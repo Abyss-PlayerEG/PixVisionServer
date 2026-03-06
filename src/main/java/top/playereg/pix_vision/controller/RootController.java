@@ -37,7 +37,7 @@ public class RootController {
     )
     @GetMapping(value = "/")
     public String home(){
-        PVSLogUtil.MuYingLog(LogType.INFO, "获取系统首页成功");
+        PVSLogUtil.PVSLog(LogType.INFO, "获取系统首页成功");
         return "redirect:/index.html";
     }
 
@@ -54,7 +54,7 @@ public class RootController {
     )
     @GetMapping(value = "/health")
     public String health() {
-        PVSLogUtil.MuYingLog(LogType.INFO, "系统服务正常");
+        PVSLogUtil.PVSLog(LogType.INFO, "系统服务正常");
         return "redirect:/server-status/running.html";
     }
 

@@ -13,12 +13,12 @@ import top.playereg.pix_vision.util.PVSLogUtil;
 public class PVSLogUtilTest extends TestCase {
 
     @Test
-    public void testMuYingLog() {
+    public void testPVSLog() {
         PVSLogUtil PVSLogUtil = new PVSLogUtil();
-        PVSLogUtil.MuYingLog(LogType.INFO,"信息日志");
-        PVSLogUtil.MuYingLog(LogType.WARN,"警告日志");
-        PVSLogUtil.MuYingLog(LogType.ERROR,"报错日志");
-        PVSLogUtil.MuYingLog(LogType.DEBUG,"测试日志");
+        PVSLogUtil.PVSLog(LogType.INFO,"信息日志");
+        PVSLogUtil.PVSLog(LogType.WARN,"警告日志");
+        PVSLogUtil.PVSLog(LogType.ERROR,"报错日志");
+        PVSLogUtil.PVSLog(LogType.DEBUG,"测试日志");
     }
 
     public void testPrintSystemDetails() {

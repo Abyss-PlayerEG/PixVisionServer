@@ -9,8 +9,8 @@ public class PVSUtilsTest {
     String str = "123456";
 
     @Test
-    public void testMuYingSha() {
-        String result = PVSUtils.MuYingSha(str);
+    public void testPVSSha() {
+        String result = PVSUtils.PVSSha(str);
         System.out.println("\n"+result);
     }
 

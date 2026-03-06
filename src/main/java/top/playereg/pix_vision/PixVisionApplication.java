@@ -70,6 +70,6 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
         }
         Console.log("    API文档(Swagger): {}", swaggerStatus);
         System.out.println();
-        PVSLogUtil.MuYingLog(LogType.INFO, "服务启动成功");
+        PVSLogUtil.PVSLog(LogType.INFO, "服务启动成功");
     }
 }

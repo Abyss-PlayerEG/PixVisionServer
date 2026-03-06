@@ -20,7 +20,7 @@ public class PVSLogUtil {
      * @author PlayerEG
      */
 
-    public static void MuYingLog(
+    public static void PVSLog(
             LogType logType,
             String log
     ) {
@@ -70,7 +70,7 @@ public class PVSLogUtil {
      * @author PlayerEG
      */
     public void printSystemDetails() {
-        MuYingLog(LogType.INFO, "打印系统信息");
+        PVSLog(LogType.INFO, "打印系统信息");
         Console.log(SystemUtil.getOsInfo()); // 操作系统信息
         Console.log(SystemUtil.getUserInfo()); // 用户信息
         Console.log(SystemUtil.getHostInfo()); // 主机信息
