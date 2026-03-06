@@ -1,0 +1,22 @@
+# MuYing日志配置
+mu-ying-logging:
+    open-highlight-color: on     # 是否启用颜色
+    enable: on    # 是否启动日志(on为启动, off为关闭)
+    level: info    # 日志级别(info,debug,error,warn,off)
+
+# MuYing安全配置
+mu-ying-secure:
+    salt: www.playereg.top # 盐值
+    num2str: [
+      # 引射表
+        "alice", # 0
+        "bob", # 1
+        "charlie", # 2
+        "david", # 3
+        "eve", # 4
+        "frank", # 5
+        "grace", # 6
+        "henry", # 7
+        "ivy", # 8
+        "jack" # 9
+    ]

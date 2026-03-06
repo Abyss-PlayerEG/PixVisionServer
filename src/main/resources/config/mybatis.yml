@@ -1,0 +1,8 @@
+# mybatis 配置
+mybatis:
+    mapper-locations: /mapper/**.xml
+    configuration:
+        log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+        map-underscore-to-camel-case: true
+    type-aliases-package: top.playereg.muyingserver.pojo
+#    type-handlers-package: top.playereg.muyingserver.handler

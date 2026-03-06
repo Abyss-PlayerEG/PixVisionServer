@@ -1,0 +1,35 @@
+workspace-name: .pix_vision # 工作空间名称
+server:
+    port: 9090
+    forward-headers-strategy: native # 启动时使用SpringBoot内置的Tomcat
+
+spring:
+    config:
+        import: # 引入配置文件
+            - classpath:config/jdbc.yml
+            - classpath:config/redis.yml
+            - classpath:config/mybatis.yml
+            - classpath:config/pix_vision.yml
+            - optional:file:${user.home}/${workspace-name}/application.yml
+    devtools:
+        restart:
+            enabled: false # 禁用热部署
+    main:
+        banner-mode: console
+    mvc:
+        pathmatch:
+            matching-strategy: ant_path_matcher
+    application:
+        name: PixVision  # 服务名称
+        version: DEV-1.0.0
+
+logging:
+    pattern:
+        console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
+    level:
+        root: info  # 日志级别
+
+knife4j:
+    enable: true        # 是否启动swagger
+    production: true   # 是否是生产环境（打包前调整为ture）
+

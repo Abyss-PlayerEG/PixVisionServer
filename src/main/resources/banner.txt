@@ -1,0 +1,14 @@
+${AnsiColor.BRIGHT_BLUE}
+    ┌────────────────────────────────────────────────┐
+    │                                                │
+    │     /\_/\                                      │
+    │    ( o.o )  ${AnsiColor.BRIGHT_CYAN}PixVision is starting up nyan~~~${AnsiColor.BRIGHT_BLUE}   │
+    │     > ^ <                                      │
+    │                                                │
+    └────────────────────────────────────────────────┘
+${AnsiColor.BRIGHT_GREEN}
+    😺Nyan~ ${AnsiColor.BRIGHT_CYAN}身份验证成功了喵~ ${AnsiColor.BRIGHT_BLUE}admin (Admin Access Granted)${AnsiColor.BRIGHT_GREEN}
+    😺Nyan~ ${AnsiColor.BRIGHT_CYAN}成功检测到了运行环境喵~ ${AnsiColor.BRIGHT_BLUE}Spring Boot: ${spring-boot.version} ${AnsiColor.BRIGHT_GREEN}\ ${AnsiColor.BRIGHT_BLUE}Java: ${java.version}
+${AnsiColor.BRIGHT_RED}
+    [SYSTEM ONLINE] ${AnsiColor.BRIGHT_MAGENTA}[安全协议已激活了喵~~~]
+${AnsiColor.DEFAULT}
