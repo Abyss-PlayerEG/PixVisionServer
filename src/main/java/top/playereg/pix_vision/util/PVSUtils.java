@@ -18,7 +18,7 @@ public class PVSUtils {
      * @return 加密后的字符串
      * @author PlayerEG
      */
-    public static String MuYingSha(String str) {
+    public static String PVSSha(String str) {
         String resStr;
         String tempStr;
         String salt = SecureConfig.getSalt(); // 获取盐值

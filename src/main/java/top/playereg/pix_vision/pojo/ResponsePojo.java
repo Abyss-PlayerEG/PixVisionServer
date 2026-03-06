@@ -46,7 +46,7 @@ public class ResponsePojo<T> {
     @Contract("_, _ -> new")
     @ApiModelProperty(value = "成功响应")
     public static <T> ResponsePojo<T> success(T t, String message) {
-        PVSLogUtil.MuYingLog(LogType.INFO, "200 " + message);
+        PVSLogUtil.PVSLog(LogType.INFO, "200 " + message);
         return new ResponsePojo<>(t, message, 200);
     }
 
@@ -54,7 +54,7 @@ public class ResponsePojo<T> {
     @Contract("_, _ -> new")
     @ApiModelProperty(value = "失败响应")
     public static <T> ResponsePojo<T> error(T t, String message) {
-        PVSLogUtil.MuYingLog(LogType.ERROR, "500 " + message);
+        PVSLogUtil.PVSLog(LogType.ERROR, "500 " + message);
         return new ResponsePojo<>(t, message, 500);
     }
 }

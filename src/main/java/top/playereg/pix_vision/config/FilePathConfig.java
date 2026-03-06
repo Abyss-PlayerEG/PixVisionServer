@@ -88,10 +88,10 @@ public class FilePathConfig {
                 java.nio.file.Path directoryPath = Paths.get(path);
                 if (!Files.exists(directoryPath)) {
                     Files.createDirectories(directoryPath);
-                    PVSLogUtil.MuYingLog(LogType.INFO, "创建目录: " + path);
+                    PVSLogUtil.PVSLog(LogType.INFO, "创建目录: " + path);
                 }
             } catch (Exception e) {
-                PVSLogUtil.MuYingLog(LogType.ERROR, "创建目录失败: " + path + " " + e.getClass().getName() + ": " + e.getMessage());
+                PVSLogUtil.PVSLog(LogType.ERROR, "创建目录失败: " + path + " " + e.getClass().getName() + ": " + e.getMessage());
             }
         }
     }
@@ -106,6 +106,6 @@ public class FilePathConfig {
             return;
         }
         FileUtil.writeString(text, p.toFile(), CharsetUtil.CHARSET_UTF_8);
-        PVSLogUtil.MuYingLog(LogType.INFO, "创建文件: " + p);
+        PVSLogUtil.PVSLog(LogType.INFO, "创建文件: " + p);
     }
 }
