@@ -5,34 +5,35 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.service.EmailService;
 
 @RestController
-@RequestMapping("/mail")
+@RequestMapping("/api/mail")
 @RequiredArgsConstructor
 @Api(tags = "邮件服务接口")
 public class MailController {
 
     private final EmailService emailService;
 
-    @PostMapping("/send")
+    @PostMapping("/send-text")
     @ApiOperation(value = "发送纯文本邮件", notes = "发送一封纯文本格式的邮件")
-    public String sendMail(
+    public ResponsePojo<String> sendMail(
             @ApiParam(value = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
             @ApiParam(value = "邮件主题", required = true, example = "测试邮件") @RequestParam String subject,
             @ApiParam(value = "邮件内容", required = true, example = "这是一封测试邮件") @RequestParam String content) {
         // 发送文本邮件
-        emailService.sendTextMail(to, subject, content);
-        return "发送成功";
+        String emailId = emailService.sendTextMail(to, subject, content);
+        return ResponsePojo.success(emailId, "纯文本邮件发送成功");
     }
 
     @PostMapping("/send-html")
     @ApiOperation(value = "发送 HTML 邮件", notes = "发送一封 HTML 格式的邮件")
-    public String sendHtmlMail(
+    public ResponsePojo<String> sendHtmlMail(
             @ApiParam(value = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
             @ApiParam(value = "邮件主题", required = true, example = "HTML 测试邮件") @RequestParam String subject) {
         String html = "<h1>标题</h1><p style='color:red'>这是 HTML 内容</p>"; // todo 待完善
-        emailService.sendHtmlMail(to, subject, html);
-        return "HTML 邮件发送成功";
+        String emailId = emailService.sendHtmlMail(to, subject, html);
+        return ResponsePojo.success(emailId, "HTML 邮件发送成功");
     }
 }
