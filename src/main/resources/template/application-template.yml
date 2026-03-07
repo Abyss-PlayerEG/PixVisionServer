@@ -17,23 +17,15 @@
 #        password: 123456
 #        database: 0
 #    mail:
-#        host: smtp.qq.com           # SMTP服务器地址
-#        port: 465                   # 端口
-#        from: your-email@example.com
-#        username: server_username    # 用户名
-#        password: your_auth_code    # 授权码
-#        protocol: smtps             # 协议
-#        default-encoding: UTF-8     # 编码
-#
-#        # 额外配置（Hutool会用到）
-#        properties:
-#            mail:
-#                smtp:
-#                    auth: true      # 是否需要SMTP验证
-#                    ssl:
-#                        enable: true    # 是否需要SSL
-#                    starttls:
-#                        enable: true    # 是否需要TLS
+#        host: smtp.qq.com               # SMTP服务器地址
+#        port: 465                       # 端口
+#        from: your-email@example.com    # 发件人
+#        username: server_username       # 用户名
+#        password: your_auth_code        # 授权码
+#        protocol: smtp                  # 协议
+#        default-encoding: UTF-8         # 编码
+#        ssl-enable: false               # 不直接建立 SSL 连接
+#        starttls-enable: false          # 启用 STARTTLS 升级
 
 #knife4j:
 #    enable: true        # 是否启动swagger
