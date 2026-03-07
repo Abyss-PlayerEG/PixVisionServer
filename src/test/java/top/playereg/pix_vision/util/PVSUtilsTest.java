@@ -1,8 +1,7 @@
-package top.playereg.muyingserver.util;
+package top.playereg.pix_vision.util;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import top.playereg.pix_vision.util.PVSUtils;
 
 @SpringBootTest
 public class PVSUtilsTest {
