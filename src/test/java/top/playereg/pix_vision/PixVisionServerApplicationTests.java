@@ -1,10 +1,10 @@
-package top.playereg.muyingserver;
+package top.playereg.pix_vision;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MuYingServerApplicationTests {
+class PixVisionServerApplicationTests {
 
     @Test
     void contextLoads() {

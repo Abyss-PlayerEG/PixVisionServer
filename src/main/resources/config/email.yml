@@ -1,0 +1,19 @@
+spring:
+    mail:
+        host: smtp.qq.com           # SMTP服务器地址
+        port: 465                   # 端口
+        from: your-email@example.com
+        username: server_username    # 用户名
+        password: your_auth_code    # 授权码
+        protocol: smtps             # 协议
+        default-encoding: UTF-8     # 编码
+
+        # 额外配置（Hutool会用到）
+        properties:
+            mail:
+                smtp:
+                    auth: true      # 是否需要SMTP验证
+                    ssl:
+                        enable: true    # 是否需要SSL
+                    starttls:
+                        enable: true    # 是否需要TLS

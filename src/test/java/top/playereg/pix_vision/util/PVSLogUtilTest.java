@@ -1,4 +1,4 @@
-package top.playereg.muyingserver.util;
+package top.playereg.pix_vision.util;
 
 import junit.framework.TestCase;
 import org.junit.Test;
@@ -6,7 +6,6 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import top.playereg.pix_vision.enums.LogType;
-import top.playereg.pix_vision.util.PVSLogUtil;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)

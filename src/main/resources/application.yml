@@ -6,6 +6,7 @@ server:
 spring:
     config:
         import: # 引入配置文件
+            - classpath:config/email.yml
             - classpath:config/jdbc.yml
             - classpath:config/redis.yml
             - classpath:config/mybatis.yml
