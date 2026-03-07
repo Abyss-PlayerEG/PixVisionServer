@@ -1,50 +1,68 @@
 # MuYing服务配置文件
 
 #### 服务端口
-# server:
-#     port: 9090
+#server:
+#    port: 9090
 
 #### 数据库配置
-# spring:
-#     datasource:
-#         url: jdbc:mysql://localhost:3306/db_muying?allowPublicKeyRetrieval=true&useSSL=false
-#         username: root
-#         password: 123456
-#     redis:
-#         host: localhost
-#         port: 6379
-#         username: root
-#         password: 123456
-#         database: 0
+#spring:
+#    datasource:
+#        url: jdbc:mysql://localhost:3306/db_muying?allowPublicKeyRetrieval=true&useSSL=false
+#        username: root
+#        password: 123456
+#    redis:
+#        host: localhost
+#        port: 6379
+#        username: root
+#        password: 123456
+#        database: 0
+#    mail:
+#        host: smtp.qq.com           # SMTP服务器地址
+#        port: 465                   # 端口
+#        from: your-email@example.com
+#        username: server_username    # 用户名
+#        password: your_auth_code    # 授权码
+#        protocol: smtps             # 协议
+#        default-encoding: UTF-8     # 编码
+#
+#        # 额外配置（Hutool会用到）
+#        properties:
+#            mail:
+#                smtp:
+#                    auth: true      # 是否需要SMTP验证
+#                    ssl:
+#                        enable: true    # 是否需要SSL
+#                    starttls:
+#                        enable: true    # 是否需要TLS
 
-# knife4j:
-#     enable: true        # 是否启动swagger
-#     production: true   # 是否是生产环境（生产环境为ture，开发环境为false）
+#knife4j:
+#    enable: true        # 是否启动swagger
+#    production: true   # 是否是生产环境（生产环境为ture，开发环境为false）
 
 #### SpringBoot日志配置项
-# logging:
-#     level:
-#         root: info  # 日志级别
+#logging:
+#    level:
+#        root: info  # 日志级别
 
 #### MuYing日志开关
-# mu-ying-logging:
-#     open-highlight-color: on # 是否启用颜色(on为启用, off为关闭)
-#     enable: on # 是否启用日志(on为启用, off为关闭)
-#     level: info # 日志级别(info,debug,error,warn,off)
+#mu-ying-logging:
+#    open-highlight-color: on # 是否启用颜色(on为启用, off为关闭)
+#    enable: on # 是否启用日志(on为启用, off为关闭)
+#    level: info # 日志级别(info,debug,error,warn,off)
 
 #### 加密选项
-# mu-ying-secure:
-#     salt: www.playereg.top # 盐值
-#     num2str: [
-#         # 映射表
-#         "alice", # 0
-#         "bob", # 1
-#         "charlie", # 2
-#         "david", # 3
-#         "eve", # 4
-#         "frank", # 5
-#         "grace", # 6
-#         "henry", # 7
-#         "ivy", # 8
-#         "jack" # 9
-#     ]
+#mu-ying-secure:
+#    salt: www.playereg.top # 盐值
+#    num2str: [
+#        # 映射表
+#        "alice", # 0
+#        "bob", # 1
+#        "charlie", # 2
+#        "david", # 3
+#        "eve", # 4
+#        "frank", # 5
+#        "grace", # 6
+#        "henry", # 7
+#        "ivy", # 8
+#        "jack" # 9
+#    ]
