@@ -35,9 +35,9 @@ public class EmailServiceImpl implements EmailService {
         account.setUser(emailConfig.getUsername());
         account.setPass(emailConfig.getPassword());
 
-        // SSL 配置
+        // SSL 和 STARTTLS 配置 - 根据配置文件动态设置
         account.setSslEnable(emailConfig.isSslEnable());
-        account.setStarttlsEnable(true);
+        account.setStarttlsEnable(emailConfig.isStarttlsEnable());
 
         return account;
     }

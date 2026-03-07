@@ -16,6 +16,9 @@ public class EmailConfig {
     private String protocol;
     private String defaultEncoding = "UTF-8";
 
-    // 自定义属性
+    // 自定义属性 - 从 properties.mail.smtp.ssl.enable 读取
     private boolean sslEnable = true;
+    
+    // 自定义属性 - 从 properties.mail.smtp.starttls.enable 读取
+    private boolean starttlsEnable = false;
 }
