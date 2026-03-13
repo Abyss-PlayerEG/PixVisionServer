@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.service.EmailService;
 
+import java.util.Random;
+
 /**
  * 邮件服务实现类
  *
@@ -107,5 +109,25 @@ public class EmailServiceImpl implements EmailService {
             log.error("群发邮件失败: {}", e.getMessage());
             throw new RuntimeException("邮件发送失败", e);
         }
+    }
+
+    //验证码长度
+    private final int generateVerificationCodeLength = 4;
+
+    //验证码
+    private final String[] metaCode = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+            "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
+
+    //验证码
+    public String verificationCode(){
+        Random random = new Random();
+        StringBuilder verificationCode = new StringBuilder();
+        while (verificationCode.length()<generateVerificationCodeLength){
+            int i = random.nextInt(metaCode.length);
+            verificationCode.append(metaCode[i]);
+        }
+
+        return verificationCode.toString();
     }
 }

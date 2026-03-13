@@ -25,4 +25,7 @@ public interface EmailService {
             String content,
             String... tos
     );
+
+    //验证码接口
+    public String verificationCode();
 }
