@@ -32,8 +32,12 @@ public class MailController {
     public ResponsePojo<String> sendHtmlMail(
             @ApiParam(value = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
             @ApiParam(value = "邮件主题", required = true, example = "HTML 测试邮件") @RequestParam String subject) {
-        String html = "<h1>标题</h1><p style='color:red'>这是 HTML 内容</p>"; // todo 待完善
+//        String html = "<h1>标题</h1><p style='color:red'>这是 HTML 内容</p>"; // todo 待完善
+
+        String html = "<h1>标题</h1><p style='color:red'>" + emailService.verificationCode()  + "</p>"; // todo 待完善
+
         String emailId = emailService.sendHtmlMail(to, subject, html);
+
         return ResponsePojo.success(emailId, "HTML 邮件发送成功");
     }
 }
