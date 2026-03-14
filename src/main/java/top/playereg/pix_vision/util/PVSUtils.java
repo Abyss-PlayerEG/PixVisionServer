@@ -25,12 +25,14 @@ public class PVSUtils {
         salt = SecureUtil.sha1(salt);   // 将盐值进行哈希加密
         tempStr = SecureUtil.sha1(str); // 将密码进行第一次哈希加密
         tempStr = str + salt;           // 将密码和盐的哈希值进行拼接
+        // 循环进行加密处理，共进行5次
         for (int i = 0; i < 5; i++) {
             tempStr = encryptString(tempStr);
             tempStr = number2Str(tempStr);
         }
         tempStr = encryptString(tempStr);
-        System.out.println(tempStr);
+
+        // 将字符串进行256哈希加密
         resStr = SecureUtil.sha256(tempStr);
         return resStr;
     }

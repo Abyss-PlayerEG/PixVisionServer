@@ -111,16 +111,20 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    //验证码长度
-    private final int generateVerificationCodeLength = 4;
-
-    //验证码
-    private final String[] metaCode = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-            "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
-
-    //验证码
+    /**
+     * 验证码生成
+     *
+     * @return 验证码
+     * @author blue_sky_ks
+     */
     public String verificationCode(){
+        // 验证码长度
+        final int generateVerificationCodeLength = 6;
+        // 验证码元数据
+        final String[] metaCode = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+                "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
+
         Random random = new Random();
         StringBuilder verificationCode = new StringBuilder();
         while (verificationCode.length()<generateVerificationCodeLength){
