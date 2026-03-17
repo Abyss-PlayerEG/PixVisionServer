@@ -27,16 +27,21 @@ public class MailController {
         return ResponsePojo.success(emailId, "纯文本邮件发送成功");
     }
 
-    @PostMapping("/send-html")
-    @ApiOperation(value = "发送 HTML 邮件", notes = "发送一封 HTML 格式的邮件")
-    public ResponsePojo<String> sendHtmlMail(
+    @PostMapping("/send-email")
+    @ApiOperation(value = "发送\"验证码\"邮件", notes = "发送一封 HTML 格式的邮件")
+    public ResponsePojo<String> sendEmailCode(
             @ApiParam(value = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
             @ApiParam(value = "邮件主题", required = true, example = "HTML 测试邮件") @RequestParam String subject) {
 //        String html = "<h1>标题</h1><p style='color:red'>这是 HTML 内容</p>"; // todo 待完善
 
-        String html = "<h1>标题</h1><p style='color:red'>" + emailService.verificationCode()  + "</p>"; // todo 待完善
+        //生成验证码
+        String verificationCode = emailService.verificationCode();
 
-        String emailId = emailService.sendHtmlMail(to, subject, html);
+        String html = "<h1>标题</h1><p style='color:red'>" + verificationCode  + "</p>"; // todo 待完善
+        String emailId = emailService.sendHtmlMail(to, subject, html);//发送验证码
+
+        emailService.RedisVCode( to, verificationCode ); //放进Redis中
+
 
         return ResponsePojo.success(emailId, "HTML 邮件发送成功");
     }

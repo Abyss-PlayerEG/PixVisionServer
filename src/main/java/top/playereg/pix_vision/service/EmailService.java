@@ -28,4 +28,7 @@ public interface EmailService {
 
     //验证码接口
     public String verificationCode();
+
+    //验证码Redis
+    public void RedisVCode( String email, String vCode );
 }

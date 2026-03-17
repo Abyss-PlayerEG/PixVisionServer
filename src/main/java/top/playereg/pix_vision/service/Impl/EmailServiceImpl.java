@@ -1,15 +1,20 @@
 package top.playereg.pix_vision.service.Impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.service.EmailService;
 
+import javax.annotation.Resource;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 邮件服务实现类
@@ -21,6 +26,9 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
     private final EmailConfig emailConfig;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 获取配置好的 MailAccount
@@ -117,7 +125,7 @@ public class EmailServiceImpl implements EmailService {
      * @return 验证码
      * @author blue_sky_ks
      */
-    public String verificationCode(){
+    public String verificationCode() {
         // 验证码长度
         final int generateVerificationCodeLength = 6;
         // 验证码元数据
@@ -133,5 +141,18 @@ public class EmailServiceImpl implements EmailService {
         }
 
         return verificationCode.toString();
+    }
+
+    //验证码Redis
+    public void RedisVCode( String email, String vCode )  {
+        // String存储
+        String key = StrUtil.format( "userEmailCode:{}", email ); // 用户邮箱
+        redisTemplate.opsForValue().set(
+                key, // key
+                vCode, // value
+                3, // 过期时间
+                TimeUnit.MINUTES // 时间单位
+        );
+        System.out.println(redisTemplate.opsForValue().get(key));
     }
 }

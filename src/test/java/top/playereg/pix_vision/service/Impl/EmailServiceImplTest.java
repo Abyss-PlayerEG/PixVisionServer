@@ -18,4 +18,9 @@ class EmailServiceImplTest {
     public void verificationCode() {
         System.out.println(EmailServiceImpl.verificationCode());
     }
+
+    @Test
+    public void vCodeRedis() {
+        EmailServiceImpl.RedisVCode( "2817205782@qq.com", "99" );
+    }
 }
