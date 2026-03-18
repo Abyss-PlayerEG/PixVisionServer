@@ -6,13 +6,16 @@ import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
+import top.playereg.pix_vision.enums.LogType;
 import top.playereg.pix_vision.service.EmailService;
+import top.playereg.pix_vision.util.PVSLogUtil;
 
 import javax.annotation.Resource;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -26,10 +29,6 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
     private final EmailConfig emailConfig;
-
-    @Resource
-    private RedisTemplate<String, Object> redisTemplate;
-
     /**
      * 获取配置好的 MailAccount
      *
@@ -48,6 +47,10 @@ public class EmailServiceImpl implements EmailService {
         // SSL 和 STARTTLS 配置 - 根据配置文件动态设置
         account.setSslEnable(emailConfig.isSslEnable());
         account.setStarttlsEnable(emailConfig.isStarttlsEnable());
+        
+        // 添加连接超时设置
+        account.setConnectionTimeout(5000); // 5 秒连接超时
+        account.setTimeout(10000); // 10 秒读取超时
 
         return account;
     }
@@ -69,17 +72,17 @@ public class EmailServiceImpl implements EmailService {
             MailAccount account = getMailAccount();
             return MailUtil.send(account, to, subject, content, false);
         } catch (Exception e) {
-            log.error("发送邮件失败: {}", e.getMessage());
+            PVSLogUtil.PVSLog(LogType.ERROR, "邮件发送失败：" + e.getMessage());
             throw new RuntimeException("邮件发送失败", e);
         }
     }
 
     /**
-     * 发送HTML邮件
+     * 发送 HTML 邮件
      *
      * @param to 收件人
      * @param subject 主题
-     * @param htmlContent HTML内容
+     * @param htmlContent HTML 内容
      * @author PlayerEG
      */
     public String sendHtmlMail(
@@ -88,11 +91,14 @@ public class EmailServiceImpl implements EmailService {
             String htmlContent
     ) {
         try {
+            log.info("开始发送 HTML 邮件到：{}", to);
             MailAccount account = getMailAccount();
-            return MailUtil.send(account, to, subject, htmlContent, true);
+            String result = MailUtil.send(account, to, subject, htmlContent, true);
+            log.info("HTML 邮件发送成功，邮件 ID: {}", result);
+            return result;
         } catch (Exception e) {
-            log.error("发送HTML邮件失败: {}", e.getMessage());
-            throw new RuntimeException("邮件发送失败", e);
+            PVSLogUtil.PVSLog(LogType.ERROR, "邮件发送失败：" + e.getMessage());
+            throw new RuntimeException("邮件发送失败：" + e.getMessage(), e);
         }
     }
 
@@ -114,45 +120,10 @@ public class EmailServiceImpl implements EmailService {
             return MailUtil.send(account, CollUtil.newArrayList(tos),
                     subject, content, false);
         } catch (Exception e) {
-            log.error("群发邮件失败: {}", e.getMessage());
+            PVSLogUtil.PVSLog(LogType.ERROR, "邮件发送失败：" + e.getMessage());
             throw new RuntimeException("邮件发送失败", e);
         }
     }
 
-    /**
-     * 验证码生成
-     *
-     * @return 验证码
-     * @author blue_sky_ks
-     */
-    public String verificationCode() {
-        // 验证码长度
-        final int generateVerificationCodeLength = 6;
-        // 验证码元数据
-        final String[] metaCode = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-                "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
 
-        Random random = new Random();
-        StringBuilder verificationCode = new StringBuilder();
-        while (verificationCode.length()<generateVerificationCodeLength){
-            int i = random.nextInt(metaCode.length);
-            verificationCode.append(metaCode[i]);
-        }
-
-        return verificationCode.toString();
-    }
-
-    //验证码Redis
-    public void RedisVCode( String email, String vCode )  {
-        // String存储
-        String key = StrUtil.format( "userEmailCode:{}", email ); // 用户邮箱
-        redisTemplate.opsForValue().set(
-                key, // key
-                vCode, // value
-                3, // 过期时间
-                TimeUnit.MINUTES // 时间单位
-        );
-        System.out.println(redisTemplate.opsForValue().get(key));
-    }
 }
