@@ -36,7 +36,7 @@ public class MailController {
         return ResponsePojo.success(emailId, "邮件发送成功");
     }
 
-    @PostMapping( "/verify-email-code" )
+    @PostMapping( "/verify-email-code-test" )
     @ApiOperation( value = "验证\"验证码\" - 测试", notes = "验证用户输入的验证码" )
     public ResponsePojo<Boolean> verifyEmailCode(
         @ApiParam( value = "用户邮箱", required = true, example = "") @RequestParam String email,
