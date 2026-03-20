@@ -22,7 +22,7 @@ public class MailController {
     @ApiOperation(value = "发送\"验证码\"邮件", notes = "发送一封 HTML 格式的验证码邮件")
     public ResponsePojo<String> sendEmailCode(
             @ApiParam(value = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
-            @ApiParam(value = "邮件主题", required = true, example = "HTML 测试邮件") @RequestParam String subject) {
+            @ApiParam(value = "邮件主题", required = true, example = "PixVision验证码邮件") @RequestParam String subject) {
 
         //生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
@@ -34,5 +34,21 @@ public class MailController {
 
 
         return ResponsePojo.success(emailId, "HTML 邮件发送成功");
+    }
+
+    @PostMapping( "/verify-email-code" )
+    @ApiOperation( value = "验证\"验证码\" - 测试", notes = "验证用户输入的验证码" )
+    public ResponsePojo<Boolean> verifyEmailCode(
+        @ApiParam( value = "用户邮箱", required = true, example = "") @RequestParam String email,
+        @ApiParam( value = "验证码", required = true, example = "") @RequestParam String code
+    ){
+
+        boolean isTrue = verificationCodeServices.verificationCodeVerify( email, code );
+
+        if(!isTrue){
+            return ResponsePojo.error( null, "验证失败，用户输入的验证码有误" );
+        }
+
+        return ResponsePojo.success(true, "验证成功" );
     }
 }
