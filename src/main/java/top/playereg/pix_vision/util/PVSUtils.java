@@ -1,8 +1,12 @@
 package top.playereg.pix_vision.util;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import org.jetbrains.annotations.NotNull;
 import top.playereg.pix_vision.config.SecureConfig;
+
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 /**
  * 密码处理工具类
@@ -25,12 +29,14 @@ public class PVSUtils {
         salt = SecureUtil.sha1(salt);   // 将盐值进行哈希加密
         tempStr = SecureUtil.sha1(str); // 将密码进行第一次哈希加密
         tempStr = str + salt;           // 将密码和盐的哈希值进行拼接
+        // 循环进行加密处理，共进行5次
         for (int i = 0; i < 5; i++) {
             tempStr = encryptString(tempStr);
             tempStr = number2Str(tempStr);
         }
         tempStr = encryptString(tempStr);
-        System.out.println(tempStr);
+
+        // 将字符串进行256哈希加密
         resStr = SecureUtil.sha256(tempStr);
         return resStr;
     }
@@ -93,5 +99,45 @@ public class PVSUtils {
             }
         }
         return tempStr.toString();
+    }
+
+    /**
+     * 字符串转换成字节数组
+     *
+     * @param str 待转换的字符串
+     * @return byte[]
+     * @author PlayerEG
+     */
+    public static byte[] string2Bytes(String str) {
+        if (StrUtil.isEmpty(str)) {
+            return new byte[0];
+        }
+        // 关键：必须明确指定编码 (推荐 UTF-8)，确保存取一致
+        return str.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 字节数组转换成字符串
+     *
+     * @param bytes 待转换的字节数组
+     * @return String
+     * @author PlayerEG
+     */
+    public static String bytes2String(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        // 关键：必须使用与写入时相同的编码 (UTF-8)
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * UUID生成器
+     * */
+    public static String generateUUID(){
+
+        String res = UUID.randomUUID().toString();
+
+        return res;
     }
 }
