@@ -1,8 +1,12 @@
 package top.playereg.pix_vision.util;
 
+import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import org.jetbrains.annotations.NotNull;
 import top.playereg.pix_vision.config.SecureConfig;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * 密码处理工具类
@@ -95,5 +99,35 @@ public class PVSUtils {
             }
         }
         return tempStr.toString();
+    }
+
+    /**
+     * 字符串转换成字节数组
+     *
+     * @param str 待转换的字符串
+     * @return byte[]
+     * @author PlayerEG
+     */
+    public static byte[] string2Bytes(String str) {
+        if (StrUtil.isEmpty(str)) {
+            return new byte[0];
+        }
+        // 关键：必须明确指定编码 (推荐 UTF-8)，确保存取一致
+        return str.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 字节数组转换成字符串
+     *
+     * @param bytes 待转换的字节数组
+     * @return String
+     * @author PlayerEG
+     */
+    public static String bytes2String(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        // 关键：必须使用与写入时相同的编码 (UTF-8)
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 }

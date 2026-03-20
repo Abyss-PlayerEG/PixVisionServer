@@ -26,6 +26,8 @@ public class ResponsePojo<T> {
     @ApiModelProperty(value = "响应状态码（200-成功；500-失败）")
     private int recode;
 
+    private byte status;
+
     public ResponsePojo(T t) {
         this.data = t;
         this.recode = 200;
