@@ -33,7 +33,7 @@ public class MailController {
         verificationCodeServices.setRedisVCode( to, verificationCode ); //放进Redis中
 
 
-        return ResponsePojo.success(emailId, "HTML 邮件发送成功");
+        return ResponsePojo.success(emailId, "邮件发送成功");
     }
 
     @PostMapping( "/verify-email-code" )
