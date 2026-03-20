@@ -46,7 +46,7 @@ public class MailController {
         boolean isTrue = verificationCodeServices.verificationCodeVerify( email, code );
 
         if(!isTrue){
-            return ResponsePojo.error( null, "验证失败，用户输入的验证码有误" );
+            return ResponsePojo.error( false, "验证失败，用户输入的验证码有误" );
         }
 
         return ResponsePojo.success(true, "验证成功" );
