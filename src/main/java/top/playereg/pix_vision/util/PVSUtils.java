@@ -1,12 +1,12 @@
 package top.playereg.pix_vision.util;
 
-import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import org.jetbrains.annotations.NotNull;
 import top.playereg.pix_vision.config.SecureConfig;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 /**
  * 密码处理工具类
@@ -129,5 +129,15 @@ public class PVSUtils {
         }
         // 关键：必须使用与写入时相同的编码 (UTF-8)
         return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * UUID生成器
+     * */
+    public static String generateUUID(){
+
+        String res = UUID.randomUUID().toString();
+
+        return res;
     }
 }
