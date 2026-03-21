@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.PVSUtils;
 
 import javax.annotation.Resource;
 import java.util.Random;
@@ -21,6 +22,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 验证码生成
      *
+     * @implNote 生成仅包含数字和大写字母的验证码
      * @return 验证码
      * @author blue_sky_ks
      */
@@ -45,6 +47,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 设置验证码缓存
      *
+     * @implNote 将邮箱和验证码以键值对缓存到redis
      * @param email 邮箱
      * @param vCode 验证码
      * @author blue_sky_ks
@@ -63,6 +66,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 删除验证码缓存
      *
+     * @implNote 删除邮箱对应的验证码缓存
      * @param email 邮箱
      * @author PlayerEG
      */
@@ -74,6 +78,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 验证码验证
      *
+     * @implNote 验证用户输入的验证码是否与缓存中的验证码一致
      * @param email 邮箱
      * @param userInputVCode 用户输入的验证码
      * @author PlayerEG

@@ -1,6 +1,7 @@
 package top.playereg.pix_vision.service.Impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.service.EmailService;
+import top.playereg.pix_vision.util.PVSUtils;
 
 /**
  * 邮件服务实现类
@@ -24,6 +26,7 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 获取配置好的 MailAccount
      *
+     * @implNote 获取配置好的 MailAccount
      * @return MailAccount
      * @author PlayerEG
      */
@@ -50,6 +53,7 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 发送纯文本邮件
      *
+     * @implNote 发送纯文本邮件
      * @param to      收件人
      * @param subject 主题
      * @param content 内容
@@ -72,6 +76,7 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 发送 HTML 邮件
      *
+     * @implNote 发送 HTML 邮件
      * @param to          收件人
      * @param subject     主题
      * @param htmlContent HTML 内容
@@ -97,6 +102,7 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 群发邮件
      *
+     * @implNote 群发邮件
      * @param subject 主题
      * @param content 内容
      * @param tos     收件人（多个）

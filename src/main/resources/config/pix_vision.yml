@@ -1,8 +1,6 @@
 # MuYing日志配置
 mu-ying-logging:
     open-highlight-color: on     # 是否启用颜色
-    enable: on    # 是否启动日志(on为启动, off为关闭)
-    level: info    # 日志级别(info,debug,error,warn,off)
 
 # MuYing安全配置
 mu-ying-secure:
