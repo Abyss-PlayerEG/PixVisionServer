@@ -40,7 +40,7 @@ public class EmailConfig {
         // 读取 logo 图片并转换为 Base64 - 浅色 logo
         byte[] lightLogoBytes = ResourceUtil.readBytes("template/logo/light.png"); // logo 图片路径
         String base64LightLogo = Base64.getEncoder().encodeToString(lightLogoBytes);
-        String logoDataUri = "data:image/png;base64," + base64LightLogo;
+        String lightLogoDataUri = "data:image/png;base64," + base64LightLogo;
 
         // 读取 logo 图片并转换为 Base64 - 深色 logo
         byte[] darkLogoBytes = ResourceUtil.readBytes("template/logo/dark.png");
@@ -52,7 +52,7 @@ public class EmailConfig {
         result = result.replace("{{expireTime}}", "5");
         result = result.replace("{{year}}", String.valueOf(DateUtil.thisYear()));
         result = result.replace("{{systemName}}", "Pixie Vision");
-        result = result.replace("{{logoUriLight}}", logoDataUri);
+        result = result.replace("{{logoUriLight}}", lightLogoDataUri);
         result = result.replace("{{logoUriDark}}", darkLogoDataUri);
 
         return result;
