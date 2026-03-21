@@ -14,11 +14,12 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
+PixVisionApplication.run.xml
 .idea
 *.iws
 *.iml
 *.ipr
-.run
+
 
 ### NetBeans ###
 /nbproject/private/
