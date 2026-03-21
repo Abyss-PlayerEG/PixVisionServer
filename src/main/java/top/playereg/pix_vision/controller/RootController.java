@@ -2,16 +2,16 @@ package top.playereg.pix_vision.controller;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import top.playereg.pix_vision.enums.LogType;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.SystemInfo;
 import top.playereg.pix_vision.service.SystemInfoService;
-import top.playereg.pix_vision.util.PVSLogUtil;
 
 /**
  * 服务端根路由
@@ -21,6 +21,7 @@ import top.playereg.pix_vision.util.PVSLogUtil;
 @RequestMapping("/")
 @Api(tags = "ServerRoot")
 public class RootController {
+    private static final Logger log = LoggerFactory.getLogger(RootController.class);
     @Autowired
     private SystemInfoService systemInfoService;
 
@@ -37,7 +38,7 @@ public class RootController {
     )
     @GetMapping(value = "/")
     public String home(){
-        PVSLogUtil.PVSLog(LogType.INFO, "获取系统首页成功");
+        log.info("获取系统首页成功");
         return "redirect:/index.html";
     }
 
@@ -54,7 +55,7 @@ public class RootController {
     )
     @GetMapping(value = "/health")
     public String health() {
-        PVSLogUtil.PVSLog(LogType.INFO, "系统服务正常");
+        log.info("系统服务正常");
         return "redirect:/server-status/running.html";
     }
 

@@ -2,10 +2,10 @@ package top.playereg.pix_vision.config;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import top.playereg.pix_vision.enums.LogType;
-import top.playereg.pix_vision.util.PVSLogUtil;
 import top.playereg.pix_vision.util.createFile.CreateApplicationYML;
 
 import javax.annotation.PostConstruct;
@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 @SuppressWarnings("all")
 @Component
 public class FilePathConfig {
+    private static final Logger log = LoggerFactory.getLogger(FilePathConfig.class);
     @Value("${workspace-name}")
     private String WorkSpaceName;
 
@@ -88,10 +89,10 @@ public class FilePathConfig {
                 java.nio.file.Path directoryPath = Paths.get(path);
                 if (!Files.exists(directoryPath)) {
                     Files.createDirectories(directoryPath);
-                    PVSLogUtil.PVSLog(LogType.INFO, "创建目录: " + path);
+                    log.info("创建目录: " + path);
                 }
             } catch (Exception e) {
-                PVSLogUtil.PVSLog(LogType.ERROR, "创建目录失败: " + path + " " + e.getClass().getName() + ": " + e.getMessage());
+                log.error("创建目录失败: " + path + " " + e.getClass().getName() + ": " + e.getMessage());
             }
         }
     }
@@ -106,6 +107,6 @@ public class FilePathConfig {
             return;
         }
         FileUtil.writeString(text, p.toFile(), CharsetUtil.CHARSET_UTF_8);
-        PVSLogUtil.PVSLog(LogType.INFO, "创建文件: " + p);
+        log.info("创建文件: " + p);
     }
 }

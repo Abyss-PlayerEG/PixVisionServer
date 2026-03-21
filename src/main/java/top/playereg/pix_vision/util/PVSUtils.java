@@ -3,6 +3,8 @@ package top.playereg.pix_vision.util;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import top.playereg.pix_vision.config.SecureConfig;
 
 import java.nio.charset.StandardCharsets;
@@ -15,6 +17,8 @@ import java.util.UUID;
  */
 @SuppressWarnings("all") // 忽略所有警告
 public class PVSUtils {
+    private static final Logger log = LoggerFactory.getLogger(PVSUtils.class);
+
     /**
      * 哈希加密处理
      *
@@ -71,7 +75,6 @@ public class PVSUtils {
                 tempStr.append(c);
             }
         }
-
         return tempStr.toString();
     }
 
@@ -133,11 +136,48 @@ public class PVSUtils {
 
     /**
      * UUID生成器
-     * */
-    public static String generateUUID(){
-
+     *
+     * @return String
+     * @author blue_sky_ks
+     */
+    public static String generateUUID() {
         String res = UUID.randomUUID().toString();
-
         return res;
+    }
+
+    /**
+     * 邮箱正则匹配
+     *
+     * @param email 待匹配的邮箱
+     * @return boolean
+     * @author PlayerEG
+     */
+    public static boolean isEmail(String email) {
+        String regex = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$";
+        if (!email.matches(regex)) {
+            log.error("邮箱格式错误: {}", email);
+            return false;
+        } else {
+            log.info("邮箱格式正确: {}", email);
+            return true;
+        }
+    }
+
+    /**
+     * 验证码正则匹配
+     *
+     * @param vCode 待匹配的验证码
+     * @return boolean
+     * @author PlayerEG
+     */
+    public static boolean isVCode(String vCode) {
+        String regex = "^[0-9A-Z]{6}$";
+        if (!vCode.matches(regex)) {
+            log.error("验证码格式错误: {}", SecureUtil.sha256(SecureUtil.md5(vCode)));
+            return false;
+        } else {
+            log.info("验证码格式正确: {}", SecureUtil.sha256(SecureUtil.md5(vCode)));
+            return true;
+        }
     }
 }

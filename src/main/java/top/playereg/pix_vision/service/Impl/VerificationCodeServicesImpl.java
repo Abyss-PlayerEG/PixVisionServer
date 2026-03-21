@@ -1,11 +1,12 @@
 package top.playereg.pix_vision.service.Impl;
 
 import cn.hutool.core.util.StrUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import top.playereg.pix_vision.enums.LogType;
 import top.playereg.pix_vision.service.VerificationCodeServices;
-import top.playereg.pix_vision.util.PVSLogUtil;
+import top.playereg.pix_vision.util.PVSUtils;
 
 import javax.annotation.Resource;
 import java.util.Random;
@@ -14,12 +15,14 @@ import java.util.concurrent.TimeUnit;
 @Service
 @SuppressWarnings("all")
 public class VerificationCodeServicesImpl implements VerificationCodeServices {
+    private static final Logger log = LoggerFactory.getLogger(VerificationCodeServicesImpl.class);
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 验证码生成
      *
+     * @implNote 生成仅包含数字和大写字母的验证码
      * @return 验证码
      * @author blue_sky_ks
      */
@@ -44,6 +47,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 设置验证码缓存
      *
+     * @implNote 将邮箱和验证码以键值对缓存到redis
      * @param email 邮箱
      * @param vCode 验证码
      * @author blue_sky_ks
@@ -62,6 +66,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 删除验证码缓存
      *
+     * @implNote 删除邮箱对应的验证码缓存
      * @param email 邮箱
      * @author PlayerEG
      */
@@ -73,6 +78,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 验证码验证
      *
+     * @implNote 验证用户输入的验证码是否与缓存中的验证码一致
      * @param email 邮箱
      * @param userInputVCode 用户输入的验证码
      * @author PlayerEG
@@ -91,13 +97,13 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
             );
         } catch (Exception e) {
             // 获取缓存中的验证码失败
-            PVSLogUtil.PVSLog(LogType.ERROR, "获取验证码缓存失败：" + e.getMessage());
+            log.error("获取验证码缓存失败: {}", e.getMessage());
             return verificationStatus;
         }
         
         // 验证码不存在的情况
         if (redisVCode == null) {
-            PVSLogUtil.PVSLog(LogType.WARN, "验证码不存在或已过期，邮箱：" + email);
+            log.error("验证码不存在或已过期，邮箱: {}", email);
             return verificationStatus;
         }
         
@@ -111,11 +117,11 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
                         StrUtil.format("userEmailCode:{}", email)
                 );
             } catch (Exception e) {
-                PVSLogUtil.PVSLog(LogType.ERROR, "删除验证码缓存失败：" + e.getMessage());
+                log.error("删除验证码缓存失败: {}", e.getMessage());
             }
         } else {
             // 验证失败
-            PVSLogUtil.PVSLog(LogType.WARN, "验证码不匹配，邮箱：" + email);
+            log.info("验证码不匹配，邮箱: {}", email);
             verificationStatus = false;
         }
         
