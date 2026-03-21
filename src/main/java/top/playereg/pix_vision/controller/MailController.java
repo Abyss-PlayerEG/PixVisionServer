@@ -41,7 +41,7 @@ public class MailController {
         }
         //生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
-        String html = EmailConfig.generateVerificationEmailHtml(verificationCode);
+        String html = EmailConfig.renderVerificationEmailTemplate(verificationCode);
 //        String html = StrUtil.format("<h1>验证码</h1><p style='color:red'> {} </p>", verificationCode); // todo 待完善
         String emailId = emailService.sendHtmlMail(to, subject, html);//发送验证码
 
