@@ -2,20 +2,22 @@ package top.playereg.pix_vision;
 
 import cn.hutool.core.lang.Console;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.enums.LogColor;
-import top.playereg.pix_vision.enums.LogType;
 import top.playereg.pix_vision.util.IpUtil;
-import top.playereg.pix_vision.util.PVSLogUtil;
 
 import java.util.List;
 
 @SpringBootApplication
 public class PixVisionApplication implements ApplicationListener<ApplicationReadyEvent> {
+    private static final Logger log = LoggerFactory.getLogger(PixVisionApplication.class);
+
     public static void main(String[] args) {
         SpringApplication.run(PixVisionApplication.class, args);
     }
@@ -70,6 +72,6 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
         }
         Console.log("    API文档(Swagger): {}", swaggerStatus);
         System.out.println();
-        PVSLogUtil.PVSLog(LogType.INFO, "服务启动成功");
+        PixVisionApplication.log.info("服务启动成功");
     }
 }

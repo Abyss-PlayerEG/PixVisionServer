@@ -11,14 +11,15 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import top.playereg.pix_vision.enums.LogType;
-import top.playereg.pix_vision.util.PVSLogUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Data
 @SuppressWarnings("unused")
 @ApiModel("响应数据类型")
 public class ResponsePojo<T> {
 
+    private static final Logger log = LoggerFactory.getLogger(ResponsePojo.class);
     @ApiModelProperty(value = "响应数据")
     private T data;
     @ApiModelProperty(value = "响应说明信息")
@@ -48,7 +49,7 @@ public class ResponsePojo<T> {
     @Contract("_, _ -> new")
     @ApiModelProperty(value = "成功响应")
     public static <T> ResponsePojo<T> success(T t, String message) {
-        PVSLogUtil.PVSLog(LogType.INFO, "200 " + message);
+        log.info("200 {}", message);
         return new ResponsePojo<>(t, message, 200);
     }
 
@@ -56,7 +57,7 @@ public class ResponsePojo<T> {
     @Contract("_, _ -> new")
     @ApiModelProperty(value = "失败响应")
     public static <T> ResponsePojo<T> error(T t, String message) {
-        PVSLogUtil.PVSLog(LogType.ERROR, "500 " + message);
+        log.error("500 {}", message);
         return new ResponsePojo<>(t, message, 500);
     }
 }

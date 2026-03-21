@@ -1,34 +1,26 @@
 package top.playereg.pix_vision.service.Impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
-import top.playereg.pix_vision.enums.LogType;
 import top.playereg.pix_vision.service.EmailService;
-import top.playereg.pix_vision.util.PVSLogUtil;
-
-import javax.annotation.Resource;
-import java.net.ConnectException;
-import java.net.SocketTimeoutException;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 邮件服务实现类
  *
  * @author PlayerEG
- * */
+ */
 @Slf4j
 @Service
+@SuppressWarnings("unused")
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
     private final EmailConfig emailConfig;
+
     /**
      * 获取配置好的 MailAccount
      *
@@ -47,7 +39,7 @@ public class EmailServiceImpl implements EmailService {
         // SSL 和 STARTTLS 配置 - 根据配置文件动态设置
         account.setSslEnable(emailConfig.isSslEnable());
         account.setStarttlsEnable(emailConfig.isStarttlsEnable());
-        
+
         // 添加连接超时设置
         account.setConnectionTimeout(5000); // 5 秒连接超时
         account.setTimeout(10000); // 10 秒读取超时
@@ -58,7 +50,7 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 发送纯文本邮件
      *
-     * @param to 收件人
+     * @param to      收件人
      * @param subject 主题
      * @param content 内容
      * @author PlayerEG
@@ -72,7 +64,7 @@ public class EmailServiceImpl implements EmailService {
             MailAccount account = getMailAccount();
             return MailUtil.send(account, to, subject, content, false);
         } catch (Exception e) {
-            PVSLogUtil.PVSLog(LogType.ERROR, "邮件发送失败：" + e.getMessage());
+            log.error("邮件发送失败：{}", e.getMessage());
             throw new RuntimeException("邮件发送失败", e);
         }
     }
@@ -80,8 +72,8 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 发送 HTML 邮件
      *
-     * @param to 收件人
-     * @param subject 主题
+     * @param to          收件人
+     * @param subject     主题
      * @param htmlContent HTML 内容
      * @author PlayerEG
      */
@@ -97,7 +89,7 @@ public class EmailServiceImpl implements EmailService {
             log.info("HTML 邮件发送成功，邮件 ID: {}", result);
             return result;
         } catch (Exception e) {
-            PVSLogUtil.PVSLog(LogType.ERROR, "邮件发送失败：" + e.getMessage());
+            log.error("邮件发送失败：{}", e.getMessage());
             throw new RuntimeException("邮件发送失败：" + e.getMessage(), e);
         }
     }
@@ -107,7 +99,7 @@ public class EmailServiceImpl implements EmailService {
      *
      * @param subject 主题
      * @param content 内容
-     * @param tos 收件人（多个）
+     * @param tos     收件人（多个）
      * @author PlayerEG
      */
     public String sendMailToMany(
@@ -120,10 +112,8 @@ public class EmailServiceImpl implements EmailService {
             return MailUtil.send(account, CollUtil.newArrayList(tos),
                     subject, content, false);
         } catch (Exception e) {
-            PVSLogUtil.PVSLog(LogType.ERROR, "邮件发送失败：" + e.getMessage());
+            log.error("邮件发送失败：{}", e.getMessage());
             throw new RuntimeException("邮件发送失败", e);
         }
     }
-
-
 }
