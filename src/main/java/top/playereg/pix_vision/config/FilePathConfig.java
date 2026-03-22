@@ -26,7 +26,8 @@ public class FilePathConfig {
 
     public static String RootPath; // 根目录
     public static String DataPath; // 数据目录
-    public static String EmailHtmlPath;
+    public static String LogoPath; // logo 图片目录
+    public static String EmailHtmlPath; // 邮箱 HTML 模板目录
 //    public static String PluginPath; // 插件目录
     public static String ConfigPath; // 配置目录
     public static String LogPath; // 日志目录
@@ -43,6 +44,7 @@ public class FilePathConfig {
         RootPath = getRootPath(WorkSpaceName);
         DataPath = getPath("data");
         ConfigPath = getPath("config");
+        LogoPath = getPath("config","logo-img");
         EmailHtmlPath = getPath("config","email-html");
         LogPath = getPath("log");
         KeyPath = getPath("key");
@@ -51,6 +53,7 @@ public class FilePathConfig {
                 RootPath,
                 DataPath,
                 ConfigPath,
+                LogoPath,
                 EmailHtmlPath,
                 LogPath,
                 KeyPath
@@ -59,6 +62,14 @@ public class FilePathConfig {
         createPath();
         CreateFile.createApplicationYML();
         CreateFile.crateEmailHtml();
+        CreateFile.createLogoImg();
+
+        // 说明文件
+        FilePathConfig.createTextFile(
+                "欢迎来到像素视觉用户目录，\n该目录用于存放后端资源和自定义内容",
+                FilePathConfig.RootPath,
+                "readme.txt"
+        );
     }
 
     /**
@@ -100,8 +111,8 @@ public class FilePathConfig {
             }
         }
     }
-    public static void createFile(
-            String text, 
+    public static void createTextFile(
+            String text,
             String path, 
             String file
     ) {
@@ -111,6 +122,19 @@ public class FilePathConfig {
             return;
         }
         FileUtil.writeString(text, p.toFile(), CharsetUtil.CHARSET_UTF_8);
+        log.info("创建文件: " + p);
+    }
+
+    public static void createByteFile(
+            byte[] bytes,
+            String path,
+            String file
+    ){
+        Path p = Paths.get(path, file);
+        if (Files.exists(p)){
+            return;
+        }
+        FileUtil.writeBytes(bytes, p.toFile());
         log.info("创建文件: " + p);
     }
 }
