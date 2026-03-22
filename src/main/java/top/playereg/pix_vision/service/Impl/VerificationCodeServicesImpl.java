@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.service.VerificationCodeServices;
-import top.playereg.pix_vision.util.PVSUtils;
 
 import javax.annotation.Resource;
 import java.util.Random;
