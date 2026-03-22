@@ -27,19 +27,19 @@ public class CreateFile {
      * @author PlayerEG
      */
     public static void crateEmailHtml() {
-        String template = ResourceUtil.readUtf8Str(
-                "template/email-html/email-verification.html"
-        );
-
+        // 邮箱模板目录说明
+        String aboutText = ResourceUtil.readUtf8Str("template/email-html/about-path.txt");
         FilePathConfig.createFile(
-                template,
-                FilePathConfig.EmailHtmlPath,
-                "email-verification.html"
-        );
-        FilePathConfig.createFile(
-                "当前目录为邮箱HTML模板，可以进行模板自定义",
+                aboutText,
                 FilePathConfig.EmailHtmlPath,
                 "目录说明.txt"
+        );
+        // 邮箱验证码 HTML 模板
+        String emailVerificationText = ResourceUtil.readUtf8Str("template/email-html/email-verification.html");
+        FilePathConfig.createFile(
+                emailVerificationText,
+                FilePathConfig.EmailHtmlPath,
+                "email-verification.html"
         );
     }
 }

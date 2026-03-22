@@ -1,0 +1,14 @@
+当前目录为邮箱HTML模板，可以进行模板自定义
+
+---
+
+验证码邮箱模板 email-verification.html:
+
+占位符说明：
+{{logoUriLight}}: 浅色模式 logo Base64
+{{logoUriDark}}: 深色模式 logo Base64
+{{username}}：用户名
+{{email_text}}：邮箱操作内容
+{{code}}：验证码
+{{year}}：当前年份
+{{systemName}}：系统名称
