@@ -40,7 +40,6 @@ public class EmailConfig {
         // 从 classpath 读取模板文件
         String template = ResourceUtil.readUtf8Str(
                 StrUtil.format("{}/email-verification.html", FilePathConfig.EmailHtmlPath)
-//                "template/email-html/email-verification.html"
         );
 
         // 读取 logo 图片并转换为 Base64 - 浅色 logo

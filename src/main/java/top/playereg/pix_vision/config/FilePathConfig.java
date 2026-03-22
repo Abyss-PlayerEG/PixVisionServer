@@ -60,21 +60,12 @@ public class FilePathConfig {
         };
         
         createPath();
-        CreateFile.createApplicationYML();
-        CreateFile.crateEmailHtml();
-        CreateFile.createLogoImg();
-
-        // 说明文件
-        FilePathConfig.createTextFile(
-                "欢迎来到像素视觉用户目录，\n该目录用于存放后端资源和自定义内容",
-                FilePathConfig.RootPath,
-                "readme.txt"
-        );
+        CreateFile.create();
     }
 
     /**
      * 获取根目录
-     * @param rootPath
+     * @param rootPath 根目录
      * @return 根目录
      * @author PlayerEG
      */
@@ -84,7 +75,7 @@ public class FilePathConfig {
 
     /**
      * 获取路径
-     * @param subPaths
+     * @param subPaths 子路径
      * @return 路径
      * @author PlayerEG
      */
@@ -111,6 +102,14 @@ public class FilePathConfig {
             }
         }
     }
+
+    /**
+     * 创建文本文件
+     * @param text 文本内容
+     * @param path 路径
+     * @param file 文件名
+     * @author PlayerEG
+     */
     public static void createTextFile(
             String text,
             String path, 
@@ -125,6 +124,13 @@ public class FilePathConfig {
         log.info("创建文件: " + p);
     }
 
+    /**
+     * 创建二进制文件
+     * @param bytes
+     * @param path
+     * @param file
+     * @author PlayerEG
+     */
     public static void createByteFile(
             byte[] bytes,
             String path,
