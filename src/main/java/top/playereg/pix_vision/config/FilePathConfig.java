@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import top.playereg.pix_vision.util.createFile.CreateApplicationYML;
+import top.playereg.pix_vision.util.createFile.CreateFile;
 
 import javax.annotation.PostConstruct;
 import java.nio.file.Files;
@@ -26,6 +26,7 @@ public class FilePathConfig {
 
     public static String RootPath; // 根目录
     public static String DataPath; // 数据目录
+    public static String EmailHtmlPath;
 //    public static String PluginPath; // 插件目录
     public static String ConfigPath; // 配置目录
     public static String LogPath; // 日志目录
@@ -42,6 +43,7 @@ public class FilePathConfig {
         RootPath = getRootPath(WorkSpaceName);
         DataPath = getPath("data");
         ConfigPath = getPath("config");
+        EmailHtmlPath = getPath("config","email-html");
         LogPath = getPath("log");
         KeyPath = getPath("key");
         
@@ -49,12 +51,14 @@ public class FilePathConfig {
                 RootPath,
                 DataPath,
                 ConfigPath,
+                EmailHtmlPath,
                 LogPath,
                 KeyPath
         };
         
         createPath();
-        CreateApplicationYML.create();
+        CreateFile.createApplicationYML();
+        CreateFile.crateEmailHtml();
     }
 
     /**

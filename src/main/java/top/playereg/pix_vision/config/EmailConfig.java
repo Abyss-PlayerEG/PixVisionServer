@@ -2,6 +2,7 @@ package top.playereg.pix_vision.config;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.util.StrUtil;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -38,7 +39,8 @@ public class EmailConfig {
     public static String renderVerificationEmailTemplate(String code, String username, String emailText) {
         // 从 classpath 读取模板文件
         String template = ResourceUtil.readUtf8Str(
-                "template/email-html/email-verification.html"
+                StrUtil.format("{}/email-verification.html",FilePathConfig.EmailHtmlPath)
+//                "template/email-html/email-verification.html"
         );
             
         // 读取 logo 图片并转换为 Base64 - 浅色 logo
