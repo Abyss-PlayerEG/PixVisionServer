@@ -22,21 +22,23 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 验证码生成
      *
-     * @implNote 生成仅包含数字和大写字母的验证码
      * @return 验证码
+     * @implNote 生成仅包含数字和大写字母的验证码
      * @author blue_sky_ks
      */
     public String verificationCode() {
         // 验证码长度
         final int generateVerificationCodeLength = 6;
         // 验证码元数据
-        final String[] metaCode = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-                "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
+        final String[] metaCode = {
+                "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+                "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+        };
 
         Random random = new Random();
         StringBuilder verificationCode = new StringBuilder();
-        while (verificationCode.length()<generateVerificationCodeLength){
+        while (verificationCode.length() < generateVerificationCodeLength) {
             int i = random.nextInt(metaCode.length);
             verificationCode.append(metaCode[i]);
         }
@@ -47,14 +49,14 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 设置验证码缓存
      *
-     * @implNote 将邮箱和验证码以键值对缓存到redis
      * @param email 邮箱
      * @param vCode 验证码
+     * @implNote 将邮箱和验证码以键值对缓存到redis
      * @author blue_sky_ks
      */
-    public void setRedisVCode(String email, String vCode )  {
+    public void setRedisVCode(String email, String vCode) {
         // String 存储
-        String key = StrUtil.format( "userEmailCode:{}", email ); // 用户邮箱
+        String key = StrUtil.format("userEmailCode:{}", email); // 用户邮箱
         redisTemplate.opsForValue().set(
                 key, // key
                 vCode, // value
@@ -66,30 +68,30 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     /**
      * 删除验证码缓存
      *
-     * @implNote 删除邮箱对应的验证码缓存
      * @param email 邮箱
+     * @implNote 删除邮箱对应的验证码缓存
      * @author PlayerEG
      */
-    public void deleteRedisVCode( String email ) {
-        String key = StrUtil.format( "userEmailCode:{}", email ); // 用户邮箱
-        redisTemplate.delete( key );
+    public void deleteRedisVCode(String email) {
+        String key = StrUtil.format("userEmailCode:{}", email); // 用户邮箱
+        redisTemplate.delete(key);
     }
 
     /**
      * 验证码验证
      *
-     * @implNote 验证用户输入的验证码是否与缓存中的验证码一致
-     * @param email 邮箱
+     * @param email          邮箱
      * @param userInputVCode 用户输入的验证码
-     * @author PlayerEG
      * @return 验证结果 true:验证成功 false:验证失败
+     * @implNote 验证用户输入的验证码是否与缓存中的验证码一致
+     * @author PlayerEG
      */
     @Override
     public boolean verificationCodeVerify(String email, String userInputVCode) {
         // 验证状态
         boolean verificationStatus = false;
         String redisVCode = null;
-        
+
         // 获取缓存中的验证码
         try {
             redisVCode = (String) redisTemplate.opsForValue().get(
@@ -100,13 +102,13 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
             log.error("获取验证码缓存失败: {}", e.getMessage());
             return verificationStatus;
         }
-        
+
         // 验证码不存在的情况
         if (redisVCode == null) {
             log.error("验证码不存在或已过期，邮箱: {}", email);
             return verificationStatus;
         }
-        
+
         // 验证逻辑
         if (redisVCode.equals(userInputVCode)) {
             // 验证成功
@@ -124,7 +126,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
             log.info("验证码不匹配，邮箱: {}", email);
             verificationStatus = false;
         }
-        
+
         return verificationStatus;
     }
 }
