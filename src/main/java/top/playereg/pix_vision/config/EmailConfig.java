@@ -30,25 +30,31 @@ public class EmailConfig {
      * 渲染邮箱验证码 HTML 模板
      *
      * @param code 验证码
+     * @param username 用户名
+     * @param emailText 邮件内容类型
      * @return 渲染后的完整 HTML 字符串
      * @author PlayerEG
      */
-    public static String renderVerificationEmailTemplate(String code) {
+    public static String renderVerificationEmailTemplate(String code, String username, String emailText) {
         // 从 classpath 读取模板文件
-        String template = ResourceUtil.readUtf8Str("template/email-verification.html");
+        String template = ResourceUtil.readUtf8Str(
+                "template/email-html/email-verification.html"
+        );
             
         // 读取 logo 图片并转换为 Base64 - 浅色 logo
-        byte[] lightLogoBytes = ResourceUtil.readBytes("template/logo/light.png"); // logo 图片路径
+        byte[] lightLogoBytes = ResourceUtil.readBytes("logo/light.png"); // logo 图片路径
         String base64LightLogo = Base64.getEncoder().encodeToString(lightLogoBytes);
         String lightLogoDataUri = "data:image/png;base64," + base64LightLogo;
 
         // 读取 logo 图片并转换为 Base64 - 深色 logo
-        byte[] darkLogoBytes = ResourceUtil.readBytes("template/logo/dark.png");
+        byte[] darkLogoBytes = ResourceUtil.readBytes("logo/dark.png");
         String base64DarkLogo = Base64.getEncoder().encodeToString(darkLogoBytes);
         String darkLogoDataUri = "data:image/png;base64," + base64DarkLogo;
             
-        // 替换模板中的占位符 {{code}}, {{expireTime}}, {{year}}, {{logoUri}}
-        String result = template.replace("{{code}}", code);
+        // 替换模板中的占位符
+        String result = template.replace("{{username}}", username);
+        result = result.replace("{{email_text}}", emailText);
+        result = result.replace("{{code}}", code);
         result = result.replace("{{expireTime}}", "5");
         result = result.replace("{{year}}", String.valueOf(DateUtil.thisYear()));
         result = result.replace("{{systemName}}", "Pixie Vision");
