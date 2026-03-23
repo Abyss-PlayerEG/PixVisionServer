@@ -27,14 +27,14 @@ public class PVSUtilsTest {
         System.out.println(result);
     }
 
-    @org.junit.Test
+    @Test
     public void string2Bytes() {
         String str = "像素视觉";
         byte[] result = PVSUtils.string2Bytes(str);
         System.out.println(Arrays.toString(result));
     }
 
-    @org.junit.Test
+    @Test
     public void bytes2String() {
         byte[] bytes = new byte[]{-27, -125, -113, -25, -76, -96, -24, -89, -122, -24, -89, -119};
         String result = PVSUtils.bytes2String(bytes);

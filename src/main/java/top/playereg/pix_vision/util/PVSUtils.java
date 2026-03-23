@@ -142,6 +142,9 @@ public class PVSUtils {
      */
     public static String generateUUID() {
         String res = UUID.randomUUID().toString();
+        res = res.replace("-", "");
+        res = res.toUpperCase();
+        log.info("生成UUID: {}", res);
         return res;
     }
 
@@ -173,10 +176,10 @@ public class PVSUtils {
     public static boolean isVCode(String vCode) {
         String regex = "^[0-9A-Z]{6}$";
         if (!vCode.matches(regex)) {
-            log.error("验证码格式错误: {}", SecureUtil.sha256(SecureUtil.md5(vCode)));
+            log.error("验证码格式错误: {}", vCode);
             return false;
         } else {
-            log.info("验证码格式正确: {}", SecureUtil.sha256(SecureUtil.md5(vCode)));
+            log.info("验证码格式正确: {}", vCode);
             return true;
         }
     }
