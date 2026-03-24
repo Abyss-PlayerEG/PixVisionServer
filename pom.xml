@@ -234,7 +234,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>top.playereg.PixVision.PixVisionApplication</mainClass>
+                    <mainClass>top.playereg.pix_vision.PixVisionApplication</mainClass>
                     <skip>false</skip>
                 </configuration>
                 <executions>
