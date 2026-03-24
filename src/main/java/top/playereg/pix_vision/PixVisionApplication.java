@@ -53,22 +53,17 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
         String localUrl = "http://localhost:" + port + contextPath;
         List<String> externalUrls = IpUtil.getAllLocalIpAddresses();
 
-        // 获取Swagger和Knife4j配置状态
-        String swaggerEnabled = event
+        // 获取 API 文档配置状态
+        String springdocEnabled = event
                 .getApplicationContext()
                 .getEnvironment()
-                .getProperty("knife4j.enable", "true");
-        String isProduction = event
-                .getApplicationContext()
-                .getEnvironment()
-                .getProperty("knife4j.production", "false");
-
-        String swaggerStatus = Boolean.parseBoolean(swaggerEnabled) && !Boolean.parseBoolean(isProduction) ?
+                .getProperty("springdoc.enabled", "on");
+        
+        String swaggerStatus = "on".equalsIgnoreCase(springdocEnabled) || "true".equalsIgnoreCase(springdocEnabled) ?
                 LogColor.colorize("开启", LogColor.GREEN) : LogColor.colorize("关闭", LogColor.RED);
 
         Console.log("    应用访问URL: {}", LogColor.colorize(localUrl, LogColor.GREEN));
         for (String url : externalUrls) {
-//            String externalUrl = "http://" + url + ":" + port + contextPath;
             String externalUrl = StrUtil.format("http://{}:{}{}", url, port, contextPath);
             Console.log("    外部访问URL: {}", LogColor.colorize(externalUrl, LogColor.GREEN));
         }

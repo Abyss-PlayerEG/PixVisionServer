@@ -1,7 +1,7 @@
 package top.playereg.pix_vision.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ import top.playereg.pix_vision.service.SystemInfoService;
  * */
 @Controller
 @RequestMapping("/")
-@Api(tags = "ServerRoot")
+@Tag(name = "ServerRoot")
 public class RootController {
     private static final Logger log = LoggerFactory.getLogger(RootController.class);
     @Autowired
@@ -32,9 +32,9 @@ public class RootController {
      * @apiNote 为服务端添加首页
      * @author PlayerEG
      */
-    @ApiOperation(
-            value = "后端首页",
-            notes = "后端首页"
+    @Operation(
+            summary = "后端首页",
+            description = "后端首页"
     )
     @GetMapping(value = "/")
     public String home(){
@@ -49,9 +49,9 @@ public class RootController {
      * @apiNote 通过该接口查看应用是否正常
      * @author PlayerEG
      */
-    @ApiOperation(
-            value = "服务健康检查",
-            notes = "服务健康检查"
+    @Operation(
+            summary = "服务健康检查",
+            description = "服务健康检查"
     )
     @GetMapping(value = "/health")
     public String health() {
@@ -59,9 +59,9 @@ public class RootController {
         return "redirect:/server-status/running.html";
     }
 
-    @ApiOperation(
-            value = "获取系统信息",
-            notes = "获取系统信息"
+    @Operation(
+            summary = "获取系统信息",
+            description = "获取系统信息"
     )
     @GetMapping(value = "/system-info")
     @ResponseBody
