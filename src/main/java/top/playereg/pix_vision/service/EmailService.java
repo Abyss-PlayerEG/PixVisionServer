@@ -1,7 +1,5 @@
 package top.playereg.pix_vision.service;
 
-import cn.hutool.extra.mail.MailAccount;
-
 public interface EmailService {
 //    MailAccount getMailAccount();
 

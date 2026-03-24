@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.playereg.pix_vision.enums.LogColor;
 
 @Data
 @SuppressWarnings("unused")
@@ -49,7 +50,7 @@ public class ResponsePojo<T> {
     @Contract("_, _ -> new")
     @ApiModelProperty(value = "成功响应")
     public static <T> ResponsePojo<T> success(T t, String message) {
-        log.info("200 {}", message);
+        log.info(LogColor.colorize("200 {}",LogColor.GREEN), message);
         return new ResponsePojo<>(t, message, 200);
     }
 
@@ -57,7 +58,7 @@ public class ResponsePojo<T> {
     @Contract("_, _ -> new")
     @ApiModelProperty(value = "失败响应")
     public static <T> ResponsePojo<T> error(T t, String message) {
-        log.error("500 {}", message);
+        log.error(LogColor.colorize("500 {}",LogColor.RED), message);
         return new ResponsePojo<>(t, message, 500);
     }
 }

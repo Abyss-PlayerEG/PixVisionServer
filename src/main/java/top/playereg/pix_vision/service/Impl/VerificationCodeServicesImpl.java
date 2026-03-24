@@ -1,12 +1,12 @@
 package top.playereg.pix_vision.service.Impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.service.VerificationCodeServices;
-import top.playereg.pix_vision.util.PVSUtils;
 
 import javax.annotation.Resource;
 import java.util.Random;
@@ -55,11 +55,13 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
      * @author blue_sky_ks
      */
     public void setRedisVCode(String email, String vCode) {
+        String hashVCode = SecureUtil.sha256(vCode);
+        String hashEmail = SecureUtil.sha256(email);
         // String 存储
-        String key = StrUtil.format("userEmailCode:{}", email); // 用户邮箱
+        String key = StrUtil.format("userEmailCode:{}", hashEmail); // 用户邮箱
         redisTemplate.opsForValue().set(
                 key, // key
-                vCode, // value
+                hashVCode, // value
                 5, // 过期时间
                 TimeUnit.MINUTES // 时间单位
         );
@@ -91,11 +93,13 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
         // 验证状态
         boolean verificationStatus = false;
         String redisVCode = null;
+        String hashUserInputVCode = SecureUtil.sha256(userInputVCode);
+        String hashEmail = SecureUtil.sha256(email);
 
         // 获取缓存中的验证码
         try {
             redisVCode = (String) redisTemplate.opsForValue().get(
-                    StrUtil.format("userEmailCode:{}", email)
+                    StrUtil.format("userEmailCode:{}",hashEmail)
             );
         } catch (Exception e) {
             // 获取缓存中的验证码失败
@@ -110,13 +114,13 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
         }
 
         // 验证逻辑
-        if (redisVCode.equals(userInputVCode)) {
+        if (redisVCode.equals(hashUserInputVCode)) {
             // 验证成功
             verificationStatus = true;
             // 删除缓存中的验证码
             try {
                 redisTemplate.delete(
-                        StrUtil.format("userEmailCode:{}", email)
+                        StrUtil.format("userEmailCode:{}", hashEmail)
                 );
             } catch (Exception e) {
                 log.error("删除验证码缓存失败: {}", e.getMessage());

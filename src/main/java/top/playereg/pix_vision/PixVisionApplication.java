@@ -1,6 +1,7 @@
 package top.playereg.pix_vision;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,11 +68,12 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
 
         Console.log("    应用访问URL: {}", LogColor.colorize(localUrl, LogColor.GREEN));
         for (String url : externalUrls) {
-            String externalUrl = "http://" + url + ":" + port + contextPath;
+//            String externalUrl = "http://" + url + ":" + port + contextPath;
+            String externalUrl = StrUtil.format("http://{}:{}{}", url, port, contextPath);
             Console.log("    外部访问URL: {}", LogColor.colorize(externalUrl, LogColor.GREEN));
         }
         Console.log("    API文档(Swagger): {}", swaggerStatus);
-        System.out.println();
+        Console.log();
         PixVisionApplication.log.info("服务启动成功");
     }
 }

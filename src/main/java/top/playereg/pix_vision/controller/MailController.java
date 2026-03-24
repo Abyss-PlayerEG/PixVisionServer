@@ -7,7 +7,10 @@ import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.service.EmailService;
@@ -18,6 +21,7 @@ import top.playereg.pix_vision.util.PVSUtils;
 @RequestMapping("/api/mail")
 @RequiredArgsConstructor
 @Api(tags = "邮件服务接口")
+@SuppressWarnings("all")
 public class MailController {
 
     private static final Logger log = LoggerFactory.getLogger(MailController.class);
@@ -27,9 +31,12 @@ public class MailController {
     /**
      * 发送"验证码"邮件
      *
-     * @param to      收件人邮箱
-     * @param subject ResponsePojo<Boolean>
+     * @param to
+     * @param subject
+     * @param username
+     * @param emailText
      * @return 响应结果
+     * @implNote 发送"验证码"邮件
      * @apiNote 发送一封 HTML 格式的验证码邮件
      * @author PlayerEG
      */
@@ -44,9 +51,9 @@ public class MailController {
                     "• emailText: 邮件内容类型，可选值：注册、登录、修改密码")
     public ResponsePojo<Boolean> sendEmailCode(
             @ApiParam(value = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
-            @ApiParam(value = "邮件主题", required = true, example = "PixVision验证码邮件") @RequestParam String subject,
-            @ApiParam(value = "用户昵称", required = true, example = "dev-username") @RequestParam String username,
-            @ApiParam(value = "邮件内容，可选值：注册、登录、修改密码", required = true, example = "注册") @RequestParam String emailText
+            @ApiParam(value = "邮件标题", required = true, example = "PixVision验证码邮件") @RequestParam String subject,
+            @ApiParam(value = "用户名", required = true, example = "dev-username") @RequestParam String username,
+            @ApiParam(value = "邮件内容类型，可选值：注册、登录、改密", required = true, example = "注册") @RequestParam String emailText
     ) {
         if (!PVSUtils.isEmail(to)) {
             return ResponsePojo.error(false, "邮箱格式错误");
@@ -60,12 +67,13 @@ public class MailController {
             case "注册":
                 content = "注册验证";
                 break;
-            case "修改密码":
-                content = "账号密码修改";
+            case "改密":
+                content = "密码修改";
                 break;
             default:
-                return ResponsePojo.error(false, "邮件内容错误（可选值：注册、登录、修改密码）");
+                return ResponsePojo.error(false, "邮件内容类型错误 - 可选值：注册、登录、修改 ");
         };
+        log.info(StrUtil.format("{} {}",username,content));
 
         //生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
@@ -86,9 +94,10 @@ public class MailController {
     /**
      * 验证"验证码"
      *
-     * @param email      用户邮箱
-     * @param inputVCode 验证码
+     * @param email
+     * @param inputVCode
      * @return ResponsePojo<Boolean>
+     * @implNote 验证"验证码"
      * @apiNote 验证用户输入的验证码
      * @author blue_sky_ks
      */

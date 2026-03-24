@@ -1,7 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.service.EmailService;
-import top.playereg.pix_vision.util.PVSUtils;
 
 /**
  * 邮件服务实现类
