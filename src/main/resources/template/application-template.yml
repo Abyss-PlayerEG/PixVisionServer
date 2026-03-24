@@ -27,9 +27,9 @@
 #        ssl-enable: false               # 不直接建立 SSL 连接
 #        starttls-enable: false          # 启用 STARTTLS 升级
 
-#knife4j:
-#    enable: true        # 是否启动swagger
-#    production: true   # 是否是生产环境（生产环境为ture，开发环境为false）
+#### SpringDoc文档配置项
+#springdoc:
+#    enabled: off # 启用 API 文档（生产环境设为 off，开发环境设为 on）
 
 #### SpringBoot日志配置项
 #logging:
