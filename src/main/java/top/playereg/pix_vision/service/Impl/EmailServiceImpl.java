@@ -1,13 +1,15 @@
 package top.playereg.pix_vision.service.Impl;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.extra.mail.MailAccount;
-import cn.hutool.extra.mail.MailUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.service.EmailService;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 /**
  * 邮件服务实现类
@@ -20,42 +22,21 @@ import top.playereg.pix_vision.service.EmailService;
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
     private final EmailConfig emailConfig;
+    private final JavaMailSender mailSender;
 
     /**
-     * 获取配置好的 MailAccount
-     *
-     * @implNote 获取配置好的 MailAccount
-     * @return MailAccount
-     * @author PlayerEG
+     * 创建 MimeMessage
      */
-    private MailAccount getMailAccount() {
-        MailAccount account = new MailAccount();
-        account.setHost(emailConfig.getHost());
-        account.setPort(emailConfig.getPort());
-        account.setAuth(true);
-        account.setFrom(emailConfig.getFrom());
-        account.setUser(emailConfig.getUsername());
-        account.setPass(emailConfig.getPassword());
-
-        // SSL 和 STARTTLS 配置 - 根据配置文件动态设置
-        account.setSslEnable(emailConfig.isSslEnable());
-        account.setStarttlsEnable(emailConfig.isStarttlsEnable());
-
-        // 添加连接超时设置
-        account.setConnectionTimeout(5000); // 5 秒连接超时
-        account.setTimeout(10000); // 10 秒读取超时
-
-        return account;
+    private MimeMessage createMimeMessage() {
+        return mailSender.createMimeMessage();
     }
 
     /**
      * 发送纯文本邮件
      *
-     * @implNote 发送纯文本邮件
      * @param to      收件人
      * @param subject 主题
      * @param content 内容
-     * @author PlayerEG
      */
     public String sendTextMail(
             String to,
@@ -63,22 +44,29 @@ public class EmailServiceImpl implements EmailService {
             String content
     ) {
         try {
-            MailAccount account = getMailAccount();
-            return MailUtil.send(account, to, subject, content, false);
-        } catch (Exception e) {
+            log.info("开始发送文本邮件到：{}", to);
+            MimeMessage message = createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false);
+            helper.setFrom(emailConfig.getFrom());
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(content);
+            
+            mailSender.send(message);
+            log.info("文本邮件发送成功");
+            return "SUCCESS";
+        } catch (MessagingException e) {
             log.error("邮件发送失败：{}", e.getMessage());
-            throw new RuntimeException("邮件发送失败", e);
+            throw new RuntimeException("邮件发送失败：" + e.getMessage(), e);
         }
     }
 
     /**
      * 发送 HTML 邮件
      *
-     * @implNote 发送 HTML 邮件
      * @param to          收件人
      * @param subject     主题
      * @param htmlContent HTML 内容
-     * @author PlayerEG
      */
     public String sendHtmlMail(
             String to,
@@ -87,11 +75,17 @@ public class EmailServiceImpl implements EmailService {
     ) {
         try {
             log.info("开始发送 HTML 邮件到：{}", to);
-            MailAccount account = getMailAccount();
-            String result = MailUtil.send(account, to, subject, htmlContent, true);
-            log.info("HTML 邮件发送成功，邮件 ID: {}", result);
-            return result;
-        } catch (Exception e) {
+            MimeMessage message = createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setFrom(emailConfig.getFrom());
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true); // true 表示 HTML 内容
+            
+            mailSender.send(message);
+            log.info("HTML 邮件发送成功");
+            return "SUCCESS";
+        } catch (MessagingException e) {
             log.error("邮件发送失败：{}", e.getMessage());
             throw new RuntimeException("邮件发送失败：" + e.getMessage(), e);
         }
@@ -100,11 +94,9 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 群发邮件
      *
-     * @implNote 群发邮件
      * @param subject 主题
      * @param content 内容
      * @param tos     收件人（多个）
-     * @author PlayerEG
      */
     public String sendMailToMany(
             String subject,
@@ -112,12 +104,23 @@ public class EmailServiceImpl implements EmailService {
             String... tos
     ) {
         try {
-            MailAccount account = getMailAccount();
-            return MailUtil.send(account, CollUtil.newArrayList(tos),
-                    subject, content, false);
-        } catch (Exception e) {
+            log.info("开始群发邮件到：{}", String.join(", ", tos));
+            
+            for (String to : tos) {
+                MimeMessage message = createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, false);
+                helper.setFrom(emailConfig.getFrom());
+                helper.setTo(to);
+                helper.setSubject(subject);
+                helper.setText(content);
+                mailSender.send(message);
+            }
+            
+            log.info("群发邮件发送成功，共 {} 封", tos.length);
+            return "SUCCESS";
+        } catch (MessagingException e) {
             log.error("邮件发送失败：{}", e.getMessage());
-            throw new RuntimeException("邮件发送失败", e);
+            throw new RuntimeException("邮件发送失败：" + e.getMessage(), e);
         }
     }
 }
