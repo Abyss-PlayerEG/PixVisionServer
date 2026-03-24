@@ -47,7 +47,6 @@
         </pluginRepository>
     </pluginRepositories>
 
-    <!-- 引入依赖 -->
     <dependencies>
         <!--SpringBoot-->
         <dependency>
@@ -113,14 +112,16 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-            <version>6.1.5.RELEASE</version>
+<!--            <version>6.1.5.RELEASE</version>-->
         </dependency>
 
-        <!-- 如果需要使用Lettuce连接池 -->
+        <!-- 如果需要使用 Lettuce 连接池 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
         </dependency>
+        
+        <!--Hutool-->
 
         <!--Lombok-->
         <dependency>
@@ -140,7 +141,7 @@
         <dependency>
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>
-            <version>3.4.4</version>
+            <version>3.5.16</version>
         </dependency>
         <dependency>
             <groupId>org.mybatis</groupId>
@@ -152,7 +153,7 @@
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>1.1.1</version>
+            <version>3.0.3</version>
         </dependency>
 
         <!--Log4j-->
@@ -169,38 +170,30 @@
             <scope>test</scope>
         </dependency>
 
-        <!--Swagger-->
+        <!--SpringDoc OpenAPI (替代 Springfox，适配 Spring Boot 3.x)-->
         <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-spring-web</artifactId>
-            <version>3.0.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-boot-starter</artifactId>
-            <version>3.0.0</version>
-            <scope>provided</scope>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
         </dependency>
 
-        <!--Knife4j-->
+        <!--Knife4j OpenAPI3 UI (适配 Spring Boot 3.x)-->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-spring-boot-starter</artifactId>
-            <version>3.0.2</version>
-            <scope>provided</scope>
+            <artifactId>knife4j-openapi3-ui</artifactId>
+            <version>4.4.0</version>
         </dependency>
 
         <!--PageHelper-->
         <dependency>
             <groupId>com.github.pagehelper</groupId>
             <artifactId>pagehelper-spring-boot-starter</artifactId>
-            <version>1.4.4</version>
+            <version>2.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>13.0</version>
+            <version>24.1.0</version>
             <scope>compile</scope>
         </dependency>
 
@@ -208,36 +201,16 @@
         <dependency>
             <groupId>com.github.oshi</groupId>
             <artifactId>oshi-core</artifactId>
-            <version>6.4.1</version>
+            <version>6.6.5</version>
         </dependency>
 
-        <!--thymeleaf 依赖-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
-    
         <!-- Jakarta Annotation API (替代 javax.annotation) -->
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
-            <version>2.1.1</version>
         </dependency>
     
     </dependencies>
-
-    <!-- 引入依赖管理 -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <!-- 构建 -->
     <build>
