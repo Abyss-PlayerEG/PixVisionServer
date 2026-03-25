@@ -11,6 +11,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -30,13 +31,9 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();     // 创建RedisTemplate对象
         template.setConnectionFactory(connectionFactory);   // 设置RedisConnectionFactory
 
-        // 使用Jackson2JsonRedisSerializer来序列化和反序列化redis的value值
-        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        // 禁用类型信息存储，避免复杂对象反序列化问题
-        mapper.deactivateDefaultTyping();
-        serializer.setObjectMapper(mapper);
+        // 使用 GenericJackson2JsonRedisSerializer 来序列化和反序列化 redis 的 value 值
+        // 自动处理类型信息，无需手动配置 ObjectMapper
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer();
 
         template.setValueSerializer(serializer);
         // 使用StringRedisSerializer来序列化和反序列化redis的key值
