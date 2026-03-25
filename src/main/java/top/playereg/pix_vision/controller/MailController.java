@@ -43,12 +43,15 @@ public class MailController {
     @PostMapping("/send-email-code")
     @Operation(
             summary = "发送\"验证码\"邮件",
-            description = "发送一封 HTML 格式的验证码邮件。" +
-                    "参数说明：<br/>" +
-                    "• to: 收件人邮箱地址，格式为标准邮箱格式<br/>" +
-                    "• subject: 邮件主题，字符串类型<br/>" +
-                    "• username: 用户昵称，用于邮件模板中个性化显示<br/>" +
-                    "• emailText: 邮件内容类型，可选值：注册、登录、修改密码")
+            description = """
+                    发送一封 HTML 格式的验证码邮件。
+                    参数说明：<br/>
+                    • to: 收件人邮箱地址，格式为标准邮箱格式<br/>
+                    • subject: 邮件主题，字符串类型<br/>
+                    • username: 用户昵称，用于邮件模板中个性化显示<br/>
+                    • emailText: 邮件内容类型，可选值：注册、登录、修改密码
+                    """
+    )
     public ResponsePojo<Boolean> sendEmailCode(
             @Parameter(description = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
             @Parameter(description = "邮件标题", required = true, example = "PixVision 验证码邮件") @RequestParam String subject,
@@ -72,8 +75,9 @@ public class MailController {
                 break;
             default:
                 return ResponsePojo.error(false, "邮件内容类型错误 - 可选值：注册、登录、修改 ");
-        };
-        log.info(StrUtil.format("{} {}",username,content));
+        }
+        ;
+        log.info(StrUtil.format("{} {}", username, content));
 
         //生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
@@ -83,7 +87,7 @@ public class MailController {
                 username,
                 content
         );
-        String emailId = emailService.sendHtmlMail(to, subject, html);//发送验证码
+        String emailId = emailService.sendEMail(to, subject, html);//发送验证码
 
         verificationCodeServices.setRedisVCode(to, verificationCode); //放进Redis中
 

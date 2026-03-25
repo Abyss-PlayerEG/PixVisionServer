@@ -26,39 +26,12 @@ public class EmailServiceImpl implements EmailService {
 
     /**
      * 创建 MimeMessage
+     *
+     * @return MimeMessage
+     * @author PlayerEG
      */
     private MimeMessage createMimeMessage() {
         return mailSender.createMimeMessage();
-    }
-
-    /**
-     * 发送纯文本邮件
-     *
-     * @param to      收件人
-     * @param subject 主题
-     * @param content 内容
-     */
-    public String sendTextMail(
-            String to,
-            String subject,
-            String content
-    ) {
-        try {
-            log.info("开始发送文本邮件到：{}", to);
-            MimeMessage message = createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false);
-            helper.setFrom(emailConfig.getFrom());
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(content);
-            
-            mailSender.send(message);
-            log.info("文本邮件发送成功");
-            return "SUCCESS";
-        } catch (MessagingException e) {
-            log.error("邮件发送失败：{}", e.getMessage());
-            throw new RuntimeException("邮件发送失败：" + e.getMessage(), e);
-        }
     }
 
     /**
@@ -66,28 +39,30 @@ public class EmailServiceImpl implements EmailService {
      *
      * @param to          收件人
      * @param subject     主题
-     * @param htmlContent HTML 内容
+     * @param content HTML 内容
+     * @return String
+     * @author PlayerEG
      */
-    public String sendHtmlMail(
+    public String sendEMail(
             String to,
             String subject,
-            String htmlContent
+            String content
     ) {
         try {
-            log.info("开始发送 HTML 邮件到：{}", to);
+            log.info("开始发送 HTML 邮件到: {}", to);
             MimeMessage message = createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
             helper.setFrom(emailConfig.getFrom());
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(htmlContent, true); // true 表示 HTML 内容
+            helper.setText(content, true); // true 表示 HTML 内容
             
             mailSender.send(message);
-            log.info("HTML 邮件发送成功");
+            log.info("HTML 邮件发送成功: {}", to);
             return "SUCCESS";
         } catch (MessagingException e) {
-            log.error("邮件发送失败：{}", e.getMessage());
-            throw new RuntimeException("邮件发送失败：" + e.getMessage(), e);
+            log.error("邮件发送失败: {}", e.getMessage());
+            throw new RuntimeException("邮件发送失败: " + e.getMessage(), e);
         }
     }
 
@@ -97,6 +72,8 @@ public class EmailServiceImpl implements EmailService {
      * @param subject 主题
      * @param content 内容
      * @param tos     收件人（多个）
+     * @return String
+     * @author PlayerEG
      */
     public String sendMailToMany(
             String subject,
@@ -104,7 +81,7 @@ public class EmailServiceImpl implements EmailService {
             String... tos
     ) {
         try {
-            log.info("开始群发邮件到：{}", String.join(", ", tos));
+            log.info("开始群发邮件到: {}", String.join(", ", tos));
             
             for (String to : tos) {
                 MimeMessage message = createMimeMessage();
@@ -114,13 +91,14 @@ public class EmailServiceImpl implements EmailService {
                 helper.setSubject(subject);
                 helper.setText(content);
                 mailSender.send(message);
+                log.info("邮件发送成功: {}", to);
             }
             
             log.info("群发邮件发送成功，共 {} 封", tos.length);
             return "SUCCESS";
         } catch (MessagingException e) {
-            log.error("邮件发送失败：{}", e.getMessage());
-            throw new RuntimeException("邮件发送失败：" + e.getMessage(), e);
+            log.error("邮件发送失败: {}", e.getMessage());
+            throw new RuntimeException("邮件发送失败: " + e.getMessage(), e);
         }
     }
 }

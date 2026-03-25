@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import top.playereg.pix_vision.enums.LogColor;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.SystemInfo;
 import top.playereg.pix_vision.service.SystemInfoService;
@@ -38,7 +39,7 @@ public class RootController {
     )
     @GetMapping(value = "/")
     public String home(){
-        log.info("获取系统首页成功");
+        log.info(LogColor.colorize("200 获取系统首页成功",LogColor.GREEN));
         return "redirect:/index.html";
     }
 
@@ -55,7 +56,7 @@ public class RootController {
     )
     @GetMapping(value = "/health")
     public String health() {
-        log.info("系统服务正常");
+        log.info(LogColor.colorize("200 系统服务正常",LogColor.GREEN));
         return "redirect:/server-status/running.html";
     }
 
