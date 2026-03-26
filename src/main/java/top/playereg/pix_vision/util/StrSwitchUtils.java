@@ -11,13 +11,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
- * 密码处理工具类
+ * 字符串处理工具类
  *
  * @author PlayerEG
  */
 @SuppressWarnings("all") // 忽略所有警告
-public class PVSUtils {
-    private static final Logger log = LoggerFactory.getLogger(PVSUtils.class);
+public class StrSwitchUtils {
+    private static final Logger log = LoggerFactory.getLogger(StrSwitchUtils.class);
 
     /**
      * 哈希加密处理
@@ -26,7 +26,7 @@ public class PVSUtils {
      * @return 加密后的字符串
      * @author PlayerEG
      */
-    public static String PVSSha(String str) {
+    public static String PasswdToHash256(String str) {
         String resStr;
         String tempStr;
         String salt = SecureConfig.getSalt(); // 获取盐值
@@ -143,44 +143,9 @@ public class PVSUtils {
     public static String generateUUID() {
         String res = UUID.randomUUID().toString();
         res = res.replace("-", "");
-        res = res.toUpperCase();
+        res = res.toLowerCase();
         log.info("生成UUID: {}", res);
         return res;
     }
 
-    /**
-     * 邮箱正则匹配
-     *
-     * @param email 待匹配的邮箱
-     * @return boolean
-     * @author PlayerEG
-     */
-    public static boolean isEmail(String email) {
-        String regex = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$";
-        if (!email.matches(regex)) {
-            log.error("邮箱格式错误: {}", email);
-            return false;
-        } else {
-            log.info("邮箱格式正确: {}", email);
-            return true;
-        }
-    }
-
-    /**
-     * 验证码正则匹配
-     *
-     * @param vCode 待匹配的验证码
-     * @return boolean
-     * @author PlayerEG
-     */
-    public static boolean isVCode(String vCode) {
-        String regex = "^[0-9A-Z]{6}$";
-        if (!vCode.matches(regex)) {
-            log.error("验证码格式错误: {}", vCode);
-            return false;
-        } else {
-            log.info("验证码格式正确: {}", vCode);
-            return true;
-        }
-    }
 }
