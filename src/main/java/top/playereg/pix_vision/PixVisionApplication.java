@@ -29,8 +29,7 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
     public void onApplicationEvent(@NotNull ApplicationReadyEvent event) {
         Console.log(LogColor.colorize(
                 """
-                                             
-                                             (♥◠‿◠)ﾉﾞ     像素视觉启动成功     ლ(´ڡ`ლ)           \s
+                        \n                     (♥◠‿◠)ﾉﾞ     像素视觉启动成功     ლ(´ڡ`ლ)
                             ╔═══════════════════════════════════════════════════════════════════════╗
                             ║                                                                       ║
                             ║   ██████╗ ██╗██╗  ██╗    ██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗   ║
@@ -40,7 +39,7 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
                             ║   ██║     ██║██╔╝ ██╗     ╚████╔╝ ██║███████║██║╚██████╔╝██║ ╚████║   ║
                             ║   ╚═╝     ╚═╝╚═╝  ╚═╝      ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ║
                             ║                                                                       ║
-                            ╚═══════════════════════════════════════════════════════════════════════╝\
+                            ╚═══════════════════════════════════════════════════════════════════════╝
                         """,
                 LogColor.BLUE
         ));

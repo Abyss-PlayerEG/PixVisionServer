@@ -76,7 +76,7 @@ public class MailController {
             default:
                 return ResponsePojo.error(false, "邮件内容类型错误 - 可选值：注册、登录、修改 ");
         }
-        ;
+
         log.info(StrUtil.format("{} {}", username, content));
 
         //生成验证码
