@@ -21,10 +21,10 @@ public class RegexUtils {
         String regex = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$";
         if (!email.matches(regex)) {
             log.error("邮箱格式错误: {}", email);
-            return true;
+            return false;
         } else {
             log.info("邮箱格式正确: {}", email);
-            return false;
+            return true;
         }
     }
 
@@ -42,6 +42,25 @@ public class RegexUtils {
             return false;
         } else {
             log.info("验证码格式正确: {}", vCode);
+            return true;
+        }
+    }
+
+    /**
+     * 用户名正则匹配
+     * 6-16位, 只允许字母、数字和_
+     * @param username 待匹配的昵称
+     * @return boolean
+     * @author PlayerEG
+     */
+    public static boolean isUsername(String username) {
+        String regex = "^[a-zA-Z0-9_]{6,16}$";
+        if (!username.matches(regex)) {
+            log.error("用户名格式错误: {}", username);
+            log.info("用户名格式要求: 6-16位, 只允许字母、数字和_");
+            return false;
+        } else {
+            log.info("用户名格式正确: {}", username);
             return true;
         }
     }

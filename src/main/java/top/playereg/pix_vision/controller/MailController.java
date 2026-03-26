@@ -58,7 +58,7 @@ public class MailController {
             @Parameter(description = "用户名", required = true, example = "dev-username") @RequestParam String username,
             @Parameter(description = "邮件内容类型，可选值：注册、登录、改密", required = true, example = "注册") @RequestParam String emailText
     ) {
-        if (RegexUtils.isEmail(to)) {
+        if (!RegexUtils.isEmail(to)) {
             return ResponsePojo.error(false, "邮箱格式错误");
         }
         // 邮箱内容
@@ -111,7 +111,7 @@ public class MailController {
             @Parameter(description = "用户邮箱", required = true, example = "test@example.com") @RequestParam String email,
             @Parameter(description = "验证码", required = true, example = "ABCDEF") @RequestParam String inputVCode
     ) {
-        if (RegexUtils.isEmail(email)) {
+        if (!RegexUtils.isEmail(email)) {
             return ResponsePojo.error(false, "邮箱格式错误");
         }
         if (!RegexUtils.isVCode(inputVCode)) {
