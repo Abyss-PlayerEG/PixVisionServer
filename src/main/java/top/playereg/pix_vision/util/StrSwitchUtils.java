@@ -1,8 +1,6 @@
 package top.playereg.pix_vision.util;
 
 import cn.hutool.core.codec.Base64;
-import cn.hutool.core.img.Img;
-import cn.hutool.core.img.ImgUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
