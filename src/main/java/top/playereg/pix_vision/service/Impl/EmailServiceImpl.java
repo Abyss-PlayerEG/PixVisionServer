@@ -69,6 +69,7 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 群发邮件
      *
+     * @deprecated 系统设计暂不支持群发邮件
      * @param subject 主题
      * @param content 内容
      * @param tos     收件人（多个）

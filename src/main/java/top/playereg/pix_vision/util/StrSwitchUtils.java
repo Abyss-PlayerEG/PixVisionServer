@@ -1,6 +1,8 @@
 package top.playereg.pix_vision.util;
 
 import cn.hutool.core.codec.Base64;
+import cn.hutool.core.img.Img;
+import cn.hutool.core.img.ImgUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
@@ -150,14 +152,14 @@ public class StrSwitchUtils {
      */
     public static String generateUUID() {
         String res = UUID.randomUUID().toString();
-        res = res.replace("-", "");
-        res = res.toLowerCase();
+        res = res.replace("-", ""); // 去分隔线
+        res = res.toLowerCase(); // 转换为小写
         log.info("生成UUID: {}", res);
         return res;
     }
 
     /**
-     * 任意图像格式转换 png
+     * 任意图像强制格式转换为 png
      *
      * @param image 图像字节数组（支持 jpg、jpeg、gif、bmp 等格式）
      * @param saveImagePath 保存路径（必须以 .png 结尾）
@@ -214,14 +216,20 @@ public class StrSwitchUtils {
      */
     public static String imageToBase64(String imagePath) {
         byte[] imageBytes = ResourceUtil.readBytes(imagePath);
-        String base64image = StrUtil.format("data:image/png;base64,{}",Base64.encode(imageBytes));
+        // 获取图像原格式
+        String imgTypeName = FileUtil.extName(imagePath);
+        // 如果获取失败，则默认为 png
+        if (imgTypeName == null || imgTypeName.isEmpty()){
+            imgTypeName = "png";
+        }
+        String base64image = StrUtil.format("data:image/{};base64,{}", imgTypeName,Base64.encode(imageBytes));
         return base64image;
     }
 
     /**
      * Base64 转换为图像
      *
-     * @deprecated
+     * @deprecated 图像上传已确定为二进制文件上传
      * @param base64image Base64 字符串 (格式：data:image/png;base64,/9j/...)
      * @param savePath 图像保存路径
      * @return void
