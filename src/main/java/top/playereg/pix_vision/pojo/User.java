@@ -16,7 +16,7 @@ public class User {
     @Schema( description = "用户 ID")
     Integer user_id;
     @Schema( description = "用户 UUID")
-    Byte user_uuid;
+    byte[] user_uuid;
     @Schema( description = "用户名")
     String username;
     @Schema( description = "用户密码")
