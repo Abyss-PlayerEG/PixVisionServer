@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import top.playereg.pix_vision.util.createFile.CreateFile;
+import top.playereg.pix_vision.util.CreateFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

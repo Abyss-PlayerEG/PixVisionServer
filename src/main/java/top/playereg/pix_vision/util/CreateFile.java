@@ -1,4 +1,4 @@
-package top.playereg.pix_vision.util.createFile;
+package top.playereg.pix_vision.util;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import top.playereg.pix_vision.config.FilePathConfig;
