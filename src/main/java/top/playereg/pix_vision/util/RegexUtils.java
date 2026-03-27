@@ -64,4 +64,25 @@ public class RegexUtils {
             return true;
         }
     }
+
+    /**
+     * 数字正则匹配
+     * @param pureNumber 纯数字
+     * @return boolean
+     * @author PlayerEG
+     */
+    public static boolean isPureNumber(String pureNumber) {
+        String regex = "^[0-9]*$";
+
+        if( pureNumber.matches(regex) ){
+            log.info( "数字格式正确: {}", pureNumber );
+            return true;
+        }else{
+            log.error("数字格式错误: {}", pureNumber);
+            log.info("只能输入数字！！");
+            return false;
+        }
+    }
+
+
 }

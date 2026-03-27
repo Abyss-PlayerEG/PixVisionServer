@@ -16,6 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.UUID;
 
 /**
@@ -259,5 +260,27 @@ public class StrSwitchUtils {
             log.error("Base64 转图像失败：{}, 错误：{}", savePath, e.getMessage(), e);
             throw new RuntimeException("Base64 转图像失败：" + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 随机用户名生成
+     * 无参数
+     * @return String
+     * @author PlayerEG
+     * */
+
+    private static String AlphaNum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static Integer nameLength = 10;
+    private static String userDefaultName = "user_";
+    private static final SecureRandom RANDOM = new SecureRandom(); //安全随机
+
+    public static String generateRandomUserDefaultNickName(){
+
+        StringBuilder sb = new StringBuilder( userDefaultName );
+        for(int i = 0; i < nameLength; i++){
+            sb.append(AlphaNum.charAt(RANDOM.nextInt(AlphaNum.length())));
+        }
+
+        return sb.toString();
     }
 }

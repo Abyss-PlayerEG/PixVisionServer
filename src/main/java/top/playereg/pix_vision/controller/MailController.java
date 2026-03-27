@@ -15,6 +15,7 @@ import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.service.EmailService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.Aspect.LogRecord;
 import top.playereg.pix_vision.util.RegexUtils;
 
 @RestController
@@ -41,6 +42,7 @@ public class MailController {
      * @author PlayerEG
      */
     @PostMapping("/send-email-code")
+    @LogRecord( module = "\"验证码\"模块", event = "发送\"验证码\"")
     @Operation(
             summary = "发送\"验证码\"邮件",
             description = """
