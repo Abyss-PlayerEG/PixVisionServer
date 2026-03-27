@@ -32,6 +32,7 @@ import top.playereg.pix_vision.util.IpUtil;
 import java.util.List;
 
 @SpringBootApplication
+@SuppressWarnings("all")
 public class PixVisionApplication implements ApplicationListener<ApplicationReadyEvent> {
     private static final Logger log = LoggerFactory.getLogger(PixVisionApplication.class);
 
@@ -43,22 +44,34 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
 
     @Override
     public void onApplicationEvent(@NotNull ApplicationReadyEvent event) {
-        Console.log(LogColor.colorize(
-                """
-                        \n                     (♥◠‿◠)ﾉﾞ     像素视觉启动成功     ლ(´ڡ`ლ)
-                            ╔═══════════════════════════════════════════════════════════════════════╗
-                            ║                                                                       ║
-                            ║   ██████╗ ██╗██╗  ██╗    ██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗   ║
-                            ║   ██╔══██╗██║╚██╗██╔╝    ██║   ██║██║██╔════╝██║██╔═══██╗████╗  ██║   ║
-                            ║   ██████╔╝██║ ╚███╔╝     ██║   ██║██║███████╗██║██║   ██║██╔██╗ ██║   ║
-                            ║   ██╔═══╝ ██║ ██╔██╗     ╚██╗ ██╔╝██║╚════██║██║██║   ██║██║╚██╗██║   ║
-                            ║   ██║     ██║██╔╝ ██╗     ╚████╔╝ ██║███████║██║╚██████╔╝██║ ╚████║   ║
-                            ║   ╚═╝     ╚═╝╚═╝  ╚═╝      ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ║
-                            ║                                                                       ║
-                            ╚═══════════════════════════════════════════════════════════════════════╝
-                        """,
-                LogColor.BLUE
-        ));
+        Console.log(
+                LogColor.colorize(
+                        """
+                                                
+                                            |\\      _,,,--,,_  ,)
+                                            /,`.-'`'   -,  ;-;;' 
+                                           |,4-  ) )-,_ ) /\\         Nyan~~~ PixelVision is setup nyan!!!
+                                          '---''(_/--' (_/-'     
+                                """,
+                        LogColor.GREEN
+                ),
+                LogColor.colorize(
+                        """
+                                                                
+                                    ╔═══════════════════════════════════════════════════════════════════════╗
+                                    ║                                                                       ║
+                                    ║   ██████╗ ██╗██╗  ██╗    ██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗   ║
+                                    ║   ██╔══██╗██║╚██╗██╔╝    ██║   ██║██║██╔════╝██║██╔═══██╗████╗  ██║   ║
+                                    ║   ██████╔╝██║ ╚███╔╝     ██║   ██║██║███████╗██║██║   ██║██╔██╗ ██║   ║
+                                    ║   ██╔═══╝ ██║ ██╔██╗     ╚██╗ ██╔╝██║╚════██║██║██║   ██║██║╚██╗██║   ║
+                                    ║   ██║     ██║██╔╝ ██╗     ╚████╔╝ ██║███████║██║╚██████╔╝██║ ╚████║   ║
+                                    ║   ╚═╝     ╚═╝╚═╝  ╚═╝      ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ║
+                                    ║                                                                       ║
+                                    ╚═══════════════════════════════════════════════════════════════════════╝
+                                """,
+                        LogColor.BLUE
+                )
+        );
         Console.log("    服务资源PATH: {}", LogColor.colorize(FilePathConfig.RootPath, LogColor.GREEN));
         // 获取服务端口
         String port = event
