@@ -10,6 +10,10 @@ import top.playereg.pix_vision.pojo.OperateLog;
 
 import java.sql.Timestamp;
 
+/**
+ * 日志切面
+ * @author blue_sky_ks
+ */
 @Component
 @Aspect
 @SuppressWarnings("unused")
@@ -18,6 +22,14 @@ public class LogAspect {
     //用于打印和输出
     private static final Logger logger = LoggerFactory.getLogger(LogAspect.class);
 
+    /**
+     * 环绕通知
+     * @param pjp 切点
+     * @param logRecord 注解
+     * @return 返回结果
+     * @throws Throwable 抛出异常
+     * @author blue_sky_ks
+     */
     @Around( "@annotation(logRecord)" )
     public Object record(ProceedingJoinPoint pjp, LogRecord logRecord) throws Throwable {
         OperateLog operateLog = new OperateLog(); //用于记录操作的实体类
