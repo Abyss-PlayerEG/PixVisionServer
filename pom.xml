@@ -68,15 +68,11 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
-
-
         <!-- Spring Boot Thymeleaf Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-
-
 
         <!--Hutool-->
         <dependency>
@@ -116,7 +112,6 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-<!--            <version>6.1.5.RELEASE</version>-->
         </dependency>
 
         <!-- 如果需要使用 Lettuce 连接池 -->
@@ -124,8 +119,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
         </dependency>
-        
-        <!--Hutool-->
 
         <!--Lombok-->
         <dependency>
@@ -141,23 +134,11 @@
             <scope>test</scope>
         </dependency>
 
-        <!--MyBatis-->
+        <!--MyBatis-Plus Spring Boot Starter (替代 MyBatis)-->
         <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis</artifactId>
-            <version>3.5.16</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis-typehandlers-jsr310</artifactId>
-            <version>1.0.2</version>
-        </dependency>
-
-        <!--MyBatis Spring Boot Starter-->
-        <dependency>
-            <groupId>org.mybatis.spring.boot</groupId>
-            <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>3.0.3</version>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+            <version>3.5.9</version>
         </dependency>
 
         <!--Log4j-->

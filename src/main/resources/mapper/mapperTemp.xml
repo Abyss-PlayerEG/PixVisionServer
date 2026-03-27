@@ -6,4 +6,7 @@
     <select id="test" resultType="int">
         select 1 from test
     </select>
+    
+    <!-- MyBatis-Plus 会自动注入 BaseMapper 的 CRUD 方法 -->
+    <!-- 自定义查询可以继续使用 XML 配置 -->
 </mapper>
