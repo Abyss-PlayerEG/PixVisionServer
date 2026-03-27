@@ -160,7 +160,7 @@ public class StrSwitchUtils {
     /**
      * 任意图像强制格式转换为 png
      *
-     * @param image 图像字节数组（支持 jpg、jpeg、gif、bmp 等格式）
+     * @param image         图像字节数组（支持 jpg、jpeg、gif、bmp 等格式）
      * @param saveImagePath 保存路径（必须以 .png 结尾）
      * @return void
      * @author PlayerEG
@@ -175,28 +175,28 @@ public class StrSwitchUtils {
         if (!saveImagePath.toLowerCase().endsWith(".png")) {
             throw new IllegalArgumentException("保存路径必须以 .png 结尾");
         }
-            
+
         try {
             // 将字节数组转换为 BufferedImage
             ByteArrayInputStream inputStream = new ByteArrayInputStream(image);
             BufferedImage bufferedImage = ImageIO.read(inputStream);
-                
+
             if (bufferedImage == null) {
                 throw new RuntimeException("无法识别的图像格式");
             }
-                
+
             // 创建输出目录（如果不存在）
             File outputFile = new File(saveImagePath);
             File parentDir = outputFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
             }
-                
+
             // 转换为 PNG 格式并保存
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ImageIO.write(bufferedImage, "png", outputStream);
             byte[] pngBytes = outputStream.toByteArray();
-                
+
             FileUtil.writeBytes(pngBytes, saveImagePath);
             log.info("图像已转换为 PNG 格式并保存：{}", saveImagePath);
             log.info("原始大小：{} bytes, PNG 大小：{} bytes", image.length, pngBytes.length);
@@ -218,21 +218,21 @@ public class StrSwitchUtils {
         // 获取图像原格式
         String imgTypeName = FileUtil.extName(imagePath);
         // 如果获取失败，则默认为 png
-        if (imgTypeName == null || imgTypeName.isEmpty()){
+        if (imgTypeName == null || imgTypeName.isEmpty()) {
             imgTypeName = "png";
         }
-        String base64image = StrUtil.format("data:image/{};base64,{}", imgTypeName,Base64.encode(imageBytes));
+        String base64image = StrUtil.format("data:image/{};base64,{}", imgTypeName, Base64.encode(imageBytes));
         return base64image;
     }
 
     /**
      * Base64 转换为图像
      *
-     * @deprecated 图像上传已确定为二进制文件上传
      * @param base64image Base64 字符串 (格式：data:image/png;base64,/9j/...)
-     * @param savePath 图像保存路径
+     * @param savePath    图像保存路径
      * @return void
      * @author PlayerEG
+     * @deprecated 图像上传已确定为二进制文件上传
      */
     public static void base64ToImage(String base64image, String savePath) {
         // 参数验证
@@ -242,17 +242,17 @@ public class StrSwitchUtils {
         if (StrUtil.isBlank(savePath)) {
             throw new IllegalArgumentException("保存路径不能为空");
         }
-            
+
         try {
             // 移除 Base64 前缀 (如：data:image/png;base64,)
             String base64Data = base64image;
             if (base64image.contains(",")) {
                 base64Data = base64image.split(",", 2)[1];
             }
-                
+
             // Base64 解码
             byte[] imageBytes = Base64.decode(base64Data);
-                
+
             // 写入文件
             FileUtil.writeBytes(imageBytes, savePath);
             log.info("保存图像：{}", savePath);
@@ -264,20 +264,18 @@ public class StrSwitchUtils {
 
     /**
      * 随机用户名生成
-     * 无参数
+     *
+     * @param prdfix 前缀
      * @return String
-     * @author PlayerEG
-     * */
-
-    private static String AlphaNum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static Integer nameLength = 10;
-    private static String userDefaultName = "user_";
-    private static final SecureRandom RANDOM = new SecureRandom(); //安全随机
-
-    public static String generateRandomUserDefaultNickName(){
-
-        StringBuilder sb = new StringBuilder( userDefaultName );
-        for(int i = 0; i < nameLength; i++){
+     * @author blue_sky_ks
+     */
+    public static String generateRandomUserDefaultNickName(String prdfix) {
+        String AlphaNum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Integer nameLength = 10;
+        String userDefaultName = prdfix + "_";
+        final SecureRandom RANDOM = new SecureRandom(); //安全随机
+        StringBuilder sb = new StringBuilder(userDefaultName);
+        for (int i = 0; i < nameLength; i++) {
             sb.append(AlphaNum.charAt(RANDOM.nextInt(AlphaNum.length())));
         }
 

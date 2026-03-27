@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 
 @Component
 @Aspect
+@SuppressWarnings("unused")
 public class LogAspect {
 
     //用于打印和输出

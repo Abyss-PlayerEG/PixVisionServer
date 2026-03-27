@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 //自定义注解
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
+@SuppressWarnings("unused")
 public @interface LogRecord {
     String module() default "";
     String event() default "";
