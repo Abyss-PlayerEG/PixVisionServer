@@ -235,7 +235,7 @@
   </style>
 </head>
 <body>
-<center class='wrapper'>
+<div class='wrapper' style="text-align: center;">
   <table width='100%'>
     <tr>
       <td align='center'>
@@ -257,12 +257,12 @@
             <tr>
               <td class='content-padding'>
                 <h1>Verification Code</h1>
-                <p class='text-primary'>尊敬的 {{username}}，</p>
+                <p class='text-primary'>尊贵的 {{username}}</p>
                 <p class='text-primary'>
                   您正在 <strong class='highlight-text'>{{systemName}}</strong> 进行
-                  <span style='border-bottom: 1px dotted #a0aec0;'>{{email_text}}</span> 操作。
+                  <span style='border-bottom: 2px dashed #a0aec0;'>{{email_text}}</span> 操作
                   <br>
-                  这是一把临时的数字钥匙，请妥善保管。
+                  这是一把临时的数字钥匙，请妥善保管
                 </p>
 
                 <!-- 验证码核心区域：艺术票根风格 -->
@@ -272,8 +272,8 @@
 
                 <!-- 提示信息 -->
                 <p class='expire-text'>
-                  此密钥有效期为 <strong>{{expireTime}}分钟</strong>。<br>
-                  如非本人操作，请忽略此信件。
+                  此密钥有效期为 <strong>{{expireTime}}分钟</strong><br>
+                  如非本人操作，请忽略此信件
                 </p>
               </td>
             </tr>
@@ -297,6 +297,6 @@
       </td>
     </tr>
   </table>
-</center>
+</div>
 </body>
 </html>

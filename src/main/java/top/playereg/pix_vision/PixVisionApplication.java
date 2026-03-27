@@ -21,23 +21,26 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
 
     public static void main(String[] args) {
         SpringApplication.run(PixVisionApplication.class, args);
+        Console.log("");
+        log.info(LogColor.colorize("200 System is setup", LogColor.GREEN));
     }
 
     @Override
     public void onApplicationEvent(@NotNull ApplicationReadyEvent event) {
-        Console.log();
         Console.log(LogColor.colorize(
-                "                     (♥◠‿◠)ﾉﾞ     像素视觉启动成功     ლ(´ڡ`ლ)            \n" +
-                        "    ╔═══════════════════════════════════════════════════════════════════════╗\n" +
-                        "    ║                                                                       ║\n" +
-                        "    ║   ██████╗ ██╗██╗  ██╗    ██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗   ║\n" +
-                        "    ║   ██╔══██╗██║╚██╗██╔╝    ██║   ██║██║██╔════╝██║██╔═══██╗████╗  ██║   ║\n" +
-                        "    ║   ██████╔╝██║ ╚███╔╝     ██║   ██║██║███████╗██║██║   ██║██╔██╗ ██║   ║\n" +
-                        "    ║   ██╔═══╝ ██║ ██╔██╗     ╚██╗ ██╔╝██║╚════██║██║██║   ██║██║╚██╗██║   ║\n" +
-                        "    ║   ██║     ██║██╔╝ ██╗     ╚████╔╝ ██║███████║██║╚██████╔╝██║ ╚████║   ║\n" +
-                        "    ║   ╚═╝     ╚═╝╚═╝  ╚═╝      ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ║\n" +
-                        "    ║                                                                       ║\n" +
-                        "    ╚═══════════════════════════════════════════════════════════════════════╝",
+                """
+                        \n                     (♥◠‿◠)ﾉﾞ     像素视觉启动成功     ლ(´ڡ`ლ)
+                            ╔═══════════════════════════════════════════════════════════════════════╗
+                            ║                                                                       ║
+                            ║   ██████╗ ██╗██╗  ██╗    ██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗   ║
+                            ║   ██╔══██╗██║╚██╗██╔╝    ██║   ██║██║██╔════╝██║██╔═══██╗████╗  ██║   ║
+                            ║   ██████╔╝██║ ╚███╔╝     ██║   ██║██║███████╗██║██║   ██║██╔██╗ ██║   ║
+                            ║   ██╔═══╝ ██║ ██╔██╗     ╚██╗ ██╔╝██║╚════██║██║██║   ██║██║╚██╗██║   ║
+                            ║   ██║     ██║██╔╝ ██╗     ╚████╔╝ ██║███████║██║╚██████╔╝██║ ╚████║   ║
+                            ║   ╚═╝     ╚═╝╚═╝  ╚═╝      ╚═══╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ║
+                            ║                                                                       ║
+                            ╚═══════════════════════════════════════════════════════════════════════╝
+                        """,
                 LogColor.BLUE
         ));
         Console.log("    服务资源PATH: {}", LogColor.colorize(FilePathConfig.RootPath, LogColor.GREEN));
@@ -58,7 +61,7 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
                 .getApplicationContext()
                 .getEnvironment()
                 .getProperty("springdoc.enabled", "on");
-        
+
         String swaggerStatus = "on".equalsIgnoreCase(springdocEnabled) || "true".equalsIgnoreCase(springdocEnabled) ?
                 LogColor.colorize("开启", LogColor.GREEN) : LogColor.colorize("关闭", LogColor.RED);
 
@@ -67,8 +70,6 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
             String externalUrl = StrUtil.format("http://{}:{}{}", url, port, contextPath);
             Console.log("    外部访问URL: {}", LogColor.colorize(externalUrl, LogColor.GREEN));
         }
-        Console.log("    API文档(Swagger): {}", swaggerStatus);
-        Console.log();
-        PixVisionApplication.log.info("服务启动成功");
+        Console.log("    API文档 (Swagger): {}", swaggerStatus);
     }
 }

@@ -2,7 +2,6 @@ package top.playereg.pix_vision.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.Contact;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,14 +11,15 @@ import org.springframework.context.annotation.Configuration;
 public class SwaggerConfig {
     @Value("${spring.application.version}")
     private String AppVersion;
-    
+
     // 创建 API
     @Bean
     public OpenAPI createRestApi() {
-        return new OpenAPI()
-                .info(new Info()
+        return new OpenAPI().info(
+                new Info()
                         .title("像素视觉")
                         .description("像素视觉后端服务器")
-                        .version(AppVersion));
+                        .version(AppVersion)
+        );
     }
 }

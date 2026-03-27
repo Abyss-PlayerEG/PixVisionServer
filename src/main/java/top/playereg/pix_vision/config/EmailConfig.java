@@ -6,8 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
-
-import java.util.Base64;
+import top.playereg.pix_vision.util.StrSwitchUtils;
 
 @Data
 @Component
@@ -39,22 +38,17 @@ public class EmailConfig {
     public static String renderVerificationEmailTemplate(String code, String username, String emailText) {
         // 从 classpath 读取模板文件
         String template = ResourceUtil.readUtf8Str(
-                StrUtil.format("{}/email-verification.html", FilePathConfig.EmailHtmlPath)
+                StrUtil.format(
+                        "{}/email-verification.html",
+                        FilePathConfig.EmailHtmlPath
+                )
         );
 
         // 读取 logo 图片并转换为 Base64 - 浅色 logo
-        byte[] lightLogoBytes = ResourceUtil.readBytes(
-                StrUtil.format("{}/light.png", FilePathConfig.LogoPath)
-        );
-        String base64LightLogo = Base64.getEncoder().encodeToString(lightLogoBytes);
-        String lightLogoDataUri = "data:image/png;base64," + base64LightLogo;
+        String lightLogoDataUri = StrSwitchUtils.imageToBase64(StrUtil.format("{}/light.png", FilePathConfig.LogoPath));
 
         // 读取 logo 图片并转换为 Base64 - 深色 logo
-        byte[] darkLogoBytes = ResourceUtil.readBytes(
-                StrUtil.format("{}/dark.png", FilePathConfig.LogoPath)
-        );
-        String base64DarkLogo = Base64.getEncoder().encodeToString(darkLogoBytes);
-        String darkLogoDataUri = "data:image/png;base64," + base64DarkLogo;
+        String darkLogoDataUri = StrSwitchUtils.imageToBase64(StrUtil.format("{}/dark.png", FilePathConfig.LogoPath));
 
         // 替换模板中的占位符
         String result = template.replace("{{username}}", username);
