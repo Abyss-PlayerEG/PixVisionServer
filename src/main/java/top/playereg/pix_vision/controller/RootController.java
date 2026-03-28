@@ -16,6 +16,8 @@ import top.playereg.pix_vision.service.SystemInfoService;
 
 /**
  * 服务端根路由
+ * @see ResponsePojo
+ * @see top.playereg.pix_vision.service.Impl.SystemInfoServiceImpl
  * @author PlayerEG
  * */
 @Controller
@@ -28,8 +30,7 @@ public class RootController {
 
     /**
      * 后端首页
-     * @return String
-     * @see RootController#home()
+     * @return String 跳转首页
      * @apiNote 为服务端添加首页
      * @author PlayerEG
      */
@@ -45,8 +46,7 @@ public class RootController {
 
     /**
      * 服务健康检查
-     * @return String
-     * @see RootController#health()
+     * @return String 跳转检测页面
      * @apiNote 通过该接口查看应用是否正常
      * @author PlayerEG
      */
@@ -60,6 +60,13 @@ public class RootController {
         return "redirect:/server-status/running.html";
     }
 
+    /**
+     * 获取系统信息
+     * @apiNote 获取系统信息获取接口
+     * @return ResponsePojo 系统信息
+     * @throws Exception 获取系统信息失败
+     * @author PlayerEG
+     */
     @Operation(
             summary = "获取系统信息",
             description = "获取系统信息"

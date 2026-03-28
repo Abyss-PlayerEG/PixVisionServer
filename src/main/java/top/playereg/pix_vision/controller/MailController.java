@@ -18,6 +18,14 @@ import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.Aspect.LogRecord;
 import top.playereg.pix_vision.util.RegexUtils;
 
+/**
+ * 邮件服务接口
+ *
+ * @see ResponsePojo
+ * @see top.playereg.pix_vision.service.Impl.VerificationCodeServicesImpl
+ * @see top.playereg.pix_vision.service.Impl.EmailServiceImpl
+ * @author PlayerEG
+ */
 @RestController
 @RequestMapping("/api/mail")
 @RequiredArgsConstructor
@@ -46,12 +54,29 @@ public class MailController {
     @Operation(
             summary = "发送\"验证码\"邮件",
             description = """
-                    发送一封 HTML 格式的验证码邮件。
-                    参数说明：<br/>
-                    • to: 收件人邮箱地址，格式为标准邮箱格式<br/>
-                    • subject: 邮件主题，字符串类型<br/>
-                    • username: 用户昵称，用于邮件模板中个性化显示<br/>
-                    • emailText: 邮件内容类型，可选值：注册、登录、修改密码
+                    # 发送一封 HTML 格式的验证码邮件
+                    
+                    ## 参数说明：
+                    - to: 收件人邮箱地址，格式为标准邮箱格式
+                    - subject: 邮件主题，字符串类型
+                    - username: 用户昵称，用于邮件模板中个性化显示
+                    - emailText: 邮件内容类型，可选值：注册、登录、修改密码
+                    
+                    ## 返回说明：
+                    - 发送成功：返回 **"data": true** 和"邮件发送成功"提示
+                    - 发送失败：返回 **"data": false** 和"邮件发送失败"提示
+                    - 格式错误：返回 **"data": false** 和相应的"邮箱或内容类型错误"提示
+                    
+                    ## 业务逻辑：
+                    1. 校验邮箱格式是否合法
+                    2. 根据 emailText 类型生成对应的邮件内容（注册验证/登录验证/密码修改）
+                    3. 生成 6 位随机验证码并存入 Redis
+                    4. 使用 HTML 邮件模板渲染邮件内容
+                    5. 发送邮件并将验证码与邮箱绑定存储
+                    
+                    ## 注意事项：
+                    - 验证码默认有效期由 Redis 配置决定
+                    - emailText 仅支持：**注册**、**登录**、**改密** 三种类型
                     """
     )
     public ResponsePojo<Boolean> sendEmailCode(
@@ -89,7 +114,11 @@ public class MailController {
                 username,
                 content
         );
-        String emailId = emailService.sendEMail(to, subject, html);//发送验证码
+        try {
+            String emailId = emailService.sendEMail(to, subject, html);//发送验证码
+        } catch (Exception e) {
+            return ResponsePojo.error(false, "邮件发送失败");
+        }
 
         verificationCodeServices.setRedisVCode(to, verificationCode); //放进Redis中
 
@@ -108,7 +137,27 @@ public class MailController {
      * @author blue_sky_ks
      */
     @PostMapping("/verify-email-code-test")
-    @Operation(summary = "验证\"验证码\" - 测试", description = "验证用户输入的验证码")
+    @Operation(
+            summary = "验证\"验证码\" - 测试", 
+            description = """
+                    # 验证用户输入的邮箱验证码是否正确
+                    
+                    ## 参数说明：
+                    - email: 用户邮箱地址，格式为标准邮箱格式
+                    - inputVCode: 用户输入的验证码，通常为 6 位大写字母或数字组合
+                    
+                    ## 返回说明：
+                    - 验证成功：返回 **"data": true** 和"验证成功"提示
+                    - 验证失败：返回 **"data": false** 和"验证失败"提示
+                    - 格式错误：返回 **"data": false** 和相应的"邮箱或验证码格式错误"提示
+                    
+                    ## 业务逻辑：
+                    1. 校验邮箱格式是否合法
+                    2. 校验验证码格式是否合法
+                    3. 从 Redis 中获取该邮箱对应的验证码进行比对
+                    4. 验证成功后会自动清除 Redis 中的验证码
+                    """
+    )
     public ResponsePojo<Boolean> verifyEmailCode(
             @Parameter(description = "用户邮箱", required = true, example = "test@example.com") @RequestParam String email,
             @Parameter(description = "验证码", required = true, example = "ABCDEF") @RequestParam String inputVCode

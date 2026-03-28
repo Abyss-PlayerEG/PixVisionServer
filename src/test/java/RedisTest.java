@@ -55,21 +55,22 @@ public class RedisTest {
         Map<String, Object> shoppingCart = new HashMap<>();
         shoppingCart.put("cartId", "123456");
         shoppingCart.put("userId", "playereg");
-        // 修复：使用Arrays.asList替代List.of以兼容较低Java版本，并添加使用items的代码
-        List<Map<String, Object>> items = Arrays.asList(
-                new HashMap<String, Object>() {{
-                    put("itemId", "1");
-                    put("itemName", "商品1");
-                }},
-                new HashMap<String, Object>() {{
-                    put("itemId", "2");
-                    put("itemName", "商品2");
-                }},
-                new HashMap<String, Object>() {{
-                    put("itemId", "3");
-                    put("itemName", "商品3");
-                }}
-        );
+        List<Map<String, Object>> items = new ArrayList<>();
+
+        Map<String, Object> item1 = new HashMap<>();
+        item1.put("itemId", "1");
+        item1.put("itemName", "商品 1");
+        items.add(item1);
+
+        Map<String, Object> item2 = new HashMap<>();
+        item2.put("itemId", "2");
+        item2.put("itemName", "商品 2");
+        items.add(item2);
+
+        Map<String, Object> item3 = new HashMap<>();
+        item3.put("itemId", "3");
+        item3.put("itemName", "商品 3");
+        items.add(item3);
         shoppingCart.put("items", items); // 添加items字段
         redisTemplate.opsForHash().putAll(key, shoppingCart); // 存储购物车信息
         System.out.println(redisTemplate.opsForHash().get(key, "items")); // 获取购物车信息
