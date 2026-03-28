@@ -4,15 +4,18 @@ server:
     forward-headers-strategy: native # 启动时使用SpringBoot内置的Tomcat
 
 spring:
+    banner:
+        charset: utf-8
+        location: classpath:banner.txt
     config:
         import: # 引入配置文件
-            - classpath:config/email.yml
-            - classpath:config/jdbc.yml
-            - classpath:config/redis.yml
-            - classpath:config/mybatis-plus.yml
-            - classpath:config/pix_vision.yml
-            - classpath:config/spring-doc.yml
-            - classpath:config/logging.yml
+            - classpath:yml-config/email.yml
+            - classpath:yml-config/jdbc.yml
+            - classpath:yml-config/redis.yml
+            - classpath:yml-config/mybatis-plus.yml
+            - classpath:yml-config/pix_vision.yml
+            - classpath:yml-config/spring-doc.yml
+            - classpath:yml-config/logging.yml
             - optional:file:${user.home}/${workspace-name}/application.yml
     devtools:
         restart:

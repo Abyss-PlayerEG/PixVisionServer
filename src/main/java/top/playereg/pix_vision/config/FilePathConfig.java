@@ -43,9 +43,9 @@ public class FilePathConfig {
     public void initPaths() {
         RootPath = getRootPath(WorkSpaceName);
         DataPath = getPath("data");
-        ConfigPath = getPath("config");
-        LogoPath = getPath("config","logo-img");
-        EmailHtmlPath = getPath("config","email-html");
+        ConfigPath = getPath("yml-config");
+        LogoPath = getPath("yml-config","logo-img");
+        EmailHtmlPath = getPath("yml-config","email-html");
         LogPath = getPath("log");
         KeyPath = getPath("key");
         

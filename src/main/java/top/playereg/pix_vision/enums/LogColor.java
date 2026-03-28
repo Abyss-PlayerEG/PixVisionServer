@@ -13,8 +13,7 @@ public enum LogColor {
     BLUE("\u001B[34m"),         // 蓝色
     PURPLE("\u001B[35m"),       // 品红
     CYAN("\u001B[36m"),         // 青色
-    WHITE("\u001B[37m");        // 白色
-
+    WHITE("\u001B[37m");         // 白色
     private final String code;
 
     LogColor(String code) {
