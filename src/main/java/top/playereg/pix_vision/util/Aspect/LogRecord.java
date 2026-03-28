@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * 日志切面注解
+ *
  * @author blue_sky_ks
  */
 @Target(ElementType.METHOD)
@@ -14,5 +15,6 @@ import java.lang.annotation.Target;
 @SuppressWarnings("unused")
 public @interface LogRecord {
     String module() default "";
+
     String event() default "";
 }

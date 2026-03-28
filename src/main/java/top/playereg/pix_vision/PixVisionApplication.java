@@ -47,17 +47,14 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
         Console.log(
                 LogColor.colorize(
                         """
-                                                
-                                            |\\      _,,,--,,_  ,)
-                                            /,`.-'`'   -,  ;-;;' 
-                                           |,4-  ) )-,_ ) /\\         Nyan~~~ PixelVision is setup nyan!!!
-                                          '---''(_/--' (_/-'     
+                                                                
+                                                    /\\_/\\ 
+                                                   ( o.o )   Nyan~~~ PixelVision is setup nyan!!
+                                                    > ^ <
                                 """,
                         LogColor.GREEN
-                ),
-                LogColor.colorize(
-                        """
-                                                                
+                ) + LogColor.colorize(
+                        """              
                                     ╔═══════════════════════════════════════════════════════════════════════╗
                                     ║                                                                       ║
                                     ║   ██████╗ ██╗██╗  ██╗    ██╗   ██╗██╗███████╗██╗ ██████╗ ███╗   ██╗   ║
