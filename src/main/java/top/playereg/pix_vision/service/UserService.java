@@ -1,5 +1,12 @@
 package top.playereg.pix_vision.service;
 
-public interface UserService {
+import top.playereg.pix_vision.pojo.User;
 
+public interface UserService {
+    User registerUser(
+            String username,
+            String password,
+            String nickname,
+            String email
+    );
 }

@@ -139,7 +139,7 @@ public class StrSwitchUtils {
     }
 
     /**
-     * UUID生成器
+     * UUID 生成器
      *
      * @return String
      * @author blue_sky_ks
@@ -148,8 +148,71 @@ public class StrSwitchUtils {
         String res = UUID.randomUUID().toString();
         res = res.replace("-", ""); // 去分隔线
         res = res.toLowerCase(); // 转换为小写
-        log.info("生成UUID: {}", res);
+        log.info("生成 UUID: {}", res);
         return res;
+    }
+    
+    /**
+     * 将 UUID 字符串转换为 16 字节二进制数组
+     *
+     * @param uuid UUID 字符串（32 位，无分隔符）
+     * @return byte[] 16 字节的二进制数组
+     * @author PlayerEG
+     */
+    public static byte[] uuidToBytes(String uuid) {
+        if (StrUtil.isEmpty(uuid) || uuid.length() != 32) {
+            log.error("UUID 格式错误");
+            throw new IllegalArgumentException("UUID 字符串必须为 32 位字符");
+        }
+            
+        byte[] bytes = new byte[16];
+        for (int i = 0; i < 16; i++) {
+            // 每两个十六进制字符转换为一个字节
+            int index = i * 2;
+            bytes[i] = (byte) Integer.parseInt(uuid.substring(index, index + 2), 16);
+        }
+            
+        log.info("UUID 转换为 16 字节二进制：{} -> {}", uuid, bytes);
+        return bytes;
+    }
+    
+    /**
+     * 将 16 字节二进制数组转换为 UUID 字符串
+     *
+     * @param bytes 16 字节的二进制数组
+     * @return String UUID 字符串（32 位，无分隔符，小写）
+     * @author PlayerEG
+     */
+    public static String bytesToUuid(byte[] bytes) {
+        if (bytes == null || bytes.length != 16) {
+            throw new IllegalArgumentException("二进制数组长度必须为 16");
+        }
+            
+        StringBuilder sb = new StringBuilder(32);
+        for (byte b : bytes) {
+            // 将每个字节转换为两位十六进制字符串
+            sb.append(String.format("%02x", b));
+        }
+            
+        String result = sb.toString().toLowerCase();
+        log.info("16 字节二进制 UUID: {}", bytes);
+        log.info("转换后 UUID: {}", result);
+        return result;
+    }
+    
+    /**
+     * 将字节数组转换为十六进制字符串（用于日志输出）
+     *
+     * @param bytes 字节数组
+     * @return String 十六进制字符串
+     * @author blue_sky_ks
+     */
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 
     /**

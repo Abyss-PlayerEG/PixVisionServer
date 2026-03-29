@@ -80,7 +80,7 @@ public class CreateFile {
 
     /**
      * 复制默认头像到用户目录
-     * 
+     * <p>
      * 将 src/main/resources/static/default-avatar 下的所有头像文件
      * 复制到用户目录下的 AvatarPath/default 目录
      * 
