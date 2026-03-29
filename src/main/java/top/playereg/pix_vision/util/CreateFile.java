@@ -108,9 +108,12 @@ public class CreateFile {
             // 如果目标文件不存在，则复制
             if (!Files.exists(targetPath)) {
                 try {
-                    byte[] avatarBytes = ResourceUtil.readBytes(resourceAvatarDir + "/" + fileName);
-                    byte[] resizeAvatarBytes = ImageUtils.resizeImage(avatarBytes, 600, 0, true);
-                    FileUtil.writeBytes(resizeAvatarBytes, targetPath.toFile());
+                    byte[] avatarBytes = ImageUtils.resizeImage(
+                            ResourceUtil.readBytes(resourceAvatarDir + "/" + fileName),
+                            600, 0,
+                            true
+                    );
+                    FileUtil.writeBytes(avatarBytes, targetPath.toFile());
                     log.info("生成默认头像：{}", targetPath);
                 } catch (Exception e) {
                     log.error("生成头像失败：{}", fileName, e);

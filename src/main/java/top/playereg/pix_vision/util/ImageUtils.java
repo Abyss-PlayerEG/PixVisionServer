@@ -201,7 +201,13 @@ public class ImageUtils {
             byte[] resizedBytes = outputStream.toByteArray();
 
             log.info("图像缩放完成：{}x{} -> {}x{}, 原始大小：{} bytes, 压缩后：{} bytes",
-                    originalWidth, originalHeight, targetWidth, targetHeight, imageBytes.length, resizedBytes.length);
+                    originalWidth,
+                    originalHeight,
+                    targetWidth,
+                    targetHeight,
+                    imageBytes.length,
+                    resizedBytes.length
+            );
 
             return resizedBytes;
         } catch (Exception e) {
