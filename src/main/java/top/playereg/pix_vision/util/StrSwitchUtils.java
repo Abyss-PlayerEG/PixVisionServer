@@ -290,10 +290,11 @@ public class StrSwitchUtils {
      * @param markdown Markdown 内容
      * @param charset 编码格式
      * @param title 标题
+     * @param  cssStyle 样式
      * @return String HTML 内容
      * @author PlayerEG
      */
-    public static String markdownToHtml(String markdown,String charset,String title) {
+    public static String markdownToHtml(String markdown,String charset,String title,String cssStyle) {
         // Html模板
         String htmlTemplate = """
                 <!DOCTYPE html>
@@ -302,7 +303,7 @@ public class StrSwitchUtils {
                     <meta charset="{}">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>{}</title>
-                    
+                    <style>{}</style>
                 </head>
                 <body>
                 {}
@@ -313,7 +314,7 @@ public class StrSwitchUtils {
         Node document = parser.parse(markdown);
         HtmlRenderer renderer = HtmlRenderer.builder().build();
         String html = renderer.render(document);
-        return StrUtil.format(htmlTemplate, charset, title, html);
+        return StrUtil.format(htmlTemplate, charset, title, cssStyle, html);
     }
 
 }
