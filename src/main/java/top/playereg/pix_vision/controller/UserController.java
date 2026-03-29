@@ -47,6 +47,8 @@ public class UserController {
      * @param email 邮箱
      * @param vCode 验证码
      * @return 响应数据<User>
+     *
+     * @author PlayerEG
      */
     @PostMapping("/register")
     @Operation(
