@@ -309,7 +309,6 @@ public class StrSwitchUtils {
                 </body>
                 </html>
                 """;
-        // 设置 UTF-8 编码，防止中文乱码
         Parser parser = Parser.builder().build();
         Node document = parser.parse(markdown);
         HtmlRenderer renderer = HtmlRenderer.builder().build();
