@@ -26,8 +26,7 @@ public class PixVisionApplication implements ApplicationListener<ApplicationRead
         SpringApplication.run(PixVisionApplication.class, args);
         Console.log("");
         log.info(LogColor.colorize("200 System is setup", LogColor.GREEN));
-        Console.log("""
-                """);
+        Console.log();
     }
 
     @Override

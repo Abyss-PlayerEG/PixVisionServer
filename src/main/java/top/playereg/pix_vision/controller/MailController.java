@@ -140,7 +140,7 @@ public class MailController {
     @Operation(
             summary = "验证\"验证码\" - 测试", 
             description = """
-                    # 验证用户输入的邮箱验证码是否正确
+                    # 验证用户输入的邮箱验证码是否正确（测试用）
                     
                     ## 参数说明：
                     - email: 用户邮箱地址，格式为标准邮箱格式
