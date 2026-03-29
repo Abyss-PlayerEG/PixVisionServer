@@ -7,7 +7,7 @@
 #### 数据库配置
 #spring:
 #    datasource:
-#        url: jdbc:mysql://localhost:3306/db_muying?allowPublicKeyRetrieval=true&useSSL=false
+#        url: jdbc:mysql://localhost:3306/db_pix_vision?allowPublicKeyRetrieval=true&useSSL=false
 #        username: root
 #        password: 123456
 #    redis:
