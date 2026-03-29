@@ -1,14 +1,11 @@
 package top.playereg.pix_vision.controller;
 
-import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -64,19 +61,20 @@ public class UserController {
                 - vCode: 邮箱验证码，6 位大写字母或数字
                 
                 ## 返回说明：
-                - **注册成功**：返回用户信息对象（User）和 "注册成功" 提示
-                - **用户名格式错误**：返回 **data: false** 和 "用户名格式错误" 提示
-                - **邮箱格式错误**：返回 **data: false** 和 "邮箱格式错误" 提示
-                - **验证码格式错误**：返回 **data: false** 和 "验证码格式错误" 提示
-                - **验证码错误**：返回 **data: false** 和 "验证码错误" 提示
+                - **注册成功**：返回 **"data": {User} 对象** 和"注册成功"提示
+                - **用户名格式错误**：返回 **"data": null** 和"用户名格式错误"提示
+                - **邮箱格式错误**：返回 **"data": null** 和"邮箱格式错误"提示
+                - **验证码格式错误**：返回 **"data": null** 和"验证码格式错误"提示
+                - **验证码错误**：返回 **"data": null** 和"验证码错误"提示
+                - **注册失败**：返回 **"data": null** 和"注册失败：用户名或者邮箱已注册"提示
                 
                 ## 业务逻辑：
                 1. 校验用户名格式是否符合规范（6-16 位字母、数字、下划线）
                 2. 校验邮箱格式是否正确
-                3. 如果昵称为空，生成随机默认昵称
-                4. 校验验证码格式是否正确（6 位大写字母或数字）
-                5. 验证邮箱验证码是否与 Redis 中存储的一致
-                6. 对密码进行 SHA-256 哈希加密处理
+                3. 校验验证码格式是否正确（6 位大写字母或数字）
+                4. 验证邮箱验证码是否与 Redis 中存储的一致
+                5. 如果昵称为空，生成随机默认昵称
+                6. 对密码进行 SHA-256 哈希偏移加盐加密处理
                 7. 创建用户并保存到数据库
                 8. 返回用户信息和成功提示
                 
@@ -84,9 +82,10 @@ public class UserController {
                 - 昵称参数为**可选参数**，不传或为空时自动生成
                 - 验证码有效期由 Redis 配置决定
                 - 密码会使用 **SHA-256** 进行加密存储
+                - **用户名**和**邮箱**不可重复注册
                 """
     )
-    public ResponsePojo<Object> registerUser(
+    public ResponsePojo<User> registerUser(
             @Parameter(description = "用户名", required = true, example = "dev_user") @RequestParam String username,
             @Parameter(description = "密码", required = true, example = "im-pass-wd") @RequestParam String password,
             @Parameter(description = "昵称（可为空）", required = false, example = "王德法") @RequestParam(required = false) String nickname,
@@ -95,19 +94,18 @@ public class UserController {
     ) {
         // 基础数据校验
         if (!RegexUtils.isUsername(username)) {
-            return ResponsePojo.error(false, "用户名格式错误");
+            return ResponsePojo.error(null, "用户名格式错误");
         }
         if (!RegexUtils.isEmail(email)) {
-            return ResponsePojo.error(false, "邮箱格式错误");
+            return ResponsePojo.error(null, "邮箱格式错误");
         }
         if (!RegexUtils.isVCode(vCode)) {
-            return ResponsePojo.error(false, "验证码格式错误");
+            return ResponsePojo.error(null, "验证码格式错误");
         }
-        // todo 数据查重
         // 验证码验证
         boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
         if (!isTrue) {
-            return ResponsePojo.error(false, "验证码错误");
+            return ResponsePojo.error(null, "验证码错误");
         }
         // 如果昵称为空，则生成一个随机昵称
         if (nickname == null || nickname.isEmpty()) {
@@ -116,10 +114,12 @@ public class UserController {
         // 密码加密
         password = StrSwitchUtils.PasswdToHash256(password);
 
+        // 创建用户
         User user = userService.registerUser(username, password, nickname, email);
 
+        // 判断用户是否创建成功
         if (user == null) {
-            return ResponsePojo.error(false, "注册失败：用户名或者邮箱已注册");
+            return ResponsePojo.error(null, "注册失败：该用户名或邮箱已注册");
         }
 
         return ResponsePojo.success(user, "注册成功");
