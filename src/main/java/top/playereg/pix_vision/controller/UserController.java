@@ -100,22 +100,23 @@ public class UserController {
         if (!RegexUtils.isEmail(email)) {
             return ResponsePojo.error(false, "邮箱格式错误");
         }
-        // 如果昵称为空，则生成一个随机昵称
-        if (nickname == null || nickname.isEmpty()) {
-            nickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
-        }
         if (!RegexUtils.isVCode(vCode)) {
             return ResponsePojo.error(false, "验证码格式错误");
         }
-
+        // todo 数据查重
         // 验证码验证
         boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
         if (!isTrue) {
             return ResponsePojo.error(false, "验证码错误");
         }
-
+        // 如果昵称为空，则生成一个随机昵称
+        if (nickname == null || nickname.isEmpty()) {
+            nickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
+        }
         // 密码加密
         password = StrSwitchUtils.PasswdToHash256(password);
+
+
 
         User user = userService.registerUser(username, password, nickname, email);
         return ResponsePojo.success(user, StrUtil.format("注册成功"));
