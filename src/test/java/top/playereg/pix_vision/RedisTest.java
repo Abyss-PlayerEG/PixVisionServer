@@ -1,8 +1,9 @@
+package top.playereg.pix_vision;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
-import top.playereg.pix_vision.PixVisionApplication;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;

@@ -12,6 +12,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @SuppressWarnings("all")
 public class MyBatisPlusConfig {
+    /**
+     * MyBatis Plus 拦截器
+     * @author PlayerEG
+     */
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
