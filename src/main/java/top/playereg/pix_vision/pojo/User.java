@@ -17,13 +17,13 @@ public class User {
     @Schema(description = "用户 ID",example = "1")
     Integer user_id;
 
-    @Schema(description = "用户 UUID",example = "81e3aeca61ce93a0855f3d192f0c8e9157f459b6b54ad0d2238c0c1253d6432b")
+    @Schema(description = "用户 UUID",example = "16字节二进制uuid")
     byte[] user_uuid;
 
     @Schema(description = "用户名",example = "li_hua")
     String username;
 
-    @Schema(description = "用户密码",example = "passwd")
+    @Schema(description = "用户密码",example = "哈希256加密密码")
     String password;
 
     @Schema(description = "用户昵称",example = "李华")
