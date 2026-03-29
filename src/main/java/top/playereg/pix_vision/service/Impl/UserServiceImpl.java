@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,14 @@ public class UserServiceImpl implements UserService {
             String nickname,
             String email
     ) {
+        if (isUsernameExists(username)) {
+            log.error("用户名已存在");
+            return null;
+        }
+        if (isEmailExists(email)) {
+            log.error("邮箱已存在");
+            return null;
+        }
         User user = new User();
         log.info("注册用户");
 
@@ -65,5 +74,29 @@ public class UserServiceImpl implements UserService {
         user.setCreate_user(0);
 
         return userMapper.insertUser(user) > 0 ? user : null;
+    }
+    /**
+     * 检查用户名是否存在
+     */
+    private boolean isUsernameExists(String username) {
+        return userMapper.selectCount(new LambdaQueryWrapper<User>()
+                .eq(User::getUsername, username)) > 0;
+    }
+
+    /**
+     * 检查邮箱是否存在
+     */
+    private boolean isEmailExists(String email) {
+        return userMapper.selectCount(new LambdaQueryWrapper<User>()
+                .eq(User::getEmail, email)) > 0;
+    }
+    @Override
+    public User selectUserByUsername(String username) {
+        return userMapper.selectUserByUsername(username);
+    }
+
+    @Override
+    public User selectUserByEmail(String email) {
+        return userMapper.selectUserByEmail(email);
     }
 }
