@@ -116,9 +116,7 @@ public class UserController {
         // 密码加密
         password = StrSwitchUtils.PasswdToHash256(password);
 
-
-
         User user = userService.registerUser(username, password, nickname, email);
-        return ResponsePojo.success(user, StrUtil.format("注册成功"));
+        return ResponsePojo.success(user, "注册成功");
     }
 }
