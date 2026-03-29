@@ -65,7 +65,7 @@ class StrSwitchUtilsTest {
         byte[] imageBytes = FileUtil.readBytes(inputFile);
         
         // 执行格式转换
-        StrSwitchUtils.imageToPng(imageBytes, savePath);
+        ImageUtils.imageToPng(imageBytes, savePath);
         
         System.out.println("图片已保存到：" + savePath);
     }

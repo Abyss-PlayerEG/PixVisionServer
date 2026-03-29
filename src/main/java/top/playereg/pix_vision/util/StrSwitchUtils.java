@@ -1,8 +1,5 @@
 package top.playereg.pix_vision.util;
 
-import cn.hutool.core.codec.Base64;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import org.commonmark.node.Node;
@@ -13,11 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.playereg.pix_vision.config.SecureConfig;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.UUID;
@@ -158,111 +150,6 @@ public class StrSwitchUtils {
         res = res.toLowerCase(); // 转换为小写
         log.info("生成UUID: {}", res);
         return res;
-    }
-
-    /**
-     * 任意图像强制格式转换为 png
-     *
-     * @param image         图像字节数组（支持 jpg、jpeg、gif、bmp 等格式）
-     * @param saveImagePath 保存路径（必须以 .png 结尾）
-     * @return void
-     * @author PlayerEG
-     */
-    public static void imageToPng(byte[] image, String saveImagePath) {
-        if (image == null || image.length == 0) {
-            throw new IllegalArgumentException("图像数据不能为空");
-        }
-        if (StrUtil.isBlank(saveImagePath)) {
-            throw new IllegalArgumentException("保存路径不能为空");
-        }
-        if (!saveImagePath.toLowerCase().endsWith(".png")) {
-            throw new IllegalArgumentException("保存路径必须以 .png 结尾");
-        }
-
-        try {
-            // 将字节数组转换为 BufferedImage
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(image);
-            BufferedImage bufferedImage = ImageIO.read(inputStream);
-
-            if (bufferedImage == null) {
-                throw new RuntimeException("无法识别的图像格式");
-            }
-
-            // 创建输出目录（如果不存在）
-            File outputFile = new File(saveImagePath);
-            File parentDir = outputFile.getParentFile();
-            if (parentDir != null && !parentDir.exists()) {
-                parentDir.mkdirs();
-            }
-
-            // 转换为 PNG 格式并保存
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            ImageIO.write(bufferedImage, "png", outputStream);
-            byte[] pngBytes = outputStream.toByteArray();
-
-            FileUtil.writeBytes(pngBytes, saveImagePath);
-            log.info("图像已转换为 PNG 格式并保存：{}", saveImagePath);
-            log.info("原始大小：{} bytes, PNG 大小：{} bytes", image.length, pngBytes.length);
-        } catch (Exception e) {
-            log.error("图像转 PNG 失败：{}, 错误：{}", saveImagePath, e.getMessage(), e);
-            throw new RuntimeException("图像转 PNG 失败：" + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 图像转换为Base64
-     *
-     * @param imagePath 图像路径
-     * @return String
-     * @author PlayerEG
-     */
-    public static String imageToBase64(String imagePath) {
-        byte[] imageBytes = ResourceUtil.readBytes(imagePath);
-        // 获取图像原格式
-        String imgTypeName = FileUtil.extName(imagePath);
-        // 如果获取失败，则默认为 png
-        if (imgTypeName == null || imgTypeName.isEmpty()) {
-            imgTypeName = "png";
-        }
-        String base64image = StrUtil.format("data:image/{};base64,{}", imgTypeName, Base64.encode(imageBytes));
-        return base64image;
-    }
-
-    /**
-     * Base64 转换为图像
-     *
-     * @param base64image Base64 字符串 (格式：data:image/png;base64,/9j/...)
-     * @param savePath    图像保存路径
-     * @return void
-     * @author PlayerEG
-     * @deprecated 图像上传已确定为二进制文件上传
-     */
-    public static void base64ToImage(String base64image, String savePath) {
-        // 参数验证
-        if (StrUtil.isBlank(base64image)) {
-            throw new IllegalArgumentException("Base64 字符串不能为空");
-        }
-        if (StrUtil.isBlank(savePath)) {
-            throw new IllegalArgumentException("保存路径不能为空");
-        }
-
-        try {
-            // 移除 Base64 前缀 (如：data:image/png;base64,)
-            String base64Data = base64image;
-            if (base64image.contains(",")) {
-                base64Data = base64image.split(",", 2)[1];
-            }
-
-            // Base64 解码
-            byte[] imageBytes = Base64.decode(base64Data);
-
-            // 写入文件
-            FileUtil.writeBytes(imageBytes, savePath);
-            log.info("保存图像：{}", savePath);
-        } catch (Exception e) {
-            log.error("Base64 转图像失败：{}, 错误：{}", savePath, e.getMessage(), e);
-            throw new RuntimeException("Base64 转图像失败：" + e.getMessage(), e);
-        }
     }
 
     /**

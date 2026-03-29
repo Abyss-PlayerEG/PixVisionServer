@@ -7,9 +7,17 @@ import top.playereg.pix_vision.pojo.User;
 
 /**
  * Mapper 接口类模板
+ *
  * @author PlayerEG
- * */
+ */
 @Mapper
 @Repository // 持久层
 public interface UserMapper extends BaseMapper<User> {
+    
+    /**
+     * 添加用户
+     * @param user 用户实体（需包含 username, password, nickname, email）
+     * @return 影响行数
+     */
+    int insertUser(User user);
 }
