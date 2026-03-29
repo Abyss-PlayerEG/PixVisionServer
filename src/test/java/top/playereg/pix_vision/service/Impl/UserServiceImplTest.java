@@ -22,4 +22,16 @@ class UserServiceImplTest {
         User user = userService.registerUser("dev-test2", "password-test2", "老李", "email2@dev.com");
         log.info("用户信息：{}", user);
     }
+
+    @Test
+    void selectUserByUsername() {
+        User user = userService.selectUserByUsername("dev_user_2");
+        log.info("用户信息：{}", user);
+    }
+
+    @Test
+    void selectUserByEmail() {
+        User user = userService.selectUserByEmail("test3@example.com");
+        log.info("用户信息：{}", user);
+    }
 }

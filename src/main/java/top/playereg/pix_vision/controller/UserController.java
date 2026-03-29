@@ -117,6 +117,11 @@ public class UserController {
         password = StrSwitchUtils.PasswdToHash256(password);
 
         User user = userService.registerUser(username, password, nickname, email);
+
+        if (user == null) {
+            return ResponsePojo.error(false, "注册失败：用户名或者邮箱已注册");
+        }
+
         return ResponsePojo.success(user, "注册成功");
     }
 }

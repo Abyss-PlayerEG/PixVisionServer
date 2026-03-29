@@ -13,11 +13,28 @@ import top.playereg.pix_vision.pojo.User;
 @Mapper
 @Repository // 持久层
 public interface UserMapper extends BaseMapper<User> {
-    
+
     /**
      * 添加用户
+     *
      * @param user 用户实体（需包含 username, password, nickname, email）
      * @return 影响行数
      */
     int insertUser(User user);
+
+    /**
+     * 根据用户名查询用户
+     *
+     * @param username 用户名
+     * @return 用户实体
+     */
+    User selectUserByUsername(String username);
+
+    /**
+     * 根据邮箱查询用户
+     *
+     * @param email 邮箱
+     * @return 用户实体
+     */
+    User selectUserByEmail(String email);
 }

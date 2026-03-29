@@ -9,4 +9,6 @@ public interface UserService {
             String nickname,
             String email
     );
+    User selectUserByUsername(String username);
+    User selectUserByEmail(String email);
 }

@@ -4,35 +4,29 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="top.playereg.pix_vision.mapper.UserMapper">
     <!-- 添加用户 -->
-    <insert
-            id="insertUser"
+    <insert id="insertUser"
             parameterType="top.playereg.pix_vision.pojo.User"
             useGeneratedKeys="true"
             keyProperty="user_id"
     >
-        INSERT INTO tb_user (user_uuid,
-                             username,
-                             password,
-                             nickname,
-                             avatar_url,
-                             email,
-                             is_delete,
-                             status,
-                             update_time,
-                             update_user,
-                             create_time,
-                             create_user)
-        VALUES (#{user_uuid},
-                #{username},
-                #{password},
-                #{nickname},
-                #{avatar_url},
-                #{email},
-                #{is_delete},
-                #{status},
-                #{update_time},
-                #{update_user},
-                #{create_time},
-                #{create_user})
+        INSERT INTO tb_user (user_uuid, username, password, nickname, avatar_url, email, is_delete, status, update_time,
+                             update_user, create_time, create_user)
+        VALUES (#{user_uuid}, #{username}, #{password}, #{nickname}, #{avatar_url}, #{email}, #{is_delete}, #{status},
+                #{update_time}, #{update_user}, #{create_time}, #{create_user})
     </insert>
+
+    <!-- 通过用户名查询用户 -->
+    <select id="selectUserByUsername" parameterType="top.playereg.pix_vision.pojo.User">
+        SELECT user_id, username, user_uuid, nickname, avatar_url, email, status
+        FROM tb_user
+        WHERE username = #{username}
+        AND is_delete = 0
+    </select>
+
+    <select id="selectUserByEmail" parameterType="top.playereg.pix_vision.pojo.User">
+        SELECT user_id, username, user_uuid, nickname, avatar_url, email, status
+        FROM tb_user
+        WHERE email = #{email}
+        AND is_delete = 0
+    </select>
 </mapper>
