@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Mac启动服务依赖" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="brew services start redis mysql" />
+    <option name="SCRIPT_TEXT" value="brew services start redis mysql@8.0" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />

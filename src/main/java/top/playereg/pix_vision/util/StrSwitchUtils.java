@@ -5,6 +5,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +19,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.UUID;
 
 /**
@@ -159,7 +163,7 @@ public class StrSwitchUtils {
     /**
      * 任意图像强制格式转换为 png
      *
-     * @param image 图像字节数组（支持 jpg、jpeg、gif、bmp 等格式）
+     * @param image         图像字节数组（支持 jpg、jpeg、gif、bmp 等格式）
      * @param saveImagePath 保存路径（必须以 .png 结尾）
      * @return void
      * @author PlayerEG
@@ -174,28 +178,28 @@ public class StrSwitchUtils {
         if (!saveImagePath.toLowerCase().endsWith(".png")) {
             throw new IllegalArgumentException("保存路径必须以 .png 结尾");
         }
-            
+
         try {
             // 将字节数组转换为 BufferedImage
             ByteArrayInputStream inputStream = new ByteArrayInputStream(image);
             BufferedImage bufferedImage = ImageIO.read(inputStream);
-                
+
             if (bufferedImage == null) {
                 throw new RuntimeException("无法识别的图像格式");
             }
-                
+
             // 创建输出目录（如果不存在）
             File outputFile = new File(saveImagePath);
             File parentDir = outputFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
             }
-                
+
             // 转换为 PNG 格式并保存
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ImageIO.write(bufferedImage, "png", outputStream);
             byte[] pngBytes = outputStream.toByteArray();
-                
+
             FileUtil.writeBytes(pngBytes, saveImagePath);
             log.info("图像已转换为 PNG 格式并保存：{}", saveImagePath);
             log.info("原始大小：{} bytes, PNG 大小：{} bytes", image.length, pngBytes.length);
@@ -217,21 +221,21 @@ public class StrSwitchUtils {
         // 获取图像原格式
         String imgTypeName = FileUtil.extName(imagePath);
         // 如果获取失败，则默认为 png
-        if (imgTypeName == null || imgTypeName.isEmpty()){
+        if (imgTypeName == null || imgTypeName.isEmpty()) {
             imgTypeName = "png";
         }
-        String base64image = StrUtil.format("data:image/{};base64,{}", imgTypeName,Base64.encode(imageBytes));
+        String base64image = StrUtil.format("data:image/{};base64,{}", imgTypeName, Base64.encode(imageBytes));
         return base64image;
     }
 
     /**
      * Base64 转换为图像
      *
-     * @deprecated 图像上传已确定为二进制文件上传
      * @param base64image Base64 字符串 (格式：data:image/png;base64,/9j/...)
-     * @param savePath 图像保存路径
+     * @param savePath    图像保存路径
      * @return void
      * @author PlayerEG
+     * @deprecated 图像上传已确定为二进制文件上传
      */
     public static void base64ToImage(String base64image, String savePath) {
         // 参数验证
@@ -241,17 +245,17 @@ public class StrSwitchUtils {
         if (StrUtil.isBlank(savePath)) {
             throw new IllegalArgumentException("保存路径不能为空");
         }
-            
+
         try {
             // 移除 Base64 前缀 (如：data:image/png;base64,)
             String base64Data = base64image;
             if (base64image.contains(",")) {
                 base64Data = base64image.split(",", 2)[1];
             }
-                
+
             // Base64 解码
             byte[] imageBytes = Base64.decode(base64Data);
-                
+
             // 写入文件
             FileUtil.writeBytes(imageBytes, savePath);
             log.info("保存图像：{}", savePath);
@@ -260,4 +264,57 @@ public class StrSwitchUtils {
             throw new RuntimeException("Base64 转图像失败：" + e.getMessage(), e);
         }
     }
+
+    /**
+     * 随机用户名生成
+     *
+     * @param prdfix 前缀
+     * @return String
+     * @author blue_sky_ks
+     */
+    public static String generateRandomUserDefaultNickName(String prdfix) {
+        String AlphaNum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Integer nameLength = 10;
+        String userDefaultName = prdfix + "_";
+        final SecureRandom RANDOM = new SecureRandom(); //安全随机
+        StringBuilder sb = new StringBuilder(userDefaultName);
+        for (int i = 0; i < nameLength; i++) {
+            sb.append(AlphaNum.charAt(RANDOM.nextInt(AlphaNum.length())));
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 将 Markdown 转换为 HTML
+     * @param markdown Markdown 内容
+     * @param charset 编码格式
+     * @param title 标题
+     * @return String HTML 内容
+     * @author PlayerEG
+     */
+    public static String markdownToHtml(String markdown,String charset,String title) {
+        // Html模板
+        String htmlTemplate = """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="{}">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>{}</title>
+                    
+                </head>
+                <body>
+                {}
+                </body>
+                </html>
+                """;
+        // 设置 UTF-8 编码，防止中文乱码
+        Parser parser = Parser.builder().build();
+        Node document = parser.parse(markdown);
+        HtmlRenderer renderer = HtmlRenderer.builder().build();
+        String html = renderer.render(document);
+        return StrUtil.format(htmlTemplate, charset, title, html);
+    }
+
 }

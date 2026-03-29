@@ -12,7 +12,7 @@ public class RegexUtils {
     private static final Logger log = LoggerFactory.getLogger(RegexUtils.class);
     /**
      * 邮箱正则匹配
-     *
+     * 邮箱格式: xxx@xxx.xxx
      * @param email 待匹配的邮箱
      * @return boolean
      * @author PlayerEG
@@ -30,7 +30,7 @@ public class RegexUtils {
 
     /**
      * 验证码正则匹配
-     *
+     * 6位, 只允许字母、数字
      * @param vCode 待匹配的验证码
      * @return boolean
      * @author PlayerEG
@@ -64,4 +64,26 @@ public class RegexUtils {
             return true;
         }
     }
+
+    /**
+     * 数字正则匹配
+     * 只允许数字
+     * @param pureNumber 待匹配的纯数字
+     * @return boolean
+     * @author bule_sky_ks
+     */
+    public static boolean isPureNumber(String pureNumber) {
+        String regex = "^[0-9]*$";
+
+        if( pureNumber.matches(regex) ){
+            log.info( "数字格式正确: {}", pureNumber );
+            return true;
+        }else{
+            log.error("数字格式错误: {}", pureNumber);
+            log.info("只能输入数字！！");
+            return false;
+        }
+    }
+
+
 }

@@ -1,11 +1,5 @@
 package top.playereg.pix_vision.pojo;
 
-/**
- * 响应数据
- *
- * @author PlayerEG
- */
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.jetbrains.annotations.Contract;
@@ -14,6 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.playereg.pix_vision.enums.LogColor;
 
+/**
+ * 响应数据
+ *
+ * @author PlayerEG
+ */
 @Data
 @SuppressWarnings("unused")
 @Schema(description = "响应数据类型")

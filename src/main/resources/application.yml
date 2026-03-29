@@ -4,13 +4,18 @@ server:
     forward-headers-strategy: native # 启动时使用SpringBoot内置的Tomcat
 
 spring:
+    banner:
+        charset: utf-8
+        location: classpath:banner.txt
     config:
         import: # 引入配置文件
-            - classpath:config/email.yml
-            - classpath:config/jdbc.yml
-            - classpath:config/redis.yml
-            - classpath:config/mybatis.yml
-            - classpath:config/pix_vision.yml
+            - classpath:yml-config/email.yml
+            - classpath:yml-config/jdbc.yml
+            - classpath:yml-config/redis.yml
+            - classpath:yml-config/mybatis-plus.yml
+            - classpath:yml-config/pix_vision.yml
+            - classpath:yml-config/spring-doc.yml
+            - classpath:yml-config/logging.yml
             - optional:file:${user.home}/${workspace-name}/application.yml
     devtools:
         restart:
@@ -23,18 +28,4 @@ spring:
     application:
         name: PixVision  # 服务名称
         version: DEV-2.0.0
-
-logging:
-    pattern:
-        console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
-    level:
-        root: info  # 日志级别
-
-springdoc:
-    enabled: off # 启用 API 文档（生产环境设为 off，开发环境设为 on）
-    api-docs:
-        enabled: ${springdoc.enabled}
-    swagger-ui:
-        enabled: ${springdoc.enabled}
-        path: /swagger-ui.html
 

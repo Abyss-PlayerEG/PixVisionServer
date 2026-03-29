@@ -1,3 +1,26 @@
+/*
+ *      ____________________________
+ *     !\_________________________/!\
+ *     !!                         !! \
+ *     !!                         !!  \
+ *     !!                         !!  !
+ *     !!                         !!  !
+ *     !!         No Bugs         !!  !
+ *     !!                         !!  !
+ *     !!                         !!  !
+ *     !!                         !!  /
+ *     !!_________________________!! /
+ *     !/_________________________\!/
+ *        __\_________________/__/!_
+ *       !_______________________!/ )
+ *     ________________________    (__
+ *    /oooo  oooo  oooo  oooo /!   _  )_
+ *   /ooooooooooooooooooooooo/ /  (_)_(_)
+ *  /ooooooooooooooooooooooo/ /    (o o)
+ * /C=_____________________/_/    ==\o/==
+ *
+ */
+
 package top.playereg.pix_vision;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
