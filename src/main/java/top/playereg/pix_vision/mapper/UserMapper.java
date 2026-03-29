@@ -12,6 +12,4 @@ import top.playereg.pix_vision.pojo.User;
 @Mapper
 @Repository // 持久层
 public interface UserMapper extends BaseMapper<User> {
-    // 创建用户
-    int createUser(User user);
 }

@@ -28,7 +28,7 @@ public class FilePathConfig {
     public static String DataPath; // 数据目录
     public static String LogoPath; // logo 图片目录
     public static String EmailHtmlPath; // 邮箱 HTML 模板目录
-//    public static String PluginPath; // 插件目录
+    //    public static String PluginPath; // 插件目录
     public static String ConfigPath; // 配置目录
     public static String LogPath; // 日志目录
     public static String KeyPath; // 密钥目录
@@ -48,7 +48,7 @@ public class FilePathConfig {
         EmailHtmlPath = getPath("yml-config","email-html");
         LogPath = getPath("log");
         KeyPath = getPath("key");
-        
+
         paths = new String[]{
                 RootPath,
                 DataPath,
@@ -58,7 +58,7 @@ public class FilePathConfig {
                 LogPath,
                 KeyPath
         };
-        
+
         createPath();
         CreateFile.create();
     }
@@ -112,7 +112,7 @@ public class FilePathConfig {
      */
     public static void createTextFile(
             String text,
-            String path, 
+            String path,
             String file
     ) {
         Path p = Paths.get(path, file);
@@ -144,3 +144,5 @@ public class FilePathConfig {
         log.info("创建文件: " + p);
     }
 }
+
+
