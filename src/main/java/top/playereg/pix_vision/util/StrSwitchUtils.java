@@ -5,6 +5,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -281,4 +284,37 @@ public class StrSwitchUtils {
 
         return sb.toString();
     }
+
+    /**
+     * 将 Markdown 转换为 HTML
+     * @param markdown Markdown 内容
+     * @param charset 编码格式
+     * @param title 标题
+     * @return String HTML 内容
+     * @author PlayerEG
+     */
+    public static String markdownToHtml(String markdown,String charset,String title) {
+        // Html模板
+        String htmlTemplate = """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="{}">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>{}</title>
+                    
+                </head>
+                <body>
+                {}
+                </body>
+                </html>
+                """;
+        // 设置 UTF-8 编码，防止中文乱码
+        Parser parser = Parser.builder().build();
+        Node document = parser.parse(markdown);
+        HtmlRenderer renderer = HtmlRenderer.builder().build();
+        String html = renderer.render(document);
+        return StrUtil.format(htmlTemplate, charset, title, html);
+    }
+
 }

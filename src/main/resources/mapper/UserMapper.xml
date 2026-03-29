@@ -2,11 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.playereg.pix_vision.mapper.mapperTemp">
-    <select id="test" resultType="int">
-        select 1 from test
-    </select>
-    
+<mapper namespace="top.playereg.pix_vision.mapper.UserMapper">
     <!-- MyBatis-Plus 会自动注入 BaseMapper 的 CRUD 方法 -->
     <!-- 自定义查询可以继续使用 XML 配置 -->
 </mapper>

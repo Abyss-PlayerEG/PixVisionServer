@@ -8,7 +8,7 @@ import java.io.File;
 import java.util.Arrays;
 
 @SpringBootTest
-public class StrSwitchUtilsTest {
+class StrSwitchUtilsTest {
     String str = "123456";
 
     @Test
@@ -49,8 +49,8 @@ public class StrSwitchUtilsTest {
         System.out.println(result);
     }
 
-    @org.junit.Test
-    public void imageToPng() {
+    @Test
+    void imageToPng() {
         String inputPath = System.getProperty("user.home") + "/Pictures/壁纸/macos_12_monterey_official_stock_wallpaper_6k_resolution_light-3840x2160.jpg";
         String savePath = System.getProperty("user.home") + "/Desktop/out.png";
         
@@ -68,5 +68,36 @@ public class StrSwitchUtilsTest {
         StrSwitchUtils.imageToPng(imageBytes, savePath);
         
         System.out.println("图片已保存到：" + savePath);
+    }
+
+    @Test
+    void markdownToHtml() {
+        String markdown = """
+                # 一级标题
+                ---
+                ## 二级标题
+                ---
+                ### 三级标题
+                - 无序1
+                - 无序2
+                    1. 有序1
+                    2. 有序2
+                ---
+                > 引用部分
+                >> 内嵌引用
+                
+                **黑体**
+                
+                *斜体*
+                
+                `行内代码`
+                
+                ```python
+                print("代码块")
+                ```
+                """;
+        String html = StrSwitchUtils.markdownToHtml(markdown, "utf-8", "md2html");
+        System.out.println(html);
+        FileUtil.writeUtf8String(html, System.getProperty("user.home") + "/Desktop/md2html.html");
     }
 }
