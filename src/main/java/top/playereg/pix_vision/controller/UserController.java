@@ -223,7 +223,7 @@ public class UserController {
                 - 同一用户的其他设备 Token 不受影响
                 """
     )
-    public ResponsePojo<Void> logout(
+    public ResponsePojo<Boolean> logout(
             @Parameter(description = "HTTP 请求对象（用于获取 Token）", required = true) HttpServletRequest request
     ) {
         // 从 Header 中获取 Token
@@ -238,7 +238,7 @@ public class UserController {
         }
         
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
         }
         
         String token = authHeader.substring(7); // 去除 "Bearer " 前缀
@@ -246,7 +246,7 @@ public class UserController {
         // 检查 Token 是否在白名单中
         if (!tokenWhitelistService.isInWhitelist(token)) {
             log.warn("Token 不在白名单中，可能已过期或被移除");
-            return ResponsePojo.success(null, "Token 已失效");
+            return ResponsePojo.success(false, "Token 已失效");
         }
         
         // 获取 Token 剩余有效期
@@ -254,7 +254,7 @@ public class UserController {
         if (remainingTime <= 0) {
             log.warn("Token 已过期，无需从白名单移除");
             tokenWhitelistService.removeFromWhitelist(token);
-            return ResponsePojo.success(null, "Token 已过期");
+            return ResponsePojo.success(false, "Token 已过期");
         }
         
         // 将 Token 从白名单移除
@@ -265,7 +265,7 @@ public class UserController {
         String username = JWTUtils.getUsernameFromToken(token);
         log.info("用户登出，用户名：{}, 用户 ID: {}, Token 剩余时间：{}ms", username, userId, remainingTime);
         
-        return ResponsePojo.success(null, "登出成功，Token 已被禁用");
+        return ResponsePojo.success(true, "登出成功，Token 已被禁用");
     }
 
     /**
