@@ -189,7 +189,7 @@ public class UserController {
     }
     
     /**
-     * 用户登出（将 Token 加入黑名单）
+     * 用户登出（将 Token 从白名单移除）
      *
      * @param token JWT Token（从 Header 中获取）
      * @return 响应数据
@@ -199,25 +199,28 @@ public class UserController {
     @Operation(
             summary = "用户登出接口",
             description = """
-                # 用户登出 - 将 Token 加入黑名单
+                # 用户登出，将 Token 从白名单移除
                 
                 ## 参数说明：
                 - Authorization: Header 中的 Token，格式为 `Bearer <token>`
                 
                 ## 返回说明：
-                - **登出成功**：返回 **{"data": null}** 和"登出成功"提示，Token 已被禁用
-                - **未授权**：返回 **{"data": null}** 和"Token 不存在"提示
+                - **登出成功**：返回 **{"data": null}** 和"登出成功"提示，Token 已从白名单移除
+                - **Token 已失效**：返回 **{"data": null}** 和"Token 已失效"提示（Token 不在白名单中）
+                - **Token 已过期**：返回 **{"data": null}** 和"Token 已过期"提示
                 
                 ## 业务逻辑：
                 1. 从请求头中提取 Token
-                2. 解析 Token 获取剩余有效期
-                3. 将 Token 加入 Redis 黑名单
-                4. 在黑名单有效期内，该 Token 无法访问任何受保护接口
+                2. 检查 Token 是否在白名单中
+                3. 获取 Token 剩余有效期
+                4. 将 Token 从白名单移除
+                5. 该 Token 将无法再访问任何受保护接口
                 
                 ## 注意事项：
-                - Token 加入黑名单后，在剩余有效期内都无法使用
-                - 黑名单会自动过期，无需手动清理
+                - Token 从白名单移除后，立即失效
                 - 需要携带有效的 Token 才能登出
+                - 如果 Token 已过期或不在白名单中，会直接返回失败
+                - 同一用户的其他设备 Token 不受影响
                 """
     )
     public ResponsePojo<Void> logout(
