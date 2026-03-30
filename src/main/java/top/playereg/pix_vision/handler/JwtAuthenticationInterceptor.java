@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
-import top.playereg.pix_vision.service.TokenBlacklistService;
+import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.JWTUtils;
 
 /**
@@ -22,7 +22,7 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationInterceptor.class);
     
     @Autowired
-    private TokenBlacklistService tokenBlacklistService;
+    private TokenWhitelistService tokenWhitelistService;
     
     /**
      * 在请求处理之前进行调用，用于验证 JWT Token
@@ -63,12 +63,12 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
             token = token.substring(7);
         }
         
-        // 检查 Token 是否在黑名单中
-        if (tokenBlacklistService.isInBlacklist(token)) {
-            log.warn("Token 已在黑名单中，URI: {}", requestURI);
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，URI: {}", requestURI);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":401,\"message\":\"未授权访问：Token 已注销\",\"data\":null}");
+            response.getWriter().write("{\"code\":401,\"message\":\"未授权访问：Token 未在白名单中，请重新登录\",\"data\":null}");
             return false;
         }
         

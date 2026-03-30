@@ -3,6 +3,7 @@ package top.playereg.pix_vision.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.User;
 import top.playereg.pix_vision.pojo.UserLogin;
-import top.playereg.pix_vision.service.TokenBlacklistService;
+import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.JWTUtils;
@@ -37,7 +38,7 @@ public class UserController {
 
     private final UserService userService;
     private final VerificationCodeServices verificationCodeServices;
-    private final TokenBlacklistService tokenBlacklistService;
+    private final TokenWhitelistService tokenWhitelistService;
 
     /**
      * 用户登录
@@ -168,6 +169,10 @@ public class UserController {
         );
         log.info("生成 Token: {}", token);
     
+        // 将 Token 加入白名单
+        long tokenExpireTime = 7 * 24 * 60 * 60 * 1000L; // 7 天（毫秒）
+        tokenWhitelistService.addToWhitelist(token, user.getUser_id(), user.getUsername(), tokenExpireTime);
+    
         // 创建返回对象
         UserLogin userLogin = new UserLogin();
         userLogin.setUser_id(user.getUser_id());
@@ -216,7 +221,7 @@ public class UserController {
                 """
     )
     public ResponsePojo<Void> logout(
-            @Parameter(hidden = true) jakarta.servlet.http.HttpServletRequest request
+            @Parameter(description = "HTTP 请求对象（用于获取 Token）", required = true) HttpServletRequest request
     ) {
         // 从 Header 中获取 Token
         String authHeader = request.getHeader("Authorization");
@@ -235,15 +240,22 @@ public class UserController {
         
         String token = authHeader.substring(7); // 去除 "Bearer " 前缀
         
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.success(null, "Token 已失效");
+        }
+        
         // 获取 Token 剩余有效期
         long remainingTime = JWTUtils.getTokenRemainingTime(token);
         if (remainingTime <= 0) {
-            log.warn("Token 已过期，无需加入黑名单");
+            log.warn("Token 已过期，无需从白名单移除");
+            tokenWhitelistService.removeFromWhitelist(token);
             return ResponsePojo.success(null, "Token 已过期");
         }
         
-        // 将 Token 加入黑名单
-        tokenBlacklistService.addToBlacklist(token, remainingTime);
+        // 将 Token 从白名单移除
+        tokenWhitelistService.removeFromWhitelist(token);
         
         // 提取用户信息用于日志
         Integer userId = JWTUtils.getUserIdFromToken(token);
