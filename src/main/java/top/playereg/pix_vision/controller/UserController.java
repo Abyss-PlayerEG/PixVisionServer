@@ -160,7 +160,10 @@ public class UserController {
         }
     
         // 生成 JWT Token
-        String token = JWTUtils.createToken(user.getUser_id(), user.getUsername());
+        String token = JWTUtils.createToken(
+                user.getUser_id(),
+                user.getUsername()
+        );
         log.info("生成 Token: {}", token);
     
         // 创建返回对象
@@ -172,7 +175,6 @@ public class UserController {
         userLogin.setAvatar_url(user.getAvatar_url());
         userLogin.setEmail(user.getEmail());
         userLogin.setStatus(user.getStatus());
-        userLogin.setCreate_time(user.getCreate_time());
         userLogin.setToken(token);
     
         log.info("用户登录成功：{}", usernameAndEmail);

@@ -2,8 +2,9 @@
 mu-ying-logging:
     open-highlight-color: on     # 是否启用颜色
 
-# MuYing安全配置
+# MuYing 安全配置
 mu-ying-secure:
+    jwt-secret: 1c8b7d76b91a4f7ade75943be4c6b36a8be73191d3fef702f2838323c4928d28 # JWT 密钥可使用 open-ssl 生成
     salt: www.playereg.top # 盐值
     num2str: [
       # 引射表

@@ -8,6 +8,7 @@ import cn.hutool.jwt.signers.JWTSignerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import top.playereg.pix_vision.config.SecureConfig;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
@@ -23,10 +24,10 @@ public class JWTUtils {
     private static final Logger log = LoggerFactory.getLogger(JWTUtils.class);
     
     /**
-     * JWT 密钥 - 从配置文件读取会更安全
-     * 建议在生产环境中使用更复杂的密钥并存储在配置文件中
+     * JWT 密钥 - 从配置文件中读取
+     * 可在用户目录下的配置文件中自定义（优先级更高）
      */
-    private static final String SECRET_KEY = "PixVision_Secret_Key_2026_SpringBoot3_JWT_Auth";
+    private static final String SECRET_KEY = SecureConfig.getJwtSecret();
     
     /**
      * Token 有效期（毫秒）- 7 天

@@ -14,6 +14,6 @@ import lombok.EqualsAndHashCode;
 @Schema(description = "用户登录响应实体")
 public class UserLogin extends User {
     
-    @Schema(description = "JWT Token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    @Schema(description = "JWT Token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9")
     private String token;
 }

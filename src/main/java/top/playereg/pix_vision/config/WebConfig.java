@@ -26,9 +26,13 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtAuthenticationInterceptor)
                 // 拦截所有请求
-                .addPathPatterns("/api/**")
+                .addPathPatterns(
+                        "/api/**",
+                        "/7e212056/require-auth"                // 测试接口
+                )
                 // 排除不需要验证的路径
                 .excludePathPatterns(
+                        "/7e212056/no-auth",                    // 测试接口
                         "/api/test/**",
                         "/api/user/register",                   // 用户注册
                         "/api/user/login",                      // 用户登录

@@ -14,6 +14,7 @@ import top.playereg.pix_vision.util.JWTUtils;
  * @author PlayerEG
  */
 @Component
+@SuppressWarnings("all")
 public class JwtAuthenticationInterceptor implements HandlerInterceptor {
     
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationInterceptor.class);
@@ -79,11 +80,17 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
         Integer userId = JWTUtils.getUserIdFromToken(token);
         String username = JWTUtils.getUsernameFromToken(token);
         
+        log.debug("从 Token 中提取的用户 ID: {}, 用户名：{}", userId, username);
+        
         if (userId != null) {
             request.setAttribute("userId", userId);
+        } else {
+            log.warn("未能从 Token 中提取用户 ID，Token: {}...", token.length() > 10 ? token.substring(0, 10) : "unknown");
         }
         if (username != null) {
             request.setAttribute("username", username);
+        } else {
+            log.warn("未能从 Token 中提取用户名，Token: {}...", token.length() > 10 ? token.substring(0, 10) : "unknown");
         }
         
         log.info("Token 验证通过，用户 ID: {}, 用户名：{}", userId, username);
