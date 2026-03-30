@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.User;
 import top.playereg.pix_vision.pojo.UserLogin;
+import top.playereg.pix_vision.service.TokenBlacklistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.JWTUtils;
@@ -36,6 +37,7 @@ public class UserController {
 
     private final UserService userService;
     private final VerificationCodeServices verificationCodeServices;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /**
      * 用户登录
@@ -179,6 +181,76 @@ public class UserController {
     
         log.info("用户登录成功：{}", usernameAndEmail);
         return ResponsePojo.success(userLogin, "登录成功");
+    }
+    
+    /**
+     * 用户登出（将 Token 加入黑名单）
+     *
+     * @param token JWT Token（从 Header 中获取）
+     * @return 响应数据
+     * @author PlayerEG
+     */
+    @PostMapping("/logout")
+    @Operation(
+            summary = "用户登出接口",
+            description = """
+                # 用户登出 - 将 Token 加入黑名单
+                
+                ## 参数说明：
+                - Authorization: Header 中的 Token，格式为 `Bearer <token>`
+                
+                ## 返回说明：
+                - **登出成功**：返回 **{"data": null}** 和"登出成功"提示，Token 已被禁用
+                - **未授权**：返回 **{"data": null}** 和"Token 不存在"提示
+                
+                ## 业务逻辑：
+                1. 从请求头中提取 Token
+                2. 解析 Token 获取剩余有效期
+                3. 将 Token 加入 Redis 黑名单
+                4. 在黑名单有效期内，该 Token 无法访问任何受保护接口
+                
+                ## 注意事项：
+                - Token 加入黑名单后，在剩余有效期内都无法使用
+                - 黑名单会自动过期，无需手动清理
+                - 需要携带有效的 Token 才能登出
+                """
+    )
+    public ResponsePojo<Void> logout(
+            @Parameter(hidden = true) jakarta.servlet.http.HttpServletRequest request
+    ) {
+        // 从 Header 中获取 Token
+        String authHeader = request.getHeader("Authorization");
+        
+        // 如果 Header 中没有，尝试从参数中获取
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            String tokenParam = request.getParameter("token");
+            if (tokenParam != null && !tokenParam.isEmpty()) {
+                authHeader = "Bearer " + tokenParam;
+            }
+        }
+        
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+        
+        String token = authHeader.substring(7); // 去除 "Bearer " 前缀
+        
+        // 获取 Token 剩余有效期
+        long remainingTime = JWTUtils.getTokenRemainingTime(token);
+        if (remainingTime <= 0) {
+            log.warn("Token 已过期，无需加入黑名单");
+            return ResponsePojo.success(null, "Token 已过期");
+        }
+        
+        // 将 Token 加入黑名单
+        tokenBlacklistService.addToBlacklist(token, remainingTime);
+        
+        // 提取用户信息用于日志
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("用户登出，用户名：{}, 用户 ID: {}, Token 剩余时间：{}ms", username, userId, remainingTime);
+        
+        return ResponsePojo.success(null, "登出成功，Token 已被禁用");
     }
 
     /**

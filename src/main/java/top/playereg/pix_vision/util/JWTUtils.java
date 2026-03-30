@@ -207,4 +207,32 @@ public class JWTUtils {
             return true; // 过期或无效
         }
     }
+    
+    /**
+     * 获取 Token 的剩余有效期（毫秒）
+     * 
+     * @param token JWT 字符串
+     * @return 剩余毫秒数，如果 Token 无效则返回 0
+     * @author PlayerEG
+     */
+    public static long getTokenRemainingTime(String token) {
+        try {
+            if (token == null || token.isEmpty()) {
+                return 0;
+            }
+            
+            JWT jwt = JWTUtil.parseToken(token);
+            Object expObj = jwt.getPayload("exp");
+            if (expObj instanceof Number) {
+                long expireTime = ((Number) expObj).longValue() * 1000L; // 转换为毫秒
+                long currentTime = System.currentTimeMillis();
+                long remainingTime = expireTime - currentTime;
+                return Math.max(0, remainingTime); // 确保不为负数
+            }
+            return 0;
+        } catch (Exception e) {
+            log.error("获取 Token 剩余时间失败：{}", e.getMessage());
+            return 0;
+        }
+    }
 }

@@ -4,8 +4,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import top.playereg.pix_vision.service.TokenBlacklistService;
 import top.playereg.pix_vision.util.JWTUtils;
 
 /**
@@ -18,6 +20,9 @@ import top.playereg.pix_vision.util.JWTUtils;
 public class JwtAuthenticationInterceptor implements HandlerInterceptor {
     
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationInterceptor.class);
+    
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
     
     /**
      * 在请求处理之前进行调用，用于验证 JWT Token
@@ -56,6 +61,15 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
         // 去除 "Bearer " 前缀（如果有）
         if (token.startsWith("Bearer ")) {
             token = token.substring(7);
+        }
+        
+        // 检查 Token 是否在黑名单中
+        if (tokenBlacklistService.isInBlacklist(token)) {
+            log.warn("Token 已在黑名单中，URI: {}", requestURI);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"message\":\"未授权访问：Token 已注销\",\"data\":null}");
+            return false;
         }
         
         // 验证 Token 是否有效
