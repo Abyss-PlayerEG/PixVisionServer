@@ -54,8 +54,8 @@ public class UserServiceImpl implements UserService {
         log.info("邮箱：{}", user.getEmail());
 
         // 生成用户 UUID（16 字节二进制）
-        user.setUser_uuid(StrSwitchUtils.uuidToBytes(StrSwitchUtils.generateUUID()));
-        log.info("用户 UUID (hex): {}", StrSwitchUtils.bytesToUuid(user.getUser_uuid()));
+        user.setUser_uuid(StrSwitchUtils.uuid2Bytes(StrSwitchUtils.generateUUID()));
+        log.info("用户 UUID (hex): {}", StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
 
         // 默认随机头像（1.png-21.png）
         int randomAvatarNum = (int) (Math.random() * 21) + 1;  // 生成 1-21 的随机整数

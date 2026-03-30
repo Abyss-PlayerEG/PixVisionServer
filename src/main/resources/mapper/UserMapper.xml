@@ -23,6 +23,7 @@
         AND is_delete = 0
     </select>
 
+    <!-- 通过邮箱查询用户 -->
     <select id="selectUserByEmail" parameterType="top.playereg.pix_vision.pojo.User">
         SELECT user_id, username, user_uuid, nickname, avatar_url, email, status
         FROM tb_user

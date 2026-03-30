@@ -48,16 +48,18 @@ public class ResponsePojo<T> {
     @Contract("_, _ -> new")
     @Schema(description = "成功响应")
     public static <T> ResponsePojo<T> success(T t, String message) {
-        log.info(LogColor.colorize("200 {}",LogColor.GREEN), message);
-        return new ResponsePojo<>(t, message, 200);
+        int code = 200;
+        log.info(LogColor.colorize("{} {}",LogColor.GREEN),code, message);
+        return new ResponsePojo<>(t, message, code);
     }
 
     @NotNull
     @Contract("_, _ -> new")
     @Schema(description = "失败响应")
     public static <T> ResponsePojo<T> error(T t, String message) {
-        log.error(LogColor.colorize("500 {}",LogColor.RED), message);
-        return new ResponsePojo<>(t, message, 500);
+        int code = 500;
+        log.error(LogColor.colorize("{} {}",LogColor.RED),code, message);
+        return new ResponsePojo<>(t, message, code);
     }
 }
 

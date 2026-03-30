@@ -90,6 +90,13 @@
             <version>5.8.38</version>
         </dependency>
 
+        <!-- Bouncy Castle (Spring Boot 3.x 兼容) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>1.77</version>
+        </dependency>
+
         <!-- Jakarta Mail (Spring Boot 3.x 兼容) -->
         <dependency>
             <groupId>com.sun.mail</groupId>
@@ -121,7 +128,6 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-<!--            <version>6.1.5.RELEASE</version>-->
         </dependency>
 
         <!-- 如果需要使用 Lettuce 连接池 -->
@@ -129,8 +135,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
         </dependency>
-
-        <!--Hutool-->
 
         <!--Lombok-->
         <dependency>
@@ -181,7 +185,7 @@
             <version>4.4.0</version>
         </dependency>
 
-
+        <!-- JetBrains 注解 -->
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>

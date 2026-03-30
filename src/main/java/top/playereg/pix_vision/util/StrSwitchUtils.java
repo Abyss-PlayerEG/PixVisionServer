@@ -159,7 +159,7 @@ public class StrSwitchUtils {
      * @return byte[] 16 字节的二进制数组
      * @author PlayerEG
      */
-    public static byte[] uuidToBytes(String uuid) {
+    public static byte[] uuid2Bytes(String uuid) {
         if (StrUtil.isEmpty(uuid) || uuid.length() != 32) {
             log.error("UUID 格式错误");
             throw new IllegalArgumentException("UUID 字符串必须为 32 位字符");
@@ -183,7 +183,7 @@ public class StrSwitchUtils {
      * @return String UUID 字符串（32 位，无分隔符，小写）
      * @author PlayerEG
      */
-    public static String bytesToUuid(byte[] bytes) {
+    public static String bytes2Uuid(byte[] bytes) {
         if (bytes == null || bytes.length != 16) {
             throw new IllegalArgumentException("二进制数组长度必须为 16");
         }
