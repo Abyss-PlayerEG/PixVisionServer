@@ -3,7 +3,7 @@ mybatis-plus:
     mapper-locations: /mapper/**.xml
     configuration:
         log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-        map-underscore-to-camel-case: true
+        map-underscore-to-camel-case: false
     type-aliases-package: top.playereg.pix_vision.pojo
     type-handlers-package: top.playereg.pix_vision.handler
     global-config:

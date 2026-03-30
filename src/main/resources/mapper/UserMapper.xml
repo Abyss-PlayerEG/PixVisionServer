@@ -16,18 +16,36 @@
     </insert>
 
     <!-- 通过用户名查询用户 -->
-    <select id="selectUserByUsername" parameterType="top.playereg.pix_vision.pojo.User">
-        SELECT user_id, username, user_uuid, nickname, avatar_url, email, status
+    <select id="selectAllUserInfoByUsername" parameterType="top.playereg.pix_vision.pojo.User"
+            resultType="top.playereg.pix_vision.pojo.User">
+        SELECT user_id,
+               user_uuid,
+               username,
+               password,
+               nickname,
+               avatar_url,
+               email,
+               is_delete,
+               status
         FROM tb_user
         WHERE username = #{username}
-        AND is_delete = 0
+          AND is_delete = 0
     </select>
 
     <!-- 通过邮箱查询用户 -->
-    <select id="selectUserByEmail" parameterType="top.playereg.pix_vision.pojo.User">
-        SELECT user_id, username, user_uuid, nickname, avatar_url, email, status
+    <select id="selectAllUserInfoByEmail" parameterType="top.playereg.pix_vision.pojo.User"
+            resultType="top.playereg.pix_vision.pojo.User">
+        SELECT user_id,
+               user_uuid,
+               username,
+               password,
+               nickname,
+               avatar_url,
+               email,
+               is_delete,
+               status
         FROM tb_user
         WHERE email = #{email}
-        AND is_delete = 0
+          AND is_delete = 0
     </select>
 </mapper>

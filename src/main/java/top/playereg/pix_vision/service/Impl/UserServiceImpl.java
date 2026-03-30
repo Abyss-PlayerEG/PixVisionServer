@@ -92,11 +92,11 @@ public class UserServiceImpl implements UserService {
     }
     @Override
     public User selectUserByUsername(String username) {
-        return userMapper.selectUserByUsername(username);
+        return userMapper.selectAllUserInfoByUsername(username);
     }
 
     @Override
     public User selectUserByEmail(String email) {
-        return userMapper.selectUserByEmail(email);
+        return userMapper.selectAllUserInfoByEmail(email);
     }
 }

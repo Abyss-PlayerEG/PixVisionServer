@@ -1,0 +1,92 @@
+package top.playereg.pix_vision.handler;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+import top.playereg.pix_vision.util.JWTUtils;
+
+/**
+ * JWT 认证拦截器
+ * 
+ * @author PlayerEG
+ */
+@Component
+public class JwtAuthenticationInterceptor implements HandlerInterceptor {
+    
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationInterceptor.class);
+    
+    /**
+     * 在请求处理之前进行调用，用于验证 JWT Token
+     * 
+     * @param request HTTP 请求对象
+     * @param response HTTP 响应对象
+     * @param handler 被调用的处理器
+     * @return true-继续执行，false-中断请求
+     * @throws Exception 可能的异常
+     */
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // 获取请求的 URI
+        String requestURI = request.getRequestURI();
+        
+        // 打印请求日志
+        log.info("JWT 拦截请求：{} {}", request.getMethod(), requestURI);
+        
+        // 从 Header 中获取 Token
+        String token = request.getHeader("Authorization");
+        
+        // 如果 Header 中没有 Token，尝试从参数中获取
+        if (token == null || token.isEmpty()) {
+            token = request.getParameter("token");
+        }
+        
+        // 检查 Token 是否存在
+        if (token == null || token.isEmpty()) {
+            log.warn("Token 不存在，URI: {}", requestURI);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"message\":\"未授权访问：Token 不存在\",\"data\":null}");
+            return false;
+        }
+        
+        // 去除 "Bearer " 前缀（如果有）
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        
+        // 验证 Token 是否有效
+        if (!JWTUtils.verifyToken(token)) {
+            log.warn("Token 验证失败，URI: {}", requestURI);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"message\":\"未授权访问：Token 无效或已过期\",\"data\":null}");
+            return false;
+        }
+        
+        // 检查 Token 是否过期
+        if (JWTUtils.isTokenExpired(token)) {
+            log.warn("Token 已过期，URI: {}", requestURI);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"message\":\"未授权访问：Token 已过期\",\"data\":null}");
+            return false;
+        }
+        
+        // 从 Token 中提取用户信息并存入 request 属性，方便后续使用
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        String username = JWTUtils.getUsernameFromToken(token);
+        
+        if (userId != null) {
+            request.setAttribute("userId", userId);
+        }
+        if (username != null) {
+            request.setAttribute("username", username);
+        }
+        
+        log.info("Token 验证通过，用户 ID: {}, 用户名：{}", userId, username);
+        return true;
+    }
+}
