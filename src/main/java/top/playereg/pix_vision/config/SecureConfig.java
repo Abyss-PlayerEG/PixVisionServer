@@ -28,6 +28,16 @@ public class SecureConfig {
     }
 
     /**
+     * JWT 密钥配置
+     */
+    @Value("${mu-ying-secure.jwt-secret}")
+    private String jwtSecret;
+
+    public static String getJwtSecret() {
+        return instance != null ? instance.jwtSecret : "3e06e7707fc096a0d5c76be570e9c34963c7288e2948a3c019359258071de996";
+    }
+
+    /**
      * 数字转字符串配置
      */
     @Value("${mu-ying-secure.num2str[0]}")

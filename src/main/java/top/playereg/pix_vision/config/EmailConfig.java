@@ -6,7 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
-import top.playereg.pix_vision.util.StrSwitchUtils;
+import top.playereg.pix_vision.util.ImageUtils;
 
 @Data
 @Component
@@ -45,10 +45,10 @@ public class EmailConfig {
         );
 
         // 读取 logo 图片并转换为 Base64 - 浅色 logo
-        String lightLogoDataUri = StrSwitchUtils.imageToBase64(StrUtil.format("{}/light.png", FilePathConfig.LogoPath));
+        String lightLogoDataUri = ImageUtils.imageToBase64(StrUtil.format("{}/light.png", FilePathConfig.LogoPath));
 
         // 读取 logo 图片并转换为 Base64 - 深色 logo
-        String darkLogoDataUri = StrSwitchUtils.imageToBase64(StrUtil.format("{}/dark.png", FilePathConfig.LogoPath));
+        String darkLogoDataUri = ImageUtils.imageToBase64(StrUtil.format("{}/dark.png", FilePathConfig.LogoPath));
 
         // 替换模板中的占位符
         String result = template.replace("{{username}}", username);

@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,6 +26,7 @@ public class Series {
     @Schema(description = "系列描述文本，24 个中文长度")
     String about_text;
 
+    @TableLogic
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
     Boolean is_delete;
 

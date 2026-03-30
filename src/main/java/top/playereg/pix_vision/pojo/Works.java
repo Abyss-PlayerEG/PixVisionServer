@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -43,6 +44,7 @@ public class Works {
     @Schema(description = "外部转载链接")
     String out_url;
 
+    @TableLogic
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
     Boolean is_delete;
 

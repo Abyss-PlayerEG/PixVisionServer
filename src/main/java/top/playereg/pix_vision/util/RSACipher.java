@@ -5,7 +5,7 @@ package top.playereg.pix_vision.util;
  * @author PlayerEG
  */
 @SuppressWarnings("all")
-public class RsaCipher {
+public class RSACipher {
     // todo 公钥加密
     // todo 私钥解密
     // todo 密钥生成

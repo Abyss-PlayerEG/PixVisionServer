@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,6 +35,7 @@ public class Comments {
     @Schema(description = "评论状态：10 - 正常、20 - 待审核、30 - 封禁")
     String status;
 
+    @TableLogic
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
     Boolean is_delete;
 }

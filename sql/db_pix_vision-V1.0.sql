@@ -1,6 +1,6 @@
--- MySQL dump 10.13  Distrib 8.0.42, for macos15.2 (arm64)
+-- MySQL dump 10.13  Distrib 8.0.40, for Win64 (x86_64)
 --
--- Host: localhost    Database: db_pix_vision
+-- Host: 127.0.0.1    Database: db_pix_vision
 -- ------------------------------------------------------
 -- Server version	8.0.45-0ubuntu0.24.04.1
 
@@ -117,8 +117,8 @@ CREATE TABLE `tb_series` (
   `series_title` varchar(64) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '系列标题，16个中文长度',
   `about_text` varchar(96) COLLATE utf8mb4_german2_ci DEFAULT NULL COMMENT '系列描述文本，24个中文长度',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
-  `update_time` timestamp NOT NULL COMMENT '数据条目更新时间戳',
-  `update_user` int NOT NULL DEFAULT '0' COMMENT '修改者id，系统修改为0',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
+  `update_user` int DEFAULT NULL COMMENT '修改者id，系统修改为0',
   `create_time` timestamp NOT NULL COMMENT '数据条目创建时间戳',
   `create_user` int NOT NULL DEFAULT '0' COMMENT '存储创建者id，系统创建为0',
   PRIMARY KEY (`series_id`),
@@ -207,8 +207,8 @@ CREATE TABLE `tb_user` (
   `email` varchar(320) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '验证成功后的邮箱地址',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   `status` int NOT NULL DEFAULT '10' COMMENT '账号状态，10 - 正常、20 - 冻结、30 - 封禁',
-  `update_time` timestamp NOT NULL COMMENT '数据条目更新时间戳',
-  `update_user` int NOT NULL DEFAULT '0' COMMENT '修改者id，系统修改为0',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
+  `update_user` int DEFAULT NULL COMMENT '修改者id，系统修改为0',
   `create_time` timestamp NOT NULL COMMENT '数据条目创建时间戳',
   `create_user` int NOT NULL DEFAULT '0' COMMENT '存储创建者id，系统创建为0',
   PRIMARY KEY (`user_id`)
@@ -237,8 +237,8 @@ CREATE TABLE `tb_user_data` (
   `user_data_name` varchar(26) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '数据项目名称（电话、邮箱、网站、微信等等）',
   `user_data` varchar(96) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '数据内容（具体的电话号码、邮箱地址、网站url等等）',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
-  `update_time` timestamp NOT NULL COMMENT '数据条目更新时间戳',
-  `update_user` int NOT NULL DEFAULT '0' COMMENT '修改者id，系统修改为0',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
+  `update_user` int DEFAULT NULL COMMENT '修改者id，系统修改为0',
   `create_time` timestamp NOT NULL COMMENT '数据条目创建时间戳',
   `create_user` int NOT NULL DEFAULT '0' COMMENT '存储创建者id，系统创建为0',
   PRIMARY KEY (`data_id`),
@@ -275,8 +275,8 @@ CREATE TABLE `tb_works` (
   `is_original_work` tinyint(1) NOT NULL DEFAULT '1' COMMENT '用于标记是否为原创作品，1 - 原创、0 - 转载',
   `out_url` varchar(2048) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '外部转载链接',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
-  `update_time` timestamp NOT NULL COMMENT '数据条目更新时间戳',
-  `update_user` int NOT NULL DEFAULT '0' COMMENT '修改者id，系统修改为0',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
+  `update_user` int DEFAULT NULL COMMENT '修改者id，系统修改为0',
   `create_time` timestamp NOT NULL COMMENT '数据条目创建时间戳',
   `create_user` int NOT NULL DEFAULT '0' COMMENT '存储创建者id，系统创建为0',
   PRIMARY KEY (`work_id`),
@@ -309,4 +309,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-27 14:51:58
+-- Dump completed on 2026-03-29 15:21:56

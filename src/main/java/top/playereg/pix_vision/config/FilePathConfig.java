@@ -24,14 +24,18 @@ public class FilePathConfig {
     @Value("${workspace-name}")
     private String WorkSpaceName;
 
+    // Root
     public static String RootPath; // 根目录
+    // 一级路径
     public static String DataPath; // 数据目录
-    public static String LogoPath; // logo 图片目录
-    public static String EmailHtmlPath; // 邮箱 HTML 模板目录
-//    public static String PluginPath; // 插件目录
     public static String ConfigPath; // 配置目录
     public static String LogPath; // 日志目录
     public static String KeyPath; // 密钥目录
+
+    // 二级路径
+    public static String LogoPath; // logo 图片目录
+    public static String AvatarPath; // 头像目录
+    public static String EmailHtmlPath; // 邮箱 HTML 模板目录
 
     private String[] paths;
 
@@ -42,23 +46,30 @@ public class FilePathConfig {
     @PostConstruct
     public void initPaths() {
         RootPath = getRootPath(WorkSpaceName);
+
         DataPath = getPath("data");
-        ConfigPath = getPath("yml-config");
-        LogoPath = getPath("yml-config","logo-img");
-        EmailHtmlPath = getPath("yml-config","email-html");
+        ConfigPath = getPath("config");
         LogPath = getPath("log");
         KeyPath = getPath("key");
-        
+
+        LogoPath = getPath("data","logo-img");
+        AvatarPath = getPath("data","avatar");
+        EmailHtmlPath = getPath("config","email-html");
+
         paths = new String[]{
+                // Root
                 RootPath,
+                // 一级路径
                 DataPath,
                 ConfigPath,
                 LogoPath,
                 EmailHtmlPath,
+                // 二级路径
                 LogPath,
+                AvatarPath,
                 KeyPath
         };
-        
+
         createPath();
         CreateFile.create();
     }
@@ -112,7 +123,7 @@ public class FilePathConfig {
      */
     public static void createTextFile(
             String text,
-            String path, 
+            String path,
             String file
     ) {
         Path p = Paths.get(path, file);
@@ -144,3 +155,5 @@ public class FilePathConfig {
         log.info("创建文件: " + p);
     }
 }
+
+

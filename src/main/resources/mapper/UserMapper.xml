@@ -3,6 +3,49 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="top.playereg.pix_vision.mapper.UserMapper">
-    <!-- MyBatis-Plus 会自动注入 BaseMapper 的 CRUD 方法 -->
-    <!-- 自定义查询可以继续使用 XML 配置 -->
+    <!-- 添加用户 -->
+    <insert id="insertUser"
+            parameterType="top.playereg.pix_vision.pojo.User"
+            useGeneratedKeys="true"
+            keyProperty="user_id"
+    >
+        INSERT INTO tb_user (user_uuid, username, password, nickname, avatar_url, email, is_delete, status, update_time,
+                             update_user, create_time, create_user)
+        VALUES (#{user_uuid}, #{username}, #{password}, #{nickname}, #{avatar_url}, #{email}, #{is_delete}, #{status},
+                #{update_time}, #{update_user}, #{create_time}, #{create_user})
+    </insert>
+
+    <!-- 通过用户名查询用户 -->
+    <select id="selectAllUserInfoByUsername" parameterType="top.playereg.pix_vision.pojo.User"
+            resultType="top.playereg.pix_vision.pojo.User">
+        SELECT user_id,
+               user_uuid,
+               username,
+               password,
+               nickname,
+               avatar_url,
+               email,
+               is_delete,
+               status
+        FROM tb_user
+        WHERE username = #{username}
+          AND is_delete = 0
+    </select>
+
+    <!-- 通过邮箱查询用户 -->
+    <select id="selectAllUserInfoByEmail" parameterType="top.playereg.pix_vision.pojo.User"
+            resultType="top.playereg.pix_vision.pojo.User">
+        SELECT user_id,
+               user_uuid,
+               username,
+               password,
+               nickname,
+               avatar_url,
+               email,
+               is_delete,
+               status
+        FROM tb_user
+        WHERE email = #{email}
+          AND is_delete = 0
+    </select>
 </mapper>
