@@ -25,7 +25,6 @@
                nickname,
                avatar_url,
                email,
-               is_delete,
                status
         FROM tb_user
         WHERE username = #{username}
@@ -33,7 +32,8 @@
     </select>
 
     <!-- 通过邮箱查询用户 -->
-    <select id="selectAllUserInfoByEmail" parameterType="top.playereg.pix_vision.pojo.userPojo.User"
+    <select id="selectAllUserInfoByEmail"
+            parameterType="top.playereg.pix_vision.pojo.userPojo.User"
             resultType="top.playereg.pix_vision.pojo.userPojo.User">
         SELECT user_id,
                user_uuid,
@@ -42,10 +42,33 @@
                nickname,
                avatar_url,
                email,
-               is_delete,
                status
         FROM tb_user
         WHERE email = #{email}
           AND is_delete = 0
+    </select>
+
+    <!-- 分页查询用户 - 通过邮箱、uuid、用户名查询 -->
+    <select id="selectPageUserInfo"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+        SELECT user_id,
+               user_uuid,
+               username,
+               password,
+               nickname,
+               avatar_url,
+               email,
+               status
+        FROM tb_user
+        WHERE is_delete = 0
+        <if test="user.username != null and user.username != ''">
+            AND username LIKE CONCAT('%', #{user.username}, '%')
+        </if>
+        <if test="user.email != null and user.email != ''">
+            AND email LIKE CONCAT('%', #{user.email}, '%')
+        </if>
+        <if test="user.user_uuid != null">
+            AND user_uuid = #{user.user_uuid}
+        </if>
     </select>
 </mapper>

@@ -7,10 +7,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.pojo.userPojo.UserLogin;
@@ -43,7 +42,7 @@ public class UserController {
     /**
      * 用户登录
      *
-     * @param usernameAndEmail 用户名或邮箱
+     * @param usernameOrEmail 用户名或邮箱
      * @param password         密码
      * @param vCode            验证码
      * @return 响应数据<UserLogin>，包含用户信息和 Token
@@ -88,12 +87,12 @@ public class UserController {
                     """
     )
     public ResponsePojo<UserLogin> login(
-            @Parameter(description = "用户名或邮箱", required = true, example = "dev_user") @RequestParam String usernameAndEmail,
+            @Parameter(description = "用户名或邮箱", required = true, example = "dev_user") @RequestParam String usernameOrEmail,
             @Parameter(description = "密码", required = true, example = "123456") @RequestParam String password,
             @Parameter(description = "验证码", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
         // 基础数据校验
-        if (!RegexUtils.isUsername(usernameAndEmail) && !RegexUtils.isEmail(usernameAndEmail)) {
+        if (!RegexUtils.isUsername(usernameOrEmail) && !RegexUtils.isEmail(usernameOrEmail)) {
             return ResponsePojo.error(null, "用户名或邮箱格式错误");
         }
         if (!RegexUtils.isVCode(vCode)) {
@@ -101,10 +100,10 @@ public class UserController {
         }
             
         // 验证码验证（使用邮箱作为 key）
-        String emailForVcode = RegexUtils.isEmail(usernameAndEmail) ? usernameAndEmail : null;
+        String emailForVcode = RegexUtils.isEmail(usernameOrEmail) ? usernameOrEmail : null;
         if (emailForVcode == null) {
             // 如果输入的是用户名，需要先从数据库查询邮箱
-            User tempUser = userService.selectUserByUsername(usernameAndEmail);
+            User tempUser = userService.selectAllUserByUsername(usernameOrEmail);
             if (tempUser != null) {
                 emailForVcode = tempUser.getEmail();
             }
@@ -123,12 +122,12 @@ public class UserController {
     
         // 查询用户信息（支持用户名或邮箱登录）
         User user;
-        if (RegexUtils.isEmail(usernameAndEmail)) {
-            user = userService.selectUserByEmail(usernameAndEmail);
-            log.info("通过邮箱查询用户：{}, 结果：{}", usernameAndEmail, user != null ? "找到" : "未找到");
+        if (RegexUtils.isEmail(usernameOrEmail)) {
+            user = userService.selectAllUserByEmail(usernameOrEmail);
+            log.info("通过邮箱查询用户：{}, 结果：{}", usernameOrEmail, user != null ? "找到" : "未找到");
         } else {
-            user = userService.selectUserByUsername(usernameAndEmail);
-            log.info("通过用户名查询用户：{}, 结果：{}", usernameAndEmail, user != null ? "找到" : "未找到");
+            user = userService.selectAllUserByUsername(usernameOrEmail);
+            log.info("通过用户名查询用户：{}, 结果：{}", usernameOrEmail, user != null ? "找到" : "未找到");
         }
         
         // 调试：输出完整用户对象
@@ -137,7 +136,7 @@ public class UserController {
             
         // 判断用户是否存在
         if (user == null) {
-            log.warn("用户不存在：{}", usernameAndEmail);
+            log.warn("用户不存在：{}", usernameOrEmail);
             return ResponsePojo.error(null, "用户不存在");
         }
             
@@ -152,13 +151,13 @@ public class UserController {
     
         // 验证密码
         if (!hashedPassword.equals(user.getPassword())) {
-            log.warn("密码错误，用户名：{}", usernameAndEmail);
+            log.warn("密码错误，用户名：{}", usernameOrEmail);
             return ResponsePojo.error(null, "用户名或密码错误");
         }
     
         // 检查用户状态（status=10 表示正常）
         if (user.getStatus() != null && user.getStatus() != 10) {
-            log.warn("账户已被禁用，用户名：{}, 状态：{}", usernameAndEmail, user.getStatus());
+            log.warn("账户已被禁用，用户名：{}, 状态：{}", usernameOrEmail, user.getStatus());
             return ResponsePojo.error(null, "账户已被禁用");
         }
     
@@ -176,7 +175,7 @@ public class UserController {
         // 创建返回对象
         UserLogin userLogin = new UserLogin();
         userLogin.setUser_id(user.getUser_id());
-        userLogin.setUser_uuid(user.getUser_uuid());
+//        userLogin.setUser_uuid(user.getUser_uuid());
         userLogin.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
         userLogin.setUsername(user.getUsername());
         userLogin.setNickname(user.getNickname());
@@ -185,7 +184,7 @@ public class UserController {
         userLogin.setStatus(user.getStatus());
         userLogin.setToken(token);
     
-        log.info("用户登录成功：{}", usernameAndEmail);
+        log.info("用户登录成功：{}", usernameOrEmail);
         return ResponsePojo.success(userLogin, "登录成功");
     }
     
@@ -356,5 +355,102 @@ public class UserController {
         }
 
         return ResponsePojo.success(user, "注册成功");
+    }
+
+    /**
+     * 分页查询用户信息
+     *
+     * @param current  当前页码（从 1 开始）
+     * @param size     每页大小
+     * @param username 用户名（可选，模糊查询）
+     * @param uuid     UUID（可选，精确查询）
+     * @param email    邮箱（可选，模糊查询）
+     * @return 响应数据<IPage<User>>
+     * @author PlayerEG
+     */
+    @PostMapping("/page/{current}/{size}")
+    @Operation(
+            summary = "分页查询用户信息",
+            description = """
+                    # 分页查询用户信息
+                        
+                    ## 参数说明：
+                    - current: 当前页码，**从 1 开始**，默认为 1
+                    - size: 每页显示数量，默认为 10
+                    - username: 用户名（可选），支持模糊查询
+                    - uuid: 用户 UUID（可选），支持精确查询
+                    - email: 邮箱（可选），支持模糊查询
+                        
+                    ## 返回说明：
+                    - **查询成功**：返回 **{"data": {IPage<User>对象}}**，包含用户列表和分页信息
+                    - **参数错误**：返回 **{"data": null}** 和"页码或每页大小错误"提示
+                        
+                    ## 返回数据结构：
+                    ```json
+                    {
+                      "code": 200,
+                      "data": {
+                        "records": [用户对象列表],
+                        "total": 总记录数,
+                        "size": 每页大小,
+                        "current": 当前页,
+                        "pages": 总页数
+                      },
+                      "message": "查询成功"
+                    }
+                    ```
+                        
+                    ## 业务逻辑：
+                    1. 校验页码和每页大小参数
+                    2. 构建分页对象
+                    3. 根据条件查询用户信息
+                    4. 返回分页结果
+                        
+                    ## 注意事项：
+                    - 所有查询条件均为**可选参数**，可不传
+                    - 支持多个条件组合查询
+                    - 用户名和邮箱支持**模糊匹配**
+                    - UUID 支持**精确匹配**
+                    - 默认返回 8 个核心字段（user_id, user_uuid, username, password, nickname, avatar_url, email, status）
+                    - 已自动过滤逻辑删除的用户
+                    """
+    )
+    public ResponsePojo<IPage<User>> getPageUserInfo(
+            @Parameter(description = "当前页码", example = "1") @PathVariable Long current,
+            @Parameter(description = "每页大小", example = "10") @PathVariable Long size,
+            @Parameter(description = "用户名（可选）") @RequestParam(required = false) String username,
+            @Parameter(description = "UUID（可选）") @RequestParam(required = false) String uuid,
+            @Parameter(description = "邮箱（可选）") @RequestParam(required = false) String email
+    ) {
+        // 参数校验
+        if (current == null || current < 1) {
+            return ResponsePojo.error(null, "页码必须大于 0");
+        }
+        if (size == null || size < 1 || size > 100) {
+            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        }
+        
+        // 转换 UUID 字符串为 byte 数组
+        byte[] uuidBytes = null;
+        if (uuid != null && !uuid.isEmpty()) {
+            try {
+                uuidBytes = StrSwitchUtils.uuid2Bytes(uuid);
+                log.info("查询条件 - UUID: {}", uuid);
+            } catch (Exception e) {
+                log.error("UUID 格式错误：{}", uuid, e);
+                return ResponsePojo.error(null, "UUID 格式错误");
+            }
+        }
+        
+        // 构建分页对象
+        Page<User> page = new Page<>(current, size);
+        
+        // 调用 Service 进行查询
+        IPage<User> result = userService.selectPageUserInfo(page, username, uuidBytes, email);
+        
+        log.info("分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}", 
+                current, size, result.getTotal(), result.getRecords().size());
+        
+        return ResponsePojo.success(result, "查询成功");
     }
 }

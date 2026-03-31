@@ -1,6 +1,7 @@
 package top.playereg.pix_vision.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.userPojo.User;
@@ -23,18 +24,30 @@ public interface UserMapper extends BaseMapper<User> {
     int insertUser(User user);
 
     /**
-     * 根据用户名查询用户
+     * 根据用户名查询用户 - 全字段查询
      *
      * @param username 用户名
      * @return 用户实体
      */
     User selectAllUserInfoByUsername(String username);
 
+
     /**
-     * 根据邮箱查询用户
+     * 根据邮箱查询用户 - 全字段查询
      *
      * @param email 邮箱
      * @return 用户实体
      */
     User selectAllUserInfoByEmail(String email);
+
+    /**
+     * 分页查询用户信息 - 支持用户名、UUID、邮箱查询
+     * @param page 分页参数
+     * @param user 查询条件对象（可选属性：username, user_uuid, email）
+     * @return 分页用户列表
+     */
+    IPage<User> selectPageUserInfo(
+            IPage<?> page,
+            User user
+    );
 }

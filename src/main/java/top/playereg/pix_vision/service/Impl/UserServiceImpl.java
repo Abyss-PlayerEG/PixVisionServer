@@ -1,6 +1,7 @@
 package top.playereg.pix_vision.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,12 +92,49 @@ public class UserServiceImpl implements UserService {
                 .eq(User::getEmail, email)) > 0;
     }
     @Override
-    public User selectUserByUsername(String username) {
+    public User selectAllUserByUsername(String username) {
         return userMapper.selectAllUserInfoByUsername(username);
     }
 
     @Override
-    public User selectUserByEmail(String email) {
+    public User selectAllUserByEmail(String email) {
         return userMapper.selectAllUserInfoByEmail(email);
+    }
+
+    /**
+     * 分页查询用户信息
+     *
+     * @param page     分页参数
+     * @param username 用户名（可选）
+     * @param uuid     UUID（可选）
+     * @param email    邮箱（可选）
+     * @return 分页用户列表
+     */
+    @Override
+    public IPage<User> selectPageUserInfo(
+            IPage<?> page,
+            String username,
+            byte[] uuid,
+            String email
+    ) {
+        log.info("分页查询用户信息");
+        
+        // 构建查询条件对象
+        User queryUser = new User();
+        if (username != null && !username.isEmpty()) {
+            queryUser.setUsername(username);
+            log.info("查询条件 - 用户名：{}", username);
+        }
+        if (uuid != null) {
+            queryUser.setUser_uuid(uuid);
+            log.info("查询条件 - UUID: {}", StrSwitchUtils.bytes2Uuid(uuid));
+        }
+        if (email != null && !email.isEmpty()) {
+            queryUser.setEmail(email);
+            log.info("查询条件 - 邮箱：{}", email);
+        }
+        
+        log.info("执行分页查询");
+        return userMapper.selectPageUserInfo(page, queryUser);
     }
 }

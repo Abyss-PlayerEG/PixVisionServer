@@ -22,14 +22,14 @@ class UserServiceImplTest {
     }
 
     @Test
-    void selectUserByUsername() {
-        User user = userService.selectUserByUsername("dev_user_2");
+    void selectAllUserByUsername() {
+        User user = userService.selectAllUserByUsername("dev_user_2");
         log.info("用户信息：{}", user);
     }
 
     @Test
-    void selectUserByEmail() {
-        User user = userService.selectUserByEmail("test3@example.com");
+    void selectAllUserByEmail() {
+        User user = userService.selectAllUserByEmail("test3@example.com");
         log.info("用户信息：{}", user);
     }
 }
