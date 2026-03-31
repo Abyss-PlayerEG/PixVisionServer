@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import top.playereg.pix_vision.mapper.UserMapper;
-import top.playereg.pix_vision.pojo.User;
+import top.playereg.pix_vision.pojo.userPojo.User;
 
 import java.util.List;
 

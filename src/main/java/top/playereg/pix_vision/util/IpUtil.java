@@ -62,6 +62,8 @@ public class IpUtil {
                     if (!ipAddresses.contains(ip)) {
                         ipAddresses.add(ip);
                     }
+                } catch (Exception ignored) {
+                    ipAddresses.add("127.0.0.1");
                 }
             }
 

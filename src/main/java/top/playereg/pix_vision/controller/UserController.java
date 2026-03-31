@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.User;
-import top.playereg.pix_vision.pojo.UserLogin;
+import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.pojo.userPojo.UserLogin;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
@@ -177,6 +177,7 @@ public class UserController {
         UserLogin userLogin = new UserLogin();
         userLogin.setUser_id(user.getUser_id());
         userLogin.setUser_uuid(user.getUser_uuid());
+        userLogin.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
         userLogin.setUsername(user.getUsername());
         userLogin.setNickname(user.getNickname());
         userLogin.setAvatar_url(user.getAvatar_url());

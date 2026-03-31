@@ -5,7 +5,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.UserMapper">
     <!-- 添加用户 -->
     <insert id="insertUser"
-            parameterType="top.playereg.pix_vision.pojo.User"
+            parameterType="top.playereg.pix_vision.pojo.userPojo.User"
             useGeneratedKeys="true"
             keyProperty="user_id"
     >
@@ -16,8 +16,8 @@
     </insert>
 
     <!-- 通过用户名查询用户 -->
-    <select id="selectAllUserInfoByUsername" parameterType="top.playereg.pix_vision.pojo.User"
-            resultType="top.playereg.pix_vision.pojo.User">
+    <select id="selectAllUserInfoByUsername" parameterType="top.playereg.pix_vision.pojo.userPojo.User"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
         SELECT user_id,
                user_uuid,
                username,
@@ -33,8 +33,8 @@
     </select>
 
     <!-- 通过邮箱查询用户 -->
-    <select id="selectAllUserInfoByEmail" parameterType="top.playereg.pix_vision.pojo.User"
-            resultType="top.playereg.pix_vision.pojo.User">
+    <select id="selectAllUserInfoByEmail" parameterType="top.playereg.pix_vision.pojo.userPojo.User"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
         SELECT user_id,
                user_uuid,
                username,

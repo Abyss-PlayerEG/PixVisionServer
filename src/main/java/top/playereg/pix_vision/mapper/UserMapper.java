@@ -3,7 +3,7 @@ package top.playereg.pix_vision.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
-import top.playereg.pix_vision.pojo.User;
+import top.playereg.pix_vision.pojo.userPojo.User;
 
 /**
  * Mapper 接口类模板

@@ -1,6 +1,6 @@
 package top.playereg.pix_vision.service;
 
-import top.playereg.pix_vision.pojo.User;
+import top.playereg.pix_vision.pojo.userPojo.User;
 
 public interface UserService {
     User registerUser(

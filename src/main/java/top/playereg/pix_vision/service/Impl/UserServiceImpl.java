@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.UserMapper;
-import top.playereg.pix_vision.pojo.User;
+import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
