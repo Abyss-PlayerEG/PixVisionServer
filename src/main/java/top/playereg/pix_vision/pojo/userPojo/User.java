@@ -20,7 +20,6 @@ public class User {
     Integer user_id;
 
     @Schema(description = "用户 UUID",example = "16字节二进制uuid")
-//    Object user_uuid;
     byte[] user_uuid;
 
     @Schema(description = "用户名",example = "li_hua")
@@ -31,6 +30,9 @@ public class User {
 
     @Schema(description = "用户昵称",example = "李华")
     String nickname;
+
+    @Schema(description = "用户角色",example = "11")
+    Integer user_role;
 
     @Schema(description = "用户头像路径",example = "/avatar/uuid.png")
     String avatar_url;

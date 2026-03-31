@@ -9,8 +9,20 @@
             useGeneratedKeys="true"
             keyProperty="user_id"
     >
-        INSERT INTO tb_user (user_uuid, username, password, nickname, avatar_url, email, is_delete, status, update_time,
-                             update_user, create_time, create_user)
+        INSERT INTO tb_user (
+                             user_uuid,
+                             username,
+                             password,
+                             nickname,
+                             avatar_url,
+                             email,
+                             is_delete,
+                             status,
+                             update_time,
+                             update_user,
+                             create_time,
+                             create_user
+        )
         VALUES (#{user_uuid}, #{username}, #{password}, #{nickname}, #{avatar_url}, #{email}, #{is_delete}, #{status},
                 #{update_time}, #{update_user}, #{create_time}, #{create_user})
     </insert>
@@ -23,6 +35,7 @@
                username,
                password,
                nickname,
+               user_role,
                avatar_url,
                email,
                status
@@ -40,6 +53,7 @@
                username,
                password,
                nickname,
+               user_role,
                avatar_url,
                email,
                status
@@ -56,7 +70,7 @@
                username,
                password,
                nickname,
-               avatar_url,
+               user_role,
                email,
                status
         FROM tb_user
