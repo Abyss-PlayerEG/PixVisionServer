@@ -1,8 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="db_pix_vision-V1.0.sql" type="DatabaseScript" editBeforeRun="true" nameIsGenerated="true">
-    <script-file value="$PROJECT_DIR$/sql/db_pix_vision-V1.0.sql" />
-    <script-mode>FILE</script-mode>
-    <data-source id="74f884be-3a90-4945-96a1-ad9ccf6fd043" namespace="schema/&quot;db_pix_vision&quot;" />
-    <method v="2" />
-  </configuration>
-</component>

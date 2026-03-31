@@ -66,6 +66,11 @@ public class UserServiceImpl implements UserService {
 
         user.setStatus(10);
         log.info("用户状态：{}", user.getStatus());
+        
+        // 设置用户角色（默认为普通用户 11）
+        user.setUser_role(11);
+        log.info("用户角色：{}", user.getUser_role());
+        
         user.setIs_delete(false);
         log.info("用户删除状态：{}", user.getIs_delete());
 

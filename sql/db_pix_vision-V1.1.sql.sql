@@ -28,8 +28,8 @@ CREATE TABLE `tb_comments` (
   `work_id` int NOT NULL COMMENT '所属作品id',
   `answer_conmment_id` int DEFAULT NULL COMMENT '所回复的评论id',
   `conmment_floor` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论层级：1 - 作品评论、2 - 二级评论',
-  `conmment_text` varchar(512) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论内容，限制长度125字',
-  `status` varchar(100) COLLATE utf8mb4_german2_ci NOT NULL DEFAULT '20' COMMENT '评论状态，10 - 正常、20 - 待审核、30 - 封禁',
+  `conmment_text` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论内容，限制长度125字',
+  `status` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL DEFAULT '20' COMMENT '评论状态，10 - 正常、20 - 待审核、30 - 封禁',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   PRIMARY KEY (`conmment_id`),
   KEY `tb_comments_tb_user_FK` (`user_id`),
@@ -114,8 +114,8 @@ DROP TABLE IF EXISTS `tb_series`;
 CREATE TABLE `tb_series` (
   `series_id` int NOT NULL AUTO_INCREMENT COMMENT 'id唯一值',
   `user_id` int NOT NULL COMMENT '用于链接到对应的用户数据',
-  `series_title` varchar(64) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '系列标题，16个中文长度',
-  `about_text` varchar(96) COLLATE utf8mb4_german2_ci DEFAULT NULL COMMENT '系列描述文本，24个中文长度',
+  `series_title` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '系列标题，16个中文长度',
+  `about_text` varchar(96) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci DEFAULT NULL COMMENT '系列描述文本，24个中文长度',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
   `update_user` int DEFAULT NULL COMMENT '修改者id，系统修改为0',
@@ -202,9 +202,10 @@ CREATE TABLE `tb_user` (
   `user_uuid` binary(16) NOT NULL COMMENT 'uuid唯一值',
   `username` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '用户名，仅限英文字符和【-】',
   `password` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '密码哈希256映射加盐加密',
-  `nickname` varchar(48) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '昵称，12位长度的中文、英文、特殊字符',
-  `avatar_url` varchar(96) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '用户头像路径\n存储：/data/userdata/uuid.*\n数据库映射：uuid.*\n限制文件类型：jpg、jpeg、png\n限制大小：2.5mb',
-  `email` varchar(320) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '验证成功后的邮箱地址',
+  `nickname` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '昵称，12位长度的中文、英文、特殊字符',
+  `user_role` int NOT NULL DEFAULT '11' COMMENT '用户角色：\r\n普通用户 - 11\r\n创作者 - 22\r\n审核员 - 55\r\n售票管理员 - 66\r\n系统管理员 - 77',
+  `avatar_url` varchar(96) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '用户头像路径\n存储：/data/userdata/uuid.*\n数据库映射：uuid.*\n限制文件类型：jpg、jpeg、png\n限制大小：2.5mb',
+  `email` varchar(320) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '验证成功后的邮箱地址',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   `status` int NOT NULL DEFAULT '10' COMMENT '账号状态，10 - 正常、20 - 冻结、30 - 封禁',
   `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
@@ -235,7 +236,7 @@ CREATE TABLE `tb_user_data` (
   `data_id` int NOT NULL AUTO_INCREMENT COMMENT 'id唯一值',
   `user_id` int NOT NULL COMMENT '用于链接用户数据到用户表',
   `user_data_name` varchar(26) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '数据项目名称（电话、邮箱、网站、微信等等）',
-  `user_data` varchar(96) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '数据内容（具体的电话号码、邮箱地址、网站url等等）',
+  `user_data` varchar(96) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '数据内容（具体的电话号码、邮箱地址、网站url等等）',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
   `update_user` int DEFAULT NULL COMMENT '修改者id，系统修改为0',
@@ -266,14 +267,14 @@ DROP TABLE IF EXISTS `tb_works`;
 CREATE TABLE `tb_works` (
   `work_id` int NOT NULL AUTO_INCREMENT COMMENT 'id唯一值',
   `user_id` int NOT NULL COMMENT '用于链接到对应的用户数据',
-  `work_title` varchar(64) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '作品标题，16个中文长度',
-  `img_url` varchar(100) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '存储：/data/work_img/uuid.*\n数据库映射：uuid.*\n限制文件类型：jpg、jpeg、png\n限制大小：12mb',
+  `work_title` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '作品标题，16个中文长度',
+  `img_url` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '存储：/data/work_img/uuid.*\n数据库映射：uuid.*\n限制文件类型：jpg、jpeg、png\n限制大小：12mb',
   `series_id` int NOT NULL COMMENT '用于链接到对应的系列合集',
   `like_count` int NOT NULL DEFAULT '0' COMMENT '点赞数',
   `star_count` int NOT NULL DEFAULT '0' COMMENT '收藏数',
   `view_count` int NOT NULL DEFAULT '0' COMMENT '查看数',
   `is_original_work` tinyint(1) NOT NULL DEFAULT '1' COMMENT '用于标记是否为原创作品，1 - 原创、0 - 转载',
-  `out_url` varchar(2048) COLLATE utf8mb4_german2_ci NOT NULL COMMENT '外部转载链接',
+  `out_url` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '外部转载链接',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
   `update_user` int DEFAULT NULL COMMENT '修改者id，系统修改为0',
@@ -309,4 +310,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-29 15:21:56
+-- Dump completed on 2026-03-31 13:54:11
