@@ -48,4 +48,12 @@
         WHERE email = #{email}
           AND is_delete = 0
     </select>
+
+    <!--  用户修改密码  -->
+    <update id="changeUserPassword" parameterType="top.playereg.pix_vision.pojo.User"
+    >
+            UPDATE tb_user
+            SET password = #{password}
+            WHERE (email = #{usernameOrEmail} OR username = #{usernameOrEmail}) AND password = #{oldPassword}
+    </update>
 </mapper>

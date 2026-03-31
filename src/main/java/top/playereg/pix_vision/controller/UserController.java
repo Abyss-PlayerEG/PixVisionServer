@@ -356,4 +356,54 @@ public class UserController {
 
         return ResponsePojo.success(user, "注册成功");
     }
+
+    /**
+     * 用户密码修改
+     *
+     * @param usernameOrEmail 用户名或邮箱
+     * @param oldPassword 旧密码
+     * @param password 新密码
+     * */
+    @PostMapping("/passwordchange")
+    @Operation(
+            summary = "用户密码修改接口"
+    )
+    public ResponsePojo<Integer> changeUserPassword(
+            @Parameter(description = "用户名或邮箱", required = true, example = "dev_user") @RequestParam String usernameOrEmail,
+            @Parameter(description = "旧密码", required = true, example = "123456") @RequestParam String oldPassword,
+            @Parameter(description = "新密码", required = true, example = "3999") @RequestParam String password ){
+
+        if (!RegexUtils.isUsername(usernameOrEmail) && !RegexUtils.isEmail(usernameOrEmail)) {
+            return ResponsePojo.error(0, "用户名或用户格式错误");
+        }
+
+        //获取用户
+        User user = null;
+        if( usernameOrEmail != null){
+            if( RegexUtils.isUsername(usernameOrEmail) ){
+                user = userService.selectUserByUsername(usernameOrEmail);
+            }else if( RegexUtils.isEmail(usernameOrEmail) ){
+                user = userService.selectUserByEmail(usernameOrEmail);
+            }
+        }
+
+        // 对密码进行加密
+        String hashedOldPassword = StrSwitchUtils.PasswdToHash256(oldPassword);
+        String hashedNewPassword = StrSwitchUtils.PasswdToHash256(password);
+
+        if( !user.getPassword().equals(hashedOldPassword) ){
+
+            return ResponsePojo.error( 0, "旧密码错误" );
+        }
+
+        if( hashedOldPassword.equals(hashedNewPassword) ){
+            return ResponsePojo.error( 0, "新旧密码不能一致" );
+        }
+
+        if( userService.changeUserPassword( usernameOrEmail, hashedOldPassword, hashedNewPassword ) < 1 ){
+            return ResponsePojo.error( 0, "修改失败" );
+        }
+
+        return ResponsePojo.success( 1, "修改成功" );
+    }
 }

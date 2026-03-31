@@ -99,4 +99,12 @@ public class UserServiceImpl implements UserService {
     public User selectUserByEmail(String email) {
         return userMapper.selectAllUserInfoByEmail(email);
     }
+
+
+    /**
+     * 修改密码
+     */
+    public Integer changeUserPassword(String usernameOrEmail, String oldPassword, String password){
+        return userMapper.changeUserPassword(usernameOrEmail, oldPassword, password);
+    }
 }

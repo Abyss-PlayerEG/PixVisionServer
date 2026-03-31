@@ -37,4 +37,14 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 用户实体
      */
     User selectAllUserInfoByEmail(String email);
+
+    /**
+     * 修改密码
+     *
+     * @param usernameOrEmail 用户名或邮箱
+     * @param oldPassword 旧密码
+     * @param password 新密码
+     * @return 整型
+     */
+    Integer changeUserPassword(String usernameOrEmail, String oldPassword , String password);
 }

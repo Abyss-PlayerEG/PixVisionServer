@@ -11,4 +11,5 @@ public interface UserService {
     );
     User selectUserByUsername(String username);
     User selectUserByEmail(String email);
+    Integer changeUserPassword(String usernameOrEmail, String oldPassword , String password);
 }
