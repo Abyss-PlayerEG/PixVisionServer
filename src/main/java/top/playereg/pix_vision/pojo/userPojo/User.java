@@ -1,4 +1,4 @@
-package top.playereg.pix_vision.pojo;
+package top.playereg.pix_vision.pojo.userPojo;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
@@ -20,6 +20,7 @@ public class User {
     Integer user_id;
 
     @Schema(description = "用户 UUID",example = "16字节二进制uuid")
+//    Object user_uuid;
     byte[] user_uuid;
 
     @Schema(description = "用户名",example = "li_hua")

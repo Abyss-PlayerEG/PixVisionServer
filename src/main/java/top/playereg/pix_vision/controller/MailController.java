@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import top.playereg.pix_vision.config.DevConfig;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.service.EmailService;

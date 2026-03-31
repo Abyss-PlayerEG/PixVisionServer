@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.UserLogin;
+import top.playereg.pix_vision.pojo.userPojo.UserLogin;
 import top.playereg.pix_vision.util.JWTUtils;
 
 import static org.junit.jupiter.api.Assertions.*;

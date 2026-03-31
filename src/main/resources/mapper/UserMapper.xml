@@ -5,7 +5,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.UserMapper">
     <!-- 添加用户 -->
     <insert id="insertUser"
-            parameterType="top.playereg.pix_vision.pojo.User"
+            parameterType="top.playereg.pix_vision.pojo.userPojo.User"
             useGeneratedKeys="true"
             keyProperty="user_id"
     >
@@ -16,8 +16,8 @@
     </insert>
 
     <!-- 通过用户名查询用户 -->
-    <select id="selectAllUserInfoByUsername" parameterType="top.playereg.pix_vision.pojo.User"
-            resultType="top.playereg.pix_vision.pojo.User">
+    <select id="selectAllUserInfoByUsername" parameterType="top.playereg.pix_vision.pojo.userPojo.User"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
         SELECT user_id,
                user_uuid,
                username,
@@ -25,7 +25,6 @@
                nickname,
                avatar_url,
                email,
-               is_delete,
                status
         FROM tb_user
         WHERE username = #{username}
@@ -33,8 +32,9 @@
     </select>
 
     <!-- 通过邮箱查询用户 -->
-    <select id="selectAllUserInfoByEmail" parameterType="top.playereg.pix_vision.pojo.User"
-            resultType="top.playereg.pix_vision.pojo.User">
+    <select id="selectAllUserInfoByEmail"
+            parameterType="top.playereg.pix_vision.pojo.userPojo.User"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
         SELECT user_id,
                user_uuid,
                username,
@@ -42,18 +42,33 @@
                nickname,
                avatar_url,
                email,
-               is_delete,
                status
         FROM tb_user
         WHERE email = #{email}
           AND is_delete = 0
     </select>
 
-    <!--  用户修改密码  -->
-    <update id="changeUserPassword" parameterType="top.playereg.pix_vision.pojo.User"
-    >
-            UPDATE tb_user
-            SET password = #{password}
-            WHERE (email = #{usernameOrEmail} OR username = #{usernameOrEmail}) AND password = #{oldPassword}
-    </update>
+    <!-- 分页查询用户 - 通过邮箱、uuid、用户名查询 -->
+    <select id="selectPageUserInfo"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+        SELECT user_id,
+               user_uuid,
+               username,
+               password,
+               nickname,
+               avatar_url,
+               email,
+               status
+        FROM tb_user
+        WHERE is_delete = 0
+        <if test="user.username != null and user.username != ''">
+            AND username LIKE CONCAT('%', #{user.username}, '%')
+        </if>
+        <if test="user.email != null and user.email != ''">
+            AND email LIKE CONCAT('%', #{user.email}, '%')
+        </if>
+        <if test="user.user_uuid != null">
+            AND user_uuid = #{user.user_uuid}
+        </if>
+    </select>
 </mapper>
