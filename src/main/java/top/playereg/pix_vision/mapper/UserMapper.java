@@ -50,4 +50,12 @@ public interface UserMapper extends BaseMapper<User> {
             IPage<?> page,
             User user
     );
+
+    /**
+     * 用户密码修改
+     * @param email 用户的邮箱或密码
+     * @param oldPassword 用户的旧密码
+     * @param newPassword 用户的新密码
+     * */
+    Integer changeUserPassword( String email, String oldPassword, String newPassword );
 }

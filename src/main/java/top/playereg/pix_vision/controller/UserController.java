@@ -484,4 +484,55 @@ public class UserController {
 
         return ResponsePojo.success(result, "查询成功");
     }
+
+
+    /**
+     * 用户密码修改
+     * @param email 用户的邮箱
+     * @param oldPassword 用户的旧密码
+     * @param newPassword 用户的新密码
+     * @param vCode 验证码
+     * */
+    @PostMapping("/changepassword")
+    @Operation(
+            summary = "用户密码修改"
+    )
+    public ResponsePojo<Integer> changeUserPassword(
+            @Parameter(description = "邮箱", required = true, example = "xxx@qq.com") @RequestParam String email,
+            @Parameter(description = "旧密码", required = true, example = "123456") @RequestParam String oldPassword,
+            @Parameter(description = "新密码", required = true, example = "123457") @RequestParam String newPassword,
+            @Parameter(description = "验证码", required = true, example = "ABCDEF") @RequestParam String vCode
+    ) {
+        // 基础数据校验
+        if (!RegexUtils.isEmail(email)) {
+            return ResponsePojo.error(0, "邮箱格式错误");
+        }
+
+        if (!RegexUtils.isVCode(vCode, 6)) {
+            return ResponsePojo.error(0, "验证码格式错误");
+        }
+
+        //密码加密
+        String oldPasswordHashed = StrSwitchUtils.PasswdToHash256(oldPassword);
+        String newPasswordHashed = StrSwitchUtils.PasswdToHash256(newPassword);
+
+        if (oldPasswordHashed.equals(newPasswordHashed)) {
+            return ResponsePojo.error(0, "新旧密码不能一致");
+        }
+
+        //用户
+        User user = userService.selectAllUserByEmail(email);
+
+        if( !user.getPassword().equals(oldPasswordHashed) ){
+            return ResponsePojo.error(0, "密码错误");
+        }
+
+        Integer res = userService.changeUserPassword( email, oldPasswordHashed, newPasswordHashed );
+
+        if( res != 1 ){
+            return ResponsePojo.success(0, "修改失败");
+        }
+
+        return ResponsePojo.success(1, "修改成功");
+    }
 }

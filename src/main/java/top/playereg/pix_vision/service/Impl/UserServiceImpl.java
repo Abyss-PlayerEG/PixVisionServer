@@ -142,4 +142,14 @@ public class UserServiceImpl implements UserService {
         log.info("执行分页查询");
         return userMapper.selectPageUserInfo(page, queryUser);
     }
+
+    /**
+     * 用户密码修改
+     * @param email 用户的邮箱
+     * @param oldPassword 用户的旧密码
+     * @param newPassword 用户的新密码
+     * */
+    public Integer changeUserPassword( String email, String oldPassword, String newPassword ){
+        return userMapper.changeUserPassword(email, oldPassword, newPassword);
+    }
 }

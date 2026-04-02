@@ -27,4 +27,12 @@ public interface UserService {
             byte[] uuid,
             String email
     );
+
+    /**
+     * 用户密码修改
+     * @param email 用户的邮箱
+     * @param oldPassword 用户的旧密码
+     * @param newPassword 用户的新密码
+     * */
+    Integer changeUserPassword( String email, String oldPassword, String newPassword );
 }
