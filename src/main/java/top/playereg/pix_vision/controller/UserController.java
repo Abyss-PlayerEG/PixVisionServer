@@ -55,7 +55,7 @@ public class UserController {
                     # 用户登录
                         
                     ## 参数说明：
-                    - usernameOrEmail: 用户名**或**邮箱地址，字符串类型，必填
+                    - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填
                     - password: 登录密码，字符串类型，必填
                     - vCode: 邮箱验证码（6 位大写字母或数字），字符串类型，必填
                         
@@ -97,7 +97,7 @@ public class UserController {
         if (!RegexUtils.isUsername(usernameOrEmail) && !RegexUtils.isEmail(usernameOrEmail)) {
             return ResponsePojo.error(null, "用户名或邮箱格式错误");
         }
-        if (!RegexUtils.isVCode(vCode)) {
+        if (!RegexUtils.isVCode(vCode,6)) {
             return ResponsePojo.error(null, "验证码格式错误");
         }
 
@@ -177,7 +177,6 @@ public class UserController {
         // 创建返回对象
         UserLogin userLogin = new UserLogin();
         userLogin.setUser_id(user.getUser_id());
-//        userLogin.setUser_uuid(user.getUser_uuid());
         userLogin.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
         userLogin.setUsername(user.getUsername());
         userLogin.setNickname(user.getNickname());
@@ -346,7 +345,7 @@ public class UserController {
         if (!RegexUtils.isEmail(email)) {
             return ResponsePojo.error(null, "邮箱格式错误");
         }
-        if (!RegexUtils.isVCode(vCode)) {
+        if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(null, "验证码格式错误");
         }
         // 验证码验证
@@ -447,28 +446,42 @@ public class UserController {
         if (size == null || size < 1 || size > 100) {
             return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
         }
-        
+        if (username != null && !username.isEmpty() && !RegexUtils.isUsername(username)) {
+            return ResponsePojo.error(null, "用户名格式错误");
+        }
+        if (email != null && !email.isEmpty() && !RegexUtils.isEmail(email)) {
+            return ResponsePojo.error(null, "邮箱格式错误");
+        }
+        if (uuid != null && !uuid.isEmpty() && !RegexUtils.isUUID(uuid)) {
+            return ResponsePojo.error(null, "UUID 格式错误");
+        }
+
         // 转换 UUID 字符串为 byte 数组
         byte[] uuidBytes = null;
         if (uuid != null && !uuid.isEmpty()) {
-            try {
-                uuidBytes = StrSwitchUtils.uuid2Bytes(uuid);
-                log.info("查询条件 - UUID: {}", uuid);
-            } catch (Exception e) {
-                log.error("UUID 格式错误：{}", uuid, e);
-                return ResponsePojo.error(null, "UUID 格式错误");
-            }
+            uuidBytes = StrSwitchUtils.uuid2Bytes(uuid);
         }
-        
+
         // 构建分页对象
         Page<User> page = new Page<>(current, size);
-        
-        // 调用 Service 进行查询
+
+        // 将查询到的用户的 16 字节二进制数组转为 16 进制字符串
         IPage<User> result = userService.selectPageUserInfo(page, username, uuidBytes, email);
+
+        // 返回结果为空，则返回错误信息
+        if (result == null || result.getRecords().size() == 0) {
+            log.error("分页查询返回结果为空 - 页码：{}, 每页：{}", current, size);
+            return ResponsePojo.error(null, "查询失败，返回结果为空");
+        }
+
+        // 将用户的 16 字节二进制UUID转换成字符串UUID
+        for (User user : result.getRecords()) {
+            user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
+        }
         
-        log.info("分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}", 
+        log.info("分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}",
                 current, size, result.getTotal(), result.getRecords().size());
-        
+
         return ResponsePojo.success(result, "查询成功");
     }
 }

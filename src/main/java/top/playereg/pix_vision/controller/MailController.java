@@ -165,7 +165,7 @@ public class MailController {
         if (!RegexUtils.isEmail(email)) {
             return ResponsePojo.error(false, "邮箱格式错误");
         }
-        if (!RegexUtils.isVCode(inputVCode)) {
+        if (!RegexUtils.isVCode(inputVCode,6)) {
             return ResponsePojo.error(false, "验证码格式错误");
         }
 
