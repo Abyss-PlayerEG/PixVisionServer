@@ -55,7 +55,7 @@ public class UserController {
                     # 用户登录
                         
                     ## 参数说明：
-                    - usernameOrEmail: 用户名**或**邮箱地址，字符串类型，必填
+                    - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填
                     - password: 登录密码，字符串类型，必填
                     - vCode: 邮箱验证码（6 位大写字母或数字），字符串类型，必填
                         
@@ -177,7 +177,6 @@ public class UserController {
         // 创建返回对象
         UserLogin userLogin = new UserLogin();
         userLogin.setUser_id(user.getUser_id());
-//        userLogin.setUser_uuid(user.getUser_uuid());
         userLogin.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
         userLogin.setUsername(user.getUsername());
         userLogin.setNickname(user.getNickname());
