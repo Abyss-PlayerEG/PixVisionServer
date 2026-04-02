@@ -468,10 +468,11 @@ public class UserController {
 
         // 将查询到的用户的 16 字节二进制数组转为 16 进制字符串
         IPage<User> result = userService.selectPageUserInfo(page, username, uuidBytes, email);
-                
-        if (result == null) {
+
+        // 返回结果为空，则返回错误信息
+        if (result == null || result.getRecords().size() == 0) {
             log.error("分页查询返回结果为空 - 页码：{}, 每页：{}", current, size);
-            return ResponsePojo.error(null, "查询失败");
+            return ResponsePojo.error(null, "查询失败，返回结果为空");
         }
 
         // 将用户的 16 字节二进制UUID转换成字符串UUID
