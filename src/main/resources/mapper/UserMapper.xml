@@ -86,7 +86,6 @@
         </if>
     </select>
 
-
     <!-- 修改密码 -->
     <update id="changeUserPassword">
         UPDATE tb_user
