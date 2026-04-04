@@ -14,6 +14,13 @@ public interface UserService {
     User selectAllUserByEmail(String email);
     
     /**
+     * 根据用户 ID 查询用户信息
+     * @param userId 用户 ID
+     * @return 用户对象
+     */
+    User selectAllUserById(Integer userId);
+    
+    /**
      * 分页查询用户信息
      * @param page 分页参数
      * @param username 用户名（可选）
@@ -29,10 +36,11 @@ public interface UserService {
     );
 
     /**
-     * 用户密码修改
+     * 用户密码修改（通过邮箱）
      * @param email 用户的邮箱
      * @param oldPassword 用户的旧密码
      * @param newPassword 用户的新密码
+     * @return 影响行数
      * */
-    Integer changeUserPassword( String email, String oldPassword, String newPassword );
+    Integer changeUserPasswordByEmail( String email, String oldPassword, String newPassword );
 }
