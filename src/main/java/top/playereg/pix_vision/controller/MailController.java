@@ -15,6 +15,7 @@ import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.EmailService;
+import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.Aspect.LogRecord;
@@ -39,6 +40,7 @@ public class MailController {
     private final EmailService emailService;
     private final VerificationCodeServices verificationCodeServices;
     private final UserService userService;
+    private final EmailTemplateService emailTemplateService;
 
     /**
      * 发送"验证码"邮件
@@ -141,10 +143,11 @@ public class MailController {
 
         log.info(StrUtil.format("{} {}", username, content));
 
-        //生成验证码
+        // 生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
-        // 渲染模板
-        String html = EmailConfig.renderVerificationEmailTemplate(
+        
+        // 使用模板服务渲染邮件 HTML
+        String html = emailTemplateService.renderVerificationEmail(
                 verificationCode,
                 username,
                 content
