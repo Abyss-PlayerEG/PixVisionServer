@@ -13,6 +13,7 @@ public class RedisTest {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
+    // 1. String
     @Test
     public void testString() {
         // String存储
@@ -26,6 +27,7 @@ public class RedisTest {
         System.out.println(redisTemplate.opsForValue().get(key));
     }
 
+    // 2. 计数器
     @Test
     public void testString2() {
         // 计数器
@@ -34,6 +36,7 @@ public class RedisTest {
         System.out.println(redisTemplate.opsForValue().get(key));
     }
 
+    // 3. 存储对象
     @Test
     public void testString3() {
         // 存储对象
@@ -50,6 +53,7 @@ public class RedisTest {
         System.out.println(redisTemplate.opsForValue().get("test:String3")); // 从Redis中获取对象
     }
 
+    // 4. 存储对象
     @Test
     public void testHash() {
         String key = "test:Hash";
@@ -77,6 +81,7 @@ public class RedisTest {
         System.out.println(redisTemplate.opsForHash().get(key, "items")); // 获取购物车信息
     }
 
+    // 5. Set
     @Test
     public void testSet() {
         // Set存储无序、不重复的元素
@@ -86,6 +91,7 @@ public class RedisTest {
         System.out.println(redisTemplate.opsForSet().size(key)); // 获取元素个数
     }
 
+    // 6. ZSet
     @Test
     public void testZset() {
         // ZSet存储有序、不重复的元素
@@ -97,6 +103,7 @@ public class RedisTest {
         System.out.println(redisTemplate.opsForZSet().reverseRange(key, 0, -1)); // 获取所有元素
     }
 
+    // 7. List
     @Test
     public void testList() {
         // List存储有序、可重复的元素
@@ -107,6 +114,8 @@ public class RedisTest {
         redisTemplate.opsForList().rightPush(key, "小张");
         redisTemplate.opsForList().rightPush(key, "小刘");
     }
+
+    // 8. 获取List
     @Test
     public void testList2() {
         String key = "test:List";
