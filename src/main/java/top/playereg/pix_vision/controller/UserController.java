@@ -61,9 +61,11 @@ public class UserController {
                         
                     ## 返回说明：
                     - **登录成功**：返回 **{"data": {UserLogin 对象}}**，包含用户信息和 JWT Token
-                    - **用户名或密码错误**：返回 **{"data": null}** 和"用户名或密码错误"提示
-                    - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
+                    - **用户名或邮箱格式错误**：返回 **{"data": null}** 和"用户名或邮箱格式错误"提示
+                    - **验证码格式错误**：返回 **{"data": null}** 和"验证码格式错误"提示
                     - **验证码错误**：返回 **{"data": null}** 和"验证码错误"提示
+                    - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
+                    - **用户名或密码错误**：返回 **{"data": null}** 和"用户名或密码错误"提示
                     - **账户异常**：返回 **{"data": null}** 和"账户已被禁用"提示
                         
                     ## 业务逻辑：
@@ -201,32 +203,32 @@ public class UserController {
     @Operation(
             summary = "用户登出接口",
             description = """
-                # 用户登出，将 Token 从白名单移除
-                
-                ## 参数说明：
-                - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
-                
-                ## 返回说明：
-                - **登出成功**：返回 **{"data": true}** 和"登出成功"提示，Token 已从白名单移除
-                - **Token 不存在**：返回 **{"data": false}** 和"Token 不存在"提示
-                - **Token 已失效**：返回 **{"data": false}** 和"Token 已失效"提示（Token 不在白名单中）
-                - **Token 已过期**：返回 **{"data": false}** 和"Token 已过期"提示
-                
-                ## 业务逻辑：
-                1. 从请求头中提取 Token（支持 Bearer 前缀或 URL 参数）
-                2. 检查 Token 是否在白名单中
-                3. 获取 Token 剩余有效期
-                4. 将 Token 从白名单移除
-                5. 记录登出日志
-                6. 该 Token 将无法再访问任何受保护接口
-                
-                ## 注意事项：
-                - Token 从白名单移除后，立即失效
-                - 需要携带有效的 Token 才能登出
-                - 如果 Token 已过期或不在白名单中，会返回相应提示
-                - 同一用户的其他设备 Token 不受影响
-                - Token 有效期为 **7 天**
-                """
+                    # 用户登出，将 Token 从白名单移除
+                    
+                    ## 参数说明：
+                    - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+                    
+                    ## 返回说明：
+                    - **登出成功**：返回 **{"data": true}** 和"登出成功，Token 已被禁用"提示
+                    - **Token 不存在**：返回 **{"data": false}** 和"Token 不存在"提示
+                    - **Token 已失效**：返回 **{"data": false}** 和"Token 已失效"提示（Token 不在白名单中）
+                    - **Token 已过期**：返回 **{"data": false}** 和"Token 已过期"提示
+                    
+                    ## 业务逻辑：
+                    1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
+                    2. 检查 Token 是否在白名单中
+                    3. 获取 Token 剩余有效期
+                    4. 将 Token 从白名单移除
+                    5. 记录登出日志
+                    6. 该 Token 将无法再访问任何受保护接口
+                    
+                    ## 注意事项：
+                    - Token 从白名单移除后，立即失效
+                    - 需要携带有效的 Token 才能登出
+                    - 如果 Token 已过期或不在白名单中，会返回相应提示
+                    - 同一用户的其他设备 Token 不受影响
+                    - Token 有效期为 **7 天**
+                    """
     )
     public ResponsePojo<Boolean> logout(
             @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request
@@ -319,7 +321,7 @@ public class UserController {
                     3. 校验验证码格式是否正确（6 位大写字母或数字）
                     4. 验证邮箱验证码是否与 Redis 中存储的一致
                     5. 如果昵称为空，生成随机默认昵称（格式：user+ 随机词）
-                    6. 对密码进行 SHA-256 哈希偏移加盐加密处理
+                    6. 对密码进行 SHA-256 哈希加密处理
                     7. 创建用户并保存到数据库
                     8. 返回用户信息和成功提示
                                     
@@ -506,10 +508,10 @@ public class UserController {
                     - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
                     
                     ## 返回说明：
-                    - **修改成功**：返回 **{"data": 1}** 和"修改成功"提示，同时当前 Token 失效
-                    - **验证码错误**：返回 **{"data": 0}** 和"验证码错误"提示
-                    - **新旧密码一致**：返回 **{"data": 0}** 和"新旧密码不能一致"提示
-                    - **修改失败**：返回 **{"data": 0}** 和"修改失败"提示
+                    - **修改成功**：返回 **{"data": true}** 和"修改成功"提示，同时当前 Token 失效
+                    - **验证码错误**：返回 **{"data": false}** 和"验证码错误"提示
+                    - **新旧密码一致**：返回 **{"data": false}** 和"新旧密码不能一致"提示
+                    - **修改失败**：返回 **{"data": false}** 和"修改失败"提示
                     
                     ## 业务逻辑：
                     1. 从请求的 Token 中提取用户 ID
@@ -530,24 +532,24 @@ public class UserController {
                     - 验证码有效期由 Redis 配置决定（默认 5 分钟）
                     """
     )
-    public ResponsePojo<Integer> changeUserPassword(
+    public ResponsePojo<Boolean> changeUserPassword(
             @Parameter(description = "HTTP 请求对象，用于从 Token 中获取用户信息", required = true) HttpServletRequest request,
-            @Parameter(description = "新密码", required = true, example = "123457") @RequestParam String newPassword,
-            @Parameter(description = "确认新密码", required = true, example = "123457") @RequestParam String confirmPassword,
+            @Parameter(description = "新密码", required = true, example = "123456789") @RequestParam String newPassword,
+            @Parameter(description = "确认新密码", required = true, example = "123456789") @RequestParam String confirmPassword,
             @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
         // 从 Token 中获取用户 ID
         Integer userId = (Integer) request.getAttribute("userId");
         if (userId == null) {
             log.error("无法从 Token 中获取用户 ID");
-            return ResponsePojo.error(0, "未授权访问：Token 无效");
+            return ResponsePojo.error(false, "未授权访问：Token 无效");
         }
         
         // 根据用户 ID 查询用户信息
         User user = userService.selectAllUserById(userId);
         if (user == null) {
             log.error("用户不存在，用户 ID: {}", userId);
-            return ResponsePojo.error(0, "用户不存在");
+            return ResponsePojo.error(false, "用户不存在");
         }
         
         String email = user.getEmail();
@@ -555,18 +557,18 @@ public class UserController {
         
         // 基础数据校验
         if (!RegexUtils.isVCode(vCode, 6)) {
-            return ResponsePojo.error(0, "验证码格式错误");
+            return ResponsePojo.error(false, "验证码格式错误");
         }
         
         // 验证码验证
         boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
         if (!isTrue) {
-            return ResponsePojo.error(0, "验证码错误");
+            return ResponsePojo.error(false, "验证码错误");
         }
         
         // 校验两次输入的新密码是否一致
         if (!newPassword.equals(confirmPassword)) {
-            return ResponsePojo.error(0, "两次输入的密码不一致");
+            return ResponsePojo.error(false, "两次输入的密码不一致");
         }
         
         // 密码加密
@@ -574,14 +576,14 @@ public class UserController {
         
         // 校验新旧密码是否一致
         if (oldPasswordHashed.equals(newPasswordHashed)) {
-            return ResponsePojo.error(0, "新旧密码不能一致");
+            return ResponsePojo.error(false, "新旧密码不能一致");
         }
         
         // 修改密码
         Integer res = userService.changeUserPasswordByEmail(email, oldPasswordHashed, newPasswordHashed);
         
         if (res != 1) {
-            return ResponsePojo.error(0, "修改失败");
+            return ResponsePojo.error(false, "修改失败");
         }
         
         // 从请求中获取 Token 并移除
@@ -600,6 +602,6 @@ public class UserController {
             log.info("用户密码修改成功，已移除当前 Token，用户 ID: {}", userId);
         }
         
-        return ResponsePojo.success(1, "修改成功");
+        return ResponsePojo.success(true, "修改成功");
     }
 }
