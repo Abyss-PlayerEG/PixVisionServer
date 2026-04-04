@@ -66,11 +66,4 @@ public class TokenWhitelistServiceImpl implements TokenWhitelistService {
             log.error("从白名单移除 Token 失败：{}", e.getMessage());
         }
     }
-    
-    @Override
-    public void removeAllByUserId(Integer userId) {
-        log.warn("当前数据结构不支持按用户 ID 批量移除 Token，该方法不执行任何操作");
-        // 注意：由于只存储了 token:whitelist:{token}，无法通过 userId 反查所有 token
-        // 如需此功能，需要改为双层结构或使用其他方案（如使用 jti 作为索引）
-    }
 }

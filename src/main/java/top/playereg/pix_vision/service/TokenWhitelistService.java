@@ -31,11 +31,4 @@ public interface TokenWhitelistService {
      * @param token JWT Token
      */
     void removeFromWhitelist(String token);
-    
-    /**
-     * 根据用户 ID 移除所有 Token（用于封禁、改密等场景）
-     * 
-     * @param userId 用户 ID
-     */
-    void removeAllByUserId(Integer userId);
 }

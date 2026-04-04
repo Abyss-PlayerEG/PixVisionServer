@@ -106,6 +106,11 @@ public class UserServiceImpl implements UserService {
         return userMapper.selectAllUserInfoByEmail(email);
     }
 
+    @Override
+    public User selectAllUserById(Integer userId) {
+        return userMapper.selectAllUserInfoById(userId);
+    }
+
     /**
      * 分页查询用户信息
      *
@@ -144,12 +149,13 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 用户密码修改
+     * 用户密码修改（通过邮箱）
      * @param email 用户的邮箱
      * @param oldPassword 用户的旧密码
      * @param newPassword 用户的新密码
+     * @return 影响行数
      * */
-    public Integer changeUserPassword( String email, String oldPassword, String newPassword ){
+    public Integer changeUserPasswordByEmail( String email, String oldPassword, String newPassword ){
         return userMapper.changeUserPassword(email, oldPassword, newPassword);
     }
 }

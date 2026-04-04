@@ -487,52 +487,119 @@ public class UserController {
 
 
     /**
-     * 用户密码修改
-     * @param email 用户的邮箱
-     * @param oldPassword 用户的旧密码
+     * 用户密码修改（登录后）
+     * @param request HTTP请求对象，用于从Token中获取用户信息
      * @param newPassword 用户的新密码
-     * @param vCode 验证码
+     * @param confirmPassword 再次输入的新密码
+     * @param vCode 邮箱验证码
      * */
     @PostMapping("/changepassword")
     @Operation(
-            summary = "用户密码修改"
+            summary = "用户密码修改（登录后）",
+            description = """
+                    # 用户密码修改（需要登录）
+                    
+                    ## 参数说明：
+                    - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+                    - newPassword: 新密码，字符串类型，必填
+                    - confirmPassword: 确认新密码，字符串类型，必填，需与新密码一致
+                    - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
+                    
+                    ## 返回说明：
+                    - **修改成功**：返回 **{"data": 1}** 和"修改成功"提示，同时当前 Token 失效
+                    - **验证码错误**：返回 **{"data": 0}** 和"验证码错误"提示
+                    - **新旧密码一致**：返回 **{"data": 0}** 和"新旧密码不能一致"提示
+                    - **修改失败**：返回 **{"data": 0}** 和"修改失败"提示
+                    
+                    ## 业务逻辑：
+                    1. 从请求的 Token 中提取用户 ID
+                    2. 根据用户 ID 从数据库查询用户信息（邮箱等）
+                    3. 校验验证码格式和正确性
+                    4. 校验两次输入的新密码是否一致
+                    5. 校验新密码与旧密码是否相同
+                    6. 对密码进行 SHA-256 哈希加密
+                    7. 更新数据库中的密码
+                    8. 将当前 Token 从白名单移除（当前设备需要重新登录）
+                    9. 返回修改结果
+                    
+                    ## 注意事项：
+                    - **必须携带有效的 Token** 才能调用此接口
+                    - 验证码发送到用户的注册邮箱
+                    - 密码修改成功后，**当前 Token 会被移除**，需要重新登录
+                    - 建议使用强密码组合（大小写字母 + 数字 + 特殊字符）
+                    - 验证码有效期由 Redis 配置决定（默认 5 分钟）
+                    """
     )
     public ResponsePojo<Integer> changeUserPassword(
-            @Parameter(description = "邮箱", required = true, example = "xxx@qq.com") @RequestParam String email,
-            @Parameter(description = "旧密码", required = true, example = "123456") @RequestParam String oldPassword,
+            @Parameter(description = "HTTP 请求对象，用于从 Token 中获取用户信息", required = true) HttpServletRequest request,
             @Parameter(description = "新密码", required = true, example = "123457") @RequestParam String newPassword,
-            @Parameter(description = "验证码", required = true, example = "ABCDEF") @RequestParam String vCode
+            @Parameter(description = "确认新密码", required = true, example = "123457") @RequestParam String confirmPassword,
+            @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
-        // 基础数据校验
-        if (!RegexUtils.isEmail(email)) {
-            return ResponsePojo.error(0, "邮箱格式错误");
+        // 从 Token 中获取用户 ID
+        Integer userId = (Integer) request.getAttribute("userId");
+        if (userId == null) {
+            log.error("无法从 Token 中获取用户 ID");
+            return ResponsePojo.error(0, "未授权访问：Token 无效");
         }
-
+        
+        // 根据用户 ID 查询用户信息
+        User user = userService.selectAllUserById(userId);
+        if (user == null) {
+            log.error("用户不存在，用户 ID: {}", userId);
+            return ResponsePojo.error(0, "用户不存在");
+        }
+        
+        String email = user.getEmail();
+        String oldPasswordHashed = user.getPassword();
+        
+        // 基础数据校验
         if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(0, "验证码格式错误");
         }
-
-        //密码加密
-        String oldPasswordHashed = StrSwitchUtils.PasswdToHash256(oldPassword);
+        
+        // 验证码验证
+        boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
+        if (!isTrue) {
+            return ResponsePojo.error(0, "验证码错误");
+        }
+        
+        // 校验两次输入的新密码是否一致
+        if (!newPassword.equals(confirmPassword)) {
+            return ResponsePojo.error(0, "两次输入的密码不一致");
+        }
+        
+        // 密码加密
         String newPasswordHashed = StrSwitchUtils.PasswdToHash256(newPassword);
-
+        
+        // 校验新旧密码是否一致
         if (oldPasswordHashed.equals(newPasswordHashed)) {
             return ResponsePojo.error(0, "新旧密码不能一致");
         }
-
-        //用户
-        User user = userService.selectAllUserByEmail(email);
-
-        if( !user.getPassword().equals(oldPasswordHashed) ){
-            return ResponsePojo.error(0, "密码错误");
+        
+        // 修改密码
+        Integer res = userService.changeUserPasswordByEmail(email, oldPasswordHashed, newPasswordHashed);
+        
+        if (res != 1) {
+            return ResponsePojo.error(0, "修改失败");
         }
-
-        Integer res = userService.changeUserPassword( email, oldPasswordHashed, newPasswordHashed );
-
-        if( res != 1 ){
-            return ResponsePojo.success(0, "修改失败");
+        
+        // 从请求中获取 Token 并移除
+        String token = request.getParameter("token");
+        if (token == null || token.isEmpty()) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            } else {
+                token = authHeader;
+            }
         }
-
+        
+        if (token != null && !token.isEmpty()) {
+            tokenWhitelistService.removeFromWhitelist(token);
+            log.info("用户密码修改成功，已移除当前 Token，用户 ID: {}", userId);
+        }
+        
         return ResponsePojo.success(1, "修改成功");
     }
 }

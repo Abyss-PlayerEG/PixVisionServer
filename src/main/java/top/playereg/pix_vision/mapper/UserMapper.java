@@ -41,6 +41,14 @@ public interface UserMapper extends BaseMapper<User> {
     User selectAllUserInfoByEmail(String email);
 
     /**
+     * 根据用户 ID 查询用户 - 全字段查询
+     *
+     * @param userId 用户 ID
+     * @return 用户实体
+     */
+    User selectAllUserInfoById(Integer userId);
+
+    /**
      * 分页查询用户信息 - 支持用户名、UUID、邮箱查询
      * @param page 分页参数
      * @param user 查询条件对象（可选属性：username, user_uuid, email）
