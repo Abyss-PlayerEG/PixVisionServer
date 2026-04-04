@@ -70,11 +70,13 @@
 
 
 
-        <!-- Spring Boot Thymeleaf Starter -->
+        <!-- Spring Boot Thymeleaf Starter (已注释 - 当前未使用) -->
+        <!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
+        -->
 
         <!-- Markdown 解析支持 -->
         <dependency>
