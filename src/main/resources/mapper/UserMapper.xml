@@ -85,4 +85,13 @@
             AND user_uuid = #{user.user_uuid}
         </if>
     </select>
+
+    <!-- 修改密码 -->
+    <update id="changeUserPassword">
+        UPDATE tb_user
+        SET password = #{newPassword}
+        WHERE email = #{email}
+          AND password = #{oldPassword}   -- （如果坚持在SQL比对的话）
+          AND is_delete = 0
+    </update>
 </mapper>
