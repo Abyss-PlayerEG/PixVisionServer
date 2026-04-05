@@ -176,53 +176,47 @@ mysql -u root -p < *.sql
 # 优先级: 最高（会覆盖项目内预设配置）
 # ============================================
 
+### 服务端口
+server:
+  port: 9090
+
 # 数据库配置
 spring:
+  # 数据源配置
   datasource:
-    url: jdbc:mysql://localhost:3306/db_pix_vision?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4
-    username: your_username        # 修改为你的数据库用户名
-    password: your_password        # 修改为你的数据库密码
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
+    url: jdbc:mysql://localhost:3306/db_pix_vision?allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: 123456
   # Redis 配置
   data:
     redis:
-      host: localhost              # Redis 主机地址
-      port: 6379                   # Redis 端口
-      password:                    # Redis 密码（如果没有则留空）
-      database: 0                  # 使用的数据库索引
-      timeout: 3000ms              # 连接超时时间
-
-# 邮件配置
-mail:
-  host: smtp.example.com           # SMTP 服务器地址
-  port: 465                        # SMTP 端口（SSL）
-  username: your_email@example.com # 邮箱地址
-  password: your_smtp_password     # SMTP 授权码（不是登录密码）
-  from: your_email@example.com     # 发件人地址
-  properties:
-    mail:
-      smtp:
-        auth: true
-        ssl:
-          enable: true             # 启用 SSL
-        starttls:
-          enable: false
-
-# 应用配置
-workspace-name: .pix_vision        # 工作空间目录名称（不建议修改）
-server:
-  port: 9090                       # 服务端口
+      host: localhost
+      port: 6379
+      timeout: 5000
+      database: 0
+      password: 123456
+      username: root
+  # 邮件配置
+  mail:
+    host: smtp.qq.com               # SMTP服务器地址
+    port: 465                       # 端口
+    from: your-email@example.com    # 发件人
+    username: server_username       # 用户名
+    password: your_auth_code        # 授权码
+    protocol: smtp                  # 协议
+    default-encoding: UTF-8         # 编码
+    ssl-enable: false               # 不直接建立 SSL 连接
+    starttls-enable: false          # 启用 STARTTLS 升级
 ```
 
 **常见邮件服务商配置参考：**
 
-| 服务商 | SMTP 主机 | 端口 | SSL |
-|--------|----------|------|-----|
-| QQ 邮箱 | smtp.qq.com | 465 | ✅ |
-| 163 邮箱 | smtp.163.com | 465 | ✅ |
-| Gmail | smtp.gmail.com | 587 | ❌ (使用 STARTTLS) |
-| Outlook | smtp-mail.outlook.com | 587 | ❌ (使用 STARTTLS) |
+| 服务商 | SMTP 主机 | 端口 | SSL | tls |
+|--------|----------|------|----| ----|
+| QQ 邮箱 | smtp.qq.com | 465 | ✅ | ❌ |
+| 163 邮箱 | smtp.163.com | 465 | ✅ | ❌ |
+| Gmail | smtp.gmail.com | 587 | ❌ | ✅ |
+| Outlook | smtp-mail.outlook.com | 587 | ❌ | ✅ |
 
 > 💡 **提示**：
 > - QQ/163 邮箱需要使用**授权码**，不是登录密码
@@ -304,13 +298,28 @@ mvn spring-boot:run
 ```json
 // 登录成功后返回
 {
-  "code": 200,
   "data": {
-    "userId": 1,
-    "username": "testuser",
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "user_id": 1,
+    "user_uuid": "16字节二进制uuid",
+    "username": "li_hua",
+    "password": "哈希256加密密码",
+    "nickname": "李华",
+    "user_role": 11,
+    "avatar_url": "/avatar/uuid.png",
+    "email": "lihua@example.com",
+    "is_delete": false,
+    "status": 10,
+    "update_time": "2026-03-29T12:00:00.003Z",
+    "update_user": 0,
+    "create_time": "2026-03-29T12:00:00.003Z",
+    "create_user": 0,
+    "avatar_base64": "我是 base64",
+    "string_user_uuid": "字符串类型uuid",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
   },
-  "message": "登录成功"
+  "message": "",
+  "recode": 0,
+  "status": ""
 }
 ```
 
@@ -524,7 +533,7 @@ graph TD;
 - **类名**：大驼峰（PascalCase），如 `UserController`
 - **方法名**：小驼峰（camelCase），如 `getUserById`
 - **常量**：全大写+下划线，如 `TOKEN_EXPIRE_TIME`
-- **变量**：小驼峰，如 `userName`
+- **变量**：全小写+下划线，如 `user_id`
 
 #### 注释规范
 - 所有 `public` 方法必须有 JavaDoc
@@ -887,27 +896,41 @@ springdoc:
      port: 9091  # 改为其他端口
    ```
 
----
+[//]: # (---)
 
-## 📄 许可证
+[//]: # ()
+[//]: # (## 📄 许可证)
 
-本项目采用 [MIT License](LICENSE) 开源协议
+[//]: # ()
+[//]: # (本项目采用 [MIT License]&#40;LICENSE&#41; 开源协议)
 
-```text
-MIT License
+[//]: # ()
+[//]: # (```text)
 
-Copyright (c) 2024 PlayerEG
+[//]: # (MIT License)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+[//]: # ()
+[//]: # (Copyright &#40;c&#41; 2024 PlayerEG)
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-```
+[//]: # ()
+[//]: # (Permission is hereby granted, free of charge, to any person obtaining a copy)
+
+[//]: # (of this software and associated documentation files &#40;the "Software"&#41;, to deal)
+
+[//]: # (in the Software without restriction, including without limitation the rights)
+
+[//]: # (to use, copy, modify, merge, publish, distribute, sublicense, and/or sell)
+
+[//]: # (copies of the Software, and to permit persons to whom the Software is)
+
+[//]: # (furnished to do so, subject to the following conditions:)
+
+[//]: # ()
+[//]: # (The above copyright notice and this permission notice shall be included in all)
+
+[//]: # (copies or substantial portions of the Software.)
+
+[//]: # (```)
 
 ---
 
@@ -915,11 +938,11 @@ copies or substantial portions of the Software.
 
 **PlayerEG**
 
-- 📧 Email: playereg@example.com
-- 🌐 GitHub: [@PlayerEG](https://github.com/PlayerEG)
+- 📧 Email: gaster@vip.playereg.top
+- 🌐 GitHub: [@PlayerEG](https://github.com/Ender-g)
 
 **贡献者：**
-- blue_sky_ks - RSA 加密工具优化
+- blue_sky_ks
 
 ---
 
@@ -933,13 +956,17 @@ copies or substantial portions of the Software.
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 开启 Pull Request
 
----
+[//]: # (---)
 
-## 📮 联系方式
+[//]: # ()
+[//]: # (## 📮 联系方式)
 
-- 🐛 **问题反馈**：[GitHub Issues](https://github.com/PlayerEG/PixVisionServer/issues)
-- 💬 **讨论交流**：[GitHub Discussions](https://github.com/PlayerEG/PixVisionServer/discussions)
-- 📧 **邮件联系**：playereg@example.com
+[//]: # ()
+[//]: # (- 🐛 **问题反馈**：[GitHub Issues]&#40;https://github.com/PlayerEG/PixVisionServer/issues&#41;)
+
+[//]: # (- 💬 **讨论交流**：[GitHub Discussions]&#40;https://github.com/PlayerEG/PixVisionServer/discussions&#41;)
+
+[//]: # (- 📧 **邮件联系**：playereg@example.com)
 
 ---
 

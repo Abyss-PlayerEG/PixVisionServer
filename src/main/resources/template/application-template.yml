@@ -1,16 +1,16 @@
 ## MuYing服务配置文件
-#
+
 #### 服务端口
 #server:
 #    port: 9090
-#
+
 #### 数据库配置
 #spring:
-#    datasource:
+#    datasource: # 数据库连接信息
 #        url: jdbc:mysql://localhost:3306/db_pix_vision?allowPublicKeyRetrieval=true&useSSL=false
 #        username: root
 #        password: 123456
-#    data:
+#    data: # 数据源配置
 #        redis:
 #            host: localhost
 #            port: 6379
@@ -18,7 +18,7 @@
 #            database: 0
 #            password: 123456
 #            username: root
-#    mail:
+#    mail: # 邮件配置
 #        host: smtp.qq.com               # SMTP服务器地址
 #        port: 465                       # 端口
 #        from: your-email@example.com    # 发件人
@@ -28,22 +28,22 @@
 #        default-encoding: UTF-8         # 编码
 #        ssl-enable: false               # 不直接建立 SSL 连接
 #        starttls-enable: false          # 启用 STARTTLS 升级
-#
+
 #### SpringDoc文档配置项
 #springdoc:
 #    enabled: off # 启用 API 文档（生产环境设为 off，开发环境设为 on）
-#
+
 #### SpringBoot日志配置项
 #logging:
 #    level:
 #        root: info  # 日志级别
-#
+
 #### MuYing日志开关
 #mu-ying-logging:
 #    open-highlight-color: on # 是否启用颜色(on为启用, off为关闭)
-#
+
 #### 加密选项
-#mu-ying-secure:
+#mu-ying-secure: # 加密选项
 #    jwt-secret: 1c8b7d76b91a4f7ade75943be4c6b36a8be73191d3fef702f2838323c4928d28 # JWT 密钥可使用 open-ssl 生成
 #    salt: www.playereg.top # 盐值
 #    num2str: [
