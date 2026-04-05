@@ -2,11 +2,11 @@ package top.playereg.pix_vision.util;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
+import cn.hutool.crypto.symmetric.AES;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.playereg.pix_vision.config.FilePathConfig;
@@ -14,16 +14,25 @@ import top.playereg.pix_vision.config.FilePathConfig;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * RSA加解密工具类
+ * RSA加解密工具类（支持混合加密）
  * <p>
  * 密钥存储位置：${user.home}/.pix_vision/key/rsa/
  * - public.key: RSA公钥（Base64编码）
  * - private.key: RSA私钥（Base64编码）
+ * <p>
+ * 加密策略：<p>
+ * - 小数据（&lt; 200字节）：直接使用 RSA 加密<p>
+ * - 大数据（≥ 200字节）或二进制数据：使用 AES + RSA 混合加密<p>
+ *   1. 生成随机 AES 密钥<p>
+ *   2. 用 AES 加密原始数据<p>
+ *   3. 用 RSA 加密 AES 密钥<p>
+ *   4. 返回格式：RSA加密的AES密钥 + "::" + AES加密的数据（均Base64编码）<p>
  *
  * @author PlayerEG
  */
@@ -35,6 +44,12 @@ public class RSACipher {
     // 密钥文件名
     private static final String PUBLIC_KEY_FILE = "public.key";
     private static final String PRIVATE_KEY_FILE = "private.key";
+
+    // 混合加密分隔符
+    private static final String HYBRID_SEPARATOR = "::";
+
+    // RSA 单次加密最大数据长度（2048位密钥 - 填充开销）
+    private static final int RSA_MAX_DATA_SIZE = 200;
 
     // 密钥内容（运行时从文件加载）
     private static String publicKeyBase64;
@@ -96,9 +111,13 @@ public class RSACipher {
     }
 
     /**
-     * 公钥加密
+     * 公钥加密（自动选择加密策略）
+     * <p>
+     * 根据数据大小自动选择：
+     * - 小数据：直接 RSA 加密
+     * - 大数据：AES + RSA 混合加密
      *
-     * @param plainText 明文
+     * @param plainText 明文字符串
      * @return Base64 编码的密文
      * @author blue_sky_ks
      */
@@ -106,26 +125,46 @@ public class RSACipher {
         if (StrUtil.isBlank(plainText)) {
             return "";
         }
+        return encryptToBase64(plainText.getBytes(StandardCharsets.UTF_8));
+    }
 
-        // 只使用公钥
-        RSA rsa = new RSA(null, publicKeyBase64);
+    /**
+     * 公钥加密字节数组（支持任意二进制数据）
+     * <p>
+     * 根据数据大小自动选择：
+     * - 小数据（&lt; 200字节）：直接 RSA 加密
+     * - 大数据（≥ 200字节）：AES + RSA 混合加密
+     *
+     * @param data 明文数据字节数组
+     * @return Base64 编码的密文
+     * @author blue_sky_ks
+     */
+    public static String encryptToBase64(byte[] data) {
+        if (data == null || data.length == 0) {
+            return "";
+        }
 
         try {
-            byte[] data = StrUtil.bytes(plainText, CharsetUtil.CHARSET_UTF_8);
-            byte[] encrypted = rsa.encrypt(data, KeyType.PublicKey);
+            // 小数据直接使用 RSA 加密
+            if (data.length < RSA_MAX_DATA_SIZE) {
+                RSA rsa = new RSA(null, publicKeyBase64);
+                byte[] encrypted = rsa.encrypt(data, KeyType.PublicKey);
+                return "RSA:" + Base64.encode(encrypted);
+            }
 
-            return Base64.encode(encrypted);
+            // 大数据使用 AES + RSA 混合加密
+            return hybridEncrypt(data);
         } catch (Exception e) {
-            log.error("RSA 公钥加密失败", e);
-            throw new RuntimeException("RSA 公钥加密失败", e);
+            log.error("RSA 加密失败", e);
+            throw new RuntimeException("RSA 加密失败", e);
         }
     }
 
     /**
-     * 私钥解密
+     * 私钥解密（自动识别加密策略）
      *
      * @param encryptedBase64 Base64 编码的密文
-     * @return 解密后的明文
+     * @return 解密后的明文字符串
      * @author blue_sky_ks
      */
     public static String decryptToString(String encryptedBase64) {
@@ -133,16 +172,122 @@ public class RSACipher {
             return null;
         }
 
+        byte[] decrypted = decryptToBytes(encryptedBase64);
+        if (decrypted == null) {
+            return null;
+        }
+
+        return new String(decrypted, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 私钥解密为字节数组（支持任意二进制数据）
+     * <p>
+     * 自动识别加密策略：
+     * - RSA: 前缀标识，直接 RSA 解密
+     * - HYBRID: 包含分隔符，AES + RSA 混合解密
+     *
+     * @param encryptedBase64 Base64 编码的密文
+     * @return 解密后的字节数组
+     * @author blue_sky_ks
+     */
+    public static byte[] decryptToBytes(String encryptedBase64) {
+        if (StrUtil.isBlank(encryptedBase64)) {
+            return null;
+        }
+
         try {
-            // 只传入私钥
-            RSA rsa = new RSA(privateKeyBase64, null);
-
-            // decryptStr 默认会先做 Base64.decode，然后用私钥解密
-            return rsa.decryptStr(encryptedBase64, KeyType.PrivateKey);
-
+            // 判断加密策略
+            if (encryptedBase64.startsWith("RSA:")) {
+                // 纯 RSA 加密
+                String actualEncrypted = encryptedBase64.substring(4);
+                RSA rsa = new RSA(privateKeyBase64, null);
+                return rsa.decrypt(Base64.decode(actualEncrypted), KeyType.PrivateKey);
+            } else if (encryptedBase64.contains(HYBRID_SEPARATOR)) {
+                // 混合加密
+                return hybridDecrypt(encryptedBase64);
+            } else {
+                // 兼容旧格式（无标识符的纯 RSA 加密）
+                RSA rsa = new RSA(privateKeyBase64, null);
+                return rsa.decrypt(Base64.decode(encryptedBase64), KeyType.PrivateKey);
+            }
         } catch (Exception e) {
-            log.error("RSA 私钥解密失败", e);
-            throw new RuntimeException("RSA 私钥解密失败", e);
+            log.error("RSA 解密失败", e);
+            throw new RuntimeException("RSA 解密失败", e);
+        }
+    }
+
+    /**
+     * 混合加密：AES + RSA
+     * <p>
+     * 1. 生成随机 AES 密钥
+     * 2. 用 AES 加密原始数据
+     * 3. 用 RSA 加密 AES 密钥
+     * 4. 返回格式：RSA(AES密钥) + "::" + AES(数据)
+     *
+     * @param data 原始数据
+     * @return 混合加密后的 Base64 字符串
+     * @author blue_sky_ks
+     */
+    private static String hybridEncrypt(byte[] data) {
+        try {
+            // 1. 生成随机 AES 密钥（256位）
+            AES aes = SecureUtil.aes();
+            byte[] aesKey = aes.getSecretKey().getEncoded();
+
+            // 2. 用 AES 加密数据
+            byte[] encryptedData = aes.encrypt(data);
+
+            // 3. 用 RSA 加密 AES 密钥
+            RSA rsa = new RSA(null, publicKeyBase64);
+            byte[] encryptedAesKey = rsa.encrypt(aesKey, KeyType.PublicKey);
+
+            // 4. 组合结果：RSA加密的AES密钥 + "::" + AES加密的数据
+            String result = Base64.encode(encryptedAesKey) + HYBRID_SEPARATOR + Base64.encode(encryptedData);
+            return "HYBRID:" + result;
+        } catch (Exception e) {
+            log.error("混合加密失败", e);
+            throw new RuntimeException("混合加密失败", e);
+        }
+    }
+
+    /**
+     * 混合解密：RSA + AES
+     * <p>
+     * 1. 分离 RSA 加密的 AES 密钥和 AES 加密的数据
+     * 2. 用 RSA 私钥解密得到 AES 密钥
+     * 3. 用 AES 密钥解密数据
+     *
+     * @param encryptedBase64 混合加密的字符串
+     * @return 解密后的原始数据
+     * @author blue_sky_ks
+     */
+    private static byte[] hybridDecrypt(String encryptedBase64) {
+        try {
+            // 移除前缀
+            String actualEncrypted = encryptedBase64.startsWith("HYBRID:") 
+                    ? encryptedBase64.substring(7) 
+                    : encryptedBase64;
+
+            // 1. 分离两部分
+            String[] parts = actualEncrypted.split(HYBRID_SEPARATOR, 2);
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("混合加密数据格式错误");
+            }
+
+            byte[] encryptedAesKey = Base64.decode(parts[0]);
+            byte[] encryptedData = Base64.decode(parts[1]);
+
+            // 2. 用 RSA 私钥解密 AES 密钥
+            RSA rsa = new RSA(privateKeyBase64, null);
+            byte[] aesKey = rsa.decrypt(encryptedAesKey, KeyType.PrivateKey);
+
+            // 3. 用 AES 密钥解密数据
+            AES aes = new AES(aesKey);
+            return aes.decrypt(encryptedData);
+        } catch (Exception e) {
+            log.error("混合解密失败", e);
+            throw new RuntimeException("混合解密失败", e);
         }
     }
 
