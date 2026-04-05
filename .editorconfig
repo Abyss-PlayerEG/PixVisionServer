@@ -1,0 +1,197 @@
+# EditorConfig - 统一代码风格配置
+# https://editorconfig.org/
+
+# 顶级配置文件，停止向上搜索
+root = true
+
+# ============================================
+# 通用配置（适用于所有文件）
+# ============================================
+[*]
+# 字符编码
+charset = utf-8
+# 缩进方式：space（空格）或 tab（制表符）
+indent_style = space
+# 缩进大小：2 或 4 个空格
+indent_size = 4
+# 行尾换行符：lf（Unix）、crlf（Windows）、cr（Mac）
+end_of_line = lf
+# 文件末尾插入空行
+insert_final_newline = true
+# 删除行尾空白字符
+trim_trailing_whitespace = true
+
+# ============================================
+# Java 源文件
+# ============================================
+[*.java]
+# Java 使用 4 个空格缩进
+indent_size = 4
+# 最大行长度
+max_line_length = 120
+# JavaDoc 注释对齐
+ij_java_doc_keep_blank_lines_in_code = 1
+ij_java_doc_keep_blank_lines = 1
+
+# ============================================
+# YAML 配置文件
+# ============================================
+[*.{yml,yaml}]
+# YAML 使用 2 个空格缩进（Spring Boot 标准）
+indent_size = 2
+# YAML 文件行长度限制
+max_line_length = off
+
+# ============================================
+# XML 文件（MyBatis Mapper、POM 等）
+# ============================================
+[*.xml]
+# XML 使用 4 个空格缩进
+indent_size = 4
+# POM 文件可以放宽行长度限制
+max_line_length = 120
+
+# ============================================
+# Markdown 文档
+# ============================================
+[*.md]
+# Markdown 使用 2 个空格缩进
+indent_size = 2
+# 不强制删除行尾空格（用于 Markdown 换行）
+trim_trailing_whitespace = false
+# 最大行长度（便于阅读）
+max_line_length = 120
+
+# ============================================
+# Properties 配置文件
+# ============================================
+[*.properties]
+# Properties 文件使用 2 个空格缩进
+indent_size = 2
+# 不删除行尾空格（某些 properties 值可能需要）
+trim_trailing_whitespace = false
+
+# ============================================
+# SQL 文件
+# ============================================
+[*.sql]
+# SQL 使用 4 个空格缩进
+indent_size = 4
+# SQL 关键字大写
+ij_sql_keyword_case = upper
+# 最大行长度
+max_line_length = 120
+
+# ============================================
+# Shell 脚本
+# ============================================
+[*.{sh,bash,zsh}]
+# Shell 脚本使用 2 个空格缩进
+indent_size = 2
+# Unix 行尾
+end_of_line = lf
+# 保留执行权限相关的格式
+trim_trailing_whitespace = true
+
+# ============================================
+# JSON 文件
+# ============================================
+[*.json]
+# JSON 使用 2 个空格缩进
+indent_size = 2
+# 最大行长度
+max_line_length = 120
+
+# ============================================
+# HTML 文件
+# ============================================
+[*.html]
+# HTML 使用 2 个空格缩进
+indent_size = 2
+# 最大行长度
+max_line_length = 120
+
+# ============================================
+# CSS/SCSS 样式文件
+# ============================================
+[*.{css,scss,sass}]
+# CSS 使用 2 个空格缩进
+indent_size = 2
+# 最大行长度
+max_line_length = 120
+
+# ============================================
+# JavaScript/TypeScript 文件
+# ============================================
+[*.{js,ts,jsx,tsx}]
+# JS/TS 使用 2 个空格缩进
+indent_size = 2
+# 最大行长度
+max_line_length = 120
+
+# ============================================
+# Git 相关文件
+# ============================================
+[{.gitignore,.gitattributes,.editorconfig}]
+# 配置文件使用 2 个空格
+indent_size = 2
+# Unix 行尾
+end_of_line = lf
+
+# ============================================
+# Maven Wrapper
+# ============================================
+[mvnw]
+# 保持原始格式
+indent_style = tab
+end_of_line = lf
+
+# ============================================
+# IDE 特定配置（IntelliJ IDEA）
+# ============================================
+# 以下配置需要 IntelliJ IDEA EditorConfig 插件支持
+
+# Java 导入排序
+[*.{java}]
+# 导入分组间距
+ij_java_imports_layout = *,|,javax.,java.,|,$*
+# 静态导入在普通导入之后
+ij_java_import_layout_static_imports_separately = true
+
+# Java 代码风格
+[*.{java}]
+# 大括号样式：Java 标准（左括号不换行）
+ij_java_brace_style = end_of_line
+# 控制语句大括号强制使用
+ij_java_keep_control_statement_braces_on_one_line = false
+# 方法大括号强制使用
+ij_java_keep_simple_methods_on_one_line = false
+
+# 空格规则
+[*.{java}]
+# 运算符周围添加空格
+ij_java_space_around_operators = true
+# 逗号后添加空格
+ij_java_space_after_comma = true
+# 类型转换括号内不加空格
+ij_java_space_within_cast_parentheses = false
+
+# 空行规则
+[*.{java}]
+# 方法之间保持一个空行
+ij_java_keep_blank_lines_before_rbrace = 1
+# 类成员之间保持一个空行
+ij_java_blank_lines_around_class = 1
+ij_java_blank_lines_around_method = 1
+
+# ============================================
+# 排除的文件和目录
+# ============================================
+# 以下文件不应用 EditorConfig 规则
+[{target,build,node_modules,.idea,.vscode}/**]
+# 不对生成的文件和 IDE 配置应用规则
+unset = indent_style
+unset = indent_size
+unset = end_of_line
+unset = insert_final_newline
+unset = trim_trailing_whitespace
