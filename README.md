@@ -1,6 +1,6 @@
 # PixVision Server
 
-> 像素视觉后端服务 - 数字艺术/图片平台后端（类似 Pixiv 风格）
+> 像素视觉后端服务 - 数字艺术/图片平台后端
 
 [![Java](https://img.shields.io/badge/Java-17-blue.svg)](https://openjdk.java.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
