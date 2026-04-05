@@ -662,7 +662,7 @@ log.error("错误信息：数据库连接失败", exception);
 1. **配置数据库**：修改 `application.yml` 中的数据库连接信息
 2. **配置 Redis**：修改 Redis 连接信息
 3. **配置邮件**：配置 SMTP 服务器信息
-4. **初始化数据库**：执行 `sql/db_pix_vision-V1.1.sql.sql`
+4. **初始化数据库**：执行 `sql/db_pix_vision-V1.1.sql`
 5. **启动应用**：运行 `PixVisionApplication.main()`
 
 ## 访问地址

@@ -76,6 +76,25 @@ public class CreateFile {
 
         // 默认头像
         copyDefaultAvatars();
+
+        // RSA 密钥目录说明（如果目录存在）
+        String rsaKeyDir = FilePathConfig.KeyPath + "/rsa";
+        if (java.nio.file.Files.exists(java.nio.file.Paths.get(rsaKeyDir))) {
+            FilePathConfig.createTextFile(
+                    "RSA 密钥存储目录\n\n" +
+                    "该目录用于存放 RSA 密钥对文件：\n" +
+                    "- public.key:  RSA 公钥（Base64 编码）\n" +
+                    "- private.key: RSA 私钥（Base64 编码）\n" +
+                    "\n" +
+                    "注意事项：\n" +
+                    "1. 私钥文件包含敏感信息，请妥善保管，不要泄露\n" +
+                    "2. 更换密钥后，使用旧密钥加密的数据将无法解密\n" +
+                    "3. 建议定期备份密钥文件\n" +
+                    "4. .bak 文件为密钥更换前的备份文件",
+                    rsaKeyDir,
+                    "目录说明.txt"
+            );
+        }
     }
 
     /**
