@@ -100,7 +100,7 @@ public class MailController {
             @Parameter(
                 description = "邮件内容类型",
                 required = true,
-                schema = @Schema(allowableValues = {"注册", "登录", "改密"}, example = "注册")
+                schema = @Schema(allowableValues = {"注册", "登录", "改密", "报错传参"}, example = "注册")
             ) @RequestParam String emailText
     ) {
         if (username != null && !username.isEmpty()){
