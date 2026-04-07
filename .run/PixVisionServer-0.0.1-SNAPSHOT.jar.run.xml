@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PixVisionServer-0.0.1-SNAPSHOT.jar" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/target/PixVisionServer-0.0.1-SNAPSHOT.jar" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2" />
+  </configuration>
+</component>

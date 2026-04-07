@@ -7,12 +7,12 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.crypto.symmetric.AES;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.playereg.pix_vision.config.FilePathConfig;
-
-import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import top.playereg.pix_vision.config.FilePathConfig;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -55,6 +55,9 @@ public class RSACipher {
     private static String publicKeyBase64;
     private static String privateKeyBase64;
 
+    @Autowired
+    private FilePathConfig filePathConfig;
+
     /**
      * 初始化：检查并加载密钥，如不存在则生成
      *
@@ -74,7 +77,13 @@ public class RSACipher {
      *
      * @author PlayerEG
      */
-    private static void loadOrGenerateKeys() {
+    private void loadOrGenerateKeys() {
+        // 确保 FilePathConfig 已初始化
+        if (FilePathConfig.KeyPath == null) {
+            log.error("FilePathConfig.KeyPath 未初始化，请检查 Bean 初始化顺序");
+            throw new IllegalStateException("FilePathConfig 未正确初始化");
+        }
+
         Path rsaDir = Paths.get(FilePathConfig.KeyPath, "rsa");
         Path publicKeyPath = rsaDir.resolve(PUBLIC_KEY_FILE);
         Path privateKeyPath = rsaDir.resolve(PRIVATE_KEY_FILE);
@@ -265,8 +274,8 @@ public class RSACipher {
     private static byte[] hybridDecrypt(String encryptedBase64) {
         try {
             // 移除前缀
-            String actualEncrypted = encryptedBase64.startsWith("HYBRID:") 
-                    ? encryptedBase64.substring(7) 
+            String actualEncrypted = encryptedBase64.startsWith("HYBRID:")
+                    ? encryptedBase64.substring(7)
                     : encryptedBase64;
 
             // 1. 分离两部分
@@ -320,8 +329,14 @@ public class RSACipher {
      * @return 新的密钥数组，[0] 为公钥，[1] 为私钥
      * @author PlayerEG
      */
-    public static String[] regenerateKeys() {
+    public String[] regenerateKeys() {
         try {
+            // 确保 FilePathConfig 已初始化
+            if (FilePathConfig.KeyPath == null) {
+                log.error("FilePathConfig.KeyPath 未初始化");
+                throw new IllegalStateException("FilePathConfig 未正确初始化");
+            }
+
             Path rsaDir = Paths.get(FilePathConfig.KeyPath, "rsa");
             Path publicKeyPath = rsaDir.resolve(PUBLIC_KEY_FILE);
             Path privateKeyPath = rsaDir.resolve(PRIVATE_KEY_FILE);
