@@ -66,11 +66,11 @@ public class UserServiceImpl implements UserService {
 
         user.setStatus(10);
         log.info("用户状态：{}", user.getStatus());
-        
+
         // 设置用户角色（默认为普通用户 11）
         user.setUser_role(11);
         log.info("用户角色：{}", user.getUser_role());
-        
+
         user.setIs_delete(false);
         log.info("用户删除状态：{}", user.getIs_delete());
 
@@ -128,7 +128,7 @@ public class UserServiceImpl implements UserService {
             String email
     ) {
         log.info("分页查询用户信息");
-        
+
         // 构建查询条件对象
         User queryUser = new User();
         if (username != null && !username.isEmpty()) {
@@ -143,7 +143,7 @@ public class UserServiceImpl implements UserService {
             queryUser.setEmail(email);
             log.info("查询条件 - 邮箱：{}", email);
         }
-        
+
         log.info("执行分页查询");
         return userMapper.selectPageUserInfo(page, queryUser);
     }
@@ -155,7 +155,52 @@ public class UserServiceImpl implements UserService {
      * @param newPassword 用户的新密码
      * @return 影响行数
      * */
-    public Integer changeUserPasswordByEmail( String email, String oldPassword, String newPassword ){
+    public Integer changeUserLoginPasswordByEmail(String email, String oldPassword, String newPassword ){
         return userMapper.changeUserPassword(email, oldPassword, newPassword);
+    }
+
+    /**
+     * 忘记密码 - 重置密码（无需登录）
+     * @param usernameOrEmail 用户名或邮箱
+     * @param newPassword 新密码
+     * @param confirmPassword 确认新密码
+     * @param vCode 邮箱验证码
+     * @return 是否成功
+     */
+    @Override
+    public Boolean resetPasswordByUsernameOrEmail(String usernameOrEmail, String newPassword, String confirmPassword, String vCode) {
+        log.info("忘记密码 - 开始重置密码，用户名或邮箱：{}", usernameOrEmail);
+
+        // 查询用户信息
+        User user;
+        if (usernameOrEmail.contains("@")) {
+            // 是邮箱
+            user = userMapper.selectAllUserInfoByEmail(usernameOrEmail);
+            log.info("通过邮箱查询用户：{}, 结果：{}", usernameOrEmail, user != null ? "找到" : "未找到");
+        } else {
+            // 是用户名
+            user = userMapper.selectAllUserInfoByUsername(usernameOrEmail);
+            log.info("通过用户名查询用户：{}, 结果：{}", usernameOrEmail, user != null ? "找到" : "未找到");
+        }
+
+        // 用户不存在
+        if (user == null) {
+            log.warn("忘记密码 - 用户不存在：{}", usernameOrEmail);
+            return false;
+        }
+
+        String email = user.getEmail();
+        log.info("忘记密码 - 找到用户，邮箱：{}", email);
+
+        // 更新密码（传入 null 作为 oldPassword，不验证旧密码）
+        int result = userMapper.changeUserPassword(email, null, newPassword);
+
+        if (result > 0) {
+            log.info("忘记密码 - 密码重置成功，邮箱：{}", email);
+            return true;
+        } else {
+            log.error("忘记密码 - 密码重置失败，邮箱：{}", email);
+            return false;
+        }
     }
 }

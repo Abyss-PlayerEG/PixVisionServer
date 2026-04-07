@@ -53,12 +53,12 @@ public class UserController {
             summary = "用户登录接口",
             description = """
                     # 用户登录
-                        
+
                     ## 参数说明：
                     - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填
                     - password: 登录密码，字符串类型，必填
                     - vCode: 邮箱验证码（6 位大写字母或数字），字符串类型，必填
-                        
+
                     ## 返回说明：
                     - **登录成功**：返回 **{"data": {UserLogin 对象}}**，包含用户信息和 JWT Token
                     - **用户名或邮箱格式错误**：返回 **{"data": null}** 和"用户名或邮箱格式错误"提示
@@ -67,7 +67,7 @@ public class UserController {
                     - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
                     - **用户名或密码错误**：返回 **{"data": null}** 和"用户名或密码错误"提示
                     - **账户异常**：返回 **{"data": null}** 和"账户已被禁用"提示
-                        
+
                     ## 业务逻辑：
                     1. 校验用户名格式、邮箱格式、验证码格式
                     2. 验证邮箱验证码是否正确（如提供用户名则先查询邮箱）
@@ -77,14 +77,14 @@ public class UserController {
                     6. 生成 JWT Token（有效期 7 天）
                     7. 将 Token 加入白名单
                     8. 返回用户信息和 Token
-                        
+
                     ## 注意事项：
                     - Token 有效期为 **7 天**
                     - Token 需要保存在客户端，后续请求需在 Header 中携带
                     - 建议使用 **HTTPS** 传输以保障安全
                     - 密码会自动进行 SHA-256 哈希加密处理后再比对
                     - 支持使用用户名**或**邮箱登录
-                        
+
                     ## Token 使用方式：
                     - Header 中添加：`Authorization: Bearer <token>`
                     - 或者 URL 参数：`?token=<token>`
@@ -204,16 +204,16 @@ public class UserController {
             summary = "用户登出接口",
             description = """
                     # 用户登出，将 Token 从白名单移除
-                    
+
                     ## 参数说明：
                     - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
-                    
+
                     ## 返回说明：
                     - **登出成功**：返回 **{"data": true}** 和"登出成功，Token 已被禁用"提示
                     - **Token 不存在**：返回 **{"data": false}** 和"Token 不存在"提示
                     - **Token 已失效**：返回 **{"data": false}** 和"Token 已失效"提示（Token 不在白名单中）
                     - **Token 已过期**：返回 **{"data": false}** 和"Token 已过期"提示
-                    
+
                     ## 业务逻辑：
                     1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
                     2. 检查 Token 是否在白名单中
@@ -221,7 +221,7 @@ public class UserController {
                     4. 将 Token 从白名单移除
                     5. 记录登出日志
                     6. 该 Token 将无法再访问任何受保护接口
-                    
+
                     ## 注意事项：
                     - Token 从白名单移除后，立即失效
                     - 需要携带有效的 Token 才能登出
@@ -235,12 +235,12 @@ public class UserController {
     ) {
         // 优先从 URL 参数获取 Token
         String token = request.getParameter("token");
-        
+
         // 如果 URL 参数中没有，尝试从 Header 获取
         if (token == null || token.isEmpty()) {
             String authHeader = request.getHeader("Authorization");
             log.debug("登出接口 - Authorization Header: {}", authHeader);
-            
+
             if (authHeader != null && !authHeader.isEmpty()) {
                 // 支持两种格式：带 Bearer 前缀 或 不带前缀
                 if (authHeader.startsWith("Bearer ")) {
@@ -250,7 +250,7 @@ public class UserController {
                 }
             }
         }
-        
+
         log.debug("登出接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
 
         if (token == null || token.isEmpty()) {
@@ -299,14 +299,14 @@ public class UserController {
             summary = "用户注册接口",
             description = """
                     # 用户注册
-                                    
+
                     ## 参数说明：
                     - username: 用户名，6-16 位，只允许字母、数字和下划线，字符串类型，必填
                     - password: 登录密码，字符串类型，必填，建议使用强密码组合
                     - nickname: 用户昵称，字符串类型，**可为空**，为空时自动生成随机昵称
                     - email: 邮箱地址，字符串类型，必填，用于接收验证码和后续找回密码
                     - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
-                                    
+
                     ## 返回说明：
                     - **注册成功**：返回 **{"data": {User 对象}}** 和"注册成功"提示
                     - **用户名格式错误**：返回 **{"data": null}** 和"用户名格式错误"提示
@@ -314,7 +314,7 @@ public class UserController {
                     - **验证码格式错误**：返回 **{"data": null}** 和"验证码格式错误"提示
                     - **验证码错误**：返回 **{"data": null}** 和"验证码错误"提示
                     - **注册失败**：返回 **{"data": null}** 和"注册失败：该用户名或邮箱已注册"提示
-                                    
+
                     ## 业务逻辑：
                     1. 校验用户名格式是否符合规范（6-16 位字母、数字、下划线）
                     2. 校验邮箱格式是否正确
@@ -324,7 +324,7 @@ public class UserController {
                     6. 对密码进行 SHA-256 哈希加密处理
                     7. 创建用户并保存到数据库
                     8. 返回用户信息和成功提示
-                                    
+
                     ## 注意事项：
                     - 昵称参数为**可选参数**，不传或为空时自动生成
                     - 验证码有效期由 Redis 配置决定（默认 5 分钟）
@@ -389,19 +389,19 @@ public class UserController {
             summary = "分页查询用户信息",
             description = """
                     # 分页查询用户信息
-                            
+
                     ## 参数说明：
                     - current: 当前页码，**从 1 开始**，Long 类型，必填，默认为 1
                     - size: 每页大小，Long 类型，必填，默认为 10，范围 1-100
                     - username: 用户名（可选），字符串类型，支持模糊查询
                     - uuid: 用户 UUID（可选），字符串类型，支持精确查询
                     - email: 邮箱（可选），字符串类型，支持模糊查询
-                            
+
                     ## 返回说明：
                     - **查询成功**：返回 **{"data": {IPage<User>对象}}**，包含用户列表和分页信息
                     - **参数错误**：返回 **{"data": null}** 和"页码或每页大小错误"提示
                     - **UUID 格式错误**：返回 **{"data": null}** 和"UUID 格式错误"提示
-                            
+
                     ## 返回数据结构：
                     ```json
                     {
@@ -416,14 +416,14 @@ public class UserController {
                       "message": "查询成功"
                     }
                     ```
-                            
+
                     ## 业务逻辑：
                     1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
                     2. 转换 UUID 字符串为 byte 数组（如提供）
                     3. 构建 MyBatis-Plus 分页对象
                     4. 根据条件查询用户信息（支持多条件组合）
                     5. 返回分页结果集
-                            
+
                     ## 注意事项：
                     - 所有查询条件均为**可选参数**，可不传
                     - 支持多个条件组合查询
@@ -480,7 +480,7 @@ public class UserController {
         for (User user : result.getRecords()) {
             user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
         }
-        
+
         log.info("分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}",
                 current, size, result.getTotal(), result.getRecords().size());
 
@@ -494,25 +494,28 @@ public class UserController {
      * @param newPassword 用户的新密码
      * @param confirmPassword 再次输入的新密码
      * @param vCode 邮箱验证码
+     * @return ResponsePojo<Boolean> 修改结果
+     * @throws Exception 修改失败
+     * @author blue_sky_ks
      * */
-    @PostMapping("/changepassword")
+    @PostMapping("/change-password")
     @Operation(
             summary = "用户密码修改（登录后）",
             description = """
                     # 用户密码修改（需要登录）
-                    
+
                     ## 参数说明：
                     - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
                     - newPassword: 新密码，字符串类型，必填
                     - confirmPassword: 确认新密码，字符串类型，必填，需与新密码一致
                     - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
-                    
+
                     ## 返回说明：
                     - **修改成功**：返回 **{"data": true}** 和"修改成功"提示，同时当前 Token 失效
                     - **验证码错误**：返回 **{"data": false}** 和"验证码错误"提示
                     - **新旧密码一致**：返回 **{"data": false}** 和"新旧密码不能一致"提示
                     - **修改失败**：返回 **{"data": false}** 和"修改失败"提示
-                    
+
                     ## 业务逻辑：
                     1. 从请求的 Token 中提取用户 ID
                     2. 根据用户 ID 从数据库查询用户信息（邮箱等）
@@ -523,7 +526,7 @@ public class UserController {
                     7. 更新数据库中的密码
                     8. 将当前 Token 从白名单移除（当前设备需要重新登录）
                     9. 返回修改结果
-                    
+
                     ## 注意事项：
                     - **必须携带有效的 Token** 才能调用此接口
                     - 验证码发送到用户的注册邮箱
@@ -544,48 +547,48 @@ public class UserController {
             log.error("无法从 Token 中获取用户 ID");
             return ResponsePojo.error(false, "未授权访问：Token 无效");
         }
-        
+
         // 根据用户 ID 查询用户信息
         User user = userService.selectAllUserById(userId);
         if (user == null) {
             log.error("用户不存在，用户 ID: {}", userId);
             return ResponsePojo.error(false, "用户不存在");
         }
-        
+
         String email = user.getEmail();
         String oldPasswordHashed = user.getPassword();
-        
+
         // 基础数据校验
         if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(false, "验证码格式错误");
         }
-        
+
         // 验证码验证
         boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
         if (!isTrue) {
             return ResponsePojo.error(false, "验证码错误");
         }
-        
+
         // 校验两次输入的新密码是否一致
         if (!newPassword.equals(confirmPassword)) {
             return ResponsePojo.error(false, "两次输入的密码不一致");
         }
-        
+
         // 密码加密
         String newPasswordHashed = StrSwitchUtils.PasswdToHash256(newPassword);
-        
+
         // 校验新旧密码是否一致
         if (oldPasswordHashed.equals(newPasswordHashed)) {
             return ResponsePojo.error(false, "新旧密码不能一致");
         }
-        
+
         // 修改密码
-        Integer res = userService.changeUserPasswordByEmail(email, oldPasswordHashed, newPasswordHashed);
-        
+        Integer res = userService.changeUserLoginPasswordByEmail(email, oldPasswordHashed, newPasswordHashed);
+
         if (res != 1) {
             return ResponsePojo.error(false, "修改失败");
         }
-        
+
         // 从请求中获取 Token 并移除
         String token = request.getParameter("token");
         if (token == null || token.isEmpty()) {
@@ -596,12 +599,114 @@ public class UserController {
                 token = authHeader;
             }
         }
-        
+
         if (token != null && !token.isEmpty()) {
             tokenWhitelistService.removeFromWhitelist(token);
             log.info("用户密码修改成功，已移除当前 Token，用户 ID: {}", userId);
         }
-        
+
         return ResponsePojo.success(true, "修改成功");
+    }
+
+    /**
+     * 忘记密码 - 重置密码接口
+     *
+     * @param usernameOrEmail 用户名或邮箱地址
+     * @param newPassword 新密码
+     * @param confirmPassword 确认新密码
+     * @param vCode 邮箱验证码
+     * @return 重置结果
+     * @author Playereg
+     */
+    @PostMapping("/forgot-password")
+    @Operation(
+            summary = "忘记密码 - 重置密码接口",
+            description = """
+                    # 忘记密码 - 重置密码（无需登录）
+
+                    ## 参数说明：
+                    - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填
+                    - newPassword: 新密码，字符串类型，必填，建议使用强密码组合
+                    - confirmPassword: 确认新密码，字符串类型，必填，需与新密码一致
+                    - vCode: 邮箱验证码（6 位大写字母或数字），字符串类型，必填
+
+                    ## 返回说明：
+                    - **重置成功**：返回 **{"data": true}** 和“密码重置成功”提示
+                    - **用户名或邮箱格式错误**：返回 **{"data": false}** 和“用户名或邮箱格式错误”提示
+                    - **验证码格式错误**：返回 **{"data": false}** 和“验证码格式错误”提示
+                    - **验证码错误**：返回 **{"data": false}** 和“验证码错误”提示
+                    - **用户不存在**：返回 **{"data": false}** 和“用户不存在”提示
+                    - **两次密码不一致**：返回 **{"data": false}** 和“两次输入的密码不一致”提示
+                    - **重置失败**：返回 **{"data": false}** 和“密码重置失败”提示
+
+                    ## 业务逻辑：
+                    1. 校验用户名格式、邮箱格式、验证码格式
+                    2. 验证邮箱验证码是否正确（如提供用户名则先查询邮箱）
+                    3. 根据用户名或邮箱查询用户信息
+                    4. 校验两次输入的新密码是否一致
+                    5. 对新密码进行 SHA-256 哈希加密处理
+                    6. 更新数据库中的密码（不验证旧密码）
+                    7. 返回重置结果
+
+                    ## 注意事项：
+                    - 此接口**无需登录**即可调用
+                    - 验证码发送到用户的注册邮箱
+                    - 密码会使用 **SHA-256** 进行加密存储
+                    - 支持使用用户名**或**邮箱找回密码
+                    - 建议使用强密码组合（大小写字母 + 数字 + 特殊字符）
+                    - 验证码有效期由 Redis 配置决定（默认 5 分钟）
+                    - 密码重置后，之前的 Token 仍然有效，建议用户重新登录
+                    """
+    )
+    public ResponsePojo<Boolean> forgotPassword(
+            @Parameter(description = "用户名或邮箱，6-16 位字母/数字/下划线或标准邮箱格式", required = true, example = "dev_user") @RequestParam String usernameOrEmail,
+            @Parameter(description = "新密码，会使用 SHA-256 加密存储", required = true, example = "123456789") @RequestParam String newPassword,
+            @Parameter(description = "确认新密码，需与新密码一致", required = true, example = "123456789") @RequestParam String confirmPassword,
+            @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
+    ) {
+        // 基础数据校验
+        if (!RegexUtils.isUsername(usernameOrEmail) && !RegexUtils.isEmail(usernameOrEmail)) {
+            return ResponsePojo.error(false, "用户名或邮箱格式错误");
+        }
+        if (!RegexUtils.isVCode(vCode, 6)) {
+            return ResponsePojo.error(false, "验证码格式错误");
+        }
+
+        // 验证码验证（使用邮箱作为 key）
+        String emailForVcode = RegexUtils.isEmail(usernameOrEmail) ? usernameOrEmail : null;
+        if (emailForVcode == null) {
+            // 如果输入的是用户名，需要先从数据库查询邮箱
+            User tempUser = userService.selectAllUserByUsername(usernameOrEmail);
+            if (tempUser != null) {
+                emailForVcode = tempUser.getEmail();
+            }
+        }
+
+        if (emailForVcode != null) {
+            boolean isTrue = verificationCodeServices.verificationCodeVerify(emailForVcode, vCode);
+            if (!isTrue) {
+                return ResponsePojo.error(false, "验证码错误");
+            }
+        }
+
+        // 校验两次输入的新密码是否一致
+        if (!newPassword.equals(confirmPassword)) {
+            return ResponsePojo.error(false, "两次输入的密码不一致");
+        }
+
+        // 对密码进行加密
+        String hashedPassword = StrSwitchUtils.PasswdToHash256(newPassword);
+        log.info("新密码哈希：{}", hashedPassword);
+
+        // 重置密码
+        Boolean result = userService.resetPasswordByUsernameOrEmail(usernameOrEmail, hashedPassword, hashedPassword, vCode);
+
+        if (!result) {
+            log.warn("密码重置失败，用户名或邮箱：{}", usernameOrEmail);
+            return ResponsePojo.error(false, "密码重置失败");
+        }
+
+        log.info("密码重置成功，用户名或邮箱：{}", usernameOrEmail);
+        return ResponsePojo.success(true, "密码重置成功");
     }
 }

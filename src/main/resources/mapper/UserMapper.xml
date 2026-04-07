@@ -104,12 +104,15 @@
         </if>
     </select>
 
-    <!-- 修改密码 -->
+    <!-- 修改密码 / 重置密码（通用） -->
     <update id="changeUserPassword">
         UPDATE tb_user
-        SET password = #{newPassword}
+        SET password = #{newPassword},
+            update_time = NOW()
         WHERE email = #{email}
-          AND password = #{oldPassword}   -- （如果坚持在SQL比对的话）
           AND is_delete = 0
+        <if test="oldPassword != null and oldPassword != ''">
+          AND password = #{oldPassword}
+        </if>
     </update>
 </mapper>

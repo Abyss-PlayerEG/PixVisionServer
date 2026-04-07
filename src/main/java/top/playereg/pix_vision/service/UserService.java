@@ -12,14 +12,14 @@ public interface UserService {
     );
     User selectAllUserByUsername(String username);
     User selectAllUserByEmail(String email);
-    
+
     /**
      * 根据用户 ID 查询用户信息
      * @param userId 用户 ID
      * @return 用户对象
      */
     User selectAllUserById(Integer userId);
-    
+
     /**
      * 分页查询用户信息
      * @param page 分页参数
@@ -42,5 +42,15 @@ public interface UserService {
      * @param newPassword 用户的新密码
      * @return 影响行数
      * */
-    Integer changeUserPasswordByEmail( String email, String oldPassword, String newPassword );
+    Integer changeUserLoginPasswordByEmail(String email, String oldPassword, String newPassword );
+
+    /**
+     * 忘记密码 - 重置密码（无需登录）
+     * @param usernameOrEmail 用户名或邮箱
+     * @param newPassword 新密码
+     * @param confirmPassword 确认新密码
+     * @param vCode 邮箱验证码
+     * @return 是否成功
+     */
+    Boolean resetPasswordByUsernameOrEmail(String usernameOrEmail, String newPassword, String confirmPassword, String vCode);
 }

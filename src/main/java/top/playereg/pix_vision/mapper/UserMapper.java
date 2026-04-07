@@ -60,10 +60,11 @@ public interface UserMapper extends BaseMapper<User> {
     );
 
     /**
-     * 用户密码修改
-     * @param email 用户的邮箱或密码
-     * @param oldPassword 用户的旧密码
+     * 用户密码修改 / 重置密码（通用）
+     * @param email 用户的邮箱
+     * @param oldPassword 用户的旧密码（可选，为空时不验证旧密码）
      * @param newPassword 用户的新密码
+     * @return 影响行数
      * */
     Integer changeUserPassword( String email, String oldPassword, String newPassword );
 }
