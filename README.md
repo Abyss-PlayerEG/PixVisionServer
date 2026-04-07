@@ -28,6 +28,7 @@
 ### 👥 用户系统
 - ✅ 用户注册与登录（用户名/邮箱 + 密码）
 - ✅ 密码修改（需邮箱二次验证）
+- ✅ 忘记密码（无需登录即可重置）
 - ✅ 用户信息管理
 - ✅ 分页用户查询
 - ✅ 多角色权限管理（普通用户/创作者/审核员/管理员）
@@ -274,7 +275,8 @@ mvn spring-boot:run
 | POST | `/register` | 用户注册 | ❌ | username, email, password, vCode |
 | POST | `/login` | 用户登录 | ❌ | usernameOrEmail, password, vCode |
 | POST | `/logout` | 用户登出 | ✅ | token |
-| POST | `/changepassword` | 修改密码 | ✅ | oldPassword, newPassword, vCode |
+| POST | `/change-password` | 修改密码（需登录） | ✅ | oldPassword, newPassword, vCode |
+| POST | `/forgot-password` | 忘记密码重置 | ❌ | usernameOrEmail, newPassword, vCode |
 | GET | `/page/{current}/{size}` | 分页查询用户 | ✅ | current, size |
 
 ### 📧 邮件接口 `/api/mail`
@@ -338,7 +340,7 @@ GET /api/user/page/1/10?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 **Token 特性：**
 - ⏰ 有效期：**7 天**
 - 🔄 自动续期：每次请求自动刷新过期时间
-- 🚫 失效场景：登出、修改密码、手动移除白名单
+- 🚫 失效场景：登出、修改密码、忘记密码重置、手动移除白名单、批量移除用户所有Token
 - 🔒 安全机制：RSA + AES 混合加密传输敏感数据
 
 ---

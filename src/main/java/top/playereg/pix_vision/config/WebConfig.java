@@ -37,7 +37,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/user/register",                   // 用户注册
                         "/api/user/login",                      // 用户登录
                         "/api/mail/send-email-code",           // 发送邮箱验证码
-                        "/api/mail/verify-email-code-test"          // 验证邮箱验证码
+                        "/api/mail/verify-email-code-test",          // 验证邮箱验证码
+                        "/api/user/forgot-password"                 // 忘记密码
                 );
     }
 }

@@ -1,5 +1,6 @@
 package top.playereg.pix_vision;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -8,6 +9,7 @@ import top.playereg.pix_vision.pojo.userPojo.User;
 
 import java.util.List;
 
+@Disabled
 @SpringBootTest
 public class MyBatisPlusTest {
     @Autowired

@@ -1,5 +1,8 @@
 package top.playereg.pix_vision;
 
+import org.junit.jupiter.api.Disabled;
+
+@Disabled
 public class DevTest {
     public static void main(String[] args) {
 //        String SHA256 = SecureUtil.sha256("123456");

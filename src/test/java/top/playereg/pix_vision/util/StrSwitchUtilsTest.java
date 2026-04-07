@@ -53,20 +53,20 @@ class StrSwitchUtilsTest {
     void imageToPng() {
         String inputPath = System.getProperty("user.home") + "/Pictures/壁纸/macos_12_monterey_official_stock_wallpaper_6k_resolution_light-3840x2160.jpg";
         String savePath = System.getProperty("user.home") + "/Desktop/out.png";
-        
+
         // 检查文件是否存在
         File inputFile = new File(inputPath);
         if (!inputFile.exists()) {
             System.out.println("错误：文件不存在 - " + inputPath);
             return;
         }
-        
+
         // 使用 FileUtil.readBytes() 读取系统文件（不是 classpath 资源）
         byte[] imageBytes = FileUtil.readBytes(inputFile);
-        
+
         // 执行格式转换
         ImageUtils.imageToPng(imageBytes, savePath);
-        
+
         System.out.println("图片已保存到：" + savePath);
     }
 
@@ -85,13 +85,13 @@ class StrSwitchUtilsTest {
                 ---
                 > 引用部分
                 >> 内嵌引用
-                
+
                 **黑体**
-                
+
                 *斜体*
-                
+
                 `行内代码`
-                
+
                 ```python
                 print("代码块")
                 ```
