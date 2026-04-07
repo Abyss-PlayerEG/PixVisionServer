@@ -437,7 +437,8 @@ public ResponsePojo<UserLogin> login(
 ### Token 管理
 - 使用 JWT + 白名单机制
 - Token 有效期：**7 天**
-- 登出或修改密码时，将 Token 从白名单移除
+- 登出、修改密码、忘记密码重置时，将 Token 从白名单移除
+- 支持批量移除用户所有 Token（`TokenWhitelistService.removeAllUserTokens`）
 - 支持两种传递方式：
   - Header：`Authorization: Bearer <token>`
   - URL 参数：`?token=<token>`
@@ -667,10 +668,10 @@ log.error("错误信息：数据库连接失败", exception);
 
 ## 访问地址
 
-- **应用首页**：http://localhost:8080
-- **Swagger 文档**：http://localhost:8080/swagger-ui.html
-- **Knife4j 文档**：http://localhost:8080/doc.html
-- **健康检查**：http://localhost:8080/actuator/health
+- **应用首页**：http://localhost:9090
+- **Swagger 文档**：http://localhost:9090/swagger-ui.html
+- **Knife4j 文档**：http://localhost:9090/doc.html
+- **健康检查**：http://localhost:9090/actuator/health
 
 ---
 
