@@ -501,9 +501,9 @@ public class UserController {
      */
     @PostMapping("/change-password")
     @Operation(
-        summary = "用户密码修改（登录后）",
+        summary = "用户密码修改 - JWT验证",
         description = """
-            # 用户密码修改（需要登录）
+            # 用户密码修改 - JWT验证
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -610,9 +610,9 @@ public class UserController {
      */
     @PostMapping("/forgot-password")
     @Operation(
-        summary = "忘记密码 - 重置密码接口",
+        summary = "用户密码修改 - 忘记密码",
         description = """
-            # 忘记密码 - 重置密码（无需登录）
+            # 用户密码修改 - 忘记密码
 
             ## 参数说明：
             - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填
