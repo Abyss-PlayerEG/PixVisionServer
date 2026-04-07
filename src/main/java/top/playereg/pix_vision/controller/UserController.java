@@ -525,13 +525,13 @@ public class UserController {
             5. 校验新密码与旧密码是否相同
             6. 对密码进行 SHA-256 哈希加密
             7. 更新数据库中的密码
-            8. 将当前 Token 从白名单移除（当前设备需要重新登录）
+            8. **移除该用户的所有 Token**（强制所有设备下线）
             9. 返回修改结果
 
             ## 注意事项：
             - **必须携带有效的 Token** 才能调用此接口
             - 验证码发送到用户的注册邮箱
-            - 密码修改成功后，**当前 Token 会被移除**，需要重新登录
+            - 密码修改成功后，**该用户的所有 Token 会被立即移除**，所有设备需要重新登录
             - 建议使用强密码组合（大小写字母 + 数字 + 特殊字符）
             - 验证码有效期由 Redis 配置决定（默认 5 分钟）
             """
@@ -590,21 +590,10 @@ public class UserController {
             return ResponsePojo.error(false, "修改失败");
         }
 
-        // 从请求中获取 Token 并移除
-        String token = request.getParameter("token");
-        if (token == null || token.isEmpty()) {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                token = authHeader.substring(7);
-            } else {
-                token = authHeader;
-            }
-        }
-
-        if (token != null && !token.isEmpty()) {
-            tokenWhitelistService.removeFromWhitelist(token);
-            log.info("用户密码修改成功，已移除当前 Token，用户 ID: {}", userId);
-        }
+        // 移除该用户的所有 Token（强制所有设备下线）
+        int removedCount = tokenWhitelistService.removeAllUserTokens(userId, user.getUsername());
+        log.info("用户密码修改成功，已移除用户所有 Token，用户 ID: {}, 用户名：{}, 移除数量：{}",
+            userId, user.getUsername(), removedCount);
 
         return ResponsePojo.success(true, "修改成功");
     }
