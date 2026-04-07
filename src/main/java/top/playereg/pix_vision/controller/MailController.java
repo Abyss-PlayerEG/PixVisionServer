@@ -3,6 +3,7 @@ package top.playereg.pix_vision.controller;
 import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -96,7 +97,11 @@ public class MailController {
             @Parameter(description = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
             @Parameter(description = "邮件标题", required = true, example = "PixVision 验证码邮件") @RequestParam String subject,
             @Parameter(description = "用户名（可选，不传则自动从数据库查询或使用邮箱前缀）", required = false, example = "dev_user") @RequestParam(required = false) String username,
-            @Parameter(description = "邮件内容类型，可选值：注册、登录、改密", required = true, example = "注册") @RequestParam String emailText
+            @Parameter(
+                description = "邮件内容类型",
+                required = true,
+                schema = @Schema(allowableValues = {"注册", "登录", "改密"}, example = "注册")
+            ) @RequestParam String emailText
     ) {
         if (username != null && !username.isEmpty()){
             if (!RegexUtils.isUsername(username)){
