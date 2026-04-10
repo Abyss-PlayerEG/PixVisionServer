@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
         // 默认随机头像（1.png-21.png）
         int randomAvatarNum = (int) (Math.random() * 21) + 1;  // 生成 1-21 的随机整数
         String randomAvatar = randomAvatarNum + ".png";
-        user.setAvatar_url("/default/" + randomAvatar);
+        user.setAvatar_url("default/" + randomAvatar);
         log.info("用户头像：{}", user.getAvatar_url());
 
         user.setStatus(10);
