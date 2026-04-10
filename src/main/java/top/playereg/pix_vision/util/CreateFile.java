@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static cn.hutool.core.util.URLUtil.getPath;
+
 /**
  * 文件创建类
  *
@@ -17,7 +19,7 @@ import java.nio.file.Paths;
  */
 public class CreateFile {
     private static final Logger log = LoggerFactory.getLogger(CreateFile.class);
-    
+
     public static void create() {
         // 根目录说明文件
         FilePathConfig.createTextFile(
@@ -102,12 +104,12 @@ public class CreateFile {
      * <p>
      * 将 src/main/resources/static/default-avatar 下的所有头像文件
      * 复制到用户目录下的 AvatarPath/default 目录
-     * 
+     *
      * @author PlayerEG
      */
     private static void copyDefaultAvatars() {
         String defaultAvatarDir = FilePathConfig.AvatarPath + "/default";
-        
+
         // 创建目标目录
         Path targetDir = Paths.get(defaultAvatarDir);
         try {
@@ -115,15 +117,16 @@ public class CreateFile {
         } catch (Exception e) {
             throw new RuntimeException("创建默认头像目录失败：" + defaultAvatarDir, e);
         }
-        
+
+
         // 资源目录下的默认头像路径
         String resourceAvatarDir = "static/default-avatar";
-        
+
         // 头像文件名列表（1.png 到 21.png）
         for (int i = 1; i <= 21; i++) {
             String fileName = i + ".png";
             Path targetPath = targetDir.resolve(fileName);
-            
+
             // 如果目标文件不存在，则复制
             if (!Files.exists(targetPath)) {
                 try {
