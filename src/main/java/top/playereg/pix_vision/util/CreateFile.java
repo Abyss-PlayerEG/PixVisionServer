@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static cn.hutool.core.util.URLUtil.getPath;
+
 /**
  * 文件创建类
  *
