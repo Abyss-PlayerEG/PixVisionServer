@@ -24,7 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
      * 如果配置文件中没有定义，使用默认的开发环境地址
      */
     @Value("${cors.allowed-origin}")
-    private String[] allowedOrigins;
+    private String[] allowedOrigin;
 
     /**
      * 添加静态资源映射
@@ -58,7 +58,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
             // 允许的源地址（从配置文件读取）
-            .allowedOriginPatterns(allowedOrigins)
+            .allowedOriginPatterns(allowedOrigin)
             // 允许的 HTTP 方法
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             // 允许的请求头
@@ -89,9 +89,8 @@ public class WebConfig implements WebMvcConfigurer {
                 "/api/user/register",                       // 用户注册
                 "/api/user/login",                          // 用户登录
                 "/api/mail/send-email-code",                // 发送邮箱验证码
-                "/api/mail/verify-email-code-test",         // 验证邮箱验证码
                 "/api/user/forgot-password",                // 忘记密码
-                "/api/get-image"                            // 图像获取
+                "/api/get-image/**"                         // 图像获取
             );
     }
 }
