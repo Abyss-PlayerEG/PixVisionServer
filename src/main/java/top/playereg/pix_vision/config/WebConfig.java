@@ -24,20 +24,20 @@ public class WebConfig implements WebMvcConfigurer {
      * @param registry 资源处理器注册表
      * @author PlayerEG
      */
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 映射头像目录: /avatar/** -> ~/.pix_vision/data/avatar/**
-        registry.addResourceHandler("/avatar/**")
-                .addResourceLocations("file:" + FilePathConfig.AvatarPath + "/");
-
-        // 映射作品图片目录(如果需要): /works/** -> ~/.pix_vision/data/works/**
-         registry.addResourceHandler("/works/**")
-                 .addResourceLocations("file:" + FilePathConfig.DataPath + "/works/");
-
-        // 映射Logo目录: /logo/** -> ~/.pix_vision/data/logo-img/**
-        registry.addResourceHandler("/logo/**")
-                .addResourceLocations("file:" + FilePathConfig.LogoPath + "/");
-    }
+//    @Override
+//    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+//        // 映射头像目录: /avatar/** -> ~/.pix_vision/data/avatar/**
+//        registry.addResourceHandler("/avatar/**")
+//                .addResourceLocations("file:" + FilePathConfig.AvatarPath + "/");
+//
+//        // 映射作品图片目录(如果需要): /works/** -> ~/.pix_vision/data/works/**
+//         registry.addResourceHandler("/works/**")
+//                 .addResourceLocations("file:" + FilePathConfig.DataPath + "/works/");
+//
+//        // 映射Logo目录: /logo/** -> ~/.pix_vision/data/logo-img/**
+//        registry.addResourceHandler("/logo/**")
+//                .addResourceLocations("file:" + FilePathConfig.LogoPath + "/");
+//    }
 
     /**
      * 添加拦截器配置
