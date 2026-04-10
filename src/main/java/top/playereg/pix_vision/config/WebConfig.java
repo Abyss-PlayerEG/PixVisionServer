@@ -3,7 +3,6 @@ package top.playereg.pix_vision.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.playereg.pix_vision.handler.JwtAuthenticationInterceptor;
 
@@ -47,20 +46,21 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtAuthenticationInterceptor)
-                // 拦截所有请求
-                .addPathPatterns(
-                        "/api/**",
-                        "/7e212056/require-auth"                // 测试接口
-                )
-                // 排除不需要验证的路径
-                .excludePathPatterns(
-                        "/7e212056/no-auth",                    // 测试接口
-                        "/api/test/**",
-                        "/api/user/register",                   // 用户注册
-                        "/api/user/login",                      // 用户登录
-                        "/api/mail/send-email-code",           // 发送邮箱验证码
-                        "/api/mail/verify-email-code-test",          // 验证邮箱验证码
-                        "/api/user/forgot-password"                 // 忘记密码
-                );
+            // 拦截所有请求
+            .addPathPatterns(
+                "/api/**",
+                "/7e212056/require-auth"                // 测试接口
+            )
+            // 排除不需要验证的路径
+            .excludePathPatterns(
+                "/7e212056/no-auth",                        // 测试接口
+                "/api/test/**",                             // 测试接口
+                "/api/user/register",                       // 用户注册
+                "/api/user/login",                          // 用户登录
+                "/api/mail/send-email-code",                // 发送邮箱验证码
+                "/api/mail/verify-email-code-test",         // 验证邮箱验证码
+                "/api/user/forgot-password",                // 忘记密码
+                "/aip/get-image"                            // 图像获取
+            );
     }
 }
