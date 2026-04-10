@@ -35,6 +35,7 @@ public class FilePathConfig {
     // 二级路径
     public static String LogoPath; // logo 图片目录
     public static String AvatarPath; // 头像目录
+    public static String WorksPath; // 作品图片目录
     public static String EmailHtmlPath; // 邮箱 HTML 模板目录
 
     private String[] paths;
@@ -54,6 +55,7 @@ public class FilePathConfig {
 
         LogoPath = getPath("data","logo-img");
         AvatarPath = getPath("data","avatar");
+        WorksPath = getPath("data","works");
         EmailHtmlPath = getPath("config","email-html");
 
         paths = new String[]{
@@ -67,6 +69,7 @@ public class FilePathConfig {
                 // 二级路径
                 LogPath,
                 AvatarPath,
+                WorksPath,
                 KeyPath
         };
 
