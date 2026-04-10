@@ -62,8 +62,10 @@ public class MailController {
             # 发送一封 HTML 格式的验证码邮件
 
             ## 参数说明：
-            - to: 收件人邮箱地址，格式为标准邮箱格式
-            - subject: 邮件主题，字符串类型
+            - to: **用户名**或**邮箱地址**，字符串类型，必填
+              - **注册场景**：必须传入邮箱地址
+              - **登录/改密场景**：支持用户名或邮箱，系统会自动识别并查询对应邮箱
+            - subject: 邮件主题，字符串类型，必填
             - username: 用户昵称（条件必填），**注册时必须传入**，登录和改密时**不能传入**
             - emailText: 邮件内容类型，可选值：注册、登录、改密
 
@@ -73,14 +75,18 @@ public class MailController {
             - **注册时未传用户名**：返回 **{"data": false}** 和"注册时必须传入用户名"提示
             - **登录/改密时传入用户名**：返回 **{"data": false}** 和"登录和改密时不能传入用户名，将自动从数据库获取"提示
             - **用户不存在**：返回 **{"data": false}** 和"用户不存在，请先注册"提示
-            - **格式错误**：返回 **{"data": false}** 和相应的"邮箱或内容类型错误"提示
+            - **格式错误**：返回 **{"data": false}** 和相应的"用户名/邮箱或内容类型错误"提示
 
             ## 业务逻辑：
-            1. 校验邮箱格式是否合法
-            2. 根据 emailText 类型校验 username 参数：
+            1. 根据 emailText 类型校验 username 参数：
                - **注册**：username 必须传入
                - **登录/改密**：username 不能传入，自动从数据库查询用户名
-            3. 登录/改密时从数据库查询用户信息，获取用户名
+            2. 根据 to 参数类型进行不同处理：
+               - **注册场景**：to 必须是邮箱地址
+               - **登录/改密场景**：
+                 - 如果 to 是邮箱格式，直接使用
+                 - 如果 to 是用户名格式，从数据库查询对应的邮箱地址
+            3. 登录/改密时从数据库查询用户信息，获取用户名和邮箱
             4. 根据 emailText 类型生成对应的邮件内容（注册验证/登录验证/密码修改）
             5. 生成 6 位随机验证码并存入 Redis
             6. 使用 HTML 邮件模板渲染邮件内容
@@ -89,12 +95,18 @@ public class MailController {
             ## 注意事项：
             - 验证码默认有效期由 Redis 配置决定
             - emailText 仅支持：**注册**、**登录**、**改密** 三种类型
-            - **注册场景**：必须传入 username 参数
-            - **登录/改密场景**：禁止传入 username 参数，系统会自动从数据库查询
+            - **注册场景**：
+              - to 必须是邮箱地址
+              - username 必须传入
+            - **登录/改密场景**：
+              - to 可以是用户名或邮箱，系统会自动识别
+              - username 禁止传入，系统会自动从数据库查询
+            - 支持的用户名格式：6-16 位字母/数字/下划线
+            - 支持的邮箱格式：标准邮箱格式
             """
     )
     public ResponsePojo<Boolean> sendEmailCode(
-        @Parameter(description = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String to,
+        @Parameter(description = "收件人邮箱地址或用户名（登录/改密时支持用户名）", required = true, example = "dev_user") @RequestParam String to,
         @Parameter(description = "邮件标题", required = true, example = "PixVision 验证码邮件") @RequestParam String subject,
         @Parameter(description = "用户名（可选，不传则自动从数据库查询或使用邮箱前缀）", required = false, example = "dev_user") @RequestParam(required = false) String username,
         @Parameter(
@@ -111,39 +123,73 @@ public class MailController {
             )
         ) @RequestParam String emailText
     ) {
+        // 校验 username 参数格式（如果传入）
         if (username != null && !username.isEmpty()) {
             if (!RegexUtils.isUsername(username)) {
                 return ResponsePojo.error(false, "用户名格式错误");
             }
         }
-        if (!RegexUtils.isEmail(to)) {
-            return ResponsePojo.error(false, "邮箱格式错误");
-        }
 
-        // 根据邮件类型校验 username 参数
+        String targetEmail = null; // 最终用于发送邮件的邮箱地址
+
+        // 根据邮件类型处理 to 参数和 username 参数
         if ("注册".equals(emailText)) {
-            // 注册时 username 不能为空
+            // ========== 注册场景 ==========
+            // 1. to 必须是邮箱地址
+            if (!RegexUtils.isEmail(to)) {
+                return ResponsePojo.error(false, "注册时 to 参数必须是邮箱地址");
+            }
+            targetEmail = to;
+
+            // 2. username 必须传入
             if (username == null || username.isEmpty()) {
                 return ResponsePojo.error(false, "注册时必须传入用户名");
             }
-            log.info("注册场景，使用传入的用户名：{}", username);
+            log.info("注册场景，使用传入的用户名：{}，邮箱：{}", username, targetEmail);
+
         } else if ("登录".equals(emailText) || "改密".equals(emailText)) {
-            // 登录和改密时 username 不能传入，从数据库查询
+            // ========== 登录/改密场景 ==========
+            // 1. username 不能传入，从数据库查询
             if (username != null && !username.isEmpty()) {
                 return ResponsePojo.error(false, "登录和改密时不能传入用户名，将自动从数据库获取");
             }
-            // 从数据库查询用户昵称
-            User user = userService.selectAllUserByEmail(to);
-            if (user != null) {
-                username = user.getUsername();
-                log.info("{}场景，从数据库查询到昵称：{}", emailText, username);
+
+            // 2. 判断 to 是用户名还是邮箱
+            User user;
+            if (RegexUtils.isEmail(to)) {
+                // to 是邮箱，直接查询
+                log.info("{}场景，to 为邮箱地址：{}", emailText, to);
+                user = userService.selectAllUserByEmail(to);
+                targetEmail = to;
+            } else if (RegexUtils.isUsername(to)) {
+                // to 是用户名，查询用户信息
+                log.info("{}场景，to 为用户名：{}", emailText, to);
+                user = userService.selectAllUserByUsername(to);
+                if (user != null) {
+                    targetEmail = user.getEmail();
+                    log.info("通过用户名 {} 查询到邮箱：{}", to, targetEmail);
+                }
             } else {
+                // to 既不是邮箱也不是用户名
+                return ResponsePojo.error(false, "to 参数格式错误，必须是邮箱地址或用户名");
+            }
+
+            // 3. 检查用户是否存在
+            if (user == null) {
+                log.warn("{}场景，用户不存在：{}", emailText, to);
                 return ResponsePojo.error(false, "用户不存在，请先注册");
             }
+
+            // 4. 从数据库获取用户名
+            username = user.getUsername();
+            log.info("{}场景，从数据库查询到用户名：{}，邮箱：{}", emailText, username, targetEmail);
+        } else {
+            // 不支持的邮件类型
+            return ResponsePojo.error(false, "邮件内容类型错误 - 可选值：注册、登录、改密");
         }
 
         // 邮箱内容
-        String content = "";
+        String content;
         switch (emailText) {
             case "登录":
                 content = "登录验证";
@@ -170,13 +216,13 @@ public class MailController {
             content
         );
         try {
-            String emailId = emailService.sendEMail(to, subject, html);//发送验证码
+            String emailId = emailService.sendEMail(targetEmail, subject, html);//发送验证码
         } catch (Exception e) {
             log.error("邮件发送失败：{}", e.getMessage());
             return ResponsePojo.error(false, "邮件发送失败");
         }
 
-        verificationCodeServices.setRedisVCode(to, verificationCode); //放进Redis中
+        verificationCodeServices.setRedisVCode(targetEmail, verificationCode); //放进Redis中
 
         return ResponsePojo.success(true, "邮件发送成功");
     }

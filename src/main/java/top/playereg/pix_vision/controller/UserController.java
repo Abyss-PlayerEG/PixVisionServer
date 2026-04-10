@@ -60,7 +60,7 @@ public class UserController {
             - vCode: 邮箱验证码（6 位大写字母或数字），字符串类型，必填
 
             ## 返回说明：
-            - **登录成功**：返回 **{"data": {UserLogin 对象}}**，包含用户信息和 JWT Token
+            - **登录成功**：返回 **{"data": UserLogin 对象}**，包含用户信息和 JWT Token
             - **用户名或邮箱格式错误**：返回 **{"data": null}** 和"用户名或邮箱格式错误"提示
             - **验证码格式错误**：返回 **{"data": null}** 和"验证码格式错误"提示
             - **验证码错误**：返回 **{"data": null}** 和"验证码错误"提示
@@ -709,7 +709,7 @@ public class UserController {
         if (user != null && user.getUser_id() != null && user.getUsername() != null) {
             int removedCount = tokenWhitelistService.removeAllUserTokens(user.getUser_id(), user.getUsername());
             log.info("密码重置成功，已移除用户所有 Token，用户 ID: {}, 用户名：{}, 移除数量：{}",
-                    user.getUser_id(), user.getUsername(), removedCount);
+                user.getUser_id(), user.getUsername(), removedCount);
         }
 
         log.info("密码重置成功，用户名或邮箱：{}", usernameOrEmail);
