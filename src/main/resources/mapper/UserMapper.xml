@@ -83,14 +83,14 @@
     <!-- 分页查询用户 - 通过邮箱、uuid、用户名查询 -->
     <select id="selectPageUserInfo"
             resultType="top.playereg.pix_vision.pojo.userPojo.User">
-        SELECT user_id,
-               user_uuid,
-               username,
-               password,
-               nickname,
-               user_role,
-               email,
-               status
+        SELECT nickname,
+        user_id,
+        avatar_url,
+        username,
+        user_role,
+        user_uuid,
+        status,
+        create_time
         FROM tb_user
         WHERE is_delete = 0
         <if test="user.username != null and user.username != ''">

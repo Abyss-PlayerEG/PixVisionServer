@@ -1,6 +1,7 @@
 package top.playereg.pix_vision.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,10 +10,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.config.FilePathConfig;
 
 import java.io.File;
@@ -47,10 +45,11 @@ public class ImageController {
             summary = "获取头像图片",
             description = "根据文件路径获取用户头像图片,支持子目录"
     )
-    @GetMapping("/avatar/**")
-    public ResponseEntity<Resource> getAvatar() {
-        String path = extractPath("/image/avatar/");
-        return getImageResource(FilePathConfig.AvatarPath, path, "头像");
+    @GetMapping("/avatar")
+    public ResponseEntity<Resource> getAvatar(
+        @Parameter(description = "图像路径") @RequestParam String filePath
+    ) {
+        return getImageResource(FilePathConfig.AvatarPath, filePath, "头像");
     }
 
     /**
@@ -63,10 +62,11 @@ public class ImageController {
             summary = "获取作品图片",
             description = "根据文件路径获取作品图片,支持子目录"
     )
-    @GetMapping("/works/**")
-    public ResponseEntity<Resource> getWorkImage() {
-        String path = extractPath("/image/works/");
-        return getImageResource(FilePathConfig.WorksPath, path, "作品");
+    @GetMapping("/works")
+    public ResponseEntity<Resource> getWorkImage(
+        @Parameter(description = "图像路径") @RequestParam String filePath
+    ) {
+        return getImageResource(FilePathConfig.WorksPath, filePath, "作品");
     }
 
     /**
@@ -79,10 +79,11 @@ public class ImageController {
             summary = "获取Logo图片",
             description = "根据文件路径获取Logo图片,支持子目录"
     )
-    @GetMapping("/logo/**")
-    public ResponseEntity<Resource> getLogo() {
-        String path = extractPath("/image/logo/");
-        return getImageResource(FilePathConfig.LogoPath, path, "Logo");
+    @GetMapping("/logo")
+    public ResponseEntity<Resource> getLogo(
+        @Parameter(description = "图像路径") @RequestParam String filePath
+    ) {
+        return getImageResource(FilePathConfig.LogoPath, filePath, "Logo");
     }
 
     /**

@@ -61,8 +61,8 @@ public class User {
 
 
     // 转换后的属性
-    @Schema(description = "用户头像 base64 字符串", example = "我是 base64")
-    private String avatar_base64;
+//    @Schema(description = "用户头像 base64 字符串", example = "我是 base64")
+//    private String avatar_base64;
 
     @Schema(description = "用户 UUID 字符串", example = "字符串类型uuid")
     private String string_user_uuid;
