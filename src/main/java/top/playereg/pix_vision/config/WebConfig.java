@@ -1,7 +1,9 @@
 package top.playereg.pix_vision.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.playereg.pix_vision.handler.JwtAuthenticationInterceptor;
@@ -16,6 +18,13 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Autowired
     private JwtAuthenticationInterceptor jwtAuthenticationInterceptor;
+
+    /**
+     * 从配置文件读取允许的跨域源地址
+     * 如果配置文件中没有定义，使用默认的开发环境地址
+     */
+    @Value("${cors.allowed-origin}")
+    private String[] allowedOrigins;
 
     /**
      * 添加静态资源映射
@@ -37,6 +46,28 @@ public class WebConfig implements WebMvcConfigurer {
 //        registry.addResourceHandler("/logo/**")
 //                .addResourceLocations("file:" + FilePathConfig.LogoPath + "/");
 //    }
+
+    /**
+     * 配置跨域资源共享（CORS）
+     * 允许前端应用跨域访问后端 API
+     *
+     * @param registry CORS 注册表
+     * @author PlayerEG
+     */
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+            // 允许的源地址（从配置文件读取）
+            .allowedOriginPatterns(allowedOrigins)
+            // 允许的 HTTP 方法
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            // 允许的请求头
+            .allowedHeaders("*")
+            // 是否允许携带凭证（Cookie、Authorization 等）
+            .allowCredentials(true)
+            // 预检请求的有效期（秒）
+            .maxAge(3600);
+    }
 
     /**
      * 添加拦截器配置

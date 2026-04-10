@@ -9,14 +9,15 @@ spring:
         location: classpath:banner.txt
     config:
         import: # 引入配置文件
-            - classpath:yml-config/email.yml
-            - classpath:yml-config/jdbc.yml
-            - classpath:yml-config/redis.yml
-            - classpath:yml-config/mybatis-plus.yml
-            - classpath:yml-config/pix_vision.yml
-            - classpath:yml-config/spring-doc.yml
-            - classpath:yml-config/logging.yml
-            - optional:file:${user.home}/${workspace-name}/application.yml
+            - classpath:yml-config/email.yml # 邮件
+            - classpath:yml-config/jdbc.yml # jdbc
+            - classpath:yml-config/redis.yml # redis
+            - classpath:yml-config/mybatis-plus.yml # mybatis-plus
+            - classpath:yml-config/spring-doc.yml # 文档
+            - classpath:yml-config/logging.yml # 日志
+            - classpath:yml-config/cors.yml # 跨域
+            - classpath:yml-config/pix_vision.yml # 系统配置文件
+            - optional:file:${user.home}/${workspace-name}/application.yml # 用户自定义配置文件
     devtools:
         restart:
             enabled: false # 禁用热部署
