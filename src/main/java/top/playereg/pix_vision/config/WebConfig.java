@@ -60,7 +60,7 @@ public class WebConfig implements WebMvcConfigurer {
                 "/api/mail/send-email-code",                // 发送邮箱验证码
                 "/api/mail/verify-email-code-test",         // 验证邮箱验证码
                 "/api/user/forgot-password",                // 忘记密码
-                "/aip/get-image"                            // 图像获取
+                "/api/get-image"                            // 图像获取
             );
     }
 }

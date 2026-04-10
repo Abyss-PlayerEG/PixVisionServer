@@ -35,7 +35,7 @@ import java.util.List;
  * @see top.playereg.pix_vision.config.FilePathConfig
  */
 @RestController
-@RequestMapping("/aip/get-image")
+@RequestMapping("/api/get-image")
 @Tag(name = "图片访问接口", description = "提供头像、作品、Logo 等图片资源的访问接口")
 public class ImageController {
     private static final Logger log = LoggerFactory.getLogger(ImageController.class);
