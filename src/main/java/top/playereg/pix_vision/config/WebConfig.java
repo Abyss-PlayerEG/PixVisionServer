@@ -1,9 +1,10 @@
 package top.playereg.pix_vision.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.playereg.pix_vision.handler.JwtAuthenticationInterceptor;
 
@@ -17,6 +18,13 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Autowired
     private JwtAuthenticationInterceptor jwtAuthenticationInterceptor;
+
+    /**
+     * 从配置文件读取允许的跨域源地址
+     * 如果配置文件中没有定义，使用默认的开发环境地址
+     */
+    @Value("${cors.allowed-origin}")
+    private String[] allowedOrigin;
 
     /**
      * 添加静态资源映射
@@ -40,6 +48,28 @@ public class WebConfig implements WebMvcConfigurer {
 //    }
 
     /**
+     * 配置跨域资源共享（CORS）
+     * 允许前端应用跨域访问后端 API
+     *
+     * @param registry CORS 注册表
+     * @author PlayerEG
+     */
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+            // 允许的源地址（从配置文件读取）
+            .allowedOriginPatterns(allowedOrigin)
+            // 允许的 HTTP 方法
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            // 允许的请求头
+            .allowedHeaders("*")
+            // 是否允许携带凭证（Cookie、Authorization 等）
+            .allowCredentials(true)
+            // 预检请求的有效期（秒）
+            .maxAge(3600);
+    }
+
+    /**
      * 添加拦截器配置
      *
      * @param registry 拦截器注册表
@@ -47,20 +77,20 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtAuthenticationInterceptor)
-                // 拦截所有请求
-                .addPathPatterns(
-                        "/api/**",
-                        "/7e212056/require-auth"                // 测试接口
-                )
-                // 排除不需要验证的路径
-                .excludePathPatterns(
-                        "/7e212056/no-auth",                    // 测试接口
-                        "/api/test/**",
-                        "/api/user/register",                   // 用户注册
-                        "/api/user/login",                      // 用户登录
-                        "/api/mail/send-email-code",           // 发送邮箱验证码
-                        "/api/mail/verify-email-code-test",          // 验证邮箱验证码
-                        "/api/user/forgot-password"                 // 忘记密码
-                );
+            // 拦截所有请求
+            .addPathPatterns(
+                "/api/**",
+                "/7e212056/require-auth"                // 测试接口
+            )
+            // 排除不需要验证的路径
+            .excludePathPatterns(
+                "/7e212056/no-auth",                        // 测试接口
+                "/api/test/**",                             // 测试接口
+                "/api/user/register",                       // 用户注册
+                "/api/user/login",                          // 用户登录
+                "/api/mail/send-email-code",                // 发送邮箱验证码
+                "/api/user/forgot-password",                // 忘记密码
+                "/api/get-image/**"                         // 图像获取
+            );
     }
 }

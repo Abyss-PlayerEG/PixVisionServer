@@ -10,7 +10,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.config.FilePathConfig;
 
 import java.io.File;
@@ -32,7 +35,7 @@ import java.util.List;
  * @see top.playereg.pix_vision.config.FilePathConfig
  */
 @RestController
-@RequestMapping("/image")
+@RequestMapping("/api/get-image")
 @Tag(name = "图片访问接口", description = "提供头像、作品、Logo 等图片资源的访问接口")
 public class ImageController {
     private static final Logger log = LoggerFactory.getLogger(ImageController.class);
@@ -53,10 +56,10 @@ public class ImageController {
             summary = "获取头像图片",
             description = """
                     # 获取用户头像图片
-                    
+
                     ## 参数说明：
                     - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
-                    
+
                     ## 返回说明：
                     - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg 等
                     - **文件不存在**：返回 **404 Not Found**
@@ -64,7 +67,7 @@ public class ImageController {
                     - **不支持的格式**：返回 **400 Bad Request**（非图片格式）
                     - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
                     - **服务器错误**：返回 **500 Internal Server Error**
-                    
+
                     ## 业务逻辑：
                     1. 校验文件路径安全性（禁止 .. 和绝对路径）
                     2. 检查文件扩展名是否在白名单中（png/jpg/jpeg/gif/webp/bmp/svg）
@@ -72,14 +75,14 @@ public class ImageController {
                     4. 确保文件在允许的目录下（~/.pix_vision/data/avatar/）
                     5. 设置响应头 Content-Type 和 Cache-Control
                     6. 返回图片二进制数据
-                    
+
                     ## 注意事项：
                     - 该接口**无需认证**，任何人都可以访问
                     - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
                     - 支持子目录结构，如：`default/11.png`、`custom/user_avatar.png`
                     - 仅允许访问图片格式文件，其他格式会被拒绝
                     - 文件路径相对于 `~/.pix_vision/data/avatar/` 目录
-                    
+
                     ## 使用示例：
                     ```
                     GET /image/avatar?filePath=default/1.png
@@ -106,10 +109,10 @@ public class ImageController {
             summary = "获取作品图片",
             description = """
                     # 获取作品图片
-                    
+
                     ## 参数说明：
                     - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
-                    
+
                     ## 返回说明：
                     - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg 等
                     - **文件不存在**：返回 **404 Not Found**
@@ -117,7 +120,7 @@ public class ImageController {
                     - **不支持的格式**：返回 **400 Bad Request**（非图片格式）
                     - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
                     - **服务器错误**：返回 **500 Internal Server Error**
-                    
+
                     ## 业务逻辑：
                     1. 校验文件路径安全性（禁止 .. 和绝对路径）
                     2. 检查文件扩展名是否在白名单中（png/jpg/jpeg/gif/webp/bmp/svg）
@@ -125,7 +128,7 @@ public class ImageController {
                     4. 确保文件在允许的目录下（~/.pix_vision/data/works/）
                     5. 设置响应头 Content-Type 和 Cache-Control
                     6. 返回图片二进制数据
-                    
+
                     ## 注意事项：
                     - 该接口**无需认证**，任何人都可以访问
                     - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
@@ -133,7 +136,7 @@ public class ImageController {
                     - 仅允许访问图片格式文件，其他格式会被拒绝
                     - 文件路径相对于 `~/.pix_vision/data/works/` 目录
                     - 适用于展示用户上传的作品图片
-                    
+
                     ## 使用示例：
                     ```
                     GET /image/works?filePath=artwork_001.png
@@ -160,10 +163,10 @@ public class ImageController {
             summary = "获取Logo图片",
             description = """
                     # 获取 Logo 图片
-                    
+
                     ## 参数说明：
                     - filePath: **图像文件名**，字符串类型，必填
-                    
+
                     ## 返回说明：
                     - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg 等
                     - **文件不存在**：返回 **404 Not Found**
@@ -171,7 +174,7 @@ public class ImageController {
                     - **不支持的格式**：返回 **400 Bad Request**（非图片格式）
                     - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
                     - **服务器错误**：返回 **500 Internal Server Error**
-                    
+
                     ## 业务逻辑：
                     1. 校验文件路径安全性（禁止 .. 和绝对路径）
                     2. 检查文件扩展名是否在白名单中（png/jpg/jpeg/gif/webp/bmp/svg）
@@ -179,7 +182,7 @@ public class ImageController {
                     4. 确保文件在允许的目录下（~/.pix_vision/data/logo-img/）
                     5. 设置响应头 Content-Type 和 Cache-Control
                     6. 返回图片二进制数据
-                    
+
                     ## 注意事项：
                     - 该接口**无需认证**，任何人都可以访问
                     - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
@@ -187,7 +190,7 @@ public class ImageController {
                     - 仅允许访问图片格式文件，其他格式会被拒绝
                     - 文件路径相对于 `~/.pix_vision/data/logo-img/` 目录
                     - 适用于网站 Logo、品牌标识等静态图片资源
-                    
+
                     ## 使用示例：
                     ```
                     GET /image/logo?filePath=dark.png
