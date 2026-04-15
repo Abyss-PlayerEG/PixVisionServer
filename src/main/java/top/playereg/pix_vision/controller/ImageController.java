@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.config.FilePathConfig;
 
 import java.io.File;
@@ -205,6 +206,20 @@ public class ImageController {
     ) {
         return getImageResource(FilePathConfig.LogoPath, filePath, "Logo");
     }
+
+    /**
+     * todo 头像上传接口
+     *
+     * @param file 头像文件
+     * @return 上传结果
+     */
+    public ResponseEntity<String> uploadAvatar(
+        @Parameter(description = "头像文件", required = true) @RequestParam MultipartFile file
+    ) {
+        return null;
+    }
+
+    // ================================================================================
 
     /**
      * 通用图片资源获取方法
