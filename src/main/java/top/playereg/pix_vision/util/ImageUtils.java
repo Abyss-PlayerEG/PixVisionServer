@@ -93,6 +93,7 @@ public class ImageUtils {
      * @author PlayerEG
      * @deprecated 图像上传已确定为二进制文件上传
      */
+    @Deprecated
     public static void base64ToImage(String base64image, String savePath) {
         // 参数验证
         if (StrUtil.isBlank(base64image)) {
