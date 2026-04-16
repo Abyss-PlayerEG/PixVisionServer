@@ -90,7 +90,9 @@ public class WebConfig implements WebMvcConfigurer {
                 "/api/user/login",                          // 用户登录
                 "/api/mail/send-email-code",                // 发送邮箱验证码
                 "/api/user/forgot-password",                // 忘记密码
-                "/api/get-image/**"                         // 图像获取
+                "/api/get-image/avatar",                    // 获取头像
+                "/api/get-image/works",                     // 获取作品图片
+                "/api/get-image/logo"                       // 获取 Logo
             );
     }
 }

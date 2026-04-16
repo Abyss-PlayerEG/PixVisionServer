@@ -203,4 +203,35 @@ public class UserServiceImpl implements UserService {
             return false;
         }
     }
+
+    /**
+     * 更新用户头像
+     * @param userId 用户 ID
+     * @param avatarUrl 头像路径
+     * @return 是否成功
+     */
+    @Override
+    public Boolean updateUserAvatar(Integer userId, String avatarUrl) {
+        log.info("更新用户头像，用户 ID: {}, 头像路径: {}", userId, avatarUrl);
+        
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return false;
+        }
+        
+        if (avatarUrl == null || avatarUrl.isEmpty()) {
+            log.error("头像路径不能为空");
+            return false;
+        }
+        
+        int result = userMapper.updateUserAvatar(userId, avatarUrl);
+        
+        if (result > 0) {
+            log.info("用户头像更新成功，用户 ID: {}", userId);
+            return true;
+        } else {
+            log.error("用户头像更新失败，用户 ID: {}", userId);
+            return false;
+        }
+    }
 }

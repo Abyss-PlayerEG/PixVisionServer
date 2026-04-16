@@ -16,6 +16,36 @@ import java.io.File;
 
 public class ImageUtils {
     private static final Logger log = LoggerFactory.getLogger(ImageUtils.class);
+    
+    /**
+     * 验证文件是否为有效的图片格式（通过魔数检查）
+     * 仅支持 JPG、JPEG、PNG 格式
+     *
+     * @param imageBytes 文件字节数组
+     * @return true-是有效图片，false-不是有效图片
+     * @author PlayerEG
+     */
+    public static boolean isValidImage(byte[] imageBytes) {
+        if (imageBytes == null || imageBytes.length < 4) {
+            return false;
+        }
+        
+        // 检查常见图片格式的魔数（Magic Number）
+        // PNG: 89 50 4E 47
+        if (imageBytes[0] == (byte) 0x89 && imageBytes[1] == (byte) 0x50 && 
+            imageBytes[2] == (byte) 0x4E && imageBytes[3] == (byte) 0x47) {
+            return true;
+        }
+        
+        // JPEG: FF D8 FF
+        if (imageBytes[0] == (byte) 0xFF && imageBytes[1] == (byte) 0xD8 && 
+            imageBytes[2] == (byte) 0xFF) {
+            return true;
+        }
+        
+        return false;
+    }
+    
     /**
      * 任意图像强制格式转换为 png
      *
@@ -149,7 +179,13 @@ public class ImageUtils {
             BufferedImage originalImage = ImageIO.read(inputStream);
 
             if (originalImage == null) {
-                throw new RuntimeException("无法识别的图像格式");
+                // 提供更详细的错误信息
+                String errorMsg = String.format(
+                    "无法识别的图像格式。文件大小: %d bytes, 请确认上传的是有效的 JPG/JPEG/PNG 图片文件",
+                    imageBytes.length
+                );
+                log.error(errorMsg);
+                throw new RuntimeException(errorMsg);
             }
 
             int originalWidth = originalImage.getWidth();
