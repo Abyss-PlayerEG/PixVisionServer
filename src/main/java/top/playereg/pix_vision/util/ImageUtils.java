@@ -47,9 +47,43 @@ public class ImageUtils {
     }
     
     /**
+     * 检测图像是否为正方形
+     *
+     * @param imageBytes 图像字节数组
+     * @return true-是正方形，false-不是正方形
+     * @throws RuntimeException 如果无法识别图像格式
+     * @author PlayerEG
+     */
+    public static boolean isSquareImage(byte[] imageBytes) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new IllegalArgumentException("图像数据不能为空");
+        }
+        
+        try {
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
+            BufferedImage image = ImageIO.read(inputStream);
+            
+            if (image == null) {
+                throw new RuntimeException("无法识别的图像格式");
+            }
+            
+            int width = image.getWidth();
+            int height = image.getHeight();
+            
+            boolean isSquare = (width == height);
+            log.debug("图像尺寸检测：{}x{}, 是否正方形：{}", width, height, isSquare);
+            
+            return isSquare;
+        } catch (Exception e) {
+            log.error("检测图像是否为正方形失败：{}", e.getMessage(), e);
+            throw new RuntimeException("检测图像尺寸失败：" + e.getMessage(), e);
+        }
+    }
+    
+    /**
      * 任意图像强制格式转换为 png
      *
-     * @param image         图像字节数组（支持 jpg、jpeg、gif、bmp 等格式）
+     * @param image         图像字节数组（支持 jpg、jpeg、png 格式）
      * @param saveImagePath 保存路径（必须以 .png 结尾）
      * @return void
      * @author PlayerEG
@@ -154,6 +188,7 @@ public class ImageUtils {
 
     /**
      * 图像分辨率缩放
+     * 仅支持 JPG、JPEG、PNG 格式的图片
      * 
      * @param imageBytes 原始图像字节数组
      * @param width 目标宽度（像素），为 0 时保持原始宽度

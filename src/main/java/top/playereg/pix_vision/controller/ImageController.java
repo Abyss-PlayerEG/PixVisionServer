@@ -234,6 +234,7 @@ public class ImageController {
                     - **未授权**：返回 401 状态码（Token 无效或不存在）
                     - **文件格式不支持**：返回 400 状态码
                     - **文件大小超限**：返回 400 状态码（最大 5MB）
+                    - **图像不是正方形**：返回 400 状态码
                     - **服务器错误**：返回 500 状态码
 
                     ## 业务逻辑：
@@ -241,14 +242,16 @@ public class ImageController {
                     2. 验证文件格式（仅支持 jpg/jpeg/png）
                     3. 验证文件大小（最大 5MB）
                     4. 读取上传的图片数据
-                    5. 使用 ImageUtils.resizeImage() 将图片缩放为 600x600 的 PNG 格式
-                    6. 生成唯一的文件名（UUID.png）
-                    7. 保存文件到 ~/.pix_vision/data/avatar/ 目录
-                    8. 更新数据库中的用户头像路径
+                    5. 验证图像是否为正方形（宽高必须相等）
+                    6. 使用 ImageUtils.resizeImage() 将图片缩放为 600x600 的 PNG 格式
+                    7. 生成唯一的文件名（UUID.png）
+                    8. 保存文件到 ~/.pix_vision/data/avatar/ 目录
+                    9. 更新数据库中的用户头像路径
 
                     ## 注意事项：
                     - 该接口**需要认证**，必须在请求头中携带有效的 Token
                     - **仅支持 JPG、JPEG、PNG 格式**的图片上传
+                    - **头像必须是正方形图片**（宽高相等），如：800x800、1200x1200
                     - 图片会被自动缩放为 **600x600** 像素的 PNG 格式
                     - 文件名使用 UUID 生成，避免冲突
                     - 旧头像文件不会被自动删除，建议定期清理
@@ -320,27 +323,34 @@ public class ImageController {
                 return ResponseEntity.badRequest().body(ResponsePojo.error(null,
                     "文件不是有效的图片格式，请上传 JPG/JPEG/PNG 格式的图片"));
             }
-
-            // 6. 缩放图片为 600x600 的 PNG 格式
+            
+            // 6. 验证图像是否为正方形
+            if (!ImageUtils.isSquareImage(imageBytes)) {
+                log.warn("图像不是正方形");
+                return ResponseEntity.badRequest().body(ResponsePojo.error(null, 
+                    "头像必须是正方形图片，请上传宽高相等的图片"));
+            }
+                            
+            // 7. 缩放图片为 600x600 的 PNG 格式
             log.info("开始处理头像图片，原始大小: {} bytes", imageBytes.length);
             byte[] resizedImage = ImageUtils.resizeImage(imageBytes, 600, 600, true);
             log.info("头像图片处理完成，处理后大小: {} bytes", resizedImage.length);
-
-            // 7. 生成唯一文件名
+                            
+            // 8. 生成唯一文件名
             String fileName = UUID.randomUUID().toString().replace("-", "") + ".png";
             String savePath = Paths.get(FilePathConfig.AvatarPath, fileName).toString();
-
-            // 8. 保存文件
+                
+            // 9. 保存文件
             File saveFile = new File(savePath);
             File parentDir = saveFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
             }
-
+                
             cn.hutool.core.io.FileUtil.writeBytes(resizedImage, saveFile);
             log.info("头像文件保存成功: {}", savePath);
-
-            // 9. 更新数据库中的头像路径（只保存相对路径）
+                
+            // 10. 更新数据库中的头像路径（只保存相对路径）
             String avatarUrl = fileName; // 直接保存文件名，访问时使用 /api/get-image/avatar?filePath=xxx.png
             Boolean updateResult = userService.updateUserAvatar(userId, avatarUrl);
 
