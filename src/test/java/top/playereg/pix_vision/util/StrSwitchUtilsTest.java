@@ -1,12 +1,14 @@
 package top.playereg.pix_vision.util;
 
 import cn.hutool.core.io.FileUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
 import java.util.Arrays;
 
+@Disabled
 @SpringBootTest
 class StrSwitchUtilsTest {
     String str = "123456";

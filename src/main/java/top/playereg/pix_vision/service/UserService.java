@@ -53,4 +53,12 @@ public interface UserService {
      * @return 是否成功
      */
     Boolean resetPasswordByUsernameOrEmail(String usernameOrEmail, String newPassword, String confirmPassword, String vCode);
+
+    /**
+     * 更新用户头像
+     * @param userId 用户 ID
+     * @param avatarUrl 头像路径
+     * @return 是否成功
+     */
+    Boolean updateUserAvatar(Integer userId, String avatarUrl);
 }

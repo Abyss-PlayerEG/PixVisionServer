@@ -115,4 +115,13 @@
           AND password = #{oldPassword}
         </if>
     </update>
+
+    <!-- 更新用户头像 -->
+    <update id="updateUserAvatar">
+        UPDATE tb_user
+        SET avatar_url = #{avatarUrl},
+            update_time = NOW()
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+    </update>
 </mapper>

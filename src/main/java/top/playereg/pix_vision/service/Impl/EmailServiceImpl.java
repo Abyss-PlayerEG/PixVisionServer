@@ -75,6 +75,7 @@ public class EmailServiceImpl implements EmailService {
      * @return String
      * @author PlayerEG
      */
+    @Deprecated
     public String sendMailToMany(
             String subject,
             String content,

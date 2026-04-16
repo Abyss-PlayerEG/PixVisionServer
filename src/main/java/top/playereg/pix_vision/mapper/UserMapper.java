@@ -67,4 +67,12 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 影响行数
      * */
     Integer changeUserPassword( String email, String oldPassword, String newPassword );
+
+    /**
+     * 更新用户头像
+     * @param userId 用户 ID
+     * @param avatarUrl 头像路径
+     * @return 影响行数
+     */
+    int updateUserAvatar(@org.apache.ibatis.annotations.Param("userId") Integer userId, @org.apache.ibatis.annotations.Param("avatarUrl") String avatarUrl);
 }

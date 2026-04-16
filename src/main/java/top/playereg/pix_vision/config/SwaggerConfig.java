@@ -23,10 +23,11 @@ public class SwaggerConfig {
                         .version(AppVersion)
         );
     }
+    //
     @Bean
     public GroupedOpenApi rootApi() {
         return GroupedOpenApi.builder()
-                .group("1 - Root")
+                .group("1_Root")
                 .pathsToMatch("/**")
                 .packagesToScan("top.playereg.pix_vision.controller")
                 .build();
@@ -34,7 +35,7 @@ public class SwaggerConfig {
     @Bean
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
-                .group("2 - PixelVisionApi")
+                .group("2_PixelVisionApi")
                 .pathsToMatch("/api/**")
                 .packagesToScan("top.playereg.pix_vision.controller")
                 .build();

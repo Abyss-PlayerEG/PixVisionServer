@@ -91,25 +91,25 @@ public class SecureConfig {
         } else {
             switch (number) {
                 case 0:
-                    return StrUtil.join("", instance.number0);
+                    return StrUtil.join("", (Object[]) instance.number0);
                 case 1:
-                    return StrUtil.join("", instance.number1);
+                    return StrUtil.join("", (Object[]) instance.number1);
                 case 2:
-                    return StrUtil.join("", instance.number2);
+                    return StrUtil.join("", (Object[]) instance.number2);
                 case 3:
-                    return StrUtil.join("", instance.number3);
+                    return StrUtil.join("", (Object[]) instance.number3);
                 case 4:
-                    return StrUtil.join("", instance.number4);
+                    return StrUtil.join("", (Object[]) instance.number4);
                 case 5:
-                    return StrUtil.join("", instance.number5);
+                    return StrUtil.join("", (Object[]) instance.number5);
                 case 6:
-                    return StrUtil.join("", instance.number6);
+                    return StrUtil.join("", (Object[]) instance.number6);
                 case 7:
-                    return StrUtil.join("", instance.number7);
+                    return StrUtil.join("", (Object[]) instance.number7);
                 case 8:
-                    return StrUtil.join("", instance.number8);
+                    return StrUtil.join("", (Object[]) instance.number8);
                 case 9:
-                    return StrUtil.join("", instance.number9);
+                    return StrUtil.join("", (Object[]) instance.number9);
             }
         }
         return "";
