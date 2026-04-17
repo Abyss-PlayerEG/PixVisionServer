@@ -39,7 +39,7 @@ import java.util.UUID;
  * @see top.playereg.pix_vision.config.FilePathConfig
  */
 @RestController
-@RequestMapping("/api/get-image")
+@RequestMapping("/api/image")
 @Tag(name = "图片访问接口", description = "提供头像、作品、Logo 等图片资源的访问接口")
 public class ImageController {
     private static final Logger log = LoggerFactory.getLogger(ImageController.class);
@@ -98,7 +98,7 @@ public class ImageController {
                     ```
                     """
     )
-    @GetMapping("/avatar")
+    @GetMapping("/get/avatar")
     public ResponseEntity<Resource> getAvatar(
         @Parameter(description = "图像相对路径，支持子目录，如：default/11.png", required = true, example = "default/1.png") @RequestParam String filePath
     ) {
@@ -152,7 +152,7 @@ public class ImageController {
                     ```
                     """
     )
-    @GetMapping("/works")
+    @GetMapping("/get/works")
     public ResponseEntity<Resource> getWorkImage(
         @Parameter(description = "图像相对路径，支持子目录，如：2024/04/artwork.png", required = true, example = "artwork_001.png") @RequestParam String filePath
     ) {
@@ -206,7 +206,7 @@ public class ImageController {
                     ```
                     """
     )
-    @GetMapping("/logo")
+    @GetMapping("/get/logo")
     public ResponseEntity<Resource> getLogo(
         @Parameter(description = "图像文件名，如：dark.png", required = true, example = "dark.png") @RequestParam String filePath
     ) {
@@ -267,7 +267,7 @@ public class ImageController {
                     ```
                     """
     )
-    @PostMapping("/upload-avatar")
+    @PostMapping("/upload/avatar")
     public ResponseEntity<ResponsePojo<String>> uploadAvatar(
         @Parameter(description = "头像文件", required = true) @RequestParam MultipartFile file,
         HttpServletRequest request
@@ -323,33 +323,33 @@ public class ImageController {
                 return ResponseEntity.badRequest().body(ResponsePojo.error(null,
                     "文件不是有效的图片格式，请上传 JPG/JPEG/PNG 格式的图片"));
             }
-            
+
             // 6. 验证图像是否为正方形
             if (!ImageUtils.isSquareImage(imageBytes)) {
                 log.warn("图像不是正方形");
-                return ResponseEntity.badRequest().body(ResponsePojo.error(null, 
+                return ResponseEntity.badRequest().body(ResponsePojo.error(null,
                     "头像必须是正方形图片，请上传宽高相等的图片"));
             }
-                            
+
             // 7. 缩放图片为 600x600 的 PNG 格式
             log.info("开始处理头像图片，原始大小: {} bytes", imageBytes.length);
             byte[] resizedImage = ImageUtils.resizeImage(imageBytes, 600, 600, true);
             log.info("头像图片处理完成，处理后大小: {} bytes", resizedImage.length);
-                            
+
             // 8. 生成唯一文件名
             String fileName = UUID.randomUUID().toString().replace("-", "") + ".png";
             String savePath = Paths.get(FilePathConfig.AvatarPath, fileName).toString();
-                
+
             // 9. 保存文件
             File saveFile = new File(savePath);
             File parentDir = saveFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
             }
-                
+
             cn.hutool.core.io.FileUtil.writeBytes(resizedImage, saveFile);
             log.info("头像文件保存成功: {}", savePath);
-                
+
             // 10. 更新数据库中的头像路径（只保存相对路径）
             String avatarUrl = fileName; // 直接保存文件名，访问时使用 /api/get-image/avatar?filePath=xxx.png
             Boolean updateResult = userService.updateUserAvatar(userId, avatarUrl);
