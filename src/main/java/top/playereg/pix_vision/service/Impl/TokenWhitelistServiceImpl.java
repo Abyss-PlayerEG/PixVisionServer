@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -94,7 +95,7 @@ public class TokenWhitelistServiceImpl implements TokenWhitelistService {
         try {
             // 1. 从用户 Token 索引集合中获取该用户的所有 Token（O(1) 复杂度）
             String indexKey = TOKEN_INDEX_PREFIX + userId;
-            java.util.Set<String> tokens = redisTemplate.opsForSet().members(indexKey);
+            Set<String> tokens = redisTemplate.opsForSet().members(indexKey);
 
             if (tokens == null || tokens.isEmpty()) {
                 log.info("未找到任何 Token，用户 ID: {}, 用户名：{}", userId, username);
