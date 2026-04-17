@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 邮件模板渲染服务实现类
- * 
+ *
  * 特性：
  * 1. 支持多种邮件模板
  * 2. Logo 图片缓存（避免重复读取）
@@ -27,18 +27,18 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Service
 public class EmailTemplateServiceImpl implements EmailTemplateService {
-    
+
     /**
      * Logo Base64 缓存（线程安全）
      * Key: 文件名, Value: Base64 Data URI
      */
     private static final Map<String, String> LOGO_CACHE = new ConcurrentHashMap<>();
-    
+
     /**
      * 系统名称常量
      */
     private static final String SYSTEM_NAME = "Pixie Vision";
-    
+
     /**
      * 验证码过期时间（分钟）
      */
@@ -47,10 +47,10 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     @Override
     public String renderVerificationEmail(String code, String username, String emailText) {
         log.debug("开始渲染验证码邮件模板 - 用户: {}, 类型: {}", username, emailText);
-        
+
         // 构建占位符
         Map<String, String> placeholders = buildVerificationPlaceholders(code, username, emailText);
-        
+
         // 渲染模板
         return renderTemplate("email-verification", placeholders);
     }
@@ -59,10 +59,10 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     public String renderTemplate(String templateName, Map<String, String> placeholders) {
         // 加载模板文件
         String template = loadTemplate(templateName);
-        
+
         // 执行占位符替换
         String result = replacePlaceholders(template, placeholders);
-        
+
         log.debug("模板渲染完成: {}", templateName);
         return result;
     }
@@ -76,8 +76,9 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
      * @return 占位符映射表
      */
     private Map<String, String> buildVerificationPlaceholders(String code, String username, String emailText) {
+        log.info("验证码：{}", code);
         Map<String, String> placeholders = new HashMap<>();
-        
+
         // 基础信息
         placeholders.put("{{username}}", StrUtil.nullToEmpty(username));
         placeholders.put("{{email_text}}", StrUtil.nullToEmpty(emailText));
@@ -85,11 +86,11 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
         placeholders.put("{{expireTime}}", EXPIRE_TIME);
         placeholders.put("{{year}}", String.valueOf(DateUtil.thisYear()));
         placeholders.put("{{systemName}}", SYSTEM_NAME);
-        
+
         // Logo 图片（带缓存）
         placeholders.put("{{logoUriLight}}", getCachedLogoBase64("light.png"));
         placeholders.put("{{logoUriDark}}", getCachedLogoBase64("dark.png"));
-        
+
         return placeholders;
     }
 
@@ -105,12 +106,12 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
             log.trace("从缓存加载 Logo: {}", logoFileName);
             return LOGO_CACHE.get(logoFileName);
         }
-        
+
         // 缓存未命中，从文件系统加载
         String base64 = loadLogoBase64(logoFileName);
         LOGO_CACHE.put(logoFileName, base64);
         log.info("Logo 已加载并缓存: {}", logoFileName);
-        
+
         return base64;
     }
 
@@ -126,7 +127,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
                 FilePathConfig.EmailHtmlPath,
                 templateName
         );
-        
+
         try {
             String template = ResourceUtil.readUtf8Str(templatePath);
             log.debug("模板加载成功: {}", templatePath);
@@ -145,7 +146,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
      */
     private String loadLogoBase64(String logoFileName) {
         String logoPath = StrUtil.format("{}/{}", FilePathConfig.LogoPath, logoFileName);
-        
+
         try {
             return ImageUtils.imageToBase64(logoPath);
         } catch (Exception e) {
@@ -165,26 +166,26 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
         if (template == null || template.isEmpty()) {
             return "";
         }
-        
+
         if (placeholders == null || placeholders.isEmpty()) {
             return template;
         }
-        
+
         String result = template;
-        
+
         for (Map.Entry<String, String> entry : placeholders.entrySet()) {
             String placeholder = entry.getKey();
             String value = entry.getValue();
-            
+
             // 只替换非空值
             if (value != null) {
                 result = result.replace(placeholder, value);
             }
         }
-        
+
         return result;
     }
-    
+
     /**
      * 清除 Logo 缓存（用于测试或重新加载）
      */
