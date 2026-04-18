@@ -3,6 +3,7 @@ package top.playereg.pix_vision.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.userPojo.User;
 
@@ -74,7 +75,7 @@ public interface UserMapper extends BaseMapper<User> {
      * @param avatarUrl 头像路径
      * @return 影响行数
      */
-    int updateUserAvatar(@org.apache.ibatis.annotations.Param("userId") Integer userId, @org.apache.ibatis.annotations.Param("avatarUrl") String avatarUrl);
+    int updateUserAvatar(@Param("userId") Integer userId, @Param("avatarUrl") String avatarUrl);
 
     /**
      * 更新用户昵称
@@ -83,5 +84,5 @@ public interface UserMapper extends BaseMapper<User> {
      * @param nickname 新昵称
      * @return 影响行数
      */
-    int updateUserNickname(@org.apache.ibatis.annotations.Param("userId") Integer userId, @org.apache.ibatis.annotations.Param("nickname") String nickname);
+    int updateUserNickname(@Param("userId") Integer userId, @Param("nickname") String nickname);
 }
