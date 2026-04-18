@@ -715,4 +715,115 @@ public class UserController {
         log.info("密码重置成功，用户名或邮箱：{}", usernameOrEmail);
         return ResponsePojo.success(true, "密码重置成功，请使用新密码重新登录");
     }
+
+    /**
+     * 修改用户昵称
+     *
+     * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param nickname 新昵称
+     * @return 修改结果
+     * @author Playereg
+     */
+    @PostMapping("/updateNickname")
+    @Operation(
+        summary = "修改用户昵称接口",
+        description = """
+            # 修改用户昵称
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - nickname: 新昵称，字符串类型，必填，长度 1-20 个字符
+
+            ## 返回说明：
+            - **修改成功**：返回 **{"data": true}** 和“昵称修改成功”提示
+            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
+            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
+            - **昵称为空**：返回 **{"data": null}** 和“昵称不能为空”提示
+            - **昵称长度错误**：返回 **{"data": null}** 和“昵称长度必须在 1-20 个字符之间”提示
+            - **修改失败**：返回 **{"data": false}** 和“昵称修改失败”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验昵称参数（非空、长度 1-20）
+            5. 调用服务层更新用户昵称
+            6. 返回修改结果
+
+            ## 注意事项：
+            - 需要携带有效的 Token 才能修改昵称
+            - Token 必须在白名单中（未过期、未登出）
+            - 昵称长度限制：**1-20 个字符**
+            - 昵称可以包含中文、英文、数字和特殊字符
+            - 修改成功后，下次登录时会看到新昵称
+            """
+    )
+    public ResponsePojo<Boolean> updateNickname(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "新昵称，长度 1-20 个字符", required = true, example = "新昵称") @RequestParam String nickname
+    ) {
+        // 优先从 URL 参数获取 Token
+        String token = request.getParameter("token");
+
+        // 如果 URL 参数中没有，尝试从 Header 获取
+        if (token == null || token.isEmpty()) {
+            String authHeader = request.getHeader("Authorization");
+            log.debug("修改昵称接口 - Authorization Header: {}", authHeader);
+
+            if (authHeader != null && !authHeader.isEmpty()) {
+                // 支持两种格式：带 Bearer 前缀 或 不带前缀
+                if (authHeader.startsWith("Bearer ")) {
+                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
+                } else {
+                    token = authHeader; // 直接使用（假设就是 Token）
+                }
+            }
+        }
+
+        log.debug("修改昵称接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+
+        if (token == null || token.isEmpty()) {
+            log.error("修改昵称失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始修改用户昵称，用户 ID: {}, 用户名: {}, 新昵称: {}", userId, username, nickname);
+
+        // 校验昵称参数
+        if (nickname == null || nickname.isEmpty()) {
+            log.warn("昵称为空，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "昵称不能为空");
+        }
+
+        if (nickname.length() < 1 || nickname.length() > 20) {
+            log.warn("昵称长度不符合要求，用户 ID: {}, 昵称长度: {}", userId, nickname.length());
+            return ResponsePojo.error(null, "昵称长度必须在 1-20 个字符之间");
+        }
+
+        // 调用服务层更新昵称
+        Boolean result = userService.updateUserNickname(userId, nickname);
+
+        if (result) {
+            log.info("用户昵称修改成功，用户 ID: {}, 用户名: {}, 新昵称: {}", userId, username, nickname);
+            return ResponsePojo.success(true, "昵称修改成功");
+        } else {
+            log.error("用户昵称修改失败，用户 ID: {}, 用户名: {}", userId, username);
+            return ResponsePojo.error(false, "昵称修改失败");
+        }
+    }
+
 }

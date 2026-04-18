@@ -124,4 +124,13 @@
         WHERE user_id = #{userId}
           AND is_delete = 0
     </update>
+
+    <!-- 更新用户昵称 -->
+    <update id="updateUserNickname">
+        UPDATE tb_user
+        SET nickname    = #{nickname},
+            update_time = NOW()
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+    </update>
 </mapper>

@@ -75,4 +75,13 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 影响行数
      */
     int updateUserAvatar(@org.apache.ibatis.annotations.Param("userId") Integer userId, @org.apache.ibatis.annotations.Param("avatarUrl") String avatarUrl);
+
+    /**
+     * 更新用户昵称
+     *
+     * @param userId   用户 ID
+     * @param nickname 新昵称
+     * @return 影响行数
+     */
+    int updateUserNickname(@org.apache.ibatis.annotations.Param("userId") Integer userId, @org.apache.ibatis.annotations.Param("nickname") String nickname);
 }

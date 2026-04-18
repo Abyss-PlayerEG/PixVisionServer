@@ -213,24 +213,62 @@ public class UserServiceImpl implements UserService {
     @Override
     public Boolean updateUserAvatar(Integer userId, String avatarUrl) {
         log.info("更新用户头像，用户 ID: {}, 头像路径: {}", userId, avatarUrl);
-        
+
         if (userId == null || userId <= 0) {
             log.error("用户 ID 无效: {}", userId);
             return false;
         }
-        
+
         if (avatarUrl == null || avatarUrl.isEmpty()) {
             log.error("头像路径不能为空");
             return false;
         }
-        
+
         int result = userMapper.updateUserAvatar(userId, avatarUrl);
-        
+
         if (result > 0) {
             log.info("用户头像更新成功，用户 ID: {}", userId);
             return true;
         } else {
             log.error("用户头像更新失败，用户 ID: {}", userId);
+            return false;
+        }
+    }
+
+    /**
+     * 更新用户昵称
+     *
+     * @param userId   用户 ID
+     * @param nickname 新昵称
+     * @return 是否成功
+     */
+    @Override
+    public Boolean updateUserNickname(Integer userId, String nickname) {
+        log.info("更新用户昵称，用户 ID: {}, 新昵称: {}", userId, nickname);
+
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return false;
+        }
+
+        if (nickname == null || nickname.isEmpty()) {
+            log.error("昵称不能为空");
+            return false;
+        }
+
+        // 验证昵称长度（1-20 个字符）
+        if (nickname.length() < 1 || nickname.length() > 20) {
+            log.error("昵称长度必须在 1-20 个字符之间，当前长度: {}", nickname.length());
+            return false;
+        }
+
+        int result = userMapper.updateUserNickname(userId, nickname);
+
+        if (result > 0) {
+            log.info("用户昵称更新成功，用户 ID: {}, 新昵称: {}", userId, nickname);
+            return true;
+        } else {
+            log.error("用户昵称更新失败，用户 ID: {}", userId);
             return false;
         }
     }

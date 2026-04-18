@@ -61,4 +61,13 @@ public interface UserService {
      * @return 是否成功
      */
     Boolean updateUserAvatar(Integer userId, String avatarUrl);
+
+    /**
+     * 更新用户昵称
+     *
+     * @param userId   用户 ID
+     * @param nickname 新昵称
+     * @return 是否成功
+     */
+    Boolean updateUserNickname(Integer userId, String nickname);
 }
