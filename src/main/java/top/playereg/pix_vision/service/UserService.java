@@ -97,4 +97,13 @@ public interface UserService {
      * @return 是否成功
      */
     Boolean deleteUserData(Integer dataId, Integer userId);
+
+    /**
+     * 批量删除用户拓展数据（只能删除自己的数据）
+     *
+     * @param dataIds 数据 ID 列表
+     * @param userId  用户 ID（从 Token 中获取，用于权限验证）
+     * @return 是否成功
+     */
+    Boolean batchDeleteUserData(java.util.List<Integer> dataIds, Integer userId);
 }

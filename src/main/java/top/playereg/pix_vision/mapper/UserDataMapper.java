@@ -41,4 +41,13 @@ public interface UserDataMapper extends BaseMapper<UserData> {
      * @return 影响行数
      */
     int deleteUserDataById(@Param("dataId") Integer dataId, @Param("userId") Integer userId);
+
+    /**
+     * 批量删除用户拓展数据（逻辑删除）
+     *
+     * @param dataIds 数据 ID 列表
+     * @param userId  用户 ID（用于权限验证）
+     * @return 影响行数
+     */
+    int batchDeleteUserDataByIds(@Param("dataIds") List<Integer> dataIds, @Param("userId") Integer userId);
 }

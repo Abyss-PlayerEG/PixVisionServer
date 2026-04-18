@@ -351,4 +351,112 @@ public class UserDataController {
             return ResponsePojo.error(false, "用户拓展数据删除失败");
         }
     }
+
+    /**
+     * 批量删除用户拓展数据（需要登录）
+     *
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param dataIds 要删除的数据 ID 列表
+     * @return 删除结果
+     * @author PlayerEG
+     */
+    @PostMapping("/batch-delete")
+    @Operation(
+        summary = "批量删除用户拓展数据接口",
+        description = """
+            # 批量删除用户拓展数据（需要登录认证）
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - dataIds: 要删除的数据 ID 列表，Integer 数组类型，必填，至少包含一个 ID
+
+            ## 返回说明：
+            - **删除成功**：返回 **{"data": true}** 和“批量删除用户拓展数据成功”提示
+            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
+            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
+            - **数据 ID 列表为空**：返回 **{"data": false}** 和“数据 ID 列表不能为空”提示
+            - **无权删除**：返回 **{"data": false}** 和“部分或全部数据无权删除”提示（数据不属于当前用户）
+            - **删除失败**：返回 **{"data": false}** 和“批量删除用户拓展数据失败”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验数据 ID 列表参数有效性
+            5. 检查用户是否存在
+            6. 执行批量逻辑删除（SQL 层面验证 user_id，确保只能删除自己的数据）
+            7. 返回删除结果
+
+            ## 注意事项：
+            - **需要携带有效的 Token 才能删除拓展数据**
+            - Token 必须在白名单中（未过期、未登出）
+            - **用户只能删除自己的拓展数据**，无法删除他人的数据
+            - 采用逻辑删除方式，数据不会真正从数据库中移除
+            - 如果部分数据不属于当前用户，只会删除属于当前用户的数据
+            - 删除后，这些数据在查询接口中将不再显示
+            - 建议单次批量删除不超过 100 条数据
+            """
+    )
+    public ResponsePojo<Boolean> batchDeleteUserData(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "要删除的数据 ID 列表", required = true, example = "[1, 2, 3]") @RequestParam List<Integer> dataIds
+    ) {
+        // 优先从 URL 参数获取 Token
+        String token = request.getParameter("token");
+
+        // 如果 URL 参数中没有，尝试从 Header 获取
+        if (token == null || token.isEmpty()) {
+            String authHeader = request.getHeader("Authorization");
+            log.debug("批量删除用户拓展数据接口 - Authorization Header: {}", authHeader);
+
+            if (authHeader != null && !authHeader.isEmpty()) {
+                // 支持两种格式：带 Bearer 前缀 或 不带前缀
+                if (authHeader.startsWith("Bearer ")) {
+                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
+                } else {
+                    token = authHeader; // 直接使用（假设就是 Token）
+                }
+            }
+        }
+
+        log.debug("批量删除用户拓展数据接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+
+        if (token == null || token.isEmpty()) {
+            log.error("批量删除用户拓展数据失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始批量删除用户拓展数据，用户 ID: {}, 用户名: {}, 数据 ID 数量: {}", userId, username, dataIds != null ? dataIds.size() : 0);
+
+        // 校验数据 ID 列表参数
+        if (dataIds == null || dataIds.isEmpty()) {
+            log.warn("数据 ID 列表为空，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "数据 ID 列表不能为空");
+        }
+
+        // 调用服务层批量删除用户拓展数据
+        Boolean result = userService.batchDeleteUserData(dataIds, userId);
+
+        if (result) {
+            log.info("批量删除用户拓展数据成功，用户 ID: {}, 用户名: {}, 删除数量: {}", userId, username, dataIds.size());
+            return ResponsePojo.success(true, "批量删除用户拓展数据成功");
+        } else {
+            log.warn("批量删除用户拓展数据失败，用户 ID: {}, 用户名: {}", userId, username);
+            return ResponsePojo.error(false, "批量删除用户拓展数据失败");
+        }
+    }
 }

@@ -41,4 +41,18 @@
           AND is_delete = 0
     </update>
 
+    <!-- 批量删除用户拓展数据（逻辑删除，同时验证用户权限） -->
+    <update id="batchDeleteUserDataByIds">
+        UPDATE tb_user_data
+        SET is_delete = 1,
+        update_time = NOW(),
+        update_user = #{userId}
+        WHERE user_id = #{userId}
+        AND is_delete = 0
+        AND data_id IN
+        <foreach collection="dataIds" item="dataId" open="(" separator="," close=")">
+            #{dataId}
+        </foreach>
+    </update>
+
 </mapper>

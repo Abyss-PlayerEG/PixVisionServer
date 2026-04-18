@@ -420,4 +420,45 @@ public class UserServiceImpl implements UserService {
             return false;
         }
     }
+
+    /**
+     * 批量删除用户拓展数据（只能删除自己的数据）
+     *
+     * @param dataIds 数据 ID 列表
+     * @param userId  用户 ID（从 Token 中获取，用于权限验证）
+     * @return 是否成功
+     */
+    @Override
+    public Boolean batchDeleteUserData(java.util.List<Integer> dataIds, Integer userId) {
+        log.info("批量删除用户拓展数据，数据 ID 数量: {}, 用户 ID: {}", dataIds != null ? dataIds.size() : 0, userId);
+
+        // 参数校验
+        if (dataIds == null || dataIds.isEmpty()) {
+            log.error("数据 ID 列表为空");
+            return false;
+        }
+
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return false;
+        }
+
+        // 检查用户是否存在
+        User user = userMapper.selectAllUserInfoById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return false;
+        }
+
+        // 执行批量逻辑删除（SQL 中已包含 user_id 验证，确保只能删除自己的数据）
+        int result = userDataMapper.batchDeleteUserDataByIds(dataIds, userId);
+
+        if (result > 0) {
+            log.info("批量删除用户拓展数据成功，删除数量: {}, 用户 ID: {}", result, userId);
+            return true;
+        } else {
+            log.warn("批量删除用户拓展数据失败，可能原因：数据不存在、不属于当前用户、或已被删除，用户 ID: {}", userId);
+            return false;
+        }
+    }
 }
