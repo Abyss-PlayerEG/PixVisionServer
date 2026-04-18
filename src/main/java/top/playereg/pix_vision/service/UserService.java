@@ -80,4 +80,12 @@ public interface UserService {
      * @return 是否成功
      */
     Boolean addUserData(Integer userId, String dataName, String dataContent);
+
+    /**
+     * 查询用户所有拓展数据
+     *
+     * @param userId 用户 ID
+     * @return 用户拓展数据列表，如果用户不存在则返回 null
+     */
+    java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData> getUserDataList(Integer userId);
 }

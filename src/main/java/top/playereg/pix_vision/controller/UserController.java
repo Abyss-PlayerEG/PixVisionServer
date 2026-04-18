@@ -953,4 +953,87 @@ public class UserController {
             return ResponsePojo.error(false, "用户拓展数据添加失败");
         }
     }
+
+    /**
+     * 查询用户所有拓展数据（公开接口）
+     *
+     * @param userId 用户 ID
+     * @return 响应数据<List < UserData>>，包含用户的所有拓展数据列表
+     * @author PlayerEG
+     */
+    @GetMapping("/getUserDataList")
+    @Operation(
+        summary = "查询用户所有拓展数据接口（公开）",
+        description = """
+            # 查询用户所有拓展数据（公开接口，无需登录）
+
+            ## 参数说明：
+            - userId: 用户 ID，Integer 类型，必填
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": [UserData 列表]}** ，包含用户的所有拓展数据
+            - **用户 ID 无效**：返回 **{"data": null}** 和“用户 ID 无效”提示
+            - **用户不存在**：返回 **{"data": null}** 和“用户不存在”提示
+            - **查询失败**：返回 **{"data": null}** 和“查询失败”提示
+
+            ## 返回数据结构：
+            ```json
+            {
+              "code": 200,
+              "data": [
+                {
+                  "data_id": 2,
+                  "user_id": 1,
+                  "user_data_name": "微信",
+                  "user_data": "wx_test_user"
+                },
+                {
+                  "data_id": 1,
+                  "user_id": 1,
+                  "user_data_name": "电话",
+                  "user_data": "13800138000"
+                }
+              ],
+              "message": "查询成功"
+            }
+            ```
+
+            ## 业务逻辑：
+            1. 校验用户 ID 参数有效性
+            2. 检查用户是否存在
+            3. 查询用户的所有拓展数据（自动排除逻辑删除的数据）
+            4. 按创建时间倒序返回结果
+            5. 返回拓展数据列表
+
+            ## 注意事项：
+            - **此接口为公开接口，无需登录即可访问**
+            - 自动过滤已逻辑删除的数据（is_delete=0）
+            - 返回结果按创建时间倒序排列（最新的在前）
+            - 如果用户没有拓展数据，返回空列表 []
+            - 常见的数据名称示例：电话、邮箱、网站、微信、QQ 等
+            """
+    )
+    public ResponsePojo<java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData>> getUserDataList(
+        @Parameter(description = "用户 ID", required = true, example = "1") @RequestParam Integer userId
+    ) {
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return ResponsePojo.error(null, "用户 ID 无效");
+        }
+
+        log.info("开始查询用户拓展数据，用户 ID: {}", userId);
+
+        // 调用服务层查询用户拓展数据
+        java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData> userDataList = userService.getUserDataList(userId);
+
+        // 用户不存在
+        if (userDataList == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "用户不存在");
+        }
+
+        log.info("查询用户拓展数据成功，用户 ID: {}, 数据条数: {}", userId, userDataList.size());
+        return ResponsePojo.success(userDataList, "查询成功");
+    }
 }

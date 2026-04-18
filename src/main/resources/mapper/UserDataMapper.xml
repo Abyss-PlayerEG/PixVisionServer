@@ -18,4 +18,16 @@
                 #{create_user})
     </insert>
 
+    <!-- 根据用户 ID 查询所有拓展数据（排除逻辑删除） -->
+    <select id="selectUserDataByUserId" resultType="top.playereg.pix_vision.pojo.userPojo.UserData">
+        SELECT data_id,
+               user_id,
+               user_data_name,
+               user_data
+        FROM tb_user_data
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+        ORDER BY create_time DESC
+    </select>
+
 </mapper>

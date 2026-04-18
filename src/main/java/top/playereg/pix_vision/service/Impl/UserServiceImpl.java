@@ -344,4 +344,39 @@ public class UserServiceImpl implements UserService {
             return false;
         }
     }
+
+    /**
+     * 查询用户所有拓展数据
+     *
+     * @param userId 用户 ID
+     * @return 用户拓展数据列表，如果用户不存在则返回 null
+     */
+    @Override
+    public java.util.List<UserData> getUserDataList(Integer userId) {
+        log.info("查询用户拓展数据，用户 ID: {}", userId);
+
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return null;
+        }
+
+        // 先检查用户是否存在
+        User user = userMapper.selectAllUserInfoById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return null;
+        }
+
+        // 查询用户的所有拓展数据（排除逻辑删除）
+        java.util.List<UserData> userDataList = userDataMapper.selectUserDataByUserId(userId);
+
+        if (userDataList == null) {
+            log.info("用户没有拓展数据，用户 ID: {}", userId);
+            return new java.util.ArrayList<>();
+        }
+
+        log.info("查询到用户拓展数据，用户 ID: {}, 数据条数: {}", userId, userDataList.size());
+        return userDataList;
+    }
 }

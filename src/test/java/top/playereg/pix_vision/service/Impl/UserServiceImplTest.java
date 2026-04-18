@@ -42,4 +42,19 @@ class UserServiceImplTest {
         Boolean result2 = userService.addUserData(1, "微信", "wx_test_user");
         log.info("添加结果2：{}", result2);
     }
+
+    @Test
+    void getUserDataList() {
+        // 测试查询用户拓展数据（公开接口，直接传入 userId）
+        java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData> dataList = userService.getUserDataList(1);
+        if (dataList != null) {
+            log.info("查询到 {} 条拓展数据", dataList.size());
+            for (top.playereg.pix_vision.pojo.userPojo.UserData data : dataList) {
+                log.info("数据 ID: {}, 数据名称: {}, 数据内容: {}",
+                    data.getData_id(), data.getUser_data_name(), data.getUser_data());
+            }
+        } else {
+            log.warn("用户不存在或查询失败");
+        }
+    }
 }
