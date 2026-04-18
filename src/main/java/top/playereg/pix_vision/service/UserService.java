@@ -61,4 +61,49 @@ public interface UserService {
      * @return 是否成功
      */
     Boolean updateUserAvatar(Integer userId, String avatarUrl);
+
+    /**
+     * 更新用户昵称
+     *
+     * @param userId   用户 ID
+     * @param nickname 新昵称
+     * @return 是否成功
+     */
+    Boolean updateUserNickname(Integer userId, String nickname);
+
+    /**
+     * 新增用户拓展数据
+     *
+     * @param userId      用户 ID
+     * @param dataName    数据名称（电话、邮箱、网站、微信等）
+     * @param dataContent 数据内容（具体的电话号码、邮箱地址、网站 url 等）
+     * @return 是否成功
+     */
+    Boolean addUserData(Integer userId, String dataName, String dataContent);
+
+    /**
+     * 查询用户所有拓展数据
+     *
+     * @param userId 用户 ID
+     * @return 用户拓展数据列表，如果用户不存在则返回 null
+     */
+    java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData> getUserDataList(Integer userId);
+
+    /**
+     * 删除用户拓展数据（只能删除自己的数据）
+     *
+     * @param dataId 数据 ID
+     * @param userId 用户 ID（从 Token 中获取，用于权限验证）
+     * @return 是否成功
+     */
+    Boolean deleteUserData(Integer dataId, Integer userId);
+
+    /**
+     * 批量删除用户拓展数据（只能删除自己的数据）
+     *
+     * @param dataIds 数据 ID 列表
+     * @param userId  用户 ID（从 Token 中获取，用于权限验证）
+     * @return 是否成功
+     */
+    Boolean batchDeleteUserData(java.util.List<Integer> dataIds, Integer userId);
 }

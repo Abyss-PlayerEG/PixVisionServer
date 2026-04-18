@@ -232,11 +232,13 @@ public class MailController {
      *
      * @param email
      * @param inputVCode
+     * @deprecated
      * @return ResponsePojo<Boolean>
      * @implNote 验证"验证码"
      * @apiNote 验证用户输入的验证码
      * @author blue_sky_ks
      */
+    @Deprecated
     @PostMapping("/verify-email-code-test")
     @Operation(
         summary = "验证\"验证码\" - 测试",

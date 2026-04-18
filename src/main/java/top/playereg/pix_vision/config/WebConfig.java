@@ -84,15 +84,15 @@ public class WebConfig implements WebMvcConfigurer {
             )
             // 排除不需要验证的路径
             .excludePathPatterns(
-                "/7e212056/no-auth",                        // 测试接口
-                "/api/test/**",                             // 测试接口
-                "/api/user/register",                       // 用户注册
-                "/api/user/login",                          // 用户登录
+                "/api/user/auth/login",                     // 登录
+                "/api/user/auth/logout",                    // 登出
+                "/api/user/register",                       // 注册
+                "/api/user/password/forgot",                // 忘记密码
+                "/api/user/data/list/**",                   // 查询用户拓展数据
                 "/api/mail/send-email-code",                // 发送邮箱验证码
-                "/api/user/forgot-password",                // 忘记密码
-                "/api/get-image/avatar",                    // 获取头像
-                "/api/get-image/works",                     // 获取作品图片
-                "/api/get-image/logo"                       // 获取 Logo
+                "/api/image/get/**",                        // 获取图像
+                "/api/test/**",                             // 测试接口
+                "/7e212056/no-auth"                        // 测试接口
             );
     }
 }

@@ -16,7 +16,7 @@ import java.io.File;
 
 public class ImageUtils {
     private static final Logger log = LoggerFactory.getLogger(ImageUtils.class);
-    
+
     /**
      * 验证文件是否为有效的图片格式（通过魔数检查）
      * 仅支持 JPG、JPEG、PNG 格式
@@ -29,23 +29,28 @@ public class ImageUtils {
         if (imageBytes == null || imageBytes.length < 4) {
             return false;
         }
-        
+
         // 检查常见图片格式的魔数（Magic Number）
         // PNG: 89 50 4E 47
-        if (imageBytes[0] == (byte) 0x89 && imageBytes[1] == (byte) 0x50 && 
-            imageBytes[2] == (byte) 0x4E && imageBytes[3] == (byte) 0x47) {
+        if (imageBytes[0] == (byte) 0x89 &&
+            imageBytes[1] == (byte) 0x50 &&
+            imageBytes[2] == (byte) 0x4E &&
+            imageBytes[3] == (byte) 0x47
+        ) {
             return true;
         }
-        
+
         // JPEG: FF D8 FF
-        if (imageBytes[0] == (byte) 0xFF && imageBytes[1] == (byte) 0xD8 && 
-            imageBytes[2] == (byte) 0xFF) {
+        if (imageBytes[0] == (byte) 0xFF &&
+            imageBytes[1] == (byte) 0xD8 &&
+            imageBytes[2] == (byte) 0xFF
+        ) {
             return true;
         }
-        
+
         return false;
     }
-    
+
     /**
      * 检测图像是否为正方形
      *
@@ -58,28 +63,28 @@ public class ImageUtils {
         if (imageBytes == null || imageBytes.length == 0) {
             throw new IllegalArgumentException("图像数据不能为空");
         }
-        
+
         try {
             ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
             BufferedImage image = ImageIO.read(inputStream);
-            
+
             if (image == null) {
                 throw new RuntimeException("无法识别的图像格式");
             }
-            
+
             int width = image.getWidth();
             int height = image.getHeight();
-            
+
             boolean isSquare = (width == height);
             log.debug("图像尺寸检测：{}x{}, 是否正方形：{}", width, height, isSquare);
-            
+
             return isSquare;
         } catch (Exception e) {
             log.error("检测图像是否为正方形失败：{}", e.getMessage(), e);
             throw new RuntimeException("检测图像尺寸失败：" + e.getMessage(), e);
         }
     }
-    
+
     /**
      * 任意图像强制格式转换为 png
      *
@@ -152,7 +157,7 @@ public class ImageUtils {
      * Base64 转换为图像
      *
      * @param base64image Base64 字符串 (格式：data:image/png;base64,/9j/...)
-     * @param savePath 图像保存路径
+     * @param savePath    图像保存路径
      * @return void
      * @author PlayerEG
      * @deprecated 图像上传已确定为二进制文件上传
@@ -189,10 +194,10 @@ public class ImageUtils {
     /**
      * 图像分辨率缩放
      * 仅支持 JPG、JPEG、PNG 格式的图片
-     * 
-     * @param imageBytes 原始图像字节数组
-     * @param width 目标宽度（像素），为 0 时保持原始宽度
-     * @param height 目标高度（像素），为 0 时保持原始高度
+     *
+     * @param imageBytes          原始图像字节数组
+     * @param width               目标宽度（像素），为 0 时保持原始宽度
+     * @param height              目标高度（像素），为 0 时保持原始高度
      * @param maintainAspectRatio 是否保持宽高比，true 时根据 width 和 height 中非零值等比例缩放
      * @return byte[] 压缩后的图像字节数组（PNG 格式）
      * @author PlayerEG
@@ -272,13 +277,14 @@ public class ImageUtils {
             ImageIO.write(resizedImage, "png", outputStream);
             byte[] resizedBytes = outputStream.toByteArray();
 
-            log.info("图像缩放完成：{}x{} -> {}x{}, 原始大小：{} bytes, 压缩后：{} bytes",
-                    originalWidth,
-                    originalHeight,
-                    targetWidth,
-                    targetHeight,
-                    imageBytes.length,
-                    resizedBytes.length
+            log.info(
+                "图像缩放完成：{}x{} -> {}x{}, 原始大小：{} bytes, 压缩后：{} bytes",
+                originalWidth,
+                originalHeight,
+                targetWidth,
+                targetHeight,
+                imageBytes.length,
+                resizedBytes.length
             );
 
             return resizedBytes;
