@@ -30,10 +30,12 @@
 ### 👥 用户系统
 
 - ✅ 用户注册与登录（用户名/邮箱 + 密码）
+- ✅ **模块化控制器设计**（认证、注册、密码管理、资料管理、拓展数据）
 - ✅ 密码修改（需邮箱二次验证）
 - ✅ 忘记密码（无需登录即可重置）
 - ✅ 用户信息管理
 - ✅ 分页用户查询
+- ✅ **用户拓展数据管理**（增删查批量操作）
 - ✅ 多角色权限管理（普通用户/创作者/审核员/管理员）
 
 ### 📧 邮件服务
@@ -278,16 +280,59 @@ mvn spring-boot:run
 
 ## 📡 API 接口
 
-### 🔐 用户接口 `/api/user`
+### 🔐 用户认证接口 `/api/user/auth`
 
-| 方法   | 路径                       | 说明             | 认证 | 参数                                                   |
-|------|--------------------------|----------------|:--:|------------------------------------------------------|
-| POST | `/login`                 | 用户登录（支持用户名/邮箱） | ❌  | usernameOrEmail, password, vCode                     |
-| POST | `/register`              | 用户注册           | ❌  | username, password, nickname(可选), email, vCode       |
-| POST | `/logout`                | 用户登出（移除 Token） | ✅  | Authorization Header 或 URL 参数 token                  |
-| GET  | `/page/{current}/{size}` | 分页查询用户信息       | ✅  | current, size, username(可选), uuid(可选), email(可选)     |
-| POST | `/change-password`       | 修改密码（需登录）      | ✅  | newPassword, confirmPassword, vCode                  |
-| POST | `/forgot-password`       | 忘记密码重置         | ❌  | usernameOrEmail, newPassword, confirmPassword, vCode |
+| 方法   | 路径        | 说明             | 认证 | 参数                                  |
+|------|-----------|----------------|:--:|-------------------------------------|
+| POST | `/login`  | 用户登录（支持用户名/邮箱） | ❌  | usernameOrEmail, password, vCode    |
+| POST | `/logout` | 用户登出（移除 Token） | ✅  | Authorization Header 或 URL 参数 token |
+
+---
+
+### 📝 用户注册接口 `/api/user/register`
+
+| 方法   | 路径  | 说明   | 认证 | 参数                                             |
+|------|-----|------|:--:|------------------------------------------------|
+| POST | `/` | 用户注册 | ❌  | username, password, nickname(可选), email, vCode |
+
+---
+
+### 🔑 密码管理接口 `/api/user/password`
+
+| 方法   | 路径        | 说明        | 认证 | 参数                                                   |
+|------|-----------|-----------|:--:|------------------------------------------------------|
+| POST | `/change` | 修改密码（需登录） | ✅  | newPassword, confirmPassword, vCode                  |
+| POST | `/forgot` | 忘记密码重置    | ❌  | usernameOrEmail, newPassword, confirmPassword, vCode |
+
+---
+
+### 👤 用户资料接口 `/api/user/profile`
+
+| 方法   | 路径                       | 说明       | 认证 | 参数                                               |
+|------|--------------------------|----------|:--:|--------------------------------------------------|
+| GET  | `/page/{current}/{size}` | 分页查询用户信息 | ✅  | current, size, username(可选), uuid(可选), email(可选) |
+| POST | `/nickname`              | 修改用户昵称   | ✅  | nickname                                         |
+
+---
+
+### 📊 用户拓展数据接口 `/api/user/data`
+
+| 方法   | 路径              | 说明       | 认证 | 参数                    |
+|------|-----------------|----------|:--:|-----------------------|
+| POST | `/add`          | 新增拓展数据   | ✅  | dataName, dataContent |
+| GET  | `/list`         | 查询拓展数据列表 | ❌  | userId                |
+| POST | `/delete`       | 删除单条拓展数据 | ✅  | dataId                |
+| POST | `/batch-delete` | 批量删除拓展数据 | ✅  | dataIds (Integer 数组)  |
+
+**拓展数据特性：**
+
+- ✅ 支持多种数据类型（电话、邮箱、网站、微信、QQ 等）
+- ✅ 数据名称长度限制：**不超过 26 个字符**
+- ✅ 数据内容长度限制：**不超过 96 个字符**
+- ✅ 同一用户可添加多条拓展数据（1 对 n 关系）
+- ✅ 采用逻辑删除方式，数据不会真正从数据库移除
+- ✅ **权限控制**：只能删除自己的数据，无法删除他人数据
+- ✅ **批量操作**：支持一次性删除多条数据，提高性能
 
 ---
 
