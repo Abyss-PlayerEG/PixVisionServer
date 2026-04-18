@@ -829,6 +829,128 @@ public class UserController {
     /**
      * 新增用户拓展数据
      *
-     *
+     * @param request     HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param dataName    数据名称（电话、邮箱、网站、微信等）
+     * @param dataContent 数据内容（具体的电话号码、邮箱地址、网站 url 等）
+     * @return 添加结果
+     * @author PlayerEG
      */
+    @PostMapping("/addUserData")
+    @Operation(
+        summary = "新增用户拓展数据接口",
+        description = """
+            # 新增用户拓展数据
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - dataName: 数据名称，字符串类型，必填，长度不超过 26 个字符（如：电话、邮箱、网站、微信等）
+            - dataContent: 数据内容，字符串类型，必填，长度不超过 96 个字符（如：具体的电话号码、邮箱地址、网站 url 等）
+
+            ## 返回说明：
+            - **添加成功**：返回 **{"data": true}** 和“用户拓展数据添加成功”提示
+            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
+            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
+            - **数据名称为空**：返回 **{"data": null}** 和“数据名称不能为空”提示
+            - **数据名称过长**：返回 **{"data": null}** 和“数据名称长度不能超过 26 个字符”提示
+            - **数据内容为空**：返回 **{"data": null}** 和“数据内容不能为空”提示
+            - **数据内容过长**：返回 **{"data": null}** 和“数据内容长度不能超过 96 个字符”提示
+            - **添加失败**：返回 **{"data": false}** 和“用户拓展数据添加失败”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验数据名称和数据内容参数（非空、长度限制）
+            5. 检查用户是否存在
+            6. 调用服务层新增用户拓展数据
+            7. 返回添加结果
+
+            ## 注意事项：
+            - 需要携带有效的 Token 才能添加拓展数据
+            - Token 必须在白名单中（未过期、未登出）
+            - 数据名称长度限制：**不超过 26 个字符**
+            - 数据内容长度限制：**不超过 96 个字符**
+            - 同一用户可以添加多条拓展数据（1 对 n 关系）
+            - 常见的数据名称示例：电话、邮箱、网站、微信、QQ 等
+            """
+    )
+    public ResponsePojo<Boolean> addUserData(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "数据名称，长度不超过 26 个字符", required = true, example = "电话") @RequestParam String dataName,
+        @Parameter(description = "数据内容，长度不超过 96 个字符", required = true, example = "13800138000") @RequestParam String dataContent
+    ) {
+        // 优先从 URL 参数获取 Token
+        String token = request.getParameter("token");
+
+        // 如果 URL 参数中没有，尝试从 Header 获取
+        if (token == null || token.isEmpty()) {
+            String authHeader = request.getHeader("Authorization");
+            log.debug("新增用户拓展数据接口 - Authorization Header: {}", authHeader);
+
+            if (authHeader != null && !authHeader.isEmpty()) {
+                // 支持两种格式：带 Bearer 前缀 或 不带前缀
+                if (authHeader.startsWith("Bearer ")) {
+                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
+                } else {
+                    token = authHeader; // 直接使用（假设就是 Token）
+                }
+            }
+        }
+
+        log.debug("新增用户拓展数据接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+
+        if (token == null || token.isEmpty()) {
+            log.error("新增用户拓展数据失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始新增用户拓展数据，用户 ID: {}, 用户名: {}, 数据名称: {}, 数据内容: {}", userId, username, dataName, dataContent);
+
+        // 校验数据名称参数
+        if (dataName == null || dataName.isEmpty()) {
+            log.warn("数据名称为空，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "数据名称不能为空");
+        }
+
+        if (dataName.length() > 26) {
+            log.warn("数据名称长度不符合要求，用户 ID: {}, 数据名称长度: {}", userId, dataName.length());
+            return ResponsePojo.error(null, "数据名称长度不能超过 26 个字符");
+        }
+
+        // 校验数据内容参数
+        if (dataContent == null || dataContent.isEmpty()) {
+            log.warn("数据内容为空，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "数据内容不能为空");
+        }
+
+        if (dataContent.length() > 96) {
+            log.warn("数据内容长度不符合要求，用户 ID: {}, 数据内容长度: {}", userId, dataContent.length());
+            return ResponsePojo.error(null, "数据内容长度不能超过 96 个字符");
+        }
+
+        // 调用服务层新增用户拓展数据
+        Boolean result = userService.addUserData(userId, dataName, dataContent);
+
+        if (result) {
+            log.info("用户拓展数据添加成功，用户 ID: {}, 用户名: {}, 数据名称: {}", userId, username, dataName);
+            return ResponsePojo.success(true, "用户拓展数据添加成功");
+        } else {
+            log.error("用户拓展数据添加失败，用户 ID: {}, 用户名: {}", userId, username);
+            return ResponsePojo.error(false, "用户拓展数据添加失败");
+        }
+    }
 }

@@ -6,8 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import top.playereg.pix_vision.mapper.UserDataMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
 import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.pojo.userPojo.UserData;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
@@ -16,6 +18,8 @@ public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private UserDataMapper userDataMapper;
 
     /**
      * 注册用户
@@ -269,6 +273,74 @@ public class UserServiceImpl implements UserService {
             return true;
         } else {
             log.error("用户昵称更新失败，用户 ID: {}", userId);
+            return false;
+        }
+    }
+
+    /**
+     * 新增用户拓展数据
+     *
+     * @param userId      用户 ID
+     * @param dataName    数据名称（电话、邮箱、网站、微信等）
+     * @param dataContent 数据内容（具体的电话号码、邮箱地址、网站 url 等）
+     * @return 是否成功
+     */
+    @Override
+    public Boolean addUserData(Integer userId, String dataName, String dataContent) {
+        log.info("新增用户拓展数据，用户 ID: {}, 数据名称: {}, 数据内容: {}", userId, dataName, dataContent);
+
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return false;
+        }
+
+        if (dataName == null || dataName.isEmpty()) {
+            log.error("数据名称不能为空");
+            return false;
+        }
+
+        if (dataContent == null || dataContent.isEmpty()) {
+            log.error("数据内容不能为空");
+            return false;
+        }
+
+        // 验证数据名称长度（不超过 26 个字符）
+        if (dataName.length() > 26) {
+            log.error("数据名称长度不能超过 26 个字符，当前长度: {}", dataName.length());
+            return false;
+        }
+
+        // 验证数据内容长度（不超过 96 个字符）
+        if (dataContent.length() > 96) {
+            log.error("数据内容长度不能超过 96 个字符，当前长度: {}", dataContent.length());
+            return false;
+        }
+
+        // 检查用户是否存在
+        User user = userMapper.selectAllUserInfoById(userId);
+        if (user == null) {
+            log.error("用户不存在，用户 ID: {}", userId);
+            return false;
+        }
+
+        // 创建用户拓展数据对象
+        UserData userData = new UserData();
+        userData.setUser_id(userId);
+        userData.setUser_data_name(dataName);
+        userData.setUser_data(dataContent);
+        userData.setIs_delete(false);
+        userData.setCreate_time(new java.sql.Timestamp(System.currentTimeMillis()));
+        userData.setCreate_user(0); // 系统创建为 0
+
+        // 插入数据
+        int result = userDataMapper.insertUserData(userData);
+
+        if (result > 0) {
+            log.info("用户拓展数据添加成功，用户 ID: {}, 数据名称: {}", userId, dataName);
+            return true;
+        } else {
+            log.error("用户拓展数据添加失败，用户 ID: {}, 数据名称: {}", userId, dataName);
             return false;
         }
     }

@@ -70,4 +70,14 @@ public interface UserService {
      * @return 是否成功
      */
     Boolean updateUserNickname(Integer userId, String nickname);
+
+    /**
+     * 新增用户拓展数据
+     *
+     * @param userId      用户 ID
+     * @param dataName    数据名称（电话、邮箱、网站、微信等）
+     * @param dataContent 数据内容（具体的电话号码、邮箱地址、网站 url 等）
+     * @return 是否成功
+     */
+    Boolean addUserData(Integer userId, String dataName, String dataContent);
 }

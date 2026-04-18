@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.UserDataMapper">
+
+    <!-- 新增用户拓展数据 -->
+    <insert id="insertUserData" parameterType="top.playereg.pix_vision.pojo.userPojo.UserData">
+        INSERT INTO tb_user_data (user_id,
+                                  user_data_name,
+                                  user_data,
+                                  is_delete,
+                                  create_time,
+                                  create_user)
+        VALUES (#{user_id},
+                #{user_data_name},
+                #{user_data},
+                0,
+                NOW(),
+                #{create_user})
+    </insert>
+
+</mapper>
