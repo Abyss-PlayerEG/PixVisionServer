@@ -88,4 +88,13 @@ public interface UserService {
      * @return 用户拓展数据列表，如果用户不存在则返回 null
      */
     java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData> getUserDataList(Integer userId);
+
+    /**
+     * 删除用户拓展数据（只能删除自己的数据）
+     *
+     * @param dataId 数据 ID
+     * @param userId 用户 ID（从 Token 中获取，用于权限验证）
+     * @return 是否成功
+     */
+    Boolean deleteUserData(Integer dataId, Integer userId);
 }

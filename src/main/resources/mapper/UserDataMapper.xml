@@ -30,4 +30,15 @@
         ORDER BY create_time DESC
     </select>
 
+    <!-- 删除用户拓展数据（逻辑删除，同时验证用户权限） -->
+    <update id="deleteUserDataById">
+        UPDATE tb_user_data
+        SET is_delete   = 1,
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE data_id = #{dataId}
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
 </mapper>

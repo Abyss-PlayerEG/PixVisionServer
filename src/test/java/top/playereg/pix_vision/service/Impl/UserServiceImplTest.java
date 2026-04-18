@@ -57,4 +57,15 @@ class UserServiceImplTest {
             log.warn("用户不存在或查询失败");
         }
     }
+
+    @Test
+    void deleteUserData() {
+        // 测试删除用户拓展数据（需要验证权限）
+        Boolean result = userService.deleteUserData(1, 1); // 删除数据 ID 为 1 的数据，用户 ID 为 1
+        log.info("删除结果：{}", result);
+
+        // 测试删除不属于自己的数据（应该失败）
+        Boolean result2 = userService.deleteUserData(2, 999); // 尝试用用户 999 删除数据 2
+        log.info("删除他人数据结果（应为 false）：{}", result2);
+    }
 }

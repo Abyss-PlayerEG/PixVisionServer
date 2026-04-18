@@ -379,4 +379,45 @@ public class UserServiceImpl implements UserService {
         log.info("查询到用户拓展数据，用户 ID: {}, 数据条数: {}", userId, userDataList.size());
         return userDataList;
     }
+
+    /**
+     * 删除用户拓展数据（只能删除自己的数据）
+     *
+     * @param dataId 数据 ID
+     * @param userId 用户 ID（从 Token 中获取，用于权限验证）
+     * @return 是否成功
+     */
+    @Override
+    public Boolean deleteUserData(Integer dataId, Integer userId) {
+        log.info("删除用户拓展数据，数据 ID: {}, 用户 ID: {}", dataId, userId);
+
+        // 参数校验
+        if (dataId == null || dataId <= 0) {
+            log.error("数据 ID 无效: {}", dataId);
+            return false;
+        }
+
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return false;
+        }
+
+        // 检查用户是否存在
+        User user = userMapper.selectAllUserInfoById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return false;
+        }
+
+        // 执行逻辑删除（SQL 中已包含 user_id 验证，确保只能删除自己的数据）
+        int result = userDataMapper.deleteUserDataById(dataId, userId);
+
+        if (result > 0) {
+            log.info("用户拓展数据删除成功，数据 ID: {}, 用户 ID: {}", dataId, userId);
+            return true;
+        } else {
+            log.warn("用户拓展数据删除失败，可能原因：数据不存在、不属于当前用户、或已被删除，数据 ID: {}, 用户 ID: {}", dataId, userId);
+            return false;
+        }
+    }
 }
