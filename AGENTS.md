@@ -86,10 +86,14 @@ PixVisionServer/
 │   │   └── WebConfig.java           # Web 配置
 │   │
 │   ├── controller/          # 控制器层（@RestController）
-│   │   ├── MailController.java      # 邮件服务接口
-│   │   ├── RootController.java      # 根路由（首页、健康检查、系统信息）
-│   │   ├── TestAuthController.java  # JWT 鉴权测试接口
-│   │   └── UserController.java      # 用户操作接口
+│   │   ├── ImageController.java       # 图片资源接口（头像、作品、Logo）
+│   │   ├── MailController.java        # 邮件服务接口
+│   │   ├── RootController.java        # 根路由（首页、健康检查、系统信息）
+│   │   ├── TestAuthController.java    # JWT 鉴权测试接口
+│   │   ├── UserAuthController.java    # 用户认证接口（注册、登录、登出）
+│   │   ├── UserDataController.java    # 用户拓展数据管理接口
+│   │   ├── UserPasswordController.java # 用户密码管理接口（修改密码、忘记密码）
+│   │   └── UserProfileController.java # 用户资料管理接口（分页查询、修改昵称）
 │   │
 │   ├── service/             # 服务接口
 │   │   ├── Impl/           # 服务实现类（@Service）
@@ -490,134 +494,26 @@ import top.playereg.pix_vision.service.UserService;
 
 ## 4. 异常处理
 
-### 原则
-
-- 优先返回错误码和消息，而不是抛出异常
-- 仅在严重错误时抛出异常（如数据不一致）
+- 优先返回错误码和消息，而非抛出异常
 - 使用 `ResponsePojo.error()` 返回错误信息
-
-### 示例
-
-```java
-// ✅ 推荐：返回错误响应
-if(user ==null){
-  return ResponsePojo.
-
-error(null,"用户不存在");
-}
-
-// ❌ 避免：直接抛出异常（除非必要）
-  throw new
-
-RuntimeException("用户不存在");
-```
 
 ## 5. 日志规范
 
-### 日志级别
-
-- **DEBUG**：调试信息，详细的数据流
-- **INFO**：关键业务流程（登录成功、注册成功等）
-- **WARN**：警告信息（Token 失效、参数异常等）
-- **ERROR**：错误信息（数据库失败、系统异常等）
-
-### 日志格式
-
-```java
-// ✅ 推荐：使用占位符
-log.info("用户登录成功：{}",username);
-log.
-
-error("无法从 Token 中获取用户 ID");
-
-// ❌ 避免：字符串拼接
-log.
-
-info("用户登录成功："+username);
-```
-
-### 敏感信息脱敏
-
-- 密码、Token 等敏感信息不应完整记录
-- 可以记录哈希值或部分字符
-  ```java
-  log.debug("Token: {}", token != null ? token.substring(0, 10) + "..." : "null");
-  ```
+- **级别**：DEBUG（调试）、INFO（业务）、WARN（警告）、ERROR（错误）
+- **格式**：使用占位符 `log.info("用户登录：{}", username)`
+- **脱敏**：密码、Token 等敏感信息不完整记录
 
 ## 6. 依赖注入
 
-### 推荐方式
-
-- 使用 **构造器注入**（配合 Lombok `@RequiredArgsConstructor`）
-  ```java
-  @RestController
-  @RequiredArgsConstructor
-  public class UserController {
-      private final UserService userService;
-      private final VerificationCodeServices verificationCodeServices;
-  }
-  ```
-
-### 备选方式
-
-- 对于测试类或特殊情况，可使用 `@Autowired` 字段注入
+- **推荐**：构造器注入（配合 Lombok `@RequiredArgsConstructor`）
+- **备选**：测试类可使用 `@Autowired` 字段注入
 
 ## 7. 返回值规范
 
-### ResponsePojo 使用
-
-- **成功响应**：`ResponsePojo.success(data, message)`
-- **失败响应**：`ResponsePojo.error(data, message)`
-
-### 数据类型选择
-
-#### 1. 布尔值场景
-
-使用 `Boolean` 类型（`true`/`false`）
-
-```java
-public ResponsePojo<Boolean> logout(HttpServletRequest request) {
-  return ResponsePojo.success(true, "登出成功");
-}
-```
-
-#### 2. 对象场景
-
-返回具体对象或 `null`
-
-```java
-public ResponsePojo<User> registerUser(...) {
-  return ResponsePojo.success(user, "注册成功");
-}
-```
-
-#### 3. 列表/分页场景
-
-返回 `IPage<T>` 或 `List<T>`
-
-```java
-public ResponsePojo<IPage<User>> getPageUserInfo(...) {
-  IPage<User> page = userService.selectPageUserInfo(...);
-  return ResponsePojo.success(page, "查询成功");
-}
-```
-
-### 状态码规范
-
-- **200**：成功（`ResponsePojo.success()`）
-- **500**：失败（`ResponsePojo.error()`）
-- **401**：未授权（拦截器自动返回）
-
-### ResponsePojo 结构
-
-```java
-{
-  "data":{...},      // 响应数据（泛型 T）
-  "message":"提示信息", // 响应说明信息
-  "recode":200,        // 响应状态码
-  "status":null        // 保留字段
-  }
-```
+- **成功**：`ResponsePojo.success(data, message)`
+- **失败**：`ResponsePojo.error(data, message)`
+- **状态码**：200（成功）、500（失败）、401（未授权）
+- **数据类型**：Boolean（布尔场景）、Object（对象场景）、IPage/List（列表场景）
 
 ---
 
@@ -637,88 +533,62 @@ public ResponsePojo<IPage<User>> getPageUserInfo(...) {
 ```markdown
 # 接口标题
 
-## 参数说明：
+## 特性
+- 特性1（Token 认证、公开接口等）
+- 特性2（数据校验、缓存支持等）
+- 特性3（权限控制、安全机制等）
 
+## 参数说明：
 - 参数1: 描述，类型，是否必填
-- 参数2: 描述，类型，是否必填
 
 ## 返回说明：
-
-- **XX成功**：返回 **{"data": true}** 和提示信息
-- **XX失败**：返回 **{"data": false}** 和提示信息
+- **XX成功**：返回数据和提示信息
+- **XX失败**：返回错误信息
 
 ## 业务逻辑：
-
 1. 步骤1
 2. 步骤2
-3. 步骤3
 
 ## 注意事项：
-
-- 注意事项1
-- 注意事项2
+- 注意项1
 ```
 
 ### 格式化要求
 
-- **重点内容**：使用 `**粗体**`
-- *次要强调*：使用 `*斜体*`
-- ~~废弃内容~~：使用 `~~删除线~~`
-- 代码块：使用反引号 `` `code` ``
-- JSON 示例：使用三个反引号包裹
+- **重点**：使用 `**粗体**`；列表符号：使用小黑点 `-`
 
 ## 3. 完整示例
 
 ```java
-
 @PostMapping("/login")
 @Operation(
   summary = "用户登录接口",
   description = """
     # 用户登录
             
+    ## 特性
+    - Token 认证（支持 Header 和 URL 参数）
+    - SHA-256 密码加密
+    - JWT + Redis 白名单双重验证
+            
     ## 参数说明：
-    - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填
+    - usernameOrEmail: 用户名或邮箱，字符串类型，必填
     - password: 登录密码，字符串类型，必填
-    - vCode: 邮箱验证码（6 位大写字母或数字），字符串类型，必填
+    - vCode: 邮箱验证码，6 位大写字母或数字，必填
             
     ## 返回说明：
-    - **登录成功**：返回 **{"data": {UserLogin 对象}}**，包含用户信息和 JWT Token
-    - **用户名或邮箱格式错误**：返回 **{"data": null}** 和"用户名或邮箱格式错误"提示
-    - **验证码错误**：返回 **{"data": null}** 和"验证码错误"提示
-    - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
-    - **用户名或密码错误**：返回 **{"data": null}** 和"用户名或密码错误"提示
+    - **登录成功**：返回 UserLogin 对象，包含用户信息和 JWT Token
+    - **验证失败**：返回 null 和错误提示
             
     ## 业务逻辑：
-    1. 校验用户名格式、邮箱格式、验证码格式
-    2. 验证邮箱验证码是否正确（如提供用户名则先查询邮箱）
-    3. 根据用户名或邮箱查询用户信息
-    4. 验证密码是否正确（比对 SHA-256 哈希值）
-    5. 检查用户状态是否正常（status=10 表示正常）
-    6. 生成 JWT Token（有效期 7 天）
-    7. 将 Token 加入白名单
-    8. 返回用户信息和 Token
-            
-    ## 注意事项：
-    - Token 有效期为 **7 天**
-    - Token 需要保存在客户端，后续请求需在 Header 中携带
-    - 建议使用 **HTTPS** 传输以保障安全
-    - 密码会自动进行 SHA-256 哈希加密处理后再比对
-    - 支持使用用户名**或**邮箱登录
-            
-    ## Token 使用方式：
-    - Header 中添加：`Authorization: Bearer <token>`
-    - 或者 URL 参数：`?token=<token>`
+    1. 校验参数格式
+    2. 验证邮箱验证码
+    3. 查询用户并验证密码
+    4. 生成 JWT Token（有效期 7 天）
+    5. 将 Token 加入白名单
     """
 )
-public ResponsePojo<UserLogin> login(
-  @Parameter(description = "用户名或邮箱，6-16 位字母/数字/下划线或标准邮箱格式", required = true, example = "dev_user")
-  @RequestParam String usernameOrEmail,
-  @Parameter(description = "登录密码，会使用 SHA-256 加密后比对", required = true, example = "123456")
-  @RequestParam String password,
-  @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF")
-  @RequestParam String vCode
-) {
+public ResponsePojo<UserLogin> login(...) {
   // 实现代码...
 }
 ```
@@ -746,158 +616,40 @@ public ResponsePojo<UserLogin> login(
 
 ## 1. 分层架构
 
-### Controller 层
-
-- 负责接收请求和返回响应
-- 参数校验和基础验证
-- 调用 Service 层处理业务逻辑
-- **禁止**：直接操作数据库或包含复杂业务逻辑
-
-### Service 层
-
-- **接口**：定义业务方法签名
-- **实现类**：实现具体业务逻辑
-- 事务管理（如需）
-- 调用 Mapper 层进行数据操作
-- **禁止**：直接处理 HTTP 请求或响应
-
-### Mapper 层
-
-- MyBatis-Plus Mapper 接口
-- 继承 `BaseMapper<T>` 获得基础 CRUD
-- 自定义 SQL 写在 XML 文件中
-- **禁止**：包含业务逻辑
-
-### POJO 层
-
-- **Entity**：数据库实体类，对应表结构
-- **DTO**：数据传输对象，用于接口传输
-- **VO**：视图对象，用于前端展示
-- 使用 Lombok 简化代码（`@Data`、`@Builder` 等）
+- **Controller**：接收请求、参数校验、调用 Service
+- **Service**：业务逻辑、事务管理、调用 Mapper
+- **Mapper**：数据访问（继承 `BaseMapper<T>`）
+- **POJO**：Entity（数据库实体）、DTO（传输对象）、VO（视图对象）
 
 ## 2. 通用逻辑封装
 
-### Service 层复用原则
-
-- 将通用的 Token 验证、用户查询逻辑封装到 Service 层
-- 避免在多个 Controller 中重复相同逻辑
-- 示例：
-  ```java
-  // ✅ 推荐：封装通用方法
-  public User getCurrentUserFromToken(String token) {
-      Integer userId = JWTUtils.getUserIdFromToken(token);
-      return selectAllUserById(userId);
-  }
-  
-  // ❌ 避免：在每个 Controller 中重复
-  Integer userId = JWTUtils.getUserIdFromToken(token);
-  User user = userMapper.selectById(userId);
-  ```
+- **Service 复用**：将 Token 验证、用户查询等通用逻辑封装到 Service
+- **接口合并**：单条/批量操作合并为一个接口（如删除接口传入 List，单条传 `[1]`，批量传 `[1,2,3]`）
 
 ## 3. 安全性规范
 
 ### 密码处理
 
-- **加密算法**：使用 **SHA-256** 哈希加密存储
-- **工具类**：`StrSwitchUtils.PasswdToHash256(password)`
-- **安全要求**：
-  - 不在日志中记录明文密码
-  - 密码比对前先加密再比较
-  - 修改密码、忘记密码重置时强制所有 Token 失效
+- **加密**：SHA-256 哈希（`StrSwitchUtils.PasswdToHash256(password)`）
+- **安全**：不在日志中记录明文，修改/重置密码时强制所有 Token 失效
 
 ### Token 管理
 
-#### JWT Token 特性
-
-- **有效期**：**7 天**（604800000 毫秒）
-- **生成工具**：`JWTUtils.createToken(userId, username)`
-- **验证机制**：JWT 签名验证 + Redis 白名单双重校验
-- **传递方式**：
-  - Header：`Authorization: Bearer <token>`（推荐）
-  - URL 参数：`?token=<token>`
-
-#### Token 白名单机制
-
-- **服务类**：`TokenWhitelistService`
-- **存储位置**：Redis
-- **过期时间**：与 JWT 有效期一致（7 天）
-- **自动续期**：每次请求自动刷新过期时间
-
-#### Token 失效场景
-
-以下操作会将 Token 从白名单移除：
-
-1. **用户登出**：`/api/user/logout`
-2. **修改密码**：`/api/user/change-password`（移除该用户所有 Token）
-3. **忘记密码重置**：`/api/user/forgot-password`（移除该用户所有 Token）
-4. **手动移除**：`tokenWhitelistService.removeFromWhitelist(token)`
-5. **批量移除**：`tokenWhitelistService.removeAllUserTokens(userId, username)`
-
-#### 拦截器验证流程
-
-[JwtAuthenticationInterceptor](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/handler/JwtAuthenticationInterceptor.java)
-执行顺序：
-
-1. 从 Header 或 URL 参数提取 Token
-2. 检查 Token 是否存在
-3. 去除 "Bearer " 前缀（如果有）
-4. 检查 Token 是否在白名单中
-5. 验证 JWT 签名是否有效
-6. 检查 Token 是否过期
-7. 从 Token 中提取用户信息并存入 `request.setAttribute()`
-8. 验证通过，继续执行请求
+- **有效期**：7 天（604800000 毫秒）
+- **验证**：JWT 签名 + Redis 白名单双重校验
+- **传递**：Header `Authorization: Bearer <token>` 或 URL `?token=<token>`
+- **失效场景**：登出、修改密码、忘记密码重置
 
 ### 输入验证
 
-#### 正则表达式验证
+- **正则工具**：`RegexUtils.isUsername()`、`isEmail()`、`isVCode()`、`isUUID()`
+- **防攻击**：MyBatis-Plus 参数化查询（SQL 注入）、Token 认证（CSRF）
 
-使用 [RegexUtils](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/RegexUtils.java)
-工具类：
+### 验证码机制
 
-```java
-// 用户名验证：6-16 位字母/数字/下划线
-RegexUtils.isUsername(username)
-
-// 邮箱验证：标准邮箱格式
-RegexUtils.
-
-isEmail(email)
-
-// 验证码验证：指定位数的大写字母或数字
-RegexUtils.
-
-isVCode(vCode, 6)
-
-// UUID 验证：标准 UUID 格式
-RegexUtils.
-
-isUUID(uuid)
-```
-
-#### 防止常见攻击
-
-- **SQL 注入**：使用 MyBatis-Plus 参数化查询
-- **XSS 攻击**：对用户输入进行转义处理
-- **CSRF 攻击**：使用 Token 认证机制
-- **暴力破解**：验证码限制、登录失败次数限制（待实现）
-
-### 敏感操作二次验证
-
-#### 需要邮箱验证码的操作
-
-- **用户注册**：验证邮箱所有权
-- **用户登录**：防止暴力破解
-- **修改密码**：确认用户身份
-- **忘记密码重置**：验证邮箱所有权
-
-#### 验证码机制
-
-- **服务类**：`VerificationCodeServices`
-- **存储位置**：Redis
-- **键名格式**：`verification:code:{email}`
-- **有效期**：5 分钟（可配置）
-- **格式**：6 位大写字母或数字
-- **一次性使用**：验证成功后立即删除
+- **服务**：`VerificationCodeServices`
+- **存储**：Redis（键名 `verification:code:{email}`）
+- **有效期**：5 分钟，一次性使用
 
 ### RSA 加密工具
 
@@ -946,169 +698,36 @@ byte[] original = RSACipher.decryptToBytes(encrypted);
 
 ### 表命名
 
-- **统一前缀**：`tb_`
-- **命名规则**：小写字母+下划线
-- **示例**：`tb_user`、`tb_user_data`、`tb_works`、`tb_comments`
+- **前缀**：`tb_`（如 `tb_user`、`tb_works`）
+- **规则**：小写字母+下划线
 
 ### 字段命名
 
-- **规则**：小写字母+下划线
-- **主键**：`{table}_id`（如 `user_id`、`work_id`）或 `id`
-- **外键**：`{ref_table}_id`（如 `user_id` 引用 `tb_user`）
-- **通用字段**：
-  - `is_delete`：逻辑删除标记（0=未删除，1=已删除）
-  - `create_time`：创建时间戳
-  - `create_user`：创建者 ID
-  - `update_time`：更新时间戳
-  - `update_user`：修改者 ID
+- **主键**：`{table}_id` 或 `id`
+- **通用字段**：`is_delete`（逻辑删除）、`create_time`、`update_time`、`create_user`、`update_user`
 
 ### 逻辑删除
 
-- **字段**：`is_delete`（tinyint(1)）
-- **值含义**：
-  - `false`（0）：未删除
-  - `true`（1）：已删除
-- **MyBatis-Plus 配置**：自动过滤已删除记录
-  ```yaml
-  mybatis-plus:
-    global-config:
-      db-config:
-        logic-delete-field: is_delete
-        logic-delete-value: 1
-        logic-not-delete-value: 0
-  ```
+- **字段**：`is_delete`（0=未删除，1=已删除）
+- **配置**：MyBatis-Plus 自动过滤已删除记录
 
 ### UUID 处理
-
-#### 存储格式
-
 - **数据库**：16 字节二进制（`BINARY(16)`）
-- **接口传输**：标准 UUID 字符串（36 字符，如 `550e8400-e29b-41d4-a716-446655440000`）
-
-#### 转换工具
-
-使用 [StrSwitchUtils](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/StrSwitchUtils.java)：
-
-```java
-// 字符串 UUID → 16 字节二进制
-byte[] uuidBytes = StrSwitchUtils.uuid2Bytes("550e8400-e29b-41d4-a716-446655440000");
-
-// 16 字节二进制 → 字符串 UUID
-String uuidString = StrSwitchUtils.bytes2Uuid(uuidBytes);
-```
-
-#### 实体类处理
-
-在 User 实体中同时提供两种格式：
-
-```java
-
-@Data
-public class User {
-  private byte[] user_uuid;          // 数据库存储格式
-  private String string_user_uuid;   // 接口传输格式（非数据库字段）
-}
-```
+- **接口**：标准 UUID 字符串（36 字符）
+- **转换**：`StrSwitchUtils.uuid2Bytes()` / `bytes2Uuid()`
 
 ### 用户角色与状态
 
-#### 用户角色（user_role）
-
-| 代码 | 角色名称  | 权限说明        |
-|:--:|-------|-------------|
-| 11 | 普通用户  | 浏览、评论、点赞、收藏 |
-| 22 | 创作者   | 发布作品、管理作品   |
-| 55 | 审核员   | 审核作品、处理举报   |
-| 66 | 工单管理员 | 处理用户工单      |
-| 77 | 系统管理员 | 全部权限        |
-
-#### 用户状态（status）
-
-| 代码 | 状态名称  | 说明       |
-|:--:|-------|----------|
-| 10 | ✅ 正常  | 正常使用所有功能 |
-| 20 | ⚠️ 冻结 | 暂时限制部分功能 |
-| 30 | 🚫 封禁 | 禁止登录和使用  |
-
-### 数据表清单
-
-| 表名             | 中文名    | 主要功能           |   状态   |
-|----------------|--------|----------------|:------:|
-| `tb_user`      | 用户账户   | 用户基本信息、认证信息    | ✅ 已完成  |
-| `tb_user_data` | 用户扩展数据 | 用户额外信息（电话、网站等） | ✅ 已完成  |
-| `tb_works`     | 作品     | 作品信息、图片、统计     | 🚧 开发中 |
-| `tb_series`    | 作品系列   | 作品合集、系列管理      | 🚧 开发中 |
-| `tb_comments`  | 评论     | 多级评论、回复        | 🚧 开发中 |
-| `tb_like`      | 点赞     | 作品点赞记录         | 🚧 开发中 |
-| `tb_star`      | 收藏     | 作品收藏记录         | 🚧 开发中 |
-| `tb_history`   | 浏览历史   | 用户浏览记录         | 🚧 开发中 |
-| `tb_sys_logs`  | 系统日志   | 操作日志记录         | ✅ 已完成  |
-
-> ✅ 已完成 | 🚧 开发中
+|       代码       | 角色/状态                    | 说明   |
+|:--------------:|--------------------------|------|
+| 11/22/55/66/77 | 普通用户/创作者/审核员/工单管理员/系统管理员 | 用户角色 |
+|    10/20/30    | 正常/冻结/封禁                 | 用户状态 |
 
 ## 5. Redis 使用规范
 
-### 键命名规范
-
-- **格式**：`{业务}:{标识}:{具体key}`
-- **示例**：
-  - 验证码：`verification:code:user@example.com`
-  - Token 白名单：`token:whitelist:{token}`
-  - 用户缓存：`user:info:{userId}`
-
-### 过期时间
-
-- **验证码**：5 分钟（300 秒，可配置）
-- **Token 白名单**：与 JWT 有效期一致（7 天）
-- **普通缓存**：根据业务需求设置（默认 30 分钟）
-
-### 序列化
-
-- **Key 序列化**：`StringRedisSerializer`（字符串）
-- **Value 序列化**：`GenericJackson2JsonRedisSerializer`（JSON）
-- **Hash Key/Value**：同上
-
-### 连接池配置
-
-```yaml
-spring:
-  data:
-    redis:
-      jedis:
-        pool:
-          enabled: true
-          max-active: 8      # 最大活跃连接数
-          max-idle: 8        # 最大空闲连接数
-          min-idle: 0        # 最小空闲连接数
-          max-wait: -1       # 最大等待时间（-1=无限制）
-          time-between-eviction-runs: 1000  # 连接空闲检测间隔
-```
-
-### 常用操作
-
-```java
-
-@Autowired
-private StringRedisTemplate redisTemplate;
-
-// 设置字符串值（带过期时间）
-redisTemplate.
-
-opsForValue().
-
-set("key","value",5,TimeUnit.MINUTES);
-
-// 获取字符串值
-String value = redisTemplate.opsForValue().get("key");
-
-// 删除键
-redisTemplate.
-
-delete("key");
-
-// 检查键是否存在
-Boolean exists = redisTemplate.hasKey("key");
-```
+- **键命名**：`{业务}:{标识}:{具体key}`（如 `verification:code:user@example.com`）
+- **过期时间**：验证码 5 分钟、Token 白名单 7 天、普通缓存 30 分钟
+- **序列化**：Key 用 `StringRedisSerializer`，Value 用 `GenericJackson2JsonRedisSerializer`
 
 ---
 
@@ -1301,16 +920,35 @@ error("错误信息：数据库连接失败",exception);
 
 # API 接口清单
 
-## 🔐 用户接口 `/api/user`
+## 🔐 用户认证接口 `/api/user/auth`
 
-| 方法   | 路径                       | 说明        | 认证 | 主要参数                                                 |
-|------|--------------------------|-----------|:--:|------------------------------------------------------|
-| POST | `/register`              | 用户注册      | ❌  | username, password, nickname(可选), email, vCode       |
-| POST | `/login`                 | 用户登录      | ❌  | usernameOrEmail, password, vCode                     |
-| POST | `/logout`                | 用户登出      | ✅  | token (Header/URL)                                   |
-| POST | `/change-password`       | 修改密码（需登录） | ✅  | newPassword, confirmPassword, vCode                  |
-| POST | `/forgot-password`       | 忘记密码重置    | ❌  | usernameOrEmail, newPassword, confirmPassword, vCode |
-| GET  | `/page/{current}/{size}` | 分页查询用户    | ✅  | current, size, username(可选), uuid(可选), email(可选)     |
+| 方法   | 路径          | 说明   | 认证 | 主要参数                                           |
+|------|-------------|------|:--:|------------------------------------------------|
+| POST | `/register` | 用户注册 | ❌  | username, password, nickname(可选), email, vCode |
+| POST | `/login`    | 用户登录 | ❌  | usernameOrEmail, password, vCode               |
+| POST | `/logout`   | 用户登出 | ✅  | token (Header/URL)                             |
+
+## 📝 用户拓展数据接口 `/api/user/data`
+
+| 方法   | 路径        | 说明           | 认证 | 主要参数                         |
+|------|-----------|--------------|:--:|------------------------------|
+| POST | `/add`    | 新增拓展数据       | ✅  | dataName, dataContent, token |
+| GET  | `/list`   | 查询拓展数据列表     | ❌  | userId                       |
+| POST | `/delete` | 删除拓展数据（支持批量） | ✅  | dataIds (数组), token          |
+
+## 🔑 用户密码管理接口 `/api/user/password`
+
+| 方法   | 路径        | 说明        | 认证 | 主要参数                                                 |
+|------|-----------|-----------|:--:|------------------------------------------------------|
+| POST | `/change` | 修改密码（需登录） | ✅  | newPassword, confirmPassword, vCode                  |
+| POST | `/forgot` | 忘记密码重置    | ❌  | usernameOrEmail, newPassword, confirmPassword, vCode |
+
+## 👤 用户资料管理接口 `/api/user/profile`
+
+| 方法   | 路径                       | 说明     | 认证 | 主要参数                                             |
+|------|--------------------------|--------|:--:|--------------------------------------------------|
+| GET  | `/page/{current}/{size}` | 分页查询用户 | ✅  | current, size, username(可选), uuid(可选), email(可选) |
+| POST | `/change/nickname`       | 修改用户昵称 | ✅  | nickname, token                                  |
 
 ## 📧 邮件接口 `/api/mail`
 
@@ -1319,12 +957,21 @@ error("错误信息：数据库连接失败",exception);
 | POST | `/send-email-code`        | 发送邮箱验证码     | ❌  | to, subject, username(条件必填), emailText |
 | POST | `/verify-email-code-test` | 验证邮箱验证码（测试） | ❌  | email, code                            |
 
+## 🖼️ 图片资源接口 `/api/image`
+
+| 方法   | 路径               | 说明       | 认证 | 主要参数                 |
+|------|------------------|----------|:--:|----------------------|
+| GET  | `/get/avatar`    | 获取头像图片   | ❌  | filePath             |
+| GET  | `/get/works`     | 获取作品图片   | ❌  | filePath             |
+| GET  | `/get/logo`      | 获取Logo图片 | ❌  | filePath             |
+| POST | `/upload/avatar` | 上传用户头像   | ✅  | file (MultipartFile) |
+
 ## 🖥️ 系统接口
 
 | 方法  | 路径             | 说明    | 认证 | 返回                   |
 |-----|----------------|-------|:--:|----------------------|
 | GET | `/`            | 首页重定向 | ❌  | HTML 页面              |
-| GET | `/health`      | 健康检查  | ❌  | {"status": "UP"}     |
+| GET | `/health`      | 健康检查  | ❌  | 重定向到运行状态页面           |
 | GET | `/system-info` | 系统信息  | ❌  | JVM/OS/CPU/Memory 信息 |
 
 ## 🧪 测试接口 `/7e212056`
@@ -1332,6 +979,7 @@ error("错误信息：数据库连接失败",exception);
 | 方法  | 路径              | 说明       | 认证 | 返回     |
 |-----|-----------------|----------|:--:|--------|
 | GET | `/require-auth` | JWT 鉴权测试 | ✅  | 当前用户信息 |
+| GET | `/no-auth`      | 公开接口测试   | ❌  | 公开消息   |
 
 ---
 
@@ -1444,247 +1092,44 @@ java -jar target/PixVision-0.0.1-SNAPSHOT.jar
 
 ## 常用工具类
 
-### 核心工具类
-
-| 工具类                 | 位置                                                                                                                                  | 主要功能                     |
-|---------------------|-------------------------------------------------------------------------------------------------------------------------------------|--------------------------|
-| **JWTUtils**        | [util/JWTUtils.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/JWTUtils.java)               | JWT Token 生成、验证、解析       |
-| **RSACipher**       | [util/RSACipher.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/RSACipher.java)             | RSA + AES 混合加密/解密        |
-| **RegexUtils**      | [util/RegexUtils.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/RegexUtils.java)           | 正则表达式验证（用户名、邮箱、验证码、UUID） |
-| **StrSwitchUtils**  | [util/StrSwitchUtils.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/StrSwitchUtils.java)   | 字符串转换（UUID、密码哈希、随机昵称生成）  |
-| **ImageUtils**      | [util/ImageUtils.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/ImageUtils.java)           | 图片处理（缩放、裁剪、格式转换）         |
-| **IpUtil**          | [util/IpUtil.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/IpUtil.java)                   | IP 地址获取工具                |
-| **ConversionUtils** | [util/ConversionUtils.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/ConversionUtils.java) | 数据类型转换工具                 |
-| **CreateFile**      | [util/CreateFile.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/CreateFile.java)           | 文件创建工具（初始化模板文件）          |
-
-### AOP 切面
-
-| 切面类           | 位置                                                                                                                                    | 主要功能   |
-|---------------|---------------------------------------------------------------------------------------------------------------------------------------|--------|
-| **LogAspect** | [util/Aspect/LogAspect.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/Aspect/LogAspect.java) | 日志记录切面 |
-| **LogRecord** | [util/Aspect/LogRecord.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/Aspect/LogRecord.java) | 日志记录注解 |
+| 工具类                | 功能                       |
+|--------------------|--------------------------|
+| **JWTUtils**       | JWT Token 生成、验证、解析       |
+| **RSACipher**      | RSA + AES 混合加密/解密        |
+| **RegexUtils**     | 正则表达式验证（用户名、邮箱、验证码、UUID） |
+| **StrSwitchUtils** | 字符串转换（UUID、密码哈希、随机昵称）    |
+| **ImageUtils**     | 图片处理（缩放、裁剪、格式转换）         |
+| **IpUtil**         | IP 地址获取                  |
 
 ### 使用示例
 
-#### JWT Token 操作
-
 ```java
-// 生成 Token
+// JWT Token
 String token = JWTUtils.createToken(userId, username);
-
-// 验证 Token
-boolean isValid = JWTUtils.verifyToken(token);
-
-// 从 Token 中提取用户 ID
 Integer userId = JWTUtils.getUserIdFromToken(token);
 
-// 从 Token 中提取用户名
-String username = JWTUtils.getUsernameFromToken(token);
-
-// 检查 Token 是否过期
-boolean isExpired = JWTUtils.isTokenExpired(token);
-
-// 获取 Token 剩余时间（毫秒）
-long remainingTime = JWTUtils.getTokenRemainingTime(token);
-```
-
-#### 正则表达式验证
-
-```java
-// 用户名验证：6-16 位字母/数字/下划线
+// 正则验证
 boolean isValid = RegexUtils.isUsername("dev_user");
 
-// 邮箱验证
-boolean isValid = RegexUtils.isEmail("test@example.com");
-
-// 验证码验证：6 位大写字母或数字
-boolean isValid = RegexUtils.isVCode("ABCDEF", 6);
-
-// UUID 验证
-boolean isValid = RegexUtils.isUUID("550e8400-e29b-41d4-a716-446655440000");
-```
-
-#### 字符串转换
-
-```java
-// 密码 SHA-256 哈希
-String hashed = StrSwitchUtils.PasswdToHash256("password123");
-
-// UUID 字符串 → 16 字节二进制
-byte[] uuidBytes = StrSwitchUtils.uuid2Bytes("550e8400-e29b-41d4-a716-446655440000");
-
-// 16 字节二进制 → UUID 字符串
+// UUID 转换
+byte[] uuidBytes = StrSwitchUtils.uuid2Bytes(uuidString);
 String uuidString = StrSwitchUtils.bytes2Uuid(uuidBytes);
 
-// 生成随机默认昵称
-String nickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
-```
-
-#### RSA 加密/解密
-
-```java
-// 加密字符串
+// RSA 加密
 String encrypted = RSACipher.encryptToBase64("敏感信息");
-
-// 解密字符串
 String decrypted = RSACipher.decryptToString(encrypted);
-
-// 加密二进制数据
-byte[] data = Files.readAllBytes(Paths.get("photo.jpg"));
-String encrypted = RSACipher.encryptToBase64(data);
-
-// 解密二进制数据
-byte[] original = RSACipher.decryptToBytes(encrypted);
 ```
 
 ## 常用注解
 
-### Spring Boot 注解
-
-| 注解                | 作用          | 示例                                                 |
-|-------------------|-------------|----------------------------------------------------|
-| `@RestController` | RESTful 控制器 | `@RestController`                                  |
-| `@RequestMapping` | 请求映射        | `@RequestMapping("/api/user")`                     |
-| `@GetMapping`     | GET 请求映射    | `@GetMapping("/{id}")`                             |
-| `@PostMapping`    | POST 请求映射   | `@PostMapping("/login")`                           |
-| `@PutMapping`     | PUT 请求映射    | `@PutMapping("/{id}")`                             |
-| `@DeleteMapping`  | DELETE 请求映射 | `@DeleteMapping("/{id}")`                          |
-| `@RequestParam`   | 请求参数        | `@RequestParam String name`                        |
-| `@PathVariable`   | 路径变量        | `@PathVariable Long id`                            |
-| `@RequestBody`    | 请求体         | `@RequestBody User user`                           |
-| `@Service`        | 服务层组件       | `@Service`                                         |
-| `@Autowired`      | 自动注入        | `@Autowired private UserService userService;`      |
-| `@Transactional`  | 事务管理        | `@Transactional`                                   |
-| `@Configuration`  | 配置类         | `@Configuration`                                   |
-| `@Bean`           | Bean 定义     | `@Bean public RedisTemplate redisTemplate() {...}` |
-
-### Lombok 注解
-
-| 注解                         | 作用                          | 示例                                  |
-|----------------------------|-----------------------------|-------------------------------------|
-| `@Data`                    | 自动生成 getter/setter/toString | `@Data public class User {...}`     |
-| `@RequiredArgsConstructor` | 生成 final 字段构造器              | `@RequiredArgsConstructor`          |
-| `@Builder`                 | 构建者模式                       | `@Builder public class User {...}`  |
-| `@Slf4j`                   | 自动生成 log 对象                 | `@Slf4j public class Service {...}` |
-| `@NoArgsConstructor`       | 无参构造器                       | `@NoArgsConstructor`                |
-| `@AllArgsConstructor`      | 全参构造器                       | `@AllArgsConstructor`               |
-
-### Swagger/OpenAPI 注解
-
-| 注解           | 作用       | 示例                                                  |
-|--------------|----------|-----------------------------------------------------|
-| `@Tag`       | API 标签分组 | `@Tag(name = "用户操作相关接口")`                           |
-| `@Operation` | 接口描述     | `@Operation(summary = "用户登录", description = "...")` |
-| `@Parameter` | 参数描述     | `@Parameter(description = "用户名", required = true)`  |
-| `@Schema`    | 模型描述     | `@Schema(description = "响应数据类型")`                   |
-
-### MyBatis-Plus 注解
-
-| 注解            | 作用        | 示例                                          |
-|---------------|-----------|---------------------------------------------|
-| `@Mapper`     | Mapper 接口 | `@Mapper public interface UserMapper {...}` |
-| `@TableName`  | 表名映射      | `@TableName("tb_user")`                     |
-| `@TableId`    | 主键映射      | `@TableId(type = IdType.AUTO)`              |
-| `@TableField` | 字段映射      | `@TableField("user_name")`                  |
-| `@TableLogic` | 逻辑删除      | `@TableLogic private Integer isDelete;`     |
-
-### 自定义注解
-
-| 注解           | 位置                                                                                                                                    | 作用     |
-|--------------|---------------------------------------------------------------------------------------------------------------------------------------|--------|
-| `@LogRecord` | [util/Aspect/LogRecord.java](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/Aspect/LogRecord.java) | 日志记录注解 |
-
-**使用示例**：
-
-```java
-
-@PostMapping("/send-email-code")
-@LogRecord(module = "\"验证码\"模块", event = "发送\"验证码\"")
-public ResponsePojo<Boolean> sendEmailCode(...) {
-  // 方法执行时会自动记录日志
-}
-```
-
-## 常见问题与最佳实践
-
-### ❌ 避免硬编码
-
-```java
-// ❌ 错误
-long expireTime = 604800000L;
-
-// ✅ 正确
-private static final long TOKEN_EXPIRE_TIME = 7 * 24 * 60 * 60 * 1000L;
-```
-
-### ❌ 避免空指针
-
-```java
-// ❌ 错误
-if(user.getUsername().
-
-equals("admin")){...}
-
-// ✅ 正确
-  if(user !=null&&"admin".
-
-equals(user.getUsername())){...}
-```
-
-### ❌ 避免魔法数字
-
-```java
-// ❌ 错误
-if(user.getStatus() !=10){...}
-
-// ✅ 正确
-private static final int USER_STATUS_NORMAL = 10;
-if(user.
-
-getStatus() !=USER_STATUS_NORMAL){...}
-```
-
-### ✅ 使用 Optional 处理可能为空的结果
-
-```java
-Optional<User> user = Optional.ofNullable(userService.selectById(id));
-user.
-
-ifPresent(u ->log.
-
-info("找到用户：{}",u.getUsername()));
-```
-
-### ✅ 批量操作使用事务
-
-```java
-
-@Transactional
-public void batchUpdateUsers(List<User> users) {
-  users.forEach(this::updateUser);
-}
-```
-
-### ✅ 合理使用缓存
-
-- 频繁读取且变化少的数据使用 Redis 缓存
-- 设置合理的过期时间
-- 注意缓存一致性
-
-### ✅ 日志分级记录
-
-```java
-log.debug("调试信息：参数值={}",param);
-log.
-
-info("业务流程：用户登录成功");
-log.
-
-warn("警告信息：Token 即将过期");
-log.
-
-error("错误信息：数据库连接失败",exception);
-```
+| 注解                                                               | 作用              |
+|------------------------------------------------------------------|-----------------|
+| `@RestController`、`@RequestMapping`、`@GetMapping`、`@PostMapping` | RESTful 控制器     |
+| `@Service`、`@Autowired`、`@Transactional`                         | Service 层       |
+| `@Data`、`@RequiredArgsConstructor`、`@Slf4j`                      | Lombok          |
+| `@Tag`、`@Operation`、`@Parameter`                                 | Swagger/OpenAPI |
+| `@Mapper`、`@TableName`、`@TableId`、`@TableLogic`                  | MyBatis-Plus    |
+| `@LogRecord`                                                     | 自定义日志记录注解       |
 
 ## 参考资源
 
