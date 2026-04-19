@@ -381,9 +381,9 @@ public class UserAuthController {
      */
     @PostMapping("/delete-account")
     @Operation(
-        summary = "用户注销账户接口",
+        summary = "用户注销接口",
         description = """
-            # 用户注销账户（需要登录验证）
+            # 用户注销（需要登录验证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）

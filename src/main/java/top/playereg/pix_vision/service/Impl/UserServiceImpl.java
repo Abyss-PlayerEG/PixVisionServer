@@ -39,53 +39,49 @@ public class UserServiceImpl implements UserService {
             String nickname,
             String email
     ) {
-        log.info("注册用户");
+        log.info("开始注册用户 - 用户名: {}, 邮箱: {}", username, email);
+
         if (isUsernameExists(username)) {
-            log.error("用户名已存在");
+            log.warn("注册失败 - 用户名已存在: {}", username);
             return null;
         }
         if (isEmailExists(email)) {
-            log.error("邮箱已存在");
+            log.warn("注册失败 - 邮箱已存在: {}", email);
             return null;
         }
+
         User user = new User();
 
         // 设置用户信息
         user.setUsername(username);
-        log.info("用户名：{}", user.getUsername());
-        user.setPassword(password);
-        log.info("密码：{}", user.getPassword());
+        user.setPassword(password);  // 密码已在 Controller 层加密
         user.setNickname(nickname);
-        log.info("昵称：{}", user.getNickname());
         user.setEmail(email);
-        log.info("邮箱：{}", user.getEmail());
 
         // 生成用户 UUID（16 字节二进制）
         user.setUser_uuid(StrSwitchUtils.uuid2Bytes(StrSwitchUtils.generateUUID()));
-        log.info("用户 UUID (hex): {}", StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
 
         // 默认随机头像（1.png-21.png）
         int randomAvatarNum = (int) (Math.random() * 21) + 1;  // 生成 1-21 的随机整数
         String randomAvatar = randomAvatarNum + ".png";
         user.setAvatar_url("default/" + randomAvatar);
-        log.info("用户头像：{}", user.getAvatar_url());
 
         user.setStatus(10);
-        log.info("用户状态：{}", user.getStatus());
-
-        // 设置用户角色（默认为普通用户 11）
-        user.setUser_role(11);
-        log.info("用户角色：{}", user.getUser_role());
-
+        user.setUser_role(11);  // 默认为普通用户
         user.setIs_delete(false);
-        log.info("用户删除状态：{}", user.getIs_delete());
 
         // 创建时间
         user.setCreate_time(new java.sql.Timestamp(System.currentTimeMillis()));
-        // 创建用户
         user.setCreate_user(0);
 
-        return userMapper.insertUser(user) > 0 ? user : null;
+        boolean success = userMapper.insertUser(user) > 0;
+        if (success) {
+            log.info("用户注册成功 - 用户名: {}, 用户 ID: {}", username, user.getUser_id());
+        } else {
+            log.error("用户注册失败 - 用户名: {}", username);
+        }
+
+        return success ? user : null;
     }
     /**
      * 检查用户名是否存在
@@ -289,40 +285,40 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public Boolean addUserData(Integer userId, String dataName, String dataContent) {
-        log.info("新增用户拓展数据，用户 ID: {}, 数据名称: {}, 数据内容: {}", userId, dataName, dataContent);
+        log.debug("新增用户拓展数据 - 用户 ID: {}, 数据名称: {}", userId, dataName);
 
         // 参数校验
         if (userId == null || userId <= 0) {
-            log.error("用户 ID 无效: {}", userId);
+            log.warn("用户 ID 无效: {}", userId);
             return false;
         }
 
         if (dataName == null || dataName.isEmpty()) {
-            log.error("数据名称不能为空");
+            log.warn("数据名称不能为空");
             return false;
         }
 
         if (dataContent == null || dataContent.isEmpty()) {
-            log.error("数据内容不能为空");
+            log.warn("数据内容不能为空");
             return false;
         }
 
         // 验证数据名称长度（不超过 26 个字符）
         if (dataName.length() > 26) {
-            log.error("数据名称长度不能超过 26 个字符，当前长度: {}", dataName.length());
+            log.warn("数据名称过长 - 长度: {} (最大 26)", dataName.length());
             return false;
         }
 
         // 验证数据内容长度（不超过 96 个字符）
         if (dataContent.length() > 96) {
-            log.error("数据内容长度不能超过 96 个字符，当前长度: {}", dataContent.length());
+            log.warn("数据内容过长 - 长度: {} (最大 96)", dataContent.length());
             return false;
         }
 
         // 检查用户是否存在
         User user = userMapper.selectAllUserInfoById(userId);
         if (user == null) {
-            log.error("用户不存在，用户 ID: {}", userId);
+            log.warn("用户不存在 - 用户 ID: {}", userId);
             return false;
         }
 
@@ -339,10 +335,10 @@ public class UserServiceImpl implements UserService {
         int result = userDataMapper.insertUserData(userData);
 
         if (result > 0) {
-            log.info("用户拓展数据添加成功，用户 ID: {}, 数据名称: {}", userId, dataName);
+            log.info("用户拓展数据添加成功 - 用户 ID: {}, 数据名称: {}", userId, dataName);
             return true;
         } else {
-            log.error("用户拓展数据添加失败，用户 ID: {}, 数据名称: {}", userId, dataName);
+            log.error("用户拓展数据添加失败 - 用户 ID: {}, 数据名称: {}", userId, dataName);
             return false;
         }
     }
@@ -355,18 +351,18 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public List<UserData> getUserDataList(Integer userId) {
-        log.info("查询用户拓展数据，用户 ID: {}", userId);
+        log.debug("查询用户拓展数据 - 用户 ID: {}", userId);
 
         // 参数校验
         if (userId == null || userId <= 0) {
-            log.error("用户 ID 无效: {}", userId);
+            log.warn("用户 ID 无效: {}", userId);
             return null;
         }
 
         // 先检查用户是否存在
         User user = userMapper.selectAllUserInfoById(userId);
         if (user == null) {
-            log.warn("用户不存在，用户 ID: {}", userId);
+            log.warn("用户不存在 - 用户 ID: {}", userId);
             return null;
         }
 

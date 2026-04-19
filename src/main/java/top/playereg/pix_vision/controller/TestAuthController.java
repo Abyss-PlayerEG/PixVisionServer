@@ -58,8 +58,6 @@ public class TestAuthController {
         String username = (String) request.getAttribute("username");
         Integer userId = (Integer) request.getAttribute("userId");
 
-        log.info("访问受保护的接口，用户 ID: {}, 用户名：{}", userId, username);
-
         return ResponsePojo.success(
             String.format("欢迎访问！您已通过JWT认证 - 用户ID:%d 用户名:%s", userId, username),
             "认证成功"
