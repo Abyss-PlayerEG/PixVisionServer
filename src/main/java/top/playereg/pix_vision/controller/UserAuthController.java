@@ -20,12 +20,15 @@ import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
+import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 用户认证相关接口（登录、登出）
  *
  * @author PlayerEG
  * @see top.playereg.pix_vision.service.Impl.UserServiceImpl
+ * @see top.playereg.pix_vision.service.Impl.VerificationCodeServicesImpl
+ * @see top.playereg.pix_vision.service.Impl.TokenWhitelistServiceImpl
  */
 @RestController
 @SuppressWarnings("all")
@@ -40,6 +43,102 @@ public class UserAuthController {
     private final TokenWhitelistService tokenWhitelistService;
 
     /**
+     * 用户注册
+     *
+     * @param username 用户名
+     * @param password 密码
+     * @param nickname 昵称
+     * @param email    邮箱
+     * @param vCode    验证码
+     * @return 响应数据<User>
+     * @author PlayerEG
+     */
+    @PostMapping("/register")
+    @Operation(
+        summary = "用户注册接口",
+        description = """
+            # 用户注册（无需登录验证）
+
+            ## 特性
+            - 用户名/邮箱唯一性校验
+            - 邮箱验证码验证（Redis 存储）
+            - SHA-256 密码加密
+            - 自动生成随机昵称（可选）
+
+            ## 参数说明：
+            - username: 用户名，6-16 位，只允许字母、数字和下划线，字符串类型，必填
+            - password: 登录密码，字符串类型，必填，建议使用强密码组合
+            - nickname: 用户昵称，字符串类型，**可为空**，为空时自动生成随机昵称
+            - email: 邮箱地址，字符串类型，必填，用于接收验证码和后续找回密码
+            - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
+
+            ## 返回说明：
+            - **注册成功**：返回 **{"data": {User 对象}}** 和“注册成功”提示
+            - **用户名格式错误**：返回 **{"data": null}** 和“用户名格式错误”提示
+            - **邮箱格式错误**：返回 **{"data": null}** 和“邮箱格式错误”提示
+            - **验证码格式错误**：返回 **{"data": null}** 和“验证码格式错误”提示
+            - **验证码错误**：返回 **{"data": null}** 和“验证码错误”提示
+            - **注册失败**：返回 **{"data": null}** 和“注册失败：该用户名或邮箱已注册”提示
+
+            ## 业务逻辑：
+            1. 校验用户名格式是否符合规范（6-16 位字母、数字、下划线）
+            2. 校验邮箱格式是否正确
+            3. 校验验证码格式是否正确（6 位大写字母或数字）
+            4. 验证邮箱验证码是否与 Redis 中存储的一致
+            5. 如果昵称为空，生成随机默认昵称（格式：user+ 随机词）
+            6. 对密码进行 SHA-256 哈希加密处理
+            7. 创建用户并保存到数据库
+            8. 返回用户信息和成功提示
+
+            ## 注意事项：
+            - 昵称参数为**可选参数**，不传或为空时自动生成
+            - 验证码有效期由 Redis 配置决定（默认 5 分钟）
+            - 密码会使用 **SHA-256** 进行加密存储
+            - **用户名**和**邮箱**不可重复注册
+            - 建议使用强密码组合（大小写字母 + 数字 + 特殊字符）
+            """
+    )
+    public ResponsePojo<User> register(
+        @Parameter(description = "用户名，6-16 位字母/数字/下划线", required = true, example = "dev_user") @RequestParam String username,
+        @Parameter(description = "登录密码，会使用 SHA-256 加密存储", required = true, example = "123456") @RequestParam String password,
+        @Parameter(description = "用户昵称（可选，为空时自动生成）", required = false, example = "测试用户") @RequestParam(required = false) String nickname,
+        @Parameter(description = "邮箱地址，用于接收验证码", required = true, example = "test@example.com") @RequestParam String email,
+        @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
+    ) {
+        // 基础数据校验
+        if (!RegexUtils.isUsername(username)) {
+            return ResponsePojo.error(null, "用户名格式错误");
+        }
+        if (!RegexUtils.isEmail(email)) {
+            return ResponsePojo.error(null, "邮箱格式错误");
+        }
+        if (!RegexUtils.isVCode(vCode, 6)) {
+            return ResponsePojo.error(null, "验证码格式错误");
+        }
+        // 验证码验证
+        boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
+        if (!isTrue) {
+            return ResponsePojo.error(null, "验证码错误");
+        }
+        // 如果昵称为空，则生成一个随机昵称
+        if (nickname == null || nickname.isEmpty()) {
+            nickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
+        }
+        // 密码加密
+        password = StrSwitchUtils.PasswdToHash256(password);
+
+        // 创建用户
+        User user = userService.registerUser(username, password, nickname, email);
+
+        // 判断用户是否创建成功
+        if (user == null) {
+            return ResponsePojo.error(null, "注册失败：该用户名或邮箱已注册");
+        }
+
+        return ResponsePojo.success(user, "注册成功");
+    }
+
+    /**
      * 用户登录
      *
      * @param usernameOrEmail 用户名或邮箱
@@ -52,7 +151,14 @@ public class UserAuthController {
     @Operation(
         summary = "用户登录接口",
         description = """
-            # 用户登录
+            # 用户登录（无需登录验证）
+
+            ## 特性
+            - 支持用户名或邮箱登录
+            - JWT Token 生成（有效期 7 天）
+            - Token 白名单管理
+            - SHA-256 密码验证
+            - 账户状态检查
 
             ## 参数说明：
             - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填
@@ -124,15 +230,8 @@ public class UserAuthController {
         String hashedPassword = StrSwitchUtils.PasswdToHash256(password);
         log.info("登录密码哈希：{}", hashedPassword);
 
-        // 查询用户信息（支持用户名或邮箱登录）
-        User user;
-        if (RegexUtils.isEmail(usernameOrEmail)) {
-            user = userService.selectAllUserByEmail(usernameOrEmail);
-            log.info("通过邮箱查询用户：{}, 结果：{}", usernameOrEmail, user != null ? "找到" : "未找到");
-        } else {
-            user = userService.selectAllUserByUsername(usernameOrEmail);
-            log.info("通过用户名查询用户：{}, 结果：{}", usernameOrEmail, user != null ? "找到" : "未找到");
-        }
+        // 查询用户信息（支持用户名或邮箱登录）- 使用通用方法
+        User user = userService.selectUserByUsernameOrEmail(usernameOrEmail);
 
         // 调试：输出完整用户对象
         log.info("查询到的用户对象：{}", user);
@@ -203,7 +302,13 @@ public class UserAuthController {
     @Operation(
         summary = "用户登出接口",
         description = """
-            # 用户登出，将 Token 从白名单移除
+            # 用户登出（需要登录验证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - Token 白名单移除（立即失效）
+            - 剩余有效期检测
+            - 单设备登出（不影响其他设备）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -233,25 +338,8 @@ public class UserAuthController {
     public ResponsePojo<Boolean> logout(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request
     ) {
-        // 优先从 URL 参数获取 Token
-        String token = request.getParameter("token");
-
-        // 如果 URL 参数中没有，尝试从 Header 获取
-        if (token == null || token.isEmpty()) {
-            String authHeader = request.getHeader("Authorization");
-            log.debug("登出接口 - Authorization Header: {}", authHeader);
-
-            if (authHeader != null && !authHeader.isEmpty()) {
-                // 支持两种格式：带 Bearer 前缀 或 不带前缀
-                if (authHeader.startsWith("Bearer ")) {
-                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
-                } else {
-                    token = authHeader; // 直接使用（假设就是 Token）
-                }
-            }
-        }
-
-        log.debug("登出接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "登出接口");
 
         if (token == null || token.isEmpty()) {
             log.error("登出失败 - Token 不存在，Authorization: {}, Token 参数：{}", request.getHeader("Authorization"), request.getParameter("token"));
@@ -281,5 +369,106 @@ public class UserAuthController {
         log.info("用户登出，用户名：{}, 用户 ID: {}, Token 剩余时间：{}ms", username, userId, remainingTime);
 
         return ResponsePojo.success(true, "登出成功，Token 已被禁用");
+    }
+
+    /**
+     * 用户注销账户（逻辑删除）
+     *
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param vCode   邮箱验证码
+     * @return 响应数据<Boolean>
+     * @author PlayerEG
+     */
+    @PostMapping("/delete-account")
+    @Operation(
+        summary = "用户注销接口",
+        description = """
+            # 用户注销（需要登录验证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 邮箱验证码验证（Redis 存储）
+            - 逻辑删除用户账户（is_delete=1）
+            - 自动移除该用户所有 Token
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
+
+            ## 返回说明：
+            - **注销成功**：返回 **{"data": true}** 和“账户注销成功”提示
+            - **Token 不存在**：返回 **{"data": false}** 和“Token 不存在”提示
+            - **验证码错误**：返回 **{"data": false}** 和“验证码错误”提示
+            - **注销失败**：返回 **{"data": false}** 和“账户注销失败”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 从 Token 中解析用户 ID
+            3. 查询用户信息获取邮箱
+            4. 验证邮箱验证码是否正确
+            5. 将该用户所有 Token 从白名单移除
+            6. 逻辑删除用户账户（设置 is_delete=1）
+            7. 记录注销日志
+
+            ## 注意事项：
+            - 注销后账户将被逻辑删除，无法再登录
+            - 需要提供正确的邮箱验证码
+            - 注销操作不可逆，请谨慎操作
+            - 注销后该用户的所有 Token 将立即失效
+            - 建议注销前备份重要数据
+            """
+    )
+    public ResponsePojo<Boolean> deleteAccount(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
+    ) {
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "注销接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("注销失败 - Token 不存在");
+            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null || userId <= 0) {
+            log.error("无法从 Token 中获取用户 ID");
+            return ResponsePojo.error(false, "Token 无效");
+        }
+
+        log.info("开始注销账户，用户 ID: {}", userId);
+
+        // 查询用户信息获取邮箱
+        User user = userService.selectAllUserById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "用户不存在");
+        }
+
+        String email = user.getEmail();
+        log.info("用户邮箱: {}", email);
+
+        // 验证邮箱验证码
+        boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
+        if (!isTrue) {
+            log.warn("验证码错误，邮箱: {}", email);
+            return ResponsePojo.error(false, "验证码错误");
+        }
+
+        // 将该用户所有 Token 从白名单移除
+        tokenWhitelistService.removeAllUserTokens(userId, user.getUsername());
+        log.info("已移除用户所有 Token，用户 ID: {}, 用户名: {}", userId, user.getUsername());
+
+        // 执行账户注销（逻辑删除）
+        Boolean result = userService.deleteUserAccount(userId);
+
+        if (result) {
+            log.info("用户账户注销成功，用户 ID: {}, 用户名: {}", userId, user.getUsername());
+            return ResponsePojo.success(true, "账户注销成功");
+        } else {
+            log.error("用户账户注销失败，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "账户注销失败");
+        }
     }
 }

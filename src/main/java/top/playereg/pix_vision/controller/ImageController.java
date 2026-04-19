@@ -64,7 +64,14 @@ public class ImageController {
             description = """
                     # 获取用户头像图片
 
-                    ## 参数说明：
+                ## 特性
+                - 公开接口（无需认证）
+                - 路径安全校验（防目录遍历攻击）
+                - 文件类型白名单（JPG/JPEG/PNG）
+                - HTTP 缓存支持（1小时）
+                - 子目录结构支持
+
+                ## 参数说明：
                     - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
 
                     ## 返回说明：
@@ -117,7 +124,14 @@ public class ImageController {
             description = """
                     # 获取作品图片
 
-                    ## 参数说明：
+                ## 特性
+                - 公开接口（无需认证）
+                - 路径安全校验（防目录遍历攻击）
+                - 文件类型白名单（JPG/JPEG/PNG）
+                - HTTP 缓存支持（1小时）
+                - 多层子目录支持
+
+                ## 参数说明：
                     - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
 
                     ## 返回说明：
@@ -171,7 +185,14 @@ public class ImageController {
             description = """
                     # 获取 Logo 图片
 
-                    ## 参数说明：
+                ## 特性
+                - 公开接口（无需认证）
+                - 路径安全校验（防目录遍历攻击）
+                - 文件类型白名单（JPG/JPEG/PNG）
+                - HTTP 缓存支持（1小时）
+                - 静态资源访问
+
+                ## 参数说明：
                     - filePath: **图像文件名**，字符串类型，必填
 
                     ## 返回说明：
@@ -226,7 +247,15 @@ public class ImageController {
             description = """
                     # 上传用户头像
 
-                    ## 参数说明：
+                ## 特性
+                - Token 认证（通过拦截器自动验证）
+                - 文件格式校验（JPG/JPEG/PNG）
+                - 文件大小限制（最大5MB）
+                - 正方形图片校验
+                - 自动缩放至600x600 PNG格式
+                - UUID 唯一文件名生成
+
+                ## 参数说明：
                     - file: **头像文件**，MultipartFile 类型，必填
 
                     ## 返回说明：

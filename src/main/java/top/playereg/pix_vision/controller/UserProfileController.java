@@ -17,6 +17,7 @@ import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
+import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 用户资料管理相关接口（分页查询、修改昵称）
@@ -50,7 +51,14 @@ public class UserProfileController {
     @Operation(
         summary = "分页查询用户信息",
         description = """
-            # 分页查询用户信息
+            # 分页查询用户信息（需要登录认证）
+
+            ## 特性
+            - Token 认证（通过拦截器自动验证）
+            - MyBatis-Plus 分页支持
+            - 多条件组合查询（用户名/UUID/邮箱）
+            - 模糊匹配与精确匹配
+            - UUID 二进制转换
 
             ## 参数说明：
             - current: 当前页码，**从 1 开始**，Long 类型，必填，默认为 1
@@ -157,11 +165,16 @@ public class UserProfileController {
      * @return 修改结果
      * @author Playereg
      */
-    @PostMapping("/nickname")
+    @PostMapping("/change/nickname")
     @Operation(
         summary = "修改用户昵称接口",
         description = """
-            # 修改用户昵称
+            # 修改用户昵称（需要登录认证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 昵称长度限制校验（1-20字符）
+            - 支持中文、英文、数字和特殊字符
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -195,25 +208,8 @@ public class UserProfileController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "新昵称，长度 1-20 个字符", required = true, example = "新昵称") @RequestParam String nickname
     ) {
-        // 优先从 URL 参数获取 Token
-        String token = request.getParameter("token");
-
-        // 如果 URL 参数中没有，尝试从 Header 获取
-        if (token == null || token.isEmpty()) {
-            String authHeader = request.getHeader("Authorization");
-            log.debug("修改昵称接口 - Authorization Header: {}", authHeader);
-
-            if (authHeader != null && !authHeader.isEmpty()) {
-                // 支持两种格式：带 Bearer 前缀 或 不带前缀
-                if (authHeader.startsWith("Bearer ")) {
-                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
-                } else {
-                    token = authHeader; // 直接使用（假设就是 Token）
-                }
-            }
-        }
-
-        log.debug("修改昵称接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "修改昵称接口");
 
         if (token == null || token.isEmpty()) {
             log.error("修改昵称失败 - Token 不存在");

@@ -84,12 +84,16 @@ public class WebConfig implements WebMvcConfigurer {
             )
             // 排除不需要验证的路径
             .excludePathPatterns(
+                // 用户接口
                 "/api/user/auth/login",                     // 登录
-                "/api/user/auth/logout",                    // 登出
                 "/api/user/register",                       // 注册
                 "/api/user/password/forgot",                // 忘记密码
                 "/api/user/data/list/**",                   // 查询用户拓展数据
-                "/api/mail/send-email-code",                // 发送邮箱验证码
+                // 邮箱接口
+                "/api/mail/send-reset-password-code",       // 发送密码修改验证码邮件
+                "/api/mail/send-register-code",             // 发送注册验证码邮件
+                "/api/mail/send-login-code",                // 发送登录验证码邮件
+                // 其他接口
                 "/api/image/get/**",                        // 获取图像
                 "/api/test/**",                             // 测试接口
                 "/7e212056/no-auth"                        // 测试接口

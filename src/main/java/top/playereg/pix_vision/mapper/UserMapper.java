@@ -85,4 +85,12 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 影响行数
      */
     int updateUserNickname(@Param("userId") Integer userId, @Param("nickname") String nickname);
+
+    /**
+     * 逻辑删除用户账户
+     *
+     * @param userId 用户 ID
+     * @return 影响行数
+     */
+    int deleteUserAccount(@Param("userId") Integer userId);
 }

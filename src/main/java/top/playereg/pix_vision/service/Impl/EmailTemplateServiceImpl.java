@@ -9,13 +9,14 @@ import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.util.ImageUtils;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 邮件模板渲染服务实现类
- *
+ * <p>
  * 特性：
  * 1. 支持多种邮件模板
  * 2. Logo 图片缓存（避免重复读取）
@@ -123,9 +124,10 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
      */
     private String loadTemplate(String templateName) {
         String templatePath = StrUtil.format(
-                "{}/{}.html",
-                FilePathConfig.EmailHtmlPath,
-                templateName
+            "{}{}{}.html",
+            FilePathConfig.EmailHtmlPath,
+            File.separator,
+            templateName
         );
 
         try {
@@ -145,7 +147,12 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
      * @return Base64 Data URI
      */
     private String loadLogoBase64(String logoFileName) {
-        String logoPath = StrUtil.format("{}/{}", FilePathConfig.LogoPath, logoFileName);
+        String logoPath = StrUtil.format("{}{}{}",
+            FilePathConfig.LogoPath,
+            File.separator,
+            logoFileName
+        );
+        log.debug("开始加载 Logo: {}", logoPath);
 
         try {
             return ImageUtils.imageToBase64(logoPath);

@@ -3,6 +3,8 @@ package top.playereg.pix_vision.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import top.playereg.pix_vision.pojo.userPojo.User;
 
+import java.util.List;
+
 public interface UserService {
     User registerUser(
             String username,
@@ -90,20 +92,27 @@ public interface UserService {
     java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData> getUserDataList(Integer userId);
 
     /**
-     * 删除用户拓展数据（只能删除自己的数据）
+     * 批量删除用户拓展数据（支持单条和批量，只能删除自己的数据）
      *
-     * @param dataId 数据 ID
-     * @param userId 用户 ID（从 Token 中获取，用于权限验证）
-     * @return 是否成功
-     */
-    Boolean deleteUserData(Integer dataId, Integer userId);
-
-    /**
-     * 批量删除用户拓展数据（只能删除自己的数据）
-     *
-     * @param dataIds 数据 ID 列表
+     * @param dataIds 数据 ID 列表（单条删除时传入单个元素的列表）
      * @param userId  用户 ID（从 Token 中获取，用于权限验证）
      * @return 是否成功
      */
-    Boolean batchDeleteUserData(java.util.List<Integer> dataIds, Integer userId);
+    Boolean batchDeleteUserData(List<Integer> dataIds, Integer userId);
+
+    /**
+     * 注销用户账户（逻辑删除）
+     *
+     * @param userId 用户 ID（从 Token 中获取）
+     * @return 是否成功
+     */
+    Boolean deleteUserAccount(Integer userId);
+
+    /**
+     * 根据用户名或邮箱查询用户信息（智能识别）
+     *
+     * @param usernameOrEmail 用户名或邮箱地址
+     * @return 用户对象，如果不存在返回 null
+     */
+    User selectUserByUsernameOrEmail(String usernameOrEmail);
 }
