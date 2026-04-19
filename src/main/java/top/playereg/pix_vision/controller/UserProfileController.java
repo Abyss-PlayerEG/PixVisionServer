@@ -17,6 +17,7 @@ import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
+import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 用户资料管理相关接口（分页查询、修改昵称）
@@ -207,25 +208,8 @@ public class UserProfileController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "新昵称，长度 1-20 个字符", required = true, example = "新昵称") @RequestParam String nickname
     ) {
-        // 优先从 URL 参数获取 Token
-        String token = request.getParameter("token");
-
-        // 如果 URL 参数中没有，尝试从 Header 获取
-        if (token == null || token.isEmpty()) {
-            String authHeader = request.getHeader("Authorization");
-            log.debug("修改昵称接口 - Authorization Header: {}", authHeader);
-
-            if (authHeader != null && !authHeader.isEmpty()) {
-                // 支持两种格式：带 Bearer 前缀 或 不带前缀
-                if (authHeader.startsWith("Bearer ")) {
-                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
-                } else {
-                    token = authHeader; // 直接使用（假设就是 Token）
-                }
-            }
-        }
-
-        log.debug("修改昵称接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "修改昵称接口");
 
         if (token == null || token.isEmpty()) {
             log.error("修改昵称失败 - Token 不存在");

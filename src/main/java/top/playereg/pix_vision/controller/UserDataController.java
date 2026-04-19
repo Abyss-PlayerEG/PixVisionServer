@@ -13,6 +13,7 @@ import top.playereg.pix_vision.pojo.userPojo.UserData;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.TokenUtils;
 
 import java.util.List;
 
@@ -91,25 +92,8 @@ public class UserDataController {
         @Parameter(description = "数据名称，长度不超过 26 个字符", required = true, example = "电话") @RequestParam String dataName,
         @Parameter(description = "数据内容，长度不超过 96 个字符", required = true, example = "13800138000") @RequestParam String dataContent
     ) {
-        // 优先从 URL 参数获取 Token
-        String token = request.getParameter("token");
-
-        // 如果 URL 参数中没有，尝试从 Header 获取
-        if (token == null || token.isEmpty()) {
-            String authHeader = request.getHeader("Authorization");
-            log.debug("新增用户拓展数据接口 - Authorization Header: {}", authHeader);
-
-            if (authHeader != null && !authHeader.isEmpty()) {
-                // 支持两种格式：带 Bearer 前缀 或 不带前缀
-                if (authHeader.startsWith("Bearer ")) {
-                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
-                } else {
-                    token = authHeader; // 直接使用（假设就是 Token）
-                }
-            }
-        }
-
-        log.debug("新增用户拓展数据接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "新增用户拓展数据接口");
 
         if (token == null || token.isEmpty()) {
             log.error("新增用户拓展数据失败 - Token 不存在");
@@ -177,7 +161,7 @@ public class UserDataController {
     @Operation(
         summary = "查询用户所有拓展数据接口",
         description = """
-            # 查询用户所有拓展数据（无需登录）
+            # 查询用户所有拓展数据（无需登录验证）
 
             ## 特性
             - 公开接口（无需 Token 认证）
@@ -312,25 +296,8 @@ public class UserDataController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "要删除的数据 ID 列表（支持单条或多条）", required = true, example = "[1, 2, 3]") @RequestParam List<Integer> dataIds
     ) {
-        // 优先从 URL 参数获取 Token
-        String token = request.getParameter("token");
-
-        // 如果 URL 参数中没有，尝试从 Header 获取
-        if (token == null || token.isEmpty()) {
-            String authHeader = request.getHeader("Authorization");
-            log.debug("删除用户拓展数据接口 - Authorization Header: {}", authHeader);
-
-            if (authHeader != null && !authHeader.isEmpty()) {
-                // 支持两种格式：带 Bearer 前缀 或 不带前缀
-                if (authHeader.startsWith("Bearer ")) {
-                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
-                } else {
-                    token = authHeader; // 直接使用（假设就是 Token）
-                }
-            }
-        }
-
-        log.debug("删除用户拓展数据接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "删除用户拓展数据接口");
 
         if (token == null || token.isEmpty()) {
             log.error("删除用户拓展数据失败 - Token 不存在");

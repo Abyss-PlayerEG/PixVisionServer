@@ -86,7 +86,6 @@ public class WebConfig implements WebMvcConfigurer {
             .excludePathPatterns(
                 // 用户接口
                 "/api/user/auth/login",                     // 登录
-                "/api/user/auth/logout",                    // 登出
                 "/api/user/register",                       // 注册
                 "/api/user/password/forgot",                // 忘记密码
                 "/api/user/data/list/**",                   // 查询用户拓展数据

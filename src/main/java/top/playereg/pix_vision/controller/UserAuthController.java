@@ -20,12 +20,15 @@ import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
+import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 用户认证相关接口（登录、登出）
  *
  * @author PlayerEG
  * @see top.playereg.pix_vision.service.Impl.UserServiceImpl
+ * @see top.playereg.pix_vision.service.Impl.VerificationCodeServicesImpl
+ * @see top.playereg.pix_vision.service.Impl.TokenWhitelistServiceImpl
  */
 @RestController
 @SuppressWarnings("all")
@@ -54,7 +57,7 @@ public class UserAuthController {
     @Operation(
         summary = "用户注册接口",
         description = """
-            # 用户注册
+            # 用户注册（无需登录验证）
 
             ## 特性
             - 用户名/邮箱唯一性校验
@@ -95,7 +98,7 @@ public class UserAuthController {
             - 建议使用强密码组合（大小写字母 + 数字 + 特殊字符）
             """
     )
-    public ResponsePojo<User> registerUser(
+    public ResponsePojo<User> register(
         @Parameter(description = "用户名，6-16 位字母/数字/下划线", required = true, example = "dev_user") @RequestParam String username,
         @Parameter(description = "登录密码，会使用 SHA-256 加密存储", required = true, example = "123456") @RequestParam String password,
         @Parameter(description = "用户昵称（可选，为空时自动生成）", required = false, example = "测试用户") @RequestParam(required = false) String nickname,
@@ -148,7 +151,7 @@ public class UserAuthController {
     @Operation(
         summary = "用户登录接口",
         description = """
-            # 用户登录
+            # 用户登录（无需登录验证）
 
             ## 特性
             - 支持用户名或邮箱登录
@@ -299,7 +302,7 @@ public class UserAuthController {
     @Operation(
         summary = "用户登出接口",
         description = """
-            # 用户登出，将 Token 从白名单移除
+            # 用户登出（需要登录验证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -335,25 +338,8 @@ public class UserAuthController {
     public ResponsePojo<Boolean> logout(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request
     ) {
-        // 优先从 URL 参数获取 Token
-        String token = request.getParameter("token");
-
-        // 如果 URL 参数中没有，尝试从 Header 获取
-        if (token == null || token.isEmpty()) {
-            String authHeader = request.getHeader("Authorization");
-            log.debug("登出接口 - Authorization Header: {}", authHeader);
-
-            if (authHeader != null && !authHeader.isEmpty()) {
-                // 支持两种格式：带 Bearer 前缀 或 不带前缀
-                if (authHeader.startsWith("Bearer ")) {
-                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
-                } else {
-                    token = authHeader; // 直接使用（假设就是 Token）
-                }
-            }
-        }
-
-        log.debug("登出接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "登出接口");
 
         if (token == null || token.isEmpty()) {
             log.error("登出失败 - Token 不存在，Authorization: {}, Token 参数：{}", request.getHeader("Authorization"), request.getParameter("token"));
@@ -397,7 +383,7 @@ public class UserAuthController {
     @Operation(
         summary = "用户注销账户接口",
         description = """
-            # 用户注销账户
+            # 用户注销账户（需要登录验证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -436,25 +422,8 @@ public class UserAuthController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
-        // 优先从 URL 参数获取 Token
-        String token = request.getParameter("token");
-
-        // 如果 URL 参数中没有，尝试从 Header 获取
-        if (token == null || token.isEmpty()) {
-            String authHeader = request.getHeader("Authorization");
-            log.debug("注销接口 - Authorization Header: {}", authHeader);
-
-            if (authHeader != null && !authHeader.isEmpty()) {
-                // 支持两种格式：带 Bearer 前缀 或 不带前缀
-                if (authHeader.startsWith("Bearer ")) {
-                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
-                } else {
-                    token = authHeader; // 直接使用
-                }
-            }
-        }
-
-        log.debug("注销接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "注销接口");
 
         if (token == null || token.isEmpty()) {
             log.error("注销失败 - Token 不存在");

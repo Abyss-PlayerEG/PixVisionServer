@@ -16,16 +16,18 @@ import top.playereg.pix_vision.service.EmailService;
 import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
-import top.playereg.pix_vision.util.Aspect.LogRecord;
 import top.playereg.pix_vision.util.RegexUtils;
+import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 邮件服务接口
  *
  * @author PlayerEG
- * @see ResponsePojo
- * @see top.playereg.pix_vision.service.Impl.VerificationCodeServicesImpl
- * @see top.playereg.pix_vision.service.Impl.EmailServiceImpl
+ * @see ResponsePojo 响应结果
+ * @see top.playereg.pix_vision.service.Impl.UserServiceImpl 用户服务
+ * @see top.playereg.pix_vision.service.Impl.VerificationCodeServicesImpl 验证码服务
+ * @see top.playereg.pix_vision.service.Impl.EmailServiceImpl 邮件服务
+ * @see top.playereg.pix_vision.service.Impl.EmailTemplateServiceImpl 邮件模板服务
  */
 @RestController
 @RequestMapping("/api/mail")
@@ -36,24 +38,23 @@ public class MailController {
 
     private static final Logger log = LoggerFactory.getLogger(MailController.class);
     private final EmailService emailService;
-    private final VerificationCodeServices verificationCodeServices;
     private final UserService userService;
+    private final VerificationCodeServices verificationCodeServices;
     private final EmailTemplateService emailTemplateService;
 
     /**
      * 发送注册验证码邮件
      *
-     * @param email       邮箱地址
+     * @param email    邮箱地址
      * @param username 用户名
      * @return 响应结果
      * @author PlayerEG
      */
     @PostMapping("/send-register-code")
-    @LogRecord(module = "\"验证码\"模块", event = "发送\"注册验证码\"")
     @Operation(
         summary = "发送注册验证码邮件",
         description = """
-            # 发送注册验证码邮件
+            # 发送注册验证码邮件（无需登录验证）
 
             ## 特性
             - 邮箱格式验证
@@ -137,11 +138,10 @@ public class MailController {
      * @author PlayerEG
      */
     @PostMapping("/send-login-code")
-    @LogRecord(module = "\"验证码\"模块", event = "发送\"登录验证码\"")
     @Operation(
         summary = "发送登录验证码邮件",
         description = """
-            # 发送登录验证码邮件
+            # 发送登录验证码邮件（无需登录验证）
 
             ## 特性
             - 支持用户名或邮箱作为收件人
@@ -222,18 +222,18 @@ public class MailController {
     }
 
     /**
-     * 发送密码修改验证码邮件
+     * 发送重置密码验证码邮件
      *
      * @param usernameOrEmail 用户名或邮箱
      * @return 响应结果
      * @author PlayerEG
      */
-    @PostMapping("/send-change-password-code")
-    @LogRecord(module = "\"验证码\"模块", event = "发送\"改密验证码\"")
+//    @PostMapping("/send-change-password-code")
+    @PostMapping("/send-forget-password-code")
     @Operation(
-        summary = "发送密码修改验证码邮件",
+        summary = "发送重置密码验证码邮件",
         description = """
-            # 发送密码修改验证码邮件
+            # 发送重置密码验证码邮件（无需登录验证）
 
             ## 特性
             - 支持用户名或邮箱作为收件人
@@ -267,11 +267,11 @@ public class MailController {
             - 如果usernameOrEmail是用户名，系统会自动查询对应的邮箱
             - 如果usernameOrEmail是邮箱，直接使用
             - 用户必须已注册才能发送改密验证码
-            - 此接口用于忘记密码重置场景
-            - 邮件主题已内置为"PixVision 密码重置验证码"
+            - 此接口用于忘记重置密码场景
+            - 邮件主题已内置为"PixVision 重置密码验证码"
             """
     )
-    public ResponsePojo<Boolean> sendChangePasswordCode(
+    public ResponsePojo<Boolean> sendForgetPasswordCode(
         @Parameter(description = "用户名或邮箱地址", required = true, example = "dev_user") @RequestParam String usernameOrEmail
     ) {
         // 基础数据校验
@@ -298,13 +298,115 @@ public class MailController {
         String html = emailTemplateService.renderVerificationEmail(
             verificationCode,
             username,
-            "密码修改"
+            "重置密码"
         );
 
         try {
-            emailService.sendEMail(targetEmail, "PixVision 密码修改验证码", html);
+            emailService.sendEMail(targetEmail, "PixVision 重置密码验证码", html);
         } catch (Exception e) {
             log.error("改密验证码邮件发送失败：{}", e.getMessage());
+            return ResponsePojo.error(false, "邮件发送失败");
+        }
+
+        // 将验证码存入Redis
+        verificationCodeServices.setRedisVCode(targetEmail, verificationCode);
+
+        return ResponsePojo.success(true, "邮件发送成功");
+    }
+
+    /**
+     * 发送修改密码验证码邮件（用于已登录用户）
+     *
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @return 响应结果
+     * @author PlayerEG
+     */
+    @PostMapping("/send-change-password-code")
+    @Operation(
+        summary = "发送修改密码验证码邮件",
+        description = """
+            # 发送修改密码验证码邮件（已登录用户）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 从 Token 自动获取用户信息
+            - Redis 验证码存储
+            - HTML 邮件模板渲染
+            - 内置邮件主题
+            - 需要登录（受保护接口）
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+
+            ## 返回说明：
+            - **发送成功**：返回 **{"data": true}** 和“邮件发送成功”提示
+            - **发送失败**：返回 **{"data": false}** 和“邮件发送失败”提示
+            - **Token 不存在**：返回 **{"data": false}** 和“Token 不存在”提示
+            - **Token 无效**：返回 **{"data": false}** 和“Token 无效”提示
+            - **用户不存在**：返回 **{"data": false}** 和“用户不存在”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 从 Token 中解析用户 ID
+            3. 根据用户 ID 查询用户信息，获取用户名和邮箱
+            4. 验证用户是否存在
+            5. 生成6位随机验证码并存入Redis
+            6. 使用HTML邮件模板渲染邮件内容
+            7. 发送邮件并将验证码与邮箱绑定存储
+
+            ## 注意事项：
+            - 验证码默认有效期由Redis配置决定（默认5分钟）
+            - 用户信息从 Token 中自动获取，无需传入
+            - 此接口用于**已登录用户修改密码**场景
+            - 邮件主题已内置为"PixVision 修改密码验证码"
+            - 需要携带有效的 Token 才能调用
+            """
+    )
+    public ResponsePojo<Boolean> sendChangePasswordCode(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
+    ) {
+        // 提取 Token
+        String token = TokenUtils.extractTokenWithLog(request, "修改密码验证码接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("修改密码验证码失败 - Token 不存在");
+            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = top.playereg.pix_vision.util.JWTUtils.getUserIdFromToken(token);
+        if (userId == null || userId <= 0) {
+            log.error("无法从 Token 中获取用户 ID");
+            return ResponsePojo.error(false, "Token 无效");
+        }
+
+        log.info("发送修改密码验证码，用户 ID: {}", userId);
+
+        // 根据用户 ID 查询用户信息
+        User user = userService.selectAllUserById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "用户不存在");
+        }
+
+        String username = user.getUsername();
+        String targetEmail = user.getEmail();
+        log.info("发送修改密码验证码，用户名：{}，邮箱：{}", username, targetEmail);
+
+        // 生成验证码
+        String verificationCode = verificationCodeServices.verificationCode();
+
+        // 使用模板服务渲染邮件 HTML
+        String html = emailTemplateService.renderVerificationEmail(
+            verificationCode,
+            username,
+            "修改密码"
+        );
+
+        try {
+            emailService.sendEMail(targetEmail, "PixVision 修改密码验证码", html);
+        } catch (Exception e) {
+            log.error("修改密码验证码邮件发送失败：{}", e.getMessage());
             return ResponsePojo.error(false, "邮件发送失败");
         }
 
@@ -319,11 +421,11 @@ public class MailController {
      *
      * @param email
      * @param inputVCode
-     * @deprecated
      * @return ResponsePojo<Boolean>
      * @implNote 验证"验证码"
      * @apiNote 验证用户输入的验证码
      * @author blue_sky_ks
+     * @deprecated
      */
     @Deprecated
     @PostMapping("/verify-email-code-test")

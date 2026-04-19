@@ -42,7 +42,7 @@
 #logging:
 #  level:
 #    root: info  # 日志级别
-#
+#    top.playereg.pix_vision: info  # 模块日志级别(开发者建议等级设置为debug)
 #### MuYing日志开关
 #mu-ying-logging:
 #  open-highlight-color: on # 是否启用颜色(on为启用, off为关闭)
