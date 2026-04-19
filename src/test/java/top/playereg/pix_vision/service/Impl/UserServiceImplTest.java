@@ -60,12 +60,19 @@ class UserServiceImplTest {
 
     @Test
     void deleteUserData() {
-        // 测试删除用户拓展数据（需要验证权限）
-        Boolean result = userService.deleteUserData(1, 1); // 删除数据 ID 为 1 的数据，用户 ID 为 1
-        log.info("删除结果：{}", result);
+        // 测试单条删除用户拓展数据（需要验证权限）
+        java.util.List<Integer> singleDataId = java.util.Arrays.asList(1);
+        Boolean result = userService.batchDeleteUserData(singleDataId, 1); // 删除数据 ID 为 1 的数据，用户 ID 为 1
+        log.info("单条删除结果：{}", result);
+
+        // 测试批量删除用户拓展数据
+        java.util.List<Integer> multipleDataIds = java.util.Arrays.asList(2, 3);
+        Boolean result2 = userService.batchDeleteUserData(multipleDataIds, 1); // 批量删除数据 ID 为 2、3 的数据
+        log.info("批量删除结果：{}", result2);
 
         // 测试删除不属于自己的数据（应该失败）
-        Boolean result2 = userService.deleteUserData(2, 999); // 尝试用用户 999 删除数据 2
-        log.info("删除他人数据结果（应为 false）：{}", result2);
+        java.util.List<Integer> otherUserDataIds = java.util.Arrays.asList(4);
+        Boolean result3 = userService.batchDeleteUserData(otherUserDataIds, 999); // 尝试用用户 999 删除数据 4
+        log.info("删除他人数据结果（应为 false）：{}", result3);
     }
 }

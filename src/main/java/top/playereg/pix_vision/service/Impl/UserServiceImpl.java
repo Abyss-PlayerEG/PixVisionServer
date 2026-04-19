@@ -13,6 +13,8 @@ import top.playereg.pix_vision.pojo.userPojo.UserData;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
+import java.util.List;
+
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
@@ -352,7 +354,7 @@ public class UserServiceImpl implements UserService {
      * @return 用户拓展数据列表，如果用户不存在则返回 null
      */
     @Override
-    public java.util.List<UserData> getUserDataList(Integer userId) {
+    public List<UserData> getUserDataList(Integer userId) {
         log.info("查询用户拓展数据，用户 ID: {}", userId);
 
         // 参数校验
@@ -381,55 +383,14 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 删除用户拓展数据（只能删除自己的数据）
+     * 批量删除用户拓展数据（支持单条和批量，只能删除自己的数据）
      *
-     * @param dataId 数据 ID
-     * @param userId 用户 ID（从 Token 中获取，用于权限验证）
-     * @return 是否成功
-     */
-    @Override
-    public Boolean deleteUserData(Integer dataId, Integer userId) {
-        log.info("删除用户拓展数据，数据 ID: {}, 用户 ID: {}", dataId, userId);
-
-        // 参数校验
-        if (dataId == null || dataId <= 0) {
-            log.error("数据 ID 无效: {}", dataId);
-            return false;
-        }
-
-        if (userId == null || userId <= 0) {
-            log.error("用户 ID 无效: {}", userId);
-            return false;
-        }
-
-        // 检查用户是否存在
-        User user = userMapper.selectAllUserInfoById(userId);
-        if (user == null) {
-            log.warn("用户不存在，用户 ID: {}", userId);
-            return false;
-        }
-
-        // 执行逻辑删除（SQL 中已包含 user_id 验证，确保只能删除自己的数据）
-        int result = userDataMapper.deleteUserDataById(dataId, userId);
-
-        if (result > 0) {
-            log.info("用户拓展数据删除成功，数据 ID: {}, 用户 ID: {}", dataId, userId);
-            return true;
-        } else {
-            log.warn("用户拓展数据删除失败，可能原因：数据不存在、不属于当前用户、或已被删除，数据 ID: {}, 用户 ID: {}", dataId, userId);
-            return false;
-        }
-    }
-
-    /**
-     * 批量删除用户拓展数据（只能删除自己的数据）
-     *
-     * @param dataIds 数据 ID 列表
+     * @param dataIds 数据 ID 列表（单条删除时传入单个元素的列表）
      * @param userId  用户 ID（从 Token 中获取，用于权限验证）
      * @return 是否成功
      */
     @Override
-    public Boolean batchDeleteUserData(java.util.List<Integer> dataIds, Integer userId) {
+    public Boolean batchDeleteUserData(List<Integer> dataIds, Integer userId) {
         log.info("批量删除用户拓展数据，数据 ID 数量: {}, 用户 ID: {}", dataIds != null ? dataIds.size() : 0, userId);
 
         // 参数校验
