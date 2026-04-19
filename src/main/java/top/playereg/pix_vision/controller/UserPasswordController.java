@@ -54,6 +54,13 @@ public class UserPasswordController {
         description = """
             # 更换密码（需要登录认证）
 
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 邮箱验证码验证
+            - SHA-256 密码加密
+            - 新旧密码一致性校验
+            - 强制所有设备下线（移除所有 Token）
+
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
             - newPassword: 新密码，字符串类型，必填
@@ -162,6 +169,13 @@ public class UserPasswordController {
         summary = "忘记密码",
         description = """
             # 忘记密码（无需登录）
+
+            ## 特性
+            - 公开接口（无需 Token 认证）
+            - 支持用户名或邮箱找回
+            - 邮箱验证码验证
+            - SHA-256 密码加密
+            - 强制所有设备下线（移除所有 Token）
 
             ## 参数说明：
             - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填

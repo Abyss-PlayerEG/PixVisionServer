@@ -56,6 +56,12 @@ public class UserAuthController {
         description = """
             # 用户注册
 
+            ## 特性
+            - 用户名/邮箱唯一性校验
+            - 邮箱验证码验证（Redis 存储）
+            - SHA-256 密码加密
+            - 自动生成随机昵称（可选）
+
             ## 参数说明：
             - username: 用户名，6-16 位，只允许字母、数字和下划线，字符串类型，必填
             - password: 登录密码，字符串类型，必填，建议使用强密码组合
@@ -143,6 +149,13 @@ public class UserAuthController {
         summary = "用户登录接口",
         description = """
             # 用户登录
+
+            ## 特性
+            - 支持用户名或邮箱登录
+            - JWT Token 生成（有效期 7 天）
+            - Token 白名单管理
+            - SHA-256 密码验证
+            - 账户状态检查
 
             ## 参数说明：
             - usernameOrEmail: **用户名**或**邮箱地址**，字符串类型，必填
@@ -294,6 +307,12 @@ public class UserAuthController {
         summary = "用户登出接口",
         description = """
             # 用户登出，将 Token 从白名单移除
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - Token 白名单移除（立即失效）
+            - 剩余有效期检测
+            - 单设备登出（不影响其他设备）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递

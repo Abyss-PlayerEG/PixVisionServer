@@ -52,6 +52,13 @@ public class UserProfileController {
         description = """
             # 分页查询用户信息（需要登录认证）
 
+            ## 特性
+            - Token 认证（通过拦截器自动验证）
+            - MyBatis-Plus 分页支持
+            - 多条件组合查询（用户名/UUID/邮箱）
+            - 模糊匹配与精确匹配
+            - UUID 二进制转换
+
             ## 参数说明：
             - current: 当前页码，**从 1 开始**，Long 类型，必填，默认为 1
             - size: 每页大小，Long 类型，必填，默认为 10，范围 1-100
@@ -162,6 +169,11 @@ public class UserProfileController {
         summary = "修改用户昵称接口",
         description = """
             # 修改用户昵称（需要登录认证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 昵称长度限制校验（1-20字符）
+            - 支持中文、英文、数字和特殊字符
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递

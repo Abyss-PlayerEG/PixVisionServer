@@ -48,6 +48,11 @@ public class UserDataController {
         description = """
             # 新增用户拓展数据（需要登录认证）
 
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 数据长度限制校验（名称≤26字符，内容≤96字符）
+            - 1对n关系（同一用户可添加多条拓展数据）
+
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
             - dataName: 数据名称，字符串类型，必填，长度不超过 26 个字符（如：电话、邮箱、网站、微信等）
@@ -174,6 +179,11 @@ public class UserDataController {
         description = """
             # 查询用户所有拓展数据（无需登录）
 
+            ## 特性
+            - 公开接口（无需 Token 认证）
+            - 自动过滤逻辑删除数据
+            - 按创建时间倒序排列
+
             ## 参数说明：
             - userId: 用户 ID，Integer 类型，必填
 
@@ -259,7 +269,10 @@ public class UserDataController {
             # 删除用户拓展数据（需要登录认证）
 
             ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
             - 支持单条/批量删除
+            - SQL 层面权限验证（只能删除自己的数据）
+            - 逻辑删除（数据不真正从数据库移除）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
