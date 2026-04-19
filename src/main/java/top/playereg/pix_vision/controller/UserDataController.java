@@ -46,7 +46,7 @@ public class UserDataController {
     @Operation(
         summary = "新增用户拓展数据接口",
         description = """
-            # 新增用户拓展数据
+            # 新增用户拓展数据（需要登录认证）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -170,9 +170,9 @@ public class UserDataController {
      */
     @GetMapping("/list")
     @Operation(
-        summary = "查询用户所有拓展数据接口（公开）",
+        summary = "查询用户所有拓展数据接口",
         description = """
-            # 查询用户所有拓展数据（公开接口，无需登录）
+            # 查询用户所有拓展数据（无需登录）
 
             ## 参数说明：
             - userId: 用户 ID，Integer 类型，必填
@@ -362,7 +362,7 @@ public class UserDataController {
      */
     @PostMapping("/batch-delete")
     @Operation(
-        summary = "批量删除用户拓展数据接口",
+        summary = "删除用户拓展数据接口 - 批量",
         description = """
             # 批量删除用户拓展数据（需要登录认证）
 

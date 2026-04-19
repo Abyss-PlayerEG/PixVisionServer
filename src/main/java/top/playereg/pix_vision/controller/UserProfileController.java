@@ -50,7 +50,7 @@ public class UserProfileController {
     @Operation(
         summary = "分页查询用户信息",
         description = """
-            # 分页查询用户信息
+            # 分页查询用户信息（需要登录认证）
 
             ## 参数说明：
             - current: 当前页码，**从 1 开始**，Long 类型，必填，默认为 1
@@ -157,11 +157,11 @@ public class UserProfileController {
      * @return 修改结果
      * @author Playereg
      */
-    @PostMapping("/nickname")
+    @PostMapping("/change/nickname")
     @Operation(
         summary = "修改用户昵称接口",
         description = """
-            # 修改用户昵称
+            # 修改用户昵称（需要登录认证）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
