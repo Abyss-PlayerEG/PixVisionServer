@@ -227,15 +227,8 @@ public class UserAuthController {
         String hashedPassword = StrSwitchUtils.PasswdToHash256(password);
         log.info("登录密码哈希：{}", hashedPassword);
 
-        // 查询用户信息（支持用户名或邮箱登录）
-        User user;
-        if (RegexUtils.isEmail(usernameOrEmail)) {
-            user = userService.selectAllUserByEmail(usernameOrEmail);
-            log.info("通过邮箱查询用户：{}, 结果：{}", usernameOrEmail, user != null ? "找到" : "未找到");
-        } else {
-            user = userService.selectAllUserByUsername(usernameOrEmail);
-            log.info("通过用户名查询用户：{}, 结果：{}", usernameOrEmail, user != null ? "找到" : "未找到");
-        }
+        // 查询用户信息（支持用户名或邮箱登录）- 使用通用方法
+        User user = userService.selectUserByUsernameOrEmail(usernameOrEmail);
 
         // 调试：输出完整用户对象
         log.info("查询到的用户对象：{}", user);
@@ -390,5 +383,123 @@ public class UserAuthController {
         log.info("用户登出，用户名：{}, 用户 ID: {}, Token 剩余时间：{}ms", username, userId, remainingTime);
 
         return ResponsePojo.success(true, "登出成功，Token 已被禁用");
+    }
+
+    /**
+     * 用户注销账户（逻辑删除）
+     *
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param vCode   邮箱验证码
+     * @return 响应数据<Boolean>
+     * @author PlayerEG
+     */
+    @PostMapping("/delete-account")
+    @Operation(
+        summary = "用户注销账户接口",
+        description = """
+            # 用户注销账户
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 邮箱验证码验证（Redis 存储）
+            - 逻辑删除用户账户（is_delete=1）
+            - 自动移除该用户所有 Token
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
+
+            ## 返回说明：
+            - **注销成功**：返回 **{"data": true}** 和“账户注销成功”提示
+            - **Token 不存在**：返回 **{"data": false}** 和“Token 不存在”提示
+            - **验证码错误**：返回 **{"data": false}** 和“验证码错误”提示
+            - **注销失败**：返回 **{"data": false}** 和“账户注销失败”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 从 Token 中解析用户 ID
+            3. 查询用户信息获取邮箱
+            4. 验证邮箱验证码是否正确
+            5. 将该用户所有 Token 从白名单移除
+            6. 逻辑删除用户账户（设置 is_delete=1）
+            7. 记录注销日志
+
+            ## 注意事项：
+            - 注销后账户将被逻辑删除，无法再登录
+            - 需要提供正确的邮箱验证码
+            - 注销操作不可逆，请谨慎操作
+            - 注销后该用户的所有 Token 将立即失效
+            - 建议注销前备份重要数据
+            """
+    )
+    public ResponsePojo<Boolean> deleteAccount(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
+    ) {
+        // 优先从 URL 参数获取 Token
+        String token = request.getParameter("token");
+
+        // 如果 URL 参数中没有，尝试从 Header 获取
+        if (token == null || token.isEmpty()) {
+            String authHeader = request.getHeader("Authorization");
+            log.debug("注销接口 - Authorization Header: {}", authHeader);
+
+            if (authHeader != null && !authHeader.isEmpty()) {
+                // 支持两种格式：带 Bearer 前缀 或 不带前缀
+                if (authHeader.startsWith("Bearer ")) {
+                    token = authHeader.substring(7); // 去除 "Bearer " 前缀
+                } else {
+                    token = authHeader; // 直接使用
+                }
+            }
+        }
+
+        log.debug("注销接口 - 提取的 Token: {}", token != null ? (token.length() > 10 ? token.substring(0, 10) + "..." : token) : "null");
+
+        if (token == null || token.isEmpty()) {
+            log.error("注销失败 - Token 不存在");
+            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null || userId <= 0) {
+            log.error("无法从 Token 中获取用户 ID");
+            return ResponsePojo.error(false, "Token 无效");
+        }
+
+        log.info("开始注销账户，用户 ID: {}", userId);
+
+        // 查询用户信息获取邮箱
+        User user = userService.selectAllUserById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "用户不存在");
+        }
+
+        String email = user.getEmail();
+        log.info("用户邮箱: {}", email);
+
+        // 验证邮箱验证码
+        boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
+        if (!isTrue) {
+            log.warn("验证码错误，邮箱: {}", email);
+            return ResponsePojo.error(false, "验证码错误");
+        }
+
+        // 将该用户所有 Token 从白名单移除
+        tokenWhitelistService.removeAllUserTokens(userId, user.getUsername());
+        log.info("已移除用户所有 Token，用户 ID: {}, 用户名: {}", userId, user.getUsername());
+
+        // 执行账户注销（逻辑删除）
+        Boolean result = userService.deleteUserAccount(userId);
+
+        if (result) {
+            log.info("用户账户注销成功，用户 ID: {}, 用户名: {}", userId, user.getUsername());
+            return ResponsePojo.success(true, "账户注销成功");
+        } else {
+            log.error("用户账户注销失败，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "账户注销失败");
+        }
     }
 }

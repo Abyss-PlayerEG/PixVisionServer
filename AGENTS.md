@@ -922,11 +922,12 @@ error("错误信息：数据库连接失败",exception);
 
 ## 🔐 用户认证接口 `/api/user/auth`
 
-| 方法   | 路径          | 说明   | 认证 | 主要参数                                           |
-|------|-------------|------|:--:|------------------------------------------------|
-| POST | `/register` | 用户注册 | ❌  | username, password, nickname(可选), email, vCode |
-| POST | `/login`    | 用户登录 | ❌  | usernameOrEmail, password, vCode               |
-| POST | `/logout`   | 用户登出 | ✅  | token (Header/URL)                             |
+| 方法   | 路径                | 说明   | 认证 | 主要参数                                           |
+|------|-------------------|------|:--:|------------------------------------------------|
+| POST | `/register`       | 用户注册 | ❌  | username, password, nickname(可选), email, vCode |
+| POST | `/login`          | 用户登录 | ❌  | usernameOrEmail, password, vCode               |
+| POST | `/logout`         | 用户登出 | ✅  | token (Header/URL)                             |
+| POST | `/delete-account` | 注销账户 | ✅  | vCode, token (Header/URL)                      |
 
 ## 📝 用户拓展数据接口 `/api/user/data`
 
@@ -952,10 +953,12 @@ error("错误信息：数据库连接失败",exception);
 
 ## 📧 邮件接口 `/api/mail`
 
-| 方法   | 路径                        | 说明          | 认证 | 主要参数                                   |
-|------|---------------------------|-------------|:--:|----------------------------------------|
-| POST | `/send-email-code`        | 发送邮箱验证码     | ❌  | to, subject, username(条件必填), emailText |
-| POST | `/verify-email-code-test` | 验证邮箱验证码（测试） | ❌  | email, code                            |
+| 方法   | 路径                          | 说明          | 认证 | 主要参数             |
+|------|-----------------------------|-------------|:--:|------------------|
+| POST | `/send-register-code`       | 发送注册验证码     | ❌  | to(邮箱), username |
+| POST | `/send-login-code`          | 发送登录验证码     | ❌  | to(用户名/邮箱)       |
+| POST | `/send-reset-password-code` | 发送改密验证码     | ❌  | to(用户名/邮箱)       |
+| POST | `/verify-email-code-test`   | 验证邮箱验证码（测试） | ❌  | email, code      |
 
 ## 🖼️ 图片资源接口 `/api/image`
 

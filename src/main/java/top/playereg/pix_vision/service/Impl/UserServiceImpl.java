@@ -422,4 +422,73 @@ public class UserServiceImpl implements UserService {
             return false;
         }
     }
+
+    /**
+     * 注销用户账户（逻辑删除）
+     *
+     * @param userId 用户 ID
+     * @return 是否成功
+     */
+    @Override
+    public Boolean deleteUserAccount(Integer userId) {
+        log.info("开始注销用户账户，用户 ID: {}", userId);
+
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return false;
+        }
+
+        // 检查用户是否存在
+        User user = userMapper.selectAllUserInfoById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return false;
+        }
+
+        // 执行逻辑删除
+        int result = userMapper.deleteUserAccount(userId);
+
+        if (result > 0) {
+            log.info("用户账户注销成功，用户 ID: {}, 用户名: {}", userId, user.getUsername());
+            return true;
+        } else {
+            log.warn("用户账户注销失败，用户 ID: {}", userId);
+            return false;
+        }
+    }
+
+    /**
+     * 根据用户名或邮箱查询用户信息（智能识别）
+     *
+     * @param usernameOrEmail 用户名或邮箱地址
+     * @return 用户对象，如果不存在返回 null
+     */
+    @Override
+    public User selectUserByUsernameOrEmail(String usernameOrEmail) {
+        if (usernameOrEmail == null || usernameOrEmail.isEmpty()) {
+            log.warn("查询用户信息失败：参数为空");
+            return null;
+        }
+
+        User user;
+        // 判断是邮箱还是用户名
+        if (usernameOrEmail.contains("@")) {
+            // 是邮箱格式
+            log.info("通过邮箱查询用户：{}", usernameOrEmail);
+            user = userMapper.selectAllUserInfoByEmail(usernameOrEmail);
+        } else {
+            // 是用户名格式
+            log.info("通过用户名查询用户：{}", usernameOrEmail);
+            user = userMapper.selectAllUserInfoByUsername(usernameOrEmail);
+        }
+
+        if (user != null) {
+            log.info("查询到用户 - 用户名：{}, 邮箱：{}", user.getUsername(), user.getEmail());
+        } else {
+            log.warn("用户不存在：{}", usernameOrEmail);
+        }
+
+        return user;
+    }
 }

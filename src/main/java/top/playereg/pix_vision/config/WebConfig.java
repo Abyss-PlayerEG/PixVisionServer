@@ -89,7 +89,9 @@ public class WebConfig implements WebMvcConfigurer {
                 "/api/user/register",                       // 注册
                 "/api/user/password/forgot",                // 忘记密码
                 "/api/user/data/list/**",                   // 查询用户拓展数据
-                "/api/mail/send-email-code",                // 发送邮箱验证码
+                "/api/mail/send-reset-password-code",       // 发送密码修改验证码邮件
+                "/api/mail/send-register-code",             // 发送注册验证码邮件
+                "/api/mail/send-login-code",                // 发送登录验证码邮件
                 "/api/image/get/**",                        // 获取图像
                 "/api/test/**",                             // 测试接口
                 "/7e212056/no-auth"                        // 测试接口
