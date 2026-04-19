@@ -37,23 +37,27 @@
 - JWT Token 认证与白名单机制（7天有效期）
 - **Redis Set 索引优化**（批量移除 Token 性能提升 2,500x）
 - RSA + AES 混合加密（支持任意数据类型）
-- 邮箱验证码二次验证
+- 邮箱验证码二次验证（5种场景）
 - 密码 SHA-256 哈希加密存储
+- **Token 提取工具类封装**（统一处理 Header/URL 参数）
 
 ### 👥 用户系统
 
 - 用户注册与登录（用户名/邮箱 + 密码）
 - **模块化控制器设计**（认证、注册、密码管理、资料管理、拓展数据）
 - 密码修改与重置（需邮箱二次验证）
+- **账户注销功能**（逻辑删除 + Token 失效）
 - 用户信息管理与分页查询
 - **用户拓展数据管理**（增删查批量操作）
 - 多角色权限管理（普通用户/创作者/审核员/管理员）
 
 ### 📧 邮件服务
 
-- 邮箱验证码发送与验证
+- **5种验证码场景**（注册、登录、重置密码、修改密码、注销账户）
 - HTML 邮件模板支持
 - SMTP 配置灵活定制
+- **内置邮件主题**（无需传入参数）
+- **智能识别**用户名或邮箱格式
 
 ### 🖥️ 系统监控
 
@@ -178,39 +182,40 @@ java -jar target/PixVisionServer-0.0.1-SNAPSHOT.jar
 
 ### 🔐 用户认证 `/api/user/auth`
 
-| 方法   | 路径        | 说明             | 认证 |
-|------|-----------|----------------|:--:|
-| POST | `/login`  | 用户登录（支持用户名/邮箱） | ❌  |
-| POST | `/logout` | 用户登出（移除 Token） | ✅  |
+| 方法   | 路径                | 说明              | 认证 |
+|------|-------------------|-----------------|:--:|
+| POST | `/register`       | 用户注册            | ❌  |
+| POST | `/login`          | 用户登录（支持用户名/邮箱） | ❌  |
+| POST | `/logout`         | 用户登出（移除 Token）  | ✅  |
+| POST | `/delete-account` | 注销账户（逻辑删除）      | ✅  |
 
-### 📝 用户注册 `/api/user/register`
-
-| 方法   | 路径  | 说明   | 认证 |
-|------|-----|------|:--:|
-| POST | `/` | 用户注册 | ❌  |
+**注销账户特性：**
+- ✅ Token 认证 + 邮箱验证码双重验证
+- ✅ 逻辑删除（is_delete=1），数据保留可追溯
+- ✅ 自动移除该用户所有 Token，立即失效
+- ✅ 操作不可逆，需谨慎
 
 ### 🔑 密码管理 `/api/user/password`
 
-| 方法   | 路径        | 说明        | 认证 |
-|------|-----------|-----------|:--:|
-| POST | `/change` | 修改密码（需登录） | ✅  |
-| POST | `/forgot` | 忘记密码重置    | ❌  |
+| 方法   | 路径        | 说明             | 认证 |
+|------|-----------|----------------|:--:|
+| POST | `/change` | 修改密码（需登录）     | ✅  |
+| POST | `/forgot` | 忘记密码重置（无需登录）  | ❌  |
 
 ### 👤 用户资料 `/api/user/profile`
 
 | 方法   | 路径                       | 说明       | 认证 |
 |------|--------------------------|----------|:--:|
 | GET  | `/page/{current}/{size}` | 分页查询用户信息 | ✅  |
-| POST | `/nickname`              | 修改用户昵称   | ✅  |
+| POST | `/change/nickname`       | 修改用户昵称   | ✅  |
 
 ### 📊 用户拓展数据 `/api/user/data`
 
-| 方法   | 路径              | 说明       | 认证 |
-|------|-----------------|----------|:--:|
-| POST | `/add`          | 新增拓展数据   | ✅  |
-| GET  | `/list`         | 查询拓展数据列表 | ❌  |
-| POST | `/delete`       | 删除单条拓展数据 | ✅  |
-| POST | `/batch-delete` | 批量删除拓展数据 | ✅  |
+| 方法   | 路径              | 说明          | 认证 |
+|------|-----------------|-------------|:--:|
+| POST | `/add`          | 新增拓展数据      | ✅  |
+| GET  | `/list`         | 查询拓展数据列表    | ❌  |
+| POST | `/delete`       | 删除单条/多条拓展数据 | ✅  |
 
 **拓展数据特性：**
 - ✅ 支持多种数据类型（电话、邮箱、网站、微信、QQ 等）
@@ -218,13 +223,23 @@ java -jar target/PixVisionServer-0.0.1-SNAPSHOT.jar
 - ✅ 数据内容长度限制：**不超过 96 个字符**
 - ✅ 同一用户可添加多条拓展数据（1 对 n 关系）
 - ✅ **权限控制**：只能删除自己的数据
-- ✅ **批量操作**：支持一次性删除多条数据
 
 ### 📧 邮件服务 `/api/mail`
 
-| 方法   | 路径                 | 说明      | 认证 |
-|------|--------------------|---------|:--:|
-| POST | `/send-email-code` | 发送邮箱验证码 | ❌  |
+| 方法   | 路径                            | 说明            | 认证 |
+|------|-------------------------------|---------------|:--:|
+| POST | `/send-register-code`         | 发送注册验证码       | ❌  |
+| POST | `/send-login-code`            | 发送登录验证码       | ❌  |
+| POST | `/send-forget-password-code`  | 发送重置密码验证码     | ❌  |
+| POST | `/send-change-password-code`  | 发送修改密码验证码     | ✅  |
+| POST | `/send-delete-account-code`   | 发送注销账户验证码     | ✅  |
+
+**验证码特性：**
+- ✅ Redis 存储，默认 5 分钟有效期
+- ✅ HTML 邮件模板，美观易读
+- ✅ 内置邮件主题，无需传入
+- ✅ 智能识别用户名或邮箱格式
+- ✅ 已登录场景从 Token 自动获取用户信息
 
 ### 🖼️ 图片服务 `/api/image`
 
@@ -272,9 +287,7 @@ java -jar target/PixVisionServer-0.0.1-SNAPSHOT.jar
 #### 1. 登录时添加到白名单
 ```java
 String token = JWTUtils.createToken(userId, username);
-tokenWhitelistService.
-
-addToWhitelist(token, userId, username, expireTime);
+tokenWhitelistService.addToWhitelist(token, userId, username, expireTime);
 
 // Redis:
 // SET token:whitelist:{token} "{userId}:{username}" EX 604800
@@ -283,9 +296,9 @@ addToWhitelist(token, userId, username, expireTime);
 
 #### 2. 请求时验证白名单
 ```java
-if(!tokenWhitelistService.isInWhitelist(token)){
-  return false; // Token 不在白名单中，拒绝访问
-  }
+if (!tokenWhitelistService.isInWhitelist(token)) {
+    return false; // Token 不在白名单中，拒绝访问
+}
 
 // Redis: EXISTS token:whitelist:{token}
 ```
@@ -326,8 +339,8 @@ int removedCount = tokenWhitelistService.removeAllUserTokens(userId, username);
 
 | 表名             | 中文名    | 主要字段                                        | 状态 |
 |----------------|--------|---------------------------------------------|:--:|
-| `tb_user`      | 用户账户   | id, username, email, password, role, status | ✅  |
-| `tb_user_data` | 用户扩展数据 | user_id, data_name, data_content            | ✅  |
+| `tb_user`      | 用户账户   | id, username, email, password, user_role, status | ✅  |
+| `tb_user_data` | 用户扩展数据 | id, user_id, data_name, data_content            | ✅  |
 | `tb_works`     | 作品     | id, title, description, author_id           | 🚧 |
 | `tb_comments`  | 评论     | id, content, user_id, works_id              | 🚧 |
 | `tb_like`      | 点赞     | id, user_id, target_id                      | 🚧 |
