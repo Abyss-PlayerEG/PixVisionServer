@@ -17,7 +17,6 @@ import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
-import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 用户资料管理相关接口（分页查询、修改昵称）
@@ -209,7 +208,7 @@ public class UserProfileController {
         @Parameter(description = "新昵称，长度 1-20 个字符", required = true, example = "新昵称") @RequestParam String nickname
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "修改昵称接口");
+        String token = JWTUtils.extractTokenWithLog(request, "修改昵称接口");
 
         if (token == null || token.isEmpty()) {
             log.error("修改昵称失败 - Token 不存在");

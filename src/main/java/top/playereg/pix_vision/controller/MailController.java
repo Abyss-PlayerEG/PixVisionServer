@@ -16,8 +16,8 @@ import top.playereg.pix_vision.service.EmailService;
 import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
-import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 邮件服务接口
@@ -366,7 +366,7 @@ public class MailController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "修改密码验证码接口");
+        String token = JWTUtils.extractTokenWithLog(request, "修改密码验证码接口");
 
         if (token == null || token.isEmpty()) {
             log.error("修改密码验证码失败 - Token 不存在");
@@ -469,7 +469,7 @@ public class MailController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "注销账户验证码接口");
+        String token = JWTUtils.extractTokenWithLog(request, "注销账户验证码接口");
 
         if (token == null || token.isEmpty()) {
             log.error("注销账户验证码失败 - Token 不存在");
