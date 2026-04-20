@@ -3,6 +3,7 @@ package top.playereg.pix_vision.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.userPojo.User;
 
@@ -67,4 +68,29 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 影响行数
      * */
     Integer changeUserPassword( String email, String oldPassword, String newPassword );
+
+    /**
+     * 更新用户头像
+     * @param userId 用户 ID
+     * @param avatarUrl 头像路径
+     * @return 影响行数
+     */
+    int updateUserAvatar(@Param("userId") Integer userId, @Param("avatarUrl") String avatarUrl);
+
+    /**
+     * 更新用户昵称
+     *
+     * @param userId   用户 ID
+     * @param nickname 新昵称
+     * @return 影响行数
+     */
+    int updateUserNickname(@Param("userId") Integer userId, @Param("nickname") String nickname);
+
+    /**
+     * 逻辑删除用户账户
+     *
+     * @param userId 用户 ID
+     * @return 影响行数
+     */
+    int deleteUserAccount(@Param("userId") Integer userId);
 }

@@ -115,4 +115,34 @@
           AND password = #{oldPassword}
         </if>
     </update>
+
+    <!-- 更新用户头像 -->
+    <update id="updateUserAvatar">
+        UPDATE tb_user
+        SET avatar_url  = #{avatarUrl},
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
+    <!-- 更新用户昵称 -->
+    <update id="updateUserNickname">
+        UPDATE tb_user
+        SET nickname    = #{nickname},
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
+    <!-- 逻辑删除用户账户 -->
+    <update id="deleteUserAccount">
+        UPDATE tb_user
+        SET is_delete = 1,
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+    </update>
 </mapper>
