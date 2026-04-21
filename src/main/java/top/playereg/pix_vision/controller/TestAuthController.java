@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
+import top.playereg.pix_vision.util.Aspect.LogRecord;
 
 /**
  * 测试 JWT 鉴权的示例接口
@@ -92,5 +93,45 @@ public class TestAuthController {
     public ResponsePojo<String> noAuth() {
         log.info("访问公开接口");
         return ResponsePojo.success("这是一个公开接口，无需登录即可访问", "公开访问");
+    }
+
+    /**
+     * 测试日志记录功能
+     *
+     * @param request HTTP 请求对象
+     * @return 响应数据
+     */
+    @GetMapping("/test-log")
+    @LogRecord(module = "测试接口", event = "测试日志记录")
+    @Operation(
+            summary = "测试日志记录功能",
+            description = """
+                # 测试日志记录功能
+
+                ## 特性
+                - 自动记录用户操作到数据库
+                - 从 Token 中获取用户 ID
+                - 记录操作时间和事件描述
+
+                ## 使用说明：
+                - 需要携带有效的 Token
+                - 操作会被记录到 tb_sys_logs 表中
+                - 包含用户 ID、操作时间、事件描述
+
+                ## 返回说明：
+                - **成功**：返回测试消息，同时数据库会新增一条日志记录
+                - **未授权**：返回 401 错误
+                """
+    )
+    public ResponsePojo<String> testLog(HttpServletRequest request) {
+        String username = (String) request.getAttribute("username");
+        Integer userId = (Integer) request.getAttribute("userId");
+
+        log.info("执行测试日志记录 - 用户ID: {}, 用户名: {}", userId, username);
+
+        return ResponsePojo.success(
+            String.format("测试成功！操作已记录到数据库 - 用户ID:%d 用户名:%s", userId, username),
+            "日志记录成功"
+        );
     }
 }
