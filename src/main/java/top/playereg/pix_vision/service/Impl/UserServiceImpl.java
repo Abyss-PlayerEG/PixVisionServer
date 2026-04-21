@@ -11,6 +11,7 @@ import top.playereg.pix_vision.mapper.UserMapper;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
 import java.util.List;
@@ -22,6 +23,8 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
     @Autowired
     private UserDataMapper userDataMapper;
+    @Autowired
+    private VerificationCodeServices verificationCodeServices;
 
     /**
      * 注册用户
@@ -486,5 +489,69 @@ public class UserServiceImpl implements UserService {
         }
 
         return user;
+    }
+
+    /**
+     * 更新用户绑定邮箱（需要验证码验证）
+     *
+     * @param userId   用户 ID
+     * @param newEmail 新邮箱
+     * @param vCode    邮箱验证码
+     * @return 是否成功
+     */
+    @Override
+    public Boolean updateUserEmail(Integer userId, String newEmail, String vCode) {
+        log.info("开始更新用户邮箱，用户 ID: {}, 新邮箱: {}", userId, newEmail);
+
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return false;
+        }
+
+        if (newEmail == null || newEmail.isEmpty()) {
+            log.error("新邮箱不能为空");
+            return false;
+        }
+
+        if (vCode == null || vCode.isEmpty()) {
+            log.error("验证码不能为空");
+            return false;
+        }
+
+        // 查询当前用户信息
+        User currentUser = userMapper.selectAllUserInfoById(userId);
+        if (currentUser == null) {
+            log.warn("用户不存在 - 用户 ID: {}", userId);
+            return false;
+        }
+
+        String oldEmail = currentUser.getEmail();
+        log.info("当前用户邮箱: {}, 准备更新为: {}", oldEmail, newEmail);
+
+        // 检查新邮箱是否已被其他用户使用
+        User existingUser = userMapper.selectAllUserInfoByEmail(newEmail);
+        if (existingUser != null && !existingUser.getUser_id().equals(userId)) {
+            log.warn("新邮箱已被其他用户使用: {}", newEmail);
+            return false;
+        }
+
+        // 验证邮箱验证码（使用新邮箱作为 key）
+        boolean isVerified = verificationCodeServices.verificationCodeVerify(newEmail, vCode);
+        if (!isVerified) {
+            log.warn("邮箱验证码验证失败 - 新邮箱: {}", newEmail);
+            return false;
+        }
+
+        // 更新邮箱
+        int result = userMapper.updateUserEmail(userId, newEmail);
+
+        if (result > 0) {
+            log.info("用户邮箱更新成功 - 用户 ID: {}, 旧邮箱: {}, 新邮箱: {}", userId, oldEmail, newEmail);
+            return true;
+        } else {
+            log.error("用户邮箱更新失败 - 用户 ID: {}", userId);
+            return false;
+        }
     }
 }
