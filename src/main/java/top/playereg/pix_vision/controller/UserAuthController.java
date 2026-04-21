@@ -17,10 +17,10 @@ import top.playereg.pix_vision.pojo.userPojo.UserLogin;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
-import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 用户认证相关接口（登录、登出）
@@ -54,6 +54,7 @@ public class UserAuthController {
      * @author PlayerEG
      */
     @PostMapping("/register")
+    @PublicAccess("用户注册接口，无需认证")
     @Operation(
         summary = "用户注册接口",
         description = """
@@ -148,6 +149,7 @@ public class UserAuthController {
      * @author PlayerEG
      */
     @PostMapping("/login")
+    @PublicAccess("用户登录接口，无需认证")
     @Operation(
         summary = "用户登录接口",
         description = """
@@ -339,7 +341,7 @@ public class UserAuthController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "登出接口");
+        String token = JWTUtils.extractTokenWithLog(request, "登出接口");
 
         if (token == null || token.isEmpty()) {
             log.error("登出失败 - Token 不存在，Authorization: {}, Token 参数：{}", request.getHeader("Authorization"), request.getParameter("token"));
@@ -423,7 +425,7 @@ public class UserAuthController {
         @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "注销接口");
+        String token = JWTUtils.extractTokenWithLog(request, "注销接口");
 
         if (token == null || token.isEmpty()) {
             log.error("注销失败 - Token 不存在");

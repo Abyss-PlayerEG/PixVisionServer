@@ -115,4 +115,14 @@ public interface UserService {
      * @return 用户对象，如果不存在返回 null
      */
     User selectUserByUsernameOrEmail(String usernameOrEmail);
+
+    /**
+     * 更新用户绑定邮箱（需要验证码验证）
+     *
+     * @param userId 用户 ID
+     * @param newEmail 新邮箱
+     * @param vCode 邮箱验证码
+     * @return 是否成功
+     */
+    Boolean updateUserEmail(Integer userId, String newEmail, String vCode);
 }

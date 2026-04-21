@@ -16,8 +16,9 @@ import top.playereg.pix_vision.service.EmailService;
 import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
+import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
-import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 邮件服务接口
@@ -51,6 +52,7 @@ public class MailController {
      * @author PlayerEG
      */
     @PostMapping("/send-register-code")
+    @PublicAccess("发送注册验证码，无需认证")
     @Operation(
         summary = "发送注册验证码邮件",
         description = """
@@ -138,6 +140,7 @@ public class MailController {
      * @author PlayerEG
      */
     @PostMapping("/send-login-code")
+    @PublicAccess("发送登录验证码，无需认证")
     @Operation(
         summary = "发送登录验证码邮件",
         description = """
@@ -228,8 +231,8 @@ public class MailController {
      * @return 响应结果
      * @author PlayerEG
      */
-//    @PostMapping("/send-change-password-code")
     @PostMapping("/send-forget-password-code")
+    @PublicAccess("发送重置密码验证码，无需认证")
     @Operation(
         summary = "发送重置密码验证码邮件",
         description = """
@@ -366,7 +369,7 @@ public class MailController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "修改密码验证码接口");
+        String token = JWTUtils.extractTokenWithLog(request, "修改密码验证码接口");
 
         if (token == null || token.isEmpty()) {
             log.error("修改密码验证码失败 - Token 不存在");
@@ -469,7 +472,7 @@ public class MailController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "注销账户验证码接口");
+        String token = JWTUtils.extractTokenWithLog(request, "注销账户验证码接口");
 
         if (token == null || token.isEmpty()) {
             log.error("注销账户验证码失败 - Token 不存在");
@@ -515,6 +518,145 @@ public class MailController {
 
         // 将验证码存入Redis
         verificationCodeServices.setRedisVCode(targetEmail, verificationCode);
+
+        return ResponsePojo.success(true, "邮件发送成功");
+    }
+
+    /**
+     * 发送更改邮箱验证码邮件（用于已登录用户）
+     *
+     * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param newEmail 新邮箱地址
+     * @return 响应结果
+     * @author PlayerEG
+     */
+    @PostMapping("/send-change-email-code")
+    @Operation(
+        summary = "发送更改邮箱验证码邮件",
+        description = """
+            # 发送更改邮箱验证码邮件（已登录用户）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 从 Token 自动获取用户信息
+            - 新邮箱格式校验
+            - 新邮箱唯一性检查
+            - Redis 验证码存储
+            - HTML 邮件模板渲染
+            - 内置邮件主题
+            - 需要登录（受保护接口）
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - newEmail: 新邮箱地址，字符串类型，必填，需符合标准邮箱格式
+
+            ## 返回说明：
+            - **发送成功**：返回 **{"data": true}** 和“邮件发送成功”提示
+            - **发送失败**：返回 **{"data": false}** 和“邮件发送失败”提示
+            - **Token 不存在**：返回 **{"data": false}** 和“Token 不存在”提示
+            - **Token 无效**：返回 **{"data": false}** 和“Token 无效”提示
+            - **用户不存在**：返回 **{"data": false}** 和“用户不存在”提示
+            - **新邮箱为空**：返回 **{"data": false}** 和“新邮箱不能为空”提示
+            - **邮箱格式错误**：返回 **{"data": false}** 和“邮箱格式错误”提示
+            - **邮箱已被使用**：返回 **{"data": false}** 和“该邮箱已被其他账号使用”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 从 Token 中解析用户 ID
+            3. 根据用户 ID 查询用户信息，获取用户名和当前邮箱
+            4. 验证用户是否存在
+            5. 校验新邮箱格式是否正确
+            6. 检查新邮箱是否已被其他用户使用
+            7. 生成6位随机验证码并存入Redis（使用新邮箱作为 key）
+            8. 使用HTML邮件模板渲染邮件内容
+            9. 发送邮件并将验证码与新邮箱绑定存储
+
+            ## 注意事项：
+            - 验证码默认有效期由Redis配置决定（默认5分钟）
+            - 用户信息从 Token 中自动获取，无需传入
+            - 此接口用于**已登录用户更改绑定邮箱**场景
+            - 邮件主题已内置为“PixVision 更改邮箱验证码”
+            - 需要携带有效的 Token 才能调用
+            - 新邮箱不能被其他账号使用
+            - 验证码会发送到**新邮箱**，而不是当前绑定的邮箱
+            - 收到验证码后，调用 `/api/user/profile/change/email` 接口完成邮箱修改
+            """
+    )
+    public ResponsePojo<Boolean> sendChangeEmailCode(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request,
+        @Parameter(description = "新邮箱地址，需符合标准邮箱格式", required = true, example = "newemail@example.com") @RequestParam String newEmail
+    ) {
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "更改邮箱验证码接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("更改邮箱验证码失败 - Token 不存在");
+            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null || userId <= 0) {
+            log.error("无法从 Token 中获取用户 ID");
+            return ResponsePojo.error(false, "Token 无效");
+        }
+
+        log.info("发送更改邮箱验证码，用户 ID: {}, 新邮箱: {}", userId, newEmail);
+
+        // 校验新邮箱参数
+        if (newEmail == null || newEmail.isEmpty()) {
+            log.warn("新邮箱为空，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "新邮箱不能为空");
+        }
+
+        if (!RegexUtils.isEmail(newEmail)) {
+            log.warn("邮箱格式错误，用户 ID: {}, 邮箱: {}", userId, newEmail);
+            return ResponsePojo.error(false, "邮箱格式错误");
+        }
+
+        // 根据用户 ID 查询用户信息
+        User user = userService.selectAllUserById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "用户不存在");
+        }
+
+        String username = user.getUsername();
+        String currentEmail = user.getEmail();
+        log.info("发送更改邮箱验证码，用户名：{}，当前邮箱：{}，新邮箱：{}", username, currentEmail, newEmail);
+
+        // 检查新邮箱是否已被其他用户使用
+        User existingUser = userService.selectAllUserByEmail(newEmail);
+        if (existingUser != null && !existingUser.getUser_id().equals(userId)) {
+            log.warn("新邮箱已被其他用户使用: {}", newEmail);
+            return ResponsePojo.error(false, "该邮箱已被其他账号使用");
+        }
+
+        // 如果新邮箱与当前邮箱相同，给出提示
+        if (newEmail.equals(currentEmail)) {
+            log.warn("新邮箱与当前邮箱相同，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "新邮箱与当前邮箱相同，无需修改");
+        }
+
+        // 生成验证码
+        String verificationCode = verificationCodeServices.verificationCode();
+
+        // 使用模板服务渲染邮件 HTML
+        String html = emailTemplateService.renderVerificationEmail(
+            verificationCode,
+            username,
+            "更改邮箱"
+        );
+
+        try {
+            emailService.sendEMail(newEmail, "PixVision 更改邮箱验证码", html);
+        } catch (Exception e) {
+            log.error("更改邮箱验证码邮件发送失败：{}", e.getMessage());
+            return ResponsePojo.error(false, "邮件发送失败");
+        }
+
+        // 将验证码存入Redis（使用新邮箱作为 key）
+        verificationCodeServices.setRedisVCode(newEmail, verificationCode);
 
         return ResponsePojo.success(true, "邮件发送成功");
     }

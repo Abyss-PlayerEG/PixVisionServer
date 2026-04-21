@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.ImageUtils;
 
 import java.io.File;
@@ -49,7 +50,7 @@ public class ImageController {
 
     // 允许访问的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
-            "jpg", "jpeg", "png"
+        "jpg", "jpeg", "png"
     );
 
     /**
@@ -60,51 +61,52 @@ public class ImageController {
      * @author PlayerEG
      */
     @Operation(
-            summary = "获取头像图片",
-            description = """
-                    # 获取用户头像图片
+        summary = "获取头像图片",
+        description = """
+            # 获取用户头像图片
 
-                ## 特性
-                - 公开接口（无需认证）
-                - 路径安全校验（防目录遍历攻击）
-                - 文件类型白名单（JPG/JPEG/PNG）
-                - HTTP 缓存支持（1小时）
-                - 子目录结构支持
+            ## 特性
+            - 公开接口（无需认证）
+            - 路径安全校验（防目录遍历攻击）
+            - 文件类型白名单（JPG/JPEG/PNG）
+            - HTTP 缓存支持（1小时）
+            - 子目录结构支持
 
-                ## 参数说明：
-                    - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
+            ## 参数说明：
+            - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
 
-                    ## 返回说明：
-                    - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg
-                    - **文件不存在**：返回 **404 Not Found**
-                    - **非法路径**：返回 **400 Bad Request**（包含 .. 或 / 开头）
-                    - **不支持的格式**：返回 **400 Bad Request**（非 JPG/JPEG/PNG 格式）
-                    - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
-                    - **服务器错误**：返回 **500 Internal Server Error**
+            ## 返回说明：
+            - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg
+            - **文件不存在**：返回 **404 Not Found**
+            - **非法路径**：返回 **400 Bad Request**（包含 .. 或 / 开头）
+            - **不支持的格式**：返回 **400 Bad Request**（非 JPG/JPEG/PNG 格式）
+            - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
+            - **服务器错误**：返回 **500 Internal Server Error**
 
-                    ## 业务逻辑：
-                    1. 校验文件路径安全性（禁止 .. 和绝对路径）
-                    2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
-                    3. 构建完整文件路径并验证文件存在性
-                    4. 确保文件在允许的目录下（~/.pix_vision/data/avatar/）
-                    5. 设置响应头 Content-Type 和 Cache-Control
-                    6. 返回图片二进制数据
+            ## 业务逻辑：
+            1. 校验文件路径安全性（禁止 .. 和绝对路径）
+            2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
+            3. 构建完整文件路径并验证文件存在性
+            4. 确保文件在允许的目录下（~/.pix_vision/data/avatar/）
+            5. 设置响应头 Content-Type 和 Cache-Control
+            6. 返回图片二进制数据
 
-                    ## 注意事项：
-                    - 该接口**无需认证**，任何人都可以访问
-                    - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
-                    - 支持子目录结构，如：`default/11.png`、`custom/user_avatar.jpg`
-                    - **仅支持 JPG、JPEG、PNG 格式**的图片
-                    - 文件路径相对于 `~/.pix_vision/data/avatar/` 目录
+            ## 注意事项：
+            - 该接口**无需认证**，任何人都可以访问
+            - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
+            - 支持子目录结构，如：`default/11.png`、`custom/user_avatar.jpg`
+            - **仅支持 JPG、JPEG、PNG 格式**的图片
+            - 文件路径相对于 `~/.pix_vision/data/avatar/` 目录
 
-                    ## 使用示例：
-                    ```
-                    GET /image/avatar?filePath=default/1.png
-                    GET /image/avatar?filePath=default/11.jpg
-                    GET /image/avatar?filePath=custom/my_avatar.jpeg
-                    ```
-                    """
+            ## 使用示例：
+            ```
+            GET /image/avatar?filePath=default/1.png
+            GET /image/avatar?filePath=default/11.jpg
+            GET /image/avatar?filePath=custom/my_avatar.jpeg
+            ```
+            """
     )
+    @PublicAccess("获取头像图片，无需认证")
     @GetMapping("/get/avatar")
     public ResponseEntity<Resource> getAvatar(
         @Parameter(description = "图像相对路径，支持子目录，如：default/11.png", required = true, example = "default/1.png") @RequestParam String filePath
@@ -120,52 +122,53 @@ public class ImageController {
      * @author PlayerEG
      */
     @Operation(
-            summary = "获取作品图片",
-            description = """
-                    # 获取作品图片
+        summary = "获取作品图片",
+        description = """
+            # 获取作品图片
 
-                ## 特性
-                - 公开接口（无需认证）
-                - 路径安全校验（防目录遍历攻击）
-                - 文件类型白名单（JPG/JPEG/PNG）
-                - HTTP 缓存支持（1小时）
-                - 多层子目录支持
+            ## 特性
+            - 公开接口（无需认证）
+            - 路径安全校验（防目录遍历攻击）
+            - 文件类型白名单（JPG/JPEG/PNG）
+            - HTTP 缓存支持（1小时）
+            - 多层子目录支持
 
-                ## 参数说明：
-                    - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
+            ## 参数说明：
+            - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
 
-                    ## 返回说明：
-                    - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg
-                    - **文件不存在**：返回 **404 Not Found**
-                    - **非法路径**：返回 **400 Bad Request**（包含 .. 或 / 开头）
-                    - **不支持的格式**：返回 **400 Bad Request**（非 JPG/JPEG/PNG 格式）
-                    - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
-                    - **服务器错误**：返回 **500 Internal Server Error**
+            ## 返回说明：
+            - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg
+            - **文件不存在**：返回 **404 Not Found**
+            - **非法路径**：返回 **400 Bad Request**（包含 .. 或 / 开头）
+            - **不支持的格式**：返回 **400 Bad Request**（非 JPG/JPEG/PNG 格式）
+            - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
+            - **服务器错误**：返回 **500 Internal Server Error**
 
-                    ## 业务逻辑：
-                    1. 校验文件路径安全性（禁止 .. 和绝对路径）
-                    2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
-                    3. 构建完整文件路径并验证文件存在性
-                    4. 确保文件在允许的目录下（~/.pix_vision/data/works/）
-                    5. 设置响应头 Content-Type 和 Cache-Control
-                    6. 返回图片二进制数据
+            ## 业务逻辑：
+            1. 校验文件路径安全性（禁止 .. 和绝对路径）
+            2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
+            3. 构建完整文件路径并验证文件存在性
+            4. 确保文件在允许的目录下（~/.pix_vision/data/works/）
+            5. 设置响应头 Content-Type 和 Cache-Control
+            6. 返回图片二进制数据
 
-                    ## 注意事项：
-                    - 该接口**无需认证**，任何人都可以访问
-                    - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
-                    - 支持子目录结构，建议按日期或用户分类，如：`2024/04/artwork.png`
-                    - **仅支持 JPG、JPEG、PNG 格式**的图片
-                    - 文件路径相对于 `~/.pix_vision/data/works/` 目录
-                    - 适用于展示用户上传的作品图片
+            ## 注意事项：
+            - 该接口**无需认证**，任何人都可以访问
+            - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
+            - 支持子目录结构，建议按日期或用户分类，如：`2024/04/artwork.png`
+            - **仅支持 JPG、JPEG、PNG 格式**的图片
+            - 文件路径相对于 `~/.pix_vision/data/works/` 目录
+            - 适用于展示用户上传的作品图片
 
-                    ## 使用示例：
-                    ```
-                    GET /image/works?filePath=artwork_001.png
-                    GET /image/works?filePath=2024/04/spring_art.jpg
-                    GET /image/works?filePath=user123/gallery/photo.jpeg
-                    ```
-                    """
+            ## 使用示例：
+            ```
+            GET /image/works?filePath=artwork_001.png
+            GET /image/works?filePath=2024/04/spring_art.jpg
+            GET /image/works?filePath=user123/gallery/photo.jpeg
+            ```
+            """
     )
+    @PublicAccess("获取作品图片，无需认证")
     @GetMapping("/get/works")
     public ResponseEntity<Resource> getWorkImage(
         @Parameter(description = "图像相对路径，支持子目录，如：2024/04/artwork.png", required = true, example = "artwork_001.png") @RequestParam String filePath
@@ -181,52 +184,53 @@ public class ImageController {
      * @author PlayerEG
      */
     @Operation(
-            summary = "获取Logo图片",
-            description = """
-                    # 获取 Logo 图片
+        summary = "获取Logo图片",
+        description = """
+            # 获取 Logo 图片
 
-                ## 特性
-                - 公开接口（无需认证）
-                - 路径安全校验（防目录遍历攻击）
-                - 文件类型白名单（JPG/JPEG/PNG）
-                - HTTP 缓存支持（1小时）
-                - 静态资源访问
+            ## 特性
+            - 公开接口（无需认证）
+            - 路径安全校验（防目录遍历攻击）
+            - 文件类型白名单（JPG/JPEG/PNG）
+            - HTTP 缓存支持（1小时）
+            - 静态资源访问
 
-                ## 参数说明：
-                    - filePath: **图像文件名**，字符串类型，必填
+            ## 参数说明：
+            - filePath: **图像文件名**，字符串类型，必填
 
-                    ## 返回说明：
-                    - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg
-                    - **文件不存在**：返回 **404 Not Found**
-                    - **非法路径**：返回 **400 Bad Request**（包含 .. 或 / 开头）
-                    - **不支持的格式**：返回 **400 Bad Request**（非 JPG/JPEG/PNG 格式）
-                    - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
-                    - **服务器错误**：返回 **500 Internal Server Error**
+            ## 返回说明：
+            - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg
+            - **文件不存在**：返回 **404 Not Found**
+            - **非法路径**：返回 **400 Bad Request**（包含 .. 或 / 开头）
+            - **不支持的格式**：返回 **400 Bad Request**（非 JPG/JPEG/PNG 格式）
+            - **路径越权**：返回 **403 Forbidden**（超出允许目录范围）
+            - **服务器错误**：返回 **500 Internal Server Error**
 
-                    ## 业务逻辑：
-                    1. 校验文件路径安全性（禁止 .. 和绝对路径）
-                    2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
-                    3. 构建完整文件路径并验证文件存在性
-                    4. 确保文件在允许的目录下（~/.pix_vision/data/logo-img/）
-                    5. 设置响应头 Content-Type 和 Cache-Control
-                    6. 返回图片二进制数据
+            ## 业务逻辑：
+            1. 校验文件路径安全性（禁止 .. 和绝对路径）
+            2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
+            3. 构建完整文件路径并验证文件存在性
+            4. 确保文件在允许的目录下（~/.pix_vision/data/logo-img/）
+            5. 设置响应头 Content-Type 和 Cache-Control
+            6. 返回图片二进制数据
 
-                    ## 注意事项：
-                    - 该接口**无需认证**，任何人都可以访问
-                    - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
-                    - Logo 图片通常不包含子目录，直接使用文件名即可
-                    - **仅支持 JPG、JPEG、PNG 格式**的图片
-                    - 文件路径相对于 `~/.pix_vision/data/logo-img/` 目录
-                    - 适用于网站 Logo、品牌标识等静态图片资源
+            ## 注意事项：
+            - 该接口**无需认证**，任何人都可以访问
+            - 图片会自动缓存 **1 小时**（Cache-Control: max-age=3600）
+            - Logo 图片通常不包含子目录，直接使用文件名即可
+            - **仅支持 JPG、JPEG、PNG 格式**的图片
+            - 文件路径相对于 `~/.pix_vision/data/logo-img/` 目录
+            - 适用于网站 Logo、品牌标识等静态图片资源
 
-                    ## 使用示例：
-                    ```
-                    GET /image/logo?filePath=dark.png
-                    GET /image/logo?filePath=light.jpg
-                    GET /image/logo?filePath=brand_logo.jpeg
-                    ```
-                    """
+            ## 使用示例：
+            ```
+            GET /image/logo?filePath=dark.png
+            GET /image/logo?filePath=light.jpg
+            GET /image/logo?filePath=brand_logo.jpeg
+            ```
+            """
     )
+    @PublicAccess("获取Logo图片，无需认证")
     @GetMapping("/get/logo")
     public ResponseEntity<Resource> getLogo(
         @Parameter(description = "图像文件名，如：dark.png", required = true, example = "dark.png") @RequestParam String filePath
@@ -237,64 +241,64 @@ public class ImageController {
     /**
      * 上传用户头像
      *
-     * @param file 头像文件
+     * @param file    头像文件
      * @param request HTTP 请求对象（用于获取用户 ID）
      * @return 响应结果
      * @author PlayerEG
      */
     @Operation(
-            summary = "上传用户头像",
-            description = """
-                    # 上传用户头像
+        summary = "上传用户头像",
+        description = """
+            # 上传用户头像（需要登录认证）
 
-                ## 特性
-                - Token 认证（通过拦截器自动验证）
-                - 文件格式校验（JPG/JPEG/PNG）
-                - 文件大小限制（最大5MB）
-                - 正方形图片校验
-                - 自动缩放至600x600 PNG格式
-                - UUID 唯一文件名生成
+            ## 特性
+            - Token 认证（通过拦截器自动验证）
+            - 文件格式校验（JPG/JPEG/PNG）
+            - 文件大小限制（最大5MB）
+            - 正方形图片校验
+            - 自动缩放至600x600 PNG格式
+            - UUID 唯一文件名生成
 
-                ## 参数说明：
-                    - file: **头像文件**，MultipartFile 类型，必填
+            ## 参数说明：
+            - file: **头像文件**，MultipartFile 类型，必填
 
-                    ## 返回说明：
-                    - **上传成功**：返回 200 状态码和成功消息
-                    - **未授权**：返回 401 状态码（Token 无效或不存在）
-                    - **文件格式不支持**：返回 400 状态码
-                    - **文件大小超限**：返回 400 状态码（最大 5MB）
-                    - **图像不是正方形**：返回 400 状态码
-                    - **服务器错误**：返回 500 状态码
+            ## 返回说明：
+            - **上传成功**：返回 200 状态码和成功消息
+            - **未授权**：返回 401 状态码（Token 无效或不存在）
+            - **文件格式不支持**：返回 400 状态码
+            - **文件大小超限**：返回 400 状态码（最大 5MB）
+            - **图像不是正方形**：返回 400 状态码
+            - **服务器错误**：返回 500 状态码
 
-                    ## 业务逻辑：
-                    1. 从 Token 中获取当前登录用户的 ID
-                    2. 验证文件格式（仅支持 jpg/jpeg/png）
-                    3. 验证文件大小（最大 5MB）
-                    4. 读取上传的图片数据
-                    5. 验证图像是否为正方形（宽高必须相等）
-                    6. 使用 ImageUtils.resizeImage() 将图片缩放为 600x600 的 PNG 格式
-                    7. 生成唯一的文件名（UUID.png）
-                    8. 保存文件到 ~/.pix_vision/data/avatar/ 目录
-                    9. 更新数据库中的用户头像路径
+            ## 业务逻辑：
+            1. 从 Token 中获取当前登录用户的 ID
+            2. 验证文件格式（仅支持 jpg/jpeg/png）
+            3. 验证文件大小（最大 5MB）
+            4. 读取上传的图片数据
+            5. 验证图像是否为正方形（宽高必须相等）
+            6. 使用 ImageUtils.resizeImage() 将图片缩放为 600x600 的 PNG 格式
+            7. 生成唯一的文件名（UUID.png）
+            8. 保存文件到 ~/.pix_vision/data/avatar/ 目录
+            9. 更新数据库中的用户头像路径
 
-                    ## 注意事项：
-                    - 该接口**需要认证**，必须在请求头中携带有效的 Token
-                    - **仅支持 JPG、JPEG、PNG 格式**的图片上传
-                    - **头像必须是正方形图片**（宽高相等），如：800x800、1200x1200
-                    - 图片会被自动缩放为 **600x600** 像素的 PNG 格式
-                    - 文件名使用 UUID 生成，避免冲突
-                    - 旧头像文件不会被自动删除，建议定期清理
-                    - 文件大小限制为 **5MB**
+            ## 注意事项：
+            - 该接口**需要认证**，必须在请求头中携带有效的 Token
+            - **仅支持 JPG、JPEG、PNG 格式**的图片上传
+            - **头像必须是正方形图片**（宽高相等），如：800x800、1200x1200
+            - 图片会被自动缩放为 **600x600** 像素的 PNG 格式
+            - 文件名使用 UUID 生成，避免冲突
+            - 旧头像文件不会被自动删除，建议定期清理
+            - 文件大小限制为 **5MB**
 
-                    ## 使用示例：
-                    ```
-                    POST /api/get-image/upload-avatar
-                    Content-Type: multipart/form-data
-                    Authorization: Bearer <your-token>
+            ## 使用示例：
+            ```
+            POST /api/get-image/upload-avatar
+            Content-Type: multipart/form-data
+            Authorization: Bearer <your-token>
 
-                    file: [binary image data]
-                    ```
-                    """
+            file: [binary image data]
+            ```
+            """
     )
     @PostMapping("/upload/avatar")
     public ResponseEntity<ResponsePojo<String>> uploadAvatar(
@@ -409,9 +413,9 @@ public class ImageController {
     /**
      * 通用图片资源获取方法
      *
-     * @param basePath   基础路径
-     * @param filePath   文件相对路径(可包含子目录)
-     * @param imageType  图片类型(用于日志)
+     * @param basePath  基础路径
+     * @param filePath  文件相对路径(可包含子目录)
+     * @param imageType 图片类型(用于日志)
      * @return 图片资源响应
      * @author PlayerEG
      */
@@ -452,9 +456,9 @@ public class ImageController {
             String contentType = getContentType(extension);
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CACHE_CONTROL, "max-age=3600")  // 缓存1小时
-                    .body(resource);
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CACHE_CONTROL, "max-age=3600")  // 缓存1小时
+                .body(resource);
 
         } catch (Exception e) {
             log.error("获取{}图片失败: {}, 错误: {}", imageType, filePath, e.getMessage(), e);
@@ -472,9 +476,9 @@ public class ImageController {
     private String extractPath(String prefix) {
         // 获取当前请求的完整路径
         String requestUri = org.springframework.web.context.request.RequestContextHolder
-                .currentRequestAttributes()
-                .getAttribute("org.springframework.web.servlet.HandlerMapping.pathWithinHandlerMapping", 0)
-                .toString();
+            .currentRequestAttributes()
+            .getAttribute("org.springframework.web.servlet.HandlerMapping.pathWithinHandlerMapping", 0)
+            .toString();
 
         // 移除前缀,得到相对路径
         if (requestUri.startsWith(prefix)) {

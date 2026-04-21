@@ -12,8 +12,8 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
-import top.playereg.pix_vision.util.TokenUtils;
 
 import java.util.List;
 
@@ -93,7 +93,7 @@ public class UserDataController {
         @Parameter(description = "数据内容，长度不超过 96 个字符", required = true, example = "13800138000") @RequestParam String dataContent
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "新增用户拓展数据接口");
+        String token = JWTUtils.extractTokenWithLog(request, "新增用户拓展数据接口");
 
         if (token == null || token.isEmpty()) {
             log.error("新增用户拓展数据失败 - Token 不存在");
@@ -214,9 +214,11 @@ public class UserDataController {
             - 常见的数据名称示例：电话、邮箱、网站、微信、QQ 等
             """
     )
+    @PublicAccess("查询用户拓展数据，无需认证")
     public ResponsePojo<List<UserData>> getUserDataList(
         @Parameter(description = "用户 ID", required = true, example = "1") @RequestParam Integer userId
     ) {
+        log.debug("查询用户拓展数据 - 用户 ID: {}", userId);
         // 参数校验
         if (userId == null || userId <= 0) {
             log.warn("用户 ID 无效: {}", userId);
@@ -294,10 +296,12 @@ public class UserDataController {
     )
     public ResponsePojo<Boolean> deleteUserData(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
-        @Parameter(description = "要删除的数据 ID 列表（支持单条或多条）", required = true, example = "[1, 2, 3]") @RequestParam List<Integer> dataIds
+        @Parameter(description = "要删除的数据 ID 列表（支持单条或多条）", required = true, example = "1,2,3") @RequestParam List<Integer> dataIds
     ) {
+        log.debug("删除用户拓展数据 - 数据 ID: {}", dataIds);
+
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "删除用户拓展数据接口");
+        String token = JWTUtils.extractTokenWithLog(request, "删除用户拓展数据接口");
 
         if (token == null || token.isEmpty()) {
             log.error("删除用户拓展数据失败 - Token 不存在");

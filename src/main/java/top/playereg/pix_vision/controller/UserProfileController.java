@@ -14,10 +14,10 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
-import top.playereg.pix_vision.util.TokenUtils;
 
 /**
  * 用户资料管理相关接口（分页查询、修改昵称）
@@ -35,6 +35,7 @@ public class UserProfileController {
 
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;
+    private final VerificationCodeServices verificationCodeServices;
 
     /**
      * 分页查询用户信息
@@ -209,7 +210,7 @@ public class UserProfileController {
         @Parameter(description = "新昵称，长度 1-20 个字符", required = true, example = "新昵称") @RequestParam String nickname
     ) {
         // 提取 Token
-        String token = TokenUtils.extractTokenWithLog(request, "修改昵称接口");
+        String token = JWTUtils.extractTokenWithLog(request, "修改昵称接口");
 
         if (token == null || token.isEmpty()) {
             log.error("修改昵称失败 - Token 不存在");
@@ -252,6 +253,130 @@ public class UserProfileController {
         } else {
             log.error("用户昵称修改失败，用户 ID: {}, 用户名: {}", userId, username);
             return ResponsePojo.error(false, "昵称修改失败");
+        }
+    }
+
+    /**
+     * 更改账号绑定邮箱
+     *
+     * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param newEmail 新邮箱
+     * @param vCode    邮箱验证码
+     * @return 修改结果
+     * @author PlayerEG
+     */
+    @PostMapping("/change/email")
+    @Operation(
+        summary = "更改账号绑定邮箱接口",
+        description = """
+            # 更改账号绑定邮箱（需要登录认证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 邮箱格式校验
+            - 邮箱验证码验证
+            - 邮箱唯一性检查
+            - 自动清除旧验证码
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - newEmail: 新邮箱地址，字符串类型，必填，需符合标准邮箱格式
+            - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
+
+            ## 返回说明：
+            - **修改成功**：返回 **{"data": true}** 和“邮箱修改成功”提示
+            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
+            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
+            - **新邮箱为空**：返回 **{"data": null}** 和“新邮箱不能为空”提示
+            - **邮箱格式错误**：返回 **{"data": null}** 和“邮箱格式错误”提示
+            - **验证码为空**：返回 **{"data": null}** 和“验证码不能为空”提示
+            - **验证码格式错误**：返回 **{"data": null}** 和“验证码格式错误”提示
+            - **验证码错误**：返回 **{"data": false}** 和“验证码错误或已过期”提示
+            - **邮箱已被使用**：返回 **{"data": false}** 和“该邮箱已被其他账号使用”提示
+            - **修改失败**：返回 **{"data": false}** 和“邮箱修改失败”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验新邮箱参数（非空、格式正确）
+            5. 校验验证码参数（非空、格式正确）
+            6. 检查新邮箱是否已被其他用户使用
+            7. 验证邮箱验证码（使用新邮箱作为 key）
+            8. 调用服务层更新用户邮箱
+            9. 返回修改结果
+
+            ## 注意事项：
+            - 需要携带有效的 Token 才能修改邮箱
+            - Token 必须在白名单中（未过期、未登出）
+            - 新邮箱必须符合标准邮箱格式
+            - 新邮箱不能被其他账号使用
+            - 需要先通过 `/api/mail/send-change-email-code` 接口发送验证码到新邮箱
+            - 验证码有效期为 **5 分钟**
+            - 验证码验证成功后会自动失效（一次性使用）
+            - 修改成功后，下次登录时需要使用新邮箱
+            """
+    )
+    public ResponsePojo<Boolean> updateEmail(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "新邮箱地址，需符合标准邮箱格式", required = true, example = "newemail@example.com") @RequestParam String newEmail,
+        @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABC123") @RequestParam String vCode
+    ) {
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "修改邮箱接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("修改邮箱失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始修改用户邮箱，用户 ID: {}, 用户名: {}, 新邮箱: {}", userId, username, newEmail);
+
+        // 校验新邮箱参数
+        if (newEmail == null || newEmail.isEmpty()) {
+            log.warn("新邮箱为空，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "新邮箱不能为空");
+        }
+
+        if (!RegexUtils.isEmail(newEmail)) {
+            log.warn("邮箱格式错误，用户 ID: {}, 邮箱: {}", userId, newEmail);
+            return ResponsePojo.error(null, "邮箱格式错误");
+        }
+
+        // 校验验证码参数
+        if (vCode == null || vCode.isEmpty()) {
+            log.warn("验证码为空，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "验证码不能为空");
+        }
+
+        if (!RegexUtils.isVCode(vCode, 6)) {
+            log.warn("验证码格式错误，用户 ID: {}, 验证码长度: {}", userId, vCode.length());
+            return ResponsePojo.error(null, "验证码格式错误，应为 6 位大写字母或数字");
+        }
+
+        // 调用服务层更新邮箱
+        Boolean result = userService.updateUserEmail(userId, newEmail, vCode);
+
+        if (result) {
+            log.info("用户邮箱修改成功，用户 ID: {}, 用户名: {}, 新邮箱: {}", userId, username, newEmail);
+            return ResponsePojo.success(true, "邮箱修改成功");
+        } else {
+            log.error("用户邮箱修改失败，用户 ID: {}, 用户名: {}", userId, username);
+            return ResponsePojo.error(false, "邮箱修改失败，请检查验证码是否正确或邮箱是否已被使用");
         }
     }
 }

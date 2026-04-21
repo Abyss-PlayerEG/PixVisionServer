@@ -7,9 +7,12 @@
 [![Java](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=openjdk)](https://openjdk.java.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.0-brightgreen?style=for-the-badge&logo=spring)](https://spring.io/projects/spring-boot)
 [![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5.7-blue?style=for-the-badge)](https://baomidou.com/)
+[![Version](https://img.shields.io/badge/Version-DEV--2.0.0-purple?style=for-the-badge)](https://github.com/Ender-g/PixVisionServer)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 **一个现代化的数字艺术平台后端服务，支持作品管理、用户互动、系统监控等功能**
+
+> 🎉 **最新版本 DEV-2.0.0** - 新增绑定邮箱修改功能，完善用户资料管理体系
 
 </div>
 
@@ -37,7 +40,7 @@
 - JWT Token 认证与白名单机制（7天有效期）
 - **Redis Set 索引优化**（批量移除 Token 性能提升 2,500x）
 - RSA + AES 混合加密（支持任意数据类型）
-- 邮箱验证码二次验证（5种场景）
+- 邮箱验证码二次验证（6种场景）
 - 密码 SHA-256 哈希加密存储
 - **Token 提取工具类封装**（统一处理 Header/URL 参数）
 
@@ -49,11 +52,12 @@
 - **账户注销功能**（逻辑删除 + Token 失效）
 - 用户信息管理与分页查询
 - **用户拓展数据管理**（增删查批量操作）
+- **绑定邮箱修改**（验证码验证 + 唯一性检查）
 - 多角色权限管理（普通用户/创作者/审核员/管理员）
 
 ### 📧 邮件服务
 
-- **5种验证码场景**（注册、登录、重置密码、修改密码、注销账户）
+- **6种验证码场景**（注册、登录、重置密码、修改密码、注销账户、更改邮箱）
 - HTML 邮件模板支持
 - SMTP 配置灵活定制
 - **内置邮件主题**（无需传入参数）
@@ -73,11 +77,11 @@
 
 ### 🚧 开发中功能
 
-- 作品管理（上传、编辑、删除、审核）
-- 评论系统（多级评论、点赞、举报）
-- 点赞与收藏功能
-- 浏览历史记录
-- 搜索与推荐引擎
+- ✅ 作品管理（上传、编辑、删除、审核）- **基础框架已就绪**
+- 🚧 评论系统（多级评论、点赞、举报）
+- 🚧 点赞与收藏功能
+- 🚧 浏览历史记录
+- 🚧 搜索与推荐引擎
 
 ---
 
@@ -208,6 +212,7 @@ java -jar target/PixVisionServer-0.0.1-SNAPSHOT.jar
 |------|--------------------------|----------|:--:|
 | GET  | `/page/{current}/{size}` | 分页查询用户信息 | ✅  |
 | POST | `/change/nickname`       | 修改用户昵称   | ✅  |
+| POST | `/change/email`          | 修改绑定邮箱   | ✅  |
 
 ### 📊 用户拓展数据 `/api/user/data`
 
@@ -233,6 +238,7 @@ java -jar target/PixVisionServer-0.0.1-SNAPSHOT.jar
 | POST | `/send-forget-password-code`  | 发送重置密码验证码     | ❌  |
 | POST | `/send-change-password-code`  | 发送修改密码验证码     | ✅  |
 | POST | `/send-delete-account-code`   | 发送注销账户验证码     | ✅  |
+| POST | `/send-change-email-code`     | 发送更改邮箱验证码     | ✅  |
 
 **验证码特性：**
 - ✅ Redis 存储，默认 5 分钟有效期
@@ -240,6 +246,34 @@ java -jar target/PixVisionServer-0.0.1-SNAPSHOT.jar
 - ✅ 内置邮件主题，无需传入
 - ✅ 智能识别用户名或邮箱格式
 - ✅ 已登录场景从 Token 自动获取用户信息
+- ✅ **更改邮箱专用**：发送到新邮箱并验证唯一性
+
+#### 📧 更改邮箱完整流程
+
+**步骤 1：发送验证码到新邮箱**
+```bash
+POST /api/mail/send-change-email-code
+Headers:
+  Authorization: Bearer <token>
+Body:
+  newEmail: newemail@example.com
+```
+
+**步骤 2：使用验证码修改邮箱**
+```bash
+POST /api/user/profile/change/email
+Headers:
+  Authorization: Bearer <token>
+Body:
+  newEmail: newemail@example.com
+  vCode: ABC123
+```
+
+**注意事项：**
+- ⚠️ 验证码发送到**新邮箱**，而非当前绑定邮箱
+- ⚠️ 新邮箱不能被其他账号使用
+- ⚠️ 验证码有效期为 5 分钟，一次性使用
+- ⚠️ 修改成功后，下次登录需使用新邮箱
 
 ### 🖼️ 图片服务 `/api/image`
 
@@ -400,6 +434,32 @@ String decrypted = RSACipher.decryptToString(encrypted);
 
 ## 👨‍💻 开发指南
 
+### 📂 项目结构
+
+```
+PixVisionServer/
+├── src/main/java/top/playereg/pix_vision/
+│   ├── config/              # 配置类（Redis, MyBatis-Plus, Swagger等）
+│   ├── controller/          # REST API 控制器
+│   │   ├── UserAuthController.java      # 用户认证（注册、登录、登出）
+│   │   ├── UserPasswordController.java  # 密码管理（修改、重置）
+│   │   ├── UserProfileController.java   # 用户资料（查询、昵称、邮箱）
+│   │   ├── UserDataController.java      # 用户拓展数据
+│   │   ├── MailController.java          # 邮件服务（6种验证码）
+│   │   └── ImageController.java         # 图片服务（头像上传）
+│   ├── service/             # 业务逻辑层
+│   ├── mapper/              # MyBatis-Plus Mapper 接口
+│   ├── pojo/                # 实体类和 DTO
+│   ├── handler/             # 拦截器（JWT 认证）
+│   └── util/                # 工具类（JWT, RSA, 正则等）
+├── src/main/resources/
+│   ├── yml-config/          # YAML 配置文件
+│   ├── mapper/              # MyBatis XML 映射文件
+│   ├── template/            # 邮件 HTML 模板
+│   └── static/              # 静态资源
+└── sql/                     # 数据库脚本
+```
+
 ### 📝 新增接口流程
 
 1. **设计接口** - 确定 URL 路径、请求方式、参数
@@ -499,6 +559,53 @@ CREATE DATABASE db_pix_vision CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 # 导入脚本
 mysql -u root -p db_pix_vision < sql/db_pix_vision-V1.1.sql
 ```
+
+### 5️⃣ 更改邮箱收不到验证码
+
+**排查步骤**：
+
+1. **检查新邮箱格式**：确保输入的是标准邮箱格式
+2. **检查邮箱唯一性**：新邮箱不能被其他账号使用
+3. **查看垃圾邮件箱**：邮件可能被归类为垃圾邮件
+4. **验证 Token 有效性**：确保 Token 未过期且在白名单中
+5. **检查 Redis 服务**：确俞Redis 正常运行，能够存储验证码
+
+**注意事项**：
+- ⚠️ 验证码发送到**新邮箱**，不是当前绑定的邮箱
+- ⚠️ 如果新邮箱与当前邮箱相同，会提示“无需修改”
+- ⚠️ 验证码有效期为 5 分钟，请尽快使用
+
+---
+
+## 📝 更新日志
+
+### DEV-2.0.0 (最新)
+
+**新增功能：**
+- ✨ **绑定邮箱修改功能** - 支持用户更改账号绑定邮箱
+  - 发送验证码到新邮箱 (`/api/mail/send-change-email-code`)
+  - 验证并修改邮箱 (`/api/user/profile/change/email`)
+  - 邮箱唯一性检查，防止重复使用
+  - 验证码发送到新邮箱，而非当前邮箱
+- ✨ **Token 提取工具类** - 统一处理 Header 和 URL 参数中的 Token
+
+**优化改进：**
+- 🔧 模块化控制器设计，代码结构更清晰
+- 🔧 完善的 Swagger/OpenAPI 文档注释
+- 🔧 增强错误提示和用户友好性
+
+### DEV-1.x
+
+**核心功能：**
+- 用户注册、登录、登出
+- 密码修改与重置
+- 账户注销（逻辑删除）
+- 用户资料管理（分页查询、昵称修改）
+- 用户拓展数据管理
+- 邮件验证码服务（6种场景）
+- JWT Token 白名单机制
+- RSA + AES 混合加密
+- 系统监控与健康检查
 
 ---
 

@@ -16,6 +16,7 @@ import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
@@ -165,6 +166,7 @@ public class UserPasswordController {
      * @author Playereg
      */
     @PostMapping("/forgot")
+    @PublicAccess("忘记密码重置，无需认证")
     @Operation(
         summary = "忘记密码",
         description = """

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 
 /**
  * 测试 JWT 鉴权的示例接口
@@ -70,6 +71,7 @@ public class TestAuthController {
      * @return 响应数据
      */
     @GetMapping("/no-auth")
+    @PublicAccess("测试接口 - 无需 JWT 认证")
     @Operation(
             summary = "不需要登录的测试接口",
             description = """

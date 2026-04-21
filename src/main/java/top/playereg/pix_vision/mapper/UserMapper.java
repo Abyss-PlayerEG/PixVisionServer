@@ -93,4 +93,13 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 影响行数
      */
     int deleteUserAccount(@Param("userId") Integer userId);
+
+    /**
+     * 更新用户邮箱
+     *
+     * @param userId 用户 ID
+     * @param email  新邮箱
+     * @return 影响行数
+     */
+    int updateUserEmail(@Param("userId") Integer userId, @Param("email") String email);
 }
