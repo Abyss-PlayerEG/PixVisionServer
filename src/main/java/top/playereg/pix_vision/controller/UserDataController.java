@@ -12,6 +12,7 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 
 import java.util.List;
@@ -213,6 +214,7 @@ public class UserDataController {
             - 常见的数据名称示例：电话、邮箱、网站、微信、QQ 等
             """
     )
+    @PublicAccess("查询用户拓展数据，无需认证")
     public ResponsePojo<List<UserData>> getUserDataList(
         @Parameter(description = "用户 ID", required = true, example = "1") @RequestParam Integer userId
     ) {

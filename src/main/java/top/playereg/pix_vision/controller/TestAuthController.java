@@ -71,7 +71,7 @@ public class TestAuthController {
      * @return 响应数据
      */
     @GetMapping("/no-auth")
-    @PublicAccess
+    @PublicAccess("测试接口 - 无需 JWT 认证")
     @Operation(
             summary = "不需要登录的测试接口",
             description = """

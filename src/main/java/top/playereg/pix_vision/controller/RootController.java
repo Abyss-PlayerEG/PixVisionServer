@@ -13,7 +13,7 @@ import top.playereg.pix_vision.enums.LogColor;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.SystemInfo;
 import top.playereg.pix_vision.service.SystemInfoService;
-import top.playereg.pix_vision.util.Annotation.RequireRole;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 
 /**
  * 服务端根路由
@@ -56,7 +56,6 @@ public class RootController {
             """
     )
     @GetMapping(value = "/")
-    @RequireRole(value = {77})
     public String home() {
         log.info(LogColor.colorize("200 获取系统首页成功", LogColor.GREEN));
         return "redirect:/index.html";
@@ -88,8 +87,8 @@ public class RootController {
             - 可通过页面查看系统运行状态信息
             """
     )
+    @PublicAccess("健康检查接口，无需认证")
     @GetMapping(value = "/health")
-    @RequireRole(value = {77})
     public String health() {
         log.info(LogColor.colorize("200 系统服务正常", LogColor.GREEN));
         return "redirect:/server-status/running.html";
@@ -131,7 +130,6 @@ public class RootController {
             """
     )
     @GetMapping(value = "/system-info")
-    @RequireRole(value = {77})
     @ResponseBody
     public ResponsePojo<SystemInfo> getSystemInfo()
         throws Exception {

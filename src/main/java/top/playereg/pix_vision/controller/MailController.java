@@ -231,7 +231,6 @@ public class MailController {
      * @return 响应结果
      * @author PlayerEG
      */
-//    @PostMapping("/send-change-password-code")
     @PostMapping("/send-forget-password-code")
     @PublicAccess("发送重置密码验证码，无需认证")
     @Operation(

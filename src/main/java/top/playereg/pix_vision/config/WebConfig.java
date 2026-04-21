@@ -67,11 +67,11 @@ public class WebConfig implements WebMvcConfigurer {
         // 第1层：JWT 认证拦截器（验证 Token）
         // 使用 @PublicAccess 注解标记公开接口，无需在此处配置白名单
         registry.addInterceptor(jwtAuthenticationInterceptor)
-            .addPathPatterns("/**");  // 拦截所有 API 请求
+            .addPathPatterns("/api/**");  // 拦截所有 API 请求
 
         // 第2层：权限验证拦截器（验证角色权限）
         // 对所有已认证的 API 请求生效，但只处理带有 @RequireRole 注解的接口
         registry.addInterceptor(permissionInterceptor)
-            .addPathPatterns("/**");
+            .addPathPatterns("/api/**");
     }
 }
