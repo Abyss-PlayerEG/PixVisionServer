@@ -1,17 +1,20 @@
 package top.playereg.pix_vision.util.Aspect;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import top.playereg.pix_vision.pojo.OperateLog;
-
-import java.sql.Timestamp;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import top.playereg.pix_vision.service.OperateLogService;
+import top.playereg.pix_vision.util.JWTUtils;
 
 /**
- * 日志切面
+ * 日志切面 - 用于记录用户操作到数据库
  *
  * @author blue_sky_ks
  */
@@ -20,11 +23,13 @@ import java.sql.Timestamp;
 @SuppressWarnings("unused")
 public class LogAspect {
 
-    //用于打印和输出
     private static final Logger logger = LoggerFactory.getLogger(LogAspect.class);
 
+    @Autowired
+    private OperateLogService operateLogService;
+
     /**
-     * 环绕通知
+     * 环绕通知 - 记录用户操作日志
      *
      * @param pjp       切点
      * @param logRecord 注解
@@ -34,21 +39,86 @@ public class LogAspect {
      */
     @Around("@annotation(logRecord)")
     public Object record(ProceedingJoinPoint pjp, LogRecord logRecord) throws Throwable {
-        OperateLog operateLog = new OperateLog(); //用于记录操作的实体类
+        // 执行目标方法
+        Object result = pjp.proceed();
 
-        Object result = pjp.proceed();//返回结果
+        try {
+            // 获取当前请求
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes == null) {
+                logger.warn("无法获取请求上下文，跳过日志记录");
+                return result;
+            }
 
-        long start = System.currentTimeMillis();
-        Timestamp timestamp = new Timestamp(start);
-        operateLog.setLog_datetime(timestamp);//记录操作时间
+            HttpServletRequest request = attributes.getRequest();
 
-        operateLog.setLog_event(logRecord.event());//记录操作事件
+            // 从 Token 中获取用户 ID
+            Integer userId = extractUserIdFromRequest(request);
+            if (userId == null || userId <= 0) {
+                logger.debug("未获取到有效的用户 ID，跳过日志记录");
+                return result;
+            }
 
-        operateLog.setUser_id(1); //记录操作人员ID --TODO
+            // 构建操作事件描述
+            String module = logRecord.module();
+            String event = logRecord.event();
+            String logEvent = buildLogEvent(module, event);
 
-        //插入进数据库 --TODO
-        /*暂时没有*/
+            // 记录日志到数据库
+            boolean success = operateLogService.recordLog(userId, logEvent);
+            if (!success) {
+                logger.warn("操作日志记录失败 - 用户 ID: {}, 事件: {}", userId, logEvent);
+            }
+
+        } catch (Exception e) {
+            // 日志记录失败不应影响业务逻辑，仅记录错误
+            logger.error("日志记录过程中发生异常: {}", e.getMessage(), e);
+        }
 
         return result;
+    }
+
+    /**
+     * 从请求中提取用户 ID
+     *
+     * @param request HTTP 请求对象
+     * @return 用户 ID，如果无法提取则返回 null
+     * @author blue_sky_ks
+     */
+    private Integer extractUserIdFromRequest(HttpServletRequest request) {
+        // 优先从 request attribute 中获取（由拦截器设置）
+        Integer userId = (Integer) request.getAttribute("userId");
+        if (userId != null && userId > 0) {
+            return userId;
+        }
+
+        // 如果 attribute 中没有，尝试从 Token 中解析
+        String token = JWTUtils.extractToken(request);
+        if (token != null && !token.isEmpty()) {
+            return JWTUtils.getUserIdFromToken(token);
+        }
+
+        return null;
+    }
+
+    /**
+     * 构建操作事件描述
+     *
+     * @param module 模块名称
+     * @param event  事件描述
+     * @return 完整的操作事件描述
+     * @author blue_sky_ks
+     */
+    private String buildLogEvent(String module, String event) {
+        StringBuilder sb = new StringBuilder();
+        if (module != null && !module.isEmpty()) {
+            sb.append("[").append(module).append("] ");
+        }
+        if (event != null && !event.isEmpty()) {
+            sb.append(event);
+        } else {
+            sb.append("未知操作");
+        }
+        return sb.toString();
     }
 }
