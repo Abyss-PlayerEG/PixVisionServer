@@ -56,7 +56,7 @@ public class WebConfig implements WebMvcConfigurer {
      * 添加拦截器配置
      * <p>
      * 拦截器执行顺序：
-     * 1. JWT 认证拦截器 - 验证 Token 有效性
+     * 1. JWT 认证拦截器 - 验证 Token 有效性（支持 @PublicAccess 注解）
      * 2. 权限验证拦截器 - 验证用户角色权限（基于 @RequireRole 注解）
      * </p>
      *
@@ -65,35 +65,13 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // 第1层：JWT 认证拦截器（验证 Token）
+        // 使用 @PublicAccess 注解标记公开接口，无需在此处配置白名单
         registry.addInterceptor(jwtAuthenticationInterceptor)
-            // 拦截所有 API 请求
-            .addPathPatterns(
-                "/api/**",
-                "/7e212056/require-auth"                // 测试接口
-            )
-            // 排除不需要认证的路径
-            .excludePathPatterns(
-                // 用户认证接口
-                "/api/user/auth/login",                     // 登录
-                "/api/user/auth/register",                  // 注册
-                // 密码管理接口
-                "/api/user/password/forgot",                // 忘记密码
-                // 用户数据查询接口
-                "/api/user/data/list/**",                   // 查询用户拓展数据
-                // 邮件服务接口（发送验证码）
-                "/api/mail/send-forget-password-code",      // 发送重置密码验证码
-                "/api/mail/send-register-code",             // 发送注册验证码
-                "/api/mail/send-login-code",                // 发送登录验证码
-                // 图片获取接口
-                "/api/image/get/**",                        // 获取图像
-                // 测试接口
-                "/api/test/**",                             // 测试接口
-                "/7e212056/no-auth"                        // 测试接口
-            );
+            .addPathPatterns("/**");  // 拦截所有 API 请求
 
         // 第2层：权限验证拦截器（验证角色权限）
         // 对所有已认证的 API 请求生效，但只处理带有 @RequireRole 注解的接口
         registry.addInterceptor(permissionInterceptor)
-            .addPathPatterns("/api/**");
+            .addPathPatterns("/**");
     }
 }

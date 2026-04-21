@@ -17,6 +17,7 @@ import top.playereg.pix_vision.pojo.userPojo.UserLogin;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
@@ -53,6 +54,7 @@ public class UserAuthController {
      * @author PlayerEG
      */
     @PostMapping("/register")
+    @PublicAccess("用户注册接口，无需认证")
     @Operation(
         summary = "用户注册接口",
         description = """
@@ -147,6 +149,7 @@ public class UserAuthController {
      * @author PlayerEG
      */
     @PostMapping("/login")
+    @PublicAccess("用户登录接口，无需认证")
     @Operation(
         summary = "用户登录接口",
         description = """

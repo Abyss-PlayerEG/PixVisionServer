@@ -16,6 +16,7 @@ import top.playereg.pix_vision.service.EmailService;
 import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 
@@ -51,6 +52,7 @@ public class MailController {
      * @author PlayerEG
      */
     @PostMapping("/send-register-code")
+    @PublicAccess("发送注册验证码，无需认证")
     @Operation(
         summary = "发送注册验证码邮件",
         description = """
@@ -138,6 +140,7 @@ public class MailController {
      * @author PlayerEG
      */
     @PostMapping("/send-login-code")
+    @PublicAccess("发送登录验证码，无需认证")
     @Operation(
         summary = "发送登录验证码邮件",
         description = """
@@ -230,6 +233,7 @@ public class MailController {
      */
 //    @PostMapping("/send-change-password-code")
     @PostMapping("/send-forget-password-code")
+    @PublicAccess("发送重置密码验证码，无需认证")
     @Operation(
         summary = "发送重置密码验证码邮件",
         description = """
