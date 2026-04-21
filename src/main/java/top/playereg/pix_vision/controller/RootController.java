@@ -13,6 +13,7 @@ import top.playereg.pix_vision.enums.LogColor;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.SystemInfo;
 import top.playereg.pix_vision.service.SystemInfoService;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 
 /**
  * 服务端根路由
@@ -86,6 +87,7 @@ public class RootController {
             - 可通过页面查看系统运行状态信息
             """
     )
+    @PublicAccess("健康检查接口，无需认证")
     @GetMapping(value = "/health")
     public String health() {
         log.info(LogColor.colorize("200 系统服务正常", LogColor.GREEN));
