@@ -1,13 +1,18 @@
 package top.playereg.pix_vision.util;
 
+import cn.hutool.core.date.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Date;
+
+import static top.playereg.pix_vision.config.FilePathConfig.LogPath;
 
 /**
  * 控制台输出重定向工具类
@@ -74,6 +79,21 @@ public class ConsoleOutputRedirector {
             filePrintStream.close();
         }
         log.info("控制台输出重定向已恢复");
+    }
+
+    /**
+     * 初始化控制台输出重定向
+     * 捕获所有 System.out 和 System.err 输出到日志文件
+     */
+    public static void initConsoleOutputRedirector() {
+        try {
+            // 使用 FilePathConfig 的路径方法确保跨平台兼容
+            String logFilePath = LogPath + File.separator + "pix_vision" + DateUtil.format(new Date(), "[yyyy-MM-dd-HH-mm-ss]") + ".log";
+            ConsoleOutputRedirector.init(logFilePath);
+            log.info("控制台输出重定向已启用: {}", logFilePath);
+        } catch (Exception e) {
+            log.error("控制台输出重定向初始化失败", e);
+        }
     }
 
     /**
@@ -157,5 +177,6 @@ public class ConsoleOutputRedirector {
             // ESC 的 ASCII 码是 27 (0x1B)
             return text.replaceAll("\u001B\\[[;\\d]*m", "");
         }
+
     }
 }

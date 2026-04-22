@@ -1,6 +1,5 @@
 package top.playereg.pix_vision.config;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.CharsetUtil;
 import jakarta.annotation.PostConstruct;
@@ -11,11 +10,9 @@ import org.springframework.stereotype.Component;
 import top.playereg.pix_vision.util.ConsoleOutputRedirector;
 import top.playereg.pix_vision.util.CreateFile;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
 
 /**
  * 文件路径配置
@@ -121,24 +118,9 @@ public class FilePathConfig {
             WorksPath,
             KeyPath
         };
-        initConsoleOutputRedirector();
+        ConsoleOutputRedirector.initConsoleOutputRedirector();
         createPath();
         CreateFile.create();
-    }
-
-    /**
-     * 初始化控制台输出重定向
-     * 捕获所有 System.out 和 System.err 输出到日志文件
-     */
-    private void initConsoleOutputRedirector() {
-        try {
-            // 使用 FilePathConfig 的路径方法确保跨平台兼容
-            String logFilePath = LogPath + File.separator + "pix_vision" + DateUtil.format(new Date(), "[yyyy-MM-dd-HH-mm-ss]") + ".log";
-            ConsoleOutputRedirector.init(logFilePath);
-            log.info("控制台输出重定向已启用: {}", logFilePath);
-        } catch (Exception e) {
-            log.error("控制台输出重定向初始化失败", e);
-        }
     }
 
     /**
