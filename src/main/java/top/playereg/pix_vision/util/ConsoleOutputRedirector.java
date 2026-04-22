@@ -82,6 +82,7 @@ public class ConsoleOutputRedirector {
     private static class FilePrintStream extends PrintStream {
         private final PrintStream console;
         private final String logFilePath;
+        private boolean writing = false; // 防止递归调用
 
         public FilePrintStream(String logFilePath, PrintStream console) throws Exception {
             super(
@@ -100,32 +101,61 @@ public class ConsoleOutputRedirector {
 
         @Override
         public void write(int b) {
-            // 单个字节写入，直接转发
+            if (writing) return;
             try {
+                writing = true;
                 super.write(b);
                 console.write(b);
             } catch (Exception e) {
-                // 忽略异常，避免无限递归
+                // 忽略异常
+            } finally {
+                writing = false;
             }
         }
 
         @Override
         public void write(byte[] buf, int off, int len) {
+            if (writing) return;
             try {
-                // 写入文件
-                super.write(buf, off, len);
+                writing = true;
 
-                // 输出到控制台
+                // 写入文件（过滤 ANSI 转义码）
+                String text = new String(buf, off, len, "UTF-8");
+                String cleanText = removeAnsiCodes(text);
+                byte[] cleanBytes = cleanText.getBytes("UTF-8");
+                super.write(cleanBytes, 0, cleanBytes.length);
+
+                // 输出到控制台（保留颜色代码）
                 console.write(buf, off, len);
             } catch (Exception e) {
-                // 忽略异常，避免影响主流程
+                // 忽略异常
+            } finally {
+                writing = false;
             }
         }
 
         @Override
         public void flush() {
-            super.flush();
-            console.flush();
+            if (!writing) {
+                super.flush();
+                console.flush();
+            }
+        }
+
+        /**
+         * 移除 ANSI 转义码（颜色控制码）
+         * 例如: \u001B[2m, \u001B[39m, \u001B[0m 等
+         *
+         * @param text 包含 ANSI 码的文本
+         * @return 清理后的纯文本
+         */
+        private String removeAnsiCodes(String text) {
+            if (text == null) {
+                return null;
+            }
+            // ANSI 转义码格式: ESC [ ... m
+            // ESC 的 ASCII 码是 27 (0x1B)
+            return text.replaceAll("\u001B\\[[;\\d]*m", "");
         }
     }
 }
