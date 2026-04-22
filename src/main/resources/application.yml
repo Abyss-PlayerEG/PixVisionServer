@@ -3,7 +3,6 @@ server:
   port: 9090
   forward-headers-strategy: native # 启动时使用SpringBoot内置的Tomcat
 
-
 spring:
   banner:
     charset: utf-8
@@ -17,6 +16,7 @@ spring:
       - classpath:yml-config/spring-doc.yml # 文档
       - classpath:yml-config/logging.yml # 日志
       - classpath:yml-config/cors.yml # 跨域
+      - classpath:yml-config/log-output.yml # 日志输出
       - classpath:yml-config/pix_vision.yml # 系统配置文件
       - optional:file:${user.home}/${workspace-name}/application.yml # 用户自定义配置文件
   devtools:

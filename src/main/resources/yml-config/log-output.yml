@@ -1,0 +1,6 @@
+# 控制台输出重定向配置
+console-output:
+  enabled: false  # 是否启用控制台输出重定向(true-启用，false-禁用)
+  log-dir: ${user.home}/${workspace-name}/log  # 日志目录
+  timestamp-format: "[yyyy-MM-dd]-[HH.mm.ss]"  # 时间戳格式
+  file-pattern: "NyanLog{timestamp}.log"  # 文件名模板，{timestamp} 会被替换为实际时间戳
