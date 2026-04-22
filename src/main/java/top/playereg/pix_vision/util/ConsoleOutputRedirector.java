@@ -94,8 +94,6 @@ public class ConsoleOutputRedirector {
             // 重定向 System.out 和 System.err
             System.setOut(filePrintStream);
             System.setErr(filePrintStream);
-
-            log.info("控制台输出重定向已启用，日志文件: {}", logFilePath);
         } catch (Exception e) {
             log.error("初始化控制台输出重定向失败", e);
         }
@@ -148,7 +146,6 @@ public class ConsoleOutputRedirector {
      */
     private static class FilePrintStream extends PrintStream {
         private final PrintStream console;
-        private final String logFilePath;
         private final ThreadLocal<Boolean> writing = ThreadLocal.withInitial(() -> false); // 线程安全，防止递归调用
 
         public FilePrintStream(String logFilePath, PrintStream console) throws Exception {
@@ -166,7 +163,6 @@ public class ConsoleOutputRedirector {
                 "UTF-8"
             );
             this.console = console;
-            this.logFilePath = logFilePath;
         }
 
         @Override
