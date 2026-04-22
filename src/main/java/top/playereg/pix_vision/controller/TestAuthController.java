@@ -134,4 +134,47 @@ public class TestAuthController {
             "日志记录成功"
         );
     }
+
+    /**
+     * 测试 System.out 输出捕获
+     *
+     * @return 响应数据
+     */
+    @GetMapping("/test-system-out")
+    @PublicAccess("测试 System.out 捕获")
+    @Operation(
+        summary = "测试 System.out 输出捕获",
+        description = """
+            # 测试 System.out 输出捕获
+
+            ## 功能说明
+            - 测试 System.out.println() 输出是否被捕获到日志文件
+            - 测试 System.err.println() 输出是否被捕获到日志文件
+            - 验证控制台输出重定向功能
+
+            ## 测试内容
+            调用此接口后，会在控制台和日志文件中输出多条测试信息
+
+            ## 返回说明：
+            - 返回测试状态和提示信息
+            - 请检查日志文件确认输出是否被正确捕获
+            """
+    )
+    public ResponsePojo<String> testSystemOut() {
+        System.out.println("=== 测试 System.out.println() 输出 ===");
+        System.out.println("这是一条通过 System.out.println() 输出的测试信息");
+        System.out.println("如果配置正确，这条信息应该同时出现在控制台和日志文件中");
+
+        System.err.println("=== 测试 System.err.println() 输出 ===");
+        System.err.println("这是一条通过 System.err.println() 输出的错误信息");
+        System.err.println("错误信息也应该被捕获到日志文件中");
+
+        log.info("System.out 测试完成，请检查日志文件");
+
+        return ResponsePojo.success(
+            "测试完成！请检查日志文件：~/.pix_vision/log/pix_vision.log\n" +
+                "所有 System.out 和 System.err 的输出都应该被记录到该文件中。",
+            "System.out 捕获测试"
+        );
+    }
 }

@@ -53,6 +53,15 @@
 #  level:
 #    root: info  # 日志级别
 #    top.playereg.pix_vision: info  # 模块日志级别(开发者建议等级设置为debug)
+#  file:
+#    name: ${user.home}/${workspace-name}/log/pix_vision.log  # 日志文件路径（自动保存到用户目录）
+#    max-size: 10MB  # 单个日志文件最大大小
+#    max-history: 30  # 保留天数
+#  logback:
+#    rollingpolicy:
+#      max-file-size: 10MB
+#      max-history: 30
+#      total-size-cap: 1GB  # 日志总大小上限
 
 #### MuYing日志开关
 #mu-ying-logging:

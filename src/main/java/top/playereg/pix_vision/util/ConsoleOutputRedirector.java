@@ -1,0 +1,131 @@
+package top.playereg.pix_vision.util;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+
+/**
+ * 控制台输出重定向工具类
+ * <p>
+ * 将 System.out 和 System.err 的所有输出重定向到日志文件
+ * 确保捕获所有控制台内容，包括直接使用 System.out.println() 的输出
+ * </p>
+ *
+ * @author PlayerEG
+ */
+public class ConsoleOutputRedirector {
+    private static final Logger log = LoggerFactory.getLogger(ConsoleOutputRedirector.class);
+
+    private static PrintStream originalOut;
+    private static PrintStream originalErr;
+    private static FilePrintStream filePrintStream;
+
+    /**
+     * 初始化控制台输出重定向
+     *
+     * @param logFilePath 日志文件路径
+     * @author PlayerEG
+     */
+    public static void init(String logFilePath) {
+        try {
+            // 保存原始输出流
+            originalOut = System.out;
+            originalErr = System.err;
+
+            // 创建文件输出流
+            Path logPath = Paths.get(logFilePath);
+
+            // 确保父目录存在
+            if (logPath.getParent() != null) {
+                Files.createDirectories(logPath.getParent());
+            }
+
+            // 创建文件打印流（追加模式）
+            filePrintStream = new FilePrintStream(logFilePath, originalOut);
+
+            // 重定向 System.out 和 System.err
+            System.setOut(filePrintStream);
+            System.setErr(filePrintStream);
+
+            log.info("控制台输出重定向已启用，日志文件: {}", logFilePath);
+        } catch (Exception e) {
+            log.error("初始化控制台输出重定向失败", e);
+        }
+    }
+
+    /**
+     * 恢复原始控制台输出
+     *
+     * @author PlayerEG
+     */
+    public static void restore() {
+        if (originalOut != null) {
+            System.setOut(originalOut);
+        }
+        if (originalErr != null) {
+            System.setErr(originalErr);
+        }
+        if (filePrintStream != null) {
+            filePrintStream.close();
+        }
+        log.info("控制台输出重定向已恢复");
+    }
+
+    /**
+     * 文件打印流 - 同时输出到文件和控制台
+     */
+    private static class FilePrintStream extends PrintStream {
+        private final PrintStream console;
+        private final String logFilePath;
+
+        public FilePrintStream(String logFilePath, PrintStream console) throws Exception {
+            super(
+                Files.newOutputStream(
+                    Paths.get(logFilePath),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND,
+                    StandardOpenOption.WRITE
+                ),
+                true,
+                "UTF-8"
+            );
+            this.console = console;
+            this.logFilePath = logFilePath;
+        }
+
+        @Override
+        public void write(int b) {
+            // 单个字节写入，直接转发
+            try {
+                super.write(b);
+                console.write(b);
+            } catch (Exception e) {
+                // 忽略异常，避免无限递归
+            }
+        }
+
+        @Override
+        public void write(byte[] buf, int off, int len) {
+            try {
+                // 写入文件
+                super.write(buf, off, len);
+
+                // 输出到控制台
+                console.write(buf, off, len);
+            } catch (Exception e) {
+                // 忽略异常，避免影响主流程
+            }
+        }
+
+        @Override
+        public void flush() {
+            super.flush();
+            console.flush();
+        }
+    }
+}
