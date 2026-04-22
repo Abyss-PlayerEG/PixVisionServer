@@ -451,6 +451,106 @@ public class UserController {
 - 包含 `@param`、`@return`、`@author` 标签
 - 复杂逻辑需要在 JavaDoc 中说明业务规则
 
+### 注解类注释规范（标准模板）
+
+对于自定义注解类，应遵循以下完整的文档结构：
+
+```java
+/**
+ * 注解功能描述
+ * <p>
+ * 详细说明注解的作用、支持的元素类型、运行时行为等。
+ * 可以分段描述不同的方面。
+ * </p>
+ *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>场景1描述</li>
+ *   <li>场景2描述</li>
+ *   <li>场景3描述</li>
+ * </ol>
+ *
+ * <h3>使用示例</h3>
+ * <pre>{@code
+ * // 示例1：基本用法
+ * @AnnotationName(value = "value1")
+ * public void method1() { ... }
+ *
+ * // 示例2：高级用法
+ * @AnnotationName(value = {"v1", "v2"}, option = true)
+ * public class MyClass { ... }
+ *
+ * // 示例3：组合使用
+ * @OtherAnnotation
+ * @AnnotationName("value")
+ * public ReturnType method() { ... }
+ * }</pre>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>注意点1</li>
+ *   <li>注意点2</li>
+ *   <li>注意点3</li>
+ * </ul>
+ *
+ * <h3>最佳实践</h3>
+ * <ul>
+ *   <li>建议1</li>
+ *   <li>建议2</li>
+ * </ul>
+ *
+ * @author PlayerEG
+ * @see related.Class1 相关类1的描述
+ * @see related.Class2 相关类2的描述
+ * @since DEV-2.0.0
+ */
+```
+
+#### 关键要素说明
+
+1. **标题**：简洁明了地描述注解功能
+2. **详细描述**：使用 `<p>` 标签分段，说明核心功能
+3. **使用场景**：使用 `<h3>` + `<ol>` 列出典型应用场景
+4. **使用示例**：使用 `<h3>` + `<pre>{@code}` 提供多个实际示例
+  - 示例要覆盖不同使用场景
+  - 每个示例都要有注释说明
+  - 代码要完整可运行
+5. **注意事项**：使用 `<h3>` + `<ul>` 列出重要提醒
+6. **最佳实践**：使用 `<h3>` + `<ul>` 提供推荐做法
+7. **元数据标签**：
+  - `@author`：作者信息
+  - `@see`：相关类引用（带描述）
+  - `@since`：版本信息
+
+#### 格式化要求
+
+- 使用 `<h3>` 标签划分章节（不使用 `<h1>`、`<h2>`）
+- 列表使用 `<ol>`（有序）或 `<ul>`（无序）
+- 代码块使用 `<pre>{@code}...{@code}</pre>`
+- 重点内容使用 `<b>` 或 `**粗体**`
+- 段落之间空一行
+- 每行不超过 100 个字符
+
+#### 实际案例参考
+
+项目中已有两个标准注解可作为参考：
+
+1. *
+   *[@RequireRole](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/Annotation/RequireRole.java)
+   ** - 角色权限控制注解
+  - 包含角色等级说明
+  - 提供4个完整使用示例
+  - 详细说明注意事项和最佳实践
+
+2. *
+   *[@PublicAccess](file:///D:/CodeProject/PixVisionServer/src/main/java/top/playereg/pix_vision/util/Annotation/PublicAccess.java)
+   ** - 公开访问控制注解
+  - 列出4类典型使用场景
+  - 提供4个不同场景的示例
+  - 包含安全建议章节
+
+编写新注解时，请参考这两个注解的文档结构和详细程度。
+
 ## 3. 代码格式
 
 ### 缩进与空格

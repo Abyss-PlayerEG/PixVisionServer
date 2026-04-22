@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.OperateLogMapper">
+
+    <!-- 插入操作日志记录 -->
+    <insert id="insertOperateLog" parameterType="top.playereg.pix_vision.pojo.OperateLog">
+        INSERT INTO tb_sys_logs (user_id,
+                                 log_datetime,
+                                 log_event)
+        VALUES (#{user_id},
+                #{log_datetime},
+                #{log_event})
+    </insert>
+
+</mapper>

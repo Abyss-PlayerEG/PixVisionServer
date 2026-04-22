@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @SuppressWarnings("all")
 public class SwaggerConfig {
+
     @Value("${spring.application.version}")
     private String AppVersion;
 
