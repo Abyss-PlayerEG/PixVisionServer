@@ -1,5 +1,8 @@
 package top.playereg.pix_vision.config;
 
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +12,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.playereg.pix_vision.handler.JwtAuthenticationInterceptor;
 import top.playereg.pix_vision.handler.PermissionInterceptor;
 
+import static cn.hutool.core.lang.Console.log;
+
 /**
  * Web MVC 配置类 - 注册 JWT 拦截器和权限拦截器
  *
@@ -16,6 +21,7 @@ import top.playereg.pix_vision.handler.PermissionInterceptor;
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+    private static final Logger log = LoggerFactory.getLogger(WebConfig.class);
 
     @Autowired
     private JwtAuthenticationInterceptor jwtAuthenticationInterceptor;
@@ -38,12 +44,21 @@ public class WebConfig implements WebMvcConfigurer {
      * @author PlayerEG
      */
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
+    public void addCorsMappings(@NotNull CorsRegistry registry) {
+        int length = allowedOrigin.length;
+        log.info("已有 {} 个源地址已进行跨域处理", length);
+        log("\n\t允许的源地址列表：");
+        int i = 0;
+        for (String origin : allowedOrigin) {
+            i++;
+            log("\t\tURL[{}]: {}", i, origin);
+        }
+        log("");
         registry.addMapping("/**")
             // 允许的源地址（从配置文件读取）
             .allowedOriginPatterns(allowedOrigin)
-            // 允许的 HTTP 方法
-            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            // 允许的 HTTP 方法（* 表示所有方法）
+            .allowedMethods("*")
             // 允许的请求头
             .allowedHeaders("*")
             // 是否允许携带凭证（Cookie、Authorization 等）
@@ -56,7 +71,9 @@ public class WebConfig implements WebMvcConfigurer {
      * 添加拦截器配置
      * <p>
      * 拦截器执行顺序：
+     * <p>
      * 1. JWT 认证拦截器 - 验证 Token 有效性（支持 @PublicAccess 注解）
+     * <p>
      * 2. 权限验证拦截器 - 验证用户角色权限（基于 @RequireRole 注解）
      * </p>
      *

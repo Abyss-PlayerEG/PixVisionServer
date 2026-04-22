@@ -36,16 +36,16 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 发送 HTML 邮件
      *
-     * @param to          收件人
-     * @param subject     主题
+     * @param to      收件人
+     * @param subject 主题
      * @param content HTML 内容
      * @return String
      * @author PlayerEG
      */
     public String sendEMail(
-            String to,
-            String subject,
-            String content
+        String to,
+        String subject,
+        String content
     ) {
         try {
             log.info("开始发送 HTML 邮件到: {}", to);
@@ -55,7 +55,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(content, true); // true 表示 HTML 内容
-            
+
             mailSender.send(message);
             log.info("HTML 邮件发送成功: {}", to);
             return "SUCCESS";
@@ -68,22 +68,22 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 群发邮件
      *
-     * @deprecated 系统设计暂不支持群发邮件
      * @param subject 主题
      * @param content 内容
      * @param tos     收件人（多个）
      * @return String
      * @author PlayerEG
+     * @deprecated 系统设计暂不支持群发邮件
      */
     @Deprecated
     public String sendMailToMany(
-            String subject,
-            String content,
-            String... tos
+        String subject,
+        String content,
+        String... tos
     ) {
         try {
             log.info("开始群发邮件到: {}", String.join(", ", tos));
-            
+
             for (String to : tos) {
                 MimeMessage message = createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, false);
@@ -94,7 +94,7 @@ public class EmailServiceImpl implements EmailService {
                 mailSender.send(message);
                 log.info("邮件发送成功: {}", to);
             }
-            
+
             log.info("群发邮件发送成功，共 {} 封", tos.length);
             return "SUCCESS";
         } catch (MessagingException e) {
