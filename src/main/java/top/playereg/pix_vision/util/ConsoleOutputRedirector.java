@@ -23,6 +23,7 @@ import static top.playereg.pix_vision.config.FilePathConfig.LogPath;
  *
  * @author PlayerEG
  */
+@SuppressWarnings("all")
 public class ConsoleOutputRedirector {
     private static final Logger log = LoggerFactory.getLogger(ConsoleOutputRedirector.class);
 
