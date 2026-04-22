@@ -1,8 +1,8 @@
 # 文档配置
 springdoc:
-    enabled: off # 启用 API 文档（生产环境设为 off，开发环境设为 on）
-    api-docs:
-        enabled: ${springdoc.enabled}
-    swagger-ui:
-        enabled: ${springdoc.enabled}
-        path: /swagger-ui.html
+  enabled: off # 启用 API 文档（生产环境设为 off，开发环境设为 on）
+  api-docs:
+    enabled: ${springdoc.enabled}
+  swagger-ui:
+    enabled: ${springdoc.enabled}
+    path: /swagger-ui.html

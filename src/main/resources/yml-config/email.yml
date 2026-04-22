@@ -1,12 +1,12 @@
 # 邮件配置
 spring:
-    mail:
-        host: smtp.qq.com               # SMTP服务器地址
-        port: 465                       # 端口
-        from: your-email@example.com    # 发件人
-        username: server_username       # 用户名
-        password: your_auth_code        # 授权码
-        protocol: smtp                  # 协议
-        default-encoding: UTF-8         # 编码
-        ssl-enable: false               # 不直接建立 SSL 连接
-        starttls-enable: false          # 启用 STARTTLS 升级
+  mail:
+    host: smtp.qq.com               # SMTP服务器地址
+    port: 465                       # 端口
+    from: your-email@example.com    # 发件人
+    username: server_username       # 用户名
+    password: your_auth_code        # 授权码
+    protocol: smtp                  # 协议
+    default-encoding: UTF-8         # 编码
+    ssl-enable: false               # 不直接建立 SSL 连接
+    starttls-enable: false          # 启用 STARTTLS 升级
