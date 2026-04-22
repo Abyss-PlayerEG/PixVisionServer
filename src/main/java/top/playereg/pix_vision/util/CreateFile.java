@@ -21,78 +21,126 @@ public class CreateFile {
     public static void create() {
         // 根目录说明文件
         FilePathConfig.createTextFile(
-                "欢迎来到像素视觉用户目录，\n该目录用于存放后端资源和自定义内容",
-                FilePathConfig.RootPath,
-                "readme.txt"
+            """
+                欢迎来到像素视觉用户目录
+                该目录用于存放后端资源和自定义内容
+                """,
+            FilePathConfig.RootPath,
+            "readme.txt"
         );
 
         // application.yml 文件
-        String text = ResourceUtil.readUtf8Str("template/application-template.yml");
         FilePathConfig.createTextFile(
-                text,
-                FilePathConfig.RootPath,
-                "application.yml"
+            ResourceUtil.readUtf8Str("template/application-template.yml"),
+            FilePathConfig.RootPath,
+            "application.yml"
         );
 
         // logo-img 目录说明
-        String logoImgAbout = ResourceUtil.readUtf8Str("logo/about-path.txt");
         FilePathConfig.createTextFile(
-                logoImgAbout,
-                FilePathConfig.LogoPath,
-                "目录说明.txt"
+            """
+                当前目录为后端自定义logo，可以进行更换
+
+                ---
+
+                dark.png: 用于暗色主题的图标
+                light.png: 用于亮色主题的图标
+                """,
+            FilePathConfig.LogoPath,
+            "目录说明.txt"
         );
 
-        // logo 图片-深色
-        byte[] darkLogoBytes = ResourceUtil.readBytes("logo/dark.png");
         FilePathConfig.createByteFile(
-                darkLogoBytes,
-                FilePathConfig.LogoPath,
-                "dark.png"
+            ResourceUtil.readBytes("logo/dark.png"),
+            FilePathConfig.LogoPath,
+            "dark.png"
         );
 
         // logo 图片-浅色
-        byte[] lightLogoBytes = ResourceUtil.readBytes("logo/light.png");
         FilePathConfig.createByteFile(
-                lightLogoBytes,
-                FilePathConfig.LogoPath,
-                "light.png"
+            ResourceUtil.readBytes("logo/light.png"),
+            FilePathConfig.LogoPath,
+            "light.png"
         );
 
         // email-html 目录说明
-        String emailHtmlAbout = ResourceUtil.readUtf8Str("template/email-html/about-path.txt");
         FilePathConfig.createTextFile(
-                emailHtmlAbout,
-                FilePathConfig.EmailHtmlPath,
-                "目录说明.txt"
+            """
+                当前目录为邮箱HTML模板，可以进行模板自定义
+
+                ---
+
+                验证码邮箱模板 email-verification.html:
+
+                占位符说明：
+                    {{logoUriLight}}: 浅色模式 logo Base64
+                    {{logoUriDark}}: 深色模式 logo Base64
+                    {{username}}：用户名
+                    {{email_text}}：邮箱操作内容
+                    {{code}}：验证码
+                    {{year}}：当前年份
+                    {{systemName}}：系统名称
+                """,
+            FilePathConfig.EmailHtmlPath,
+            "目录说明.txt"
         );
 
         // 邮箱验证码 HTML 模板
-        String emailVerificationText = ResourceUtil.readUtf8Str("template/email-html/email-verification.html");
         FilePathConfig.createTextFile(
-                emailVerificationText,
-                FilePathConfig.EmailHtmlPath,
-                "email-verification.html"
+            ResourceUtil.readUtf8Str("template/email-html/email-verification.html"),
+            FilePathConfig.EmailHtmlPath,
+            "email-verification.html"
         );
 
         // 默认头像
         copyDefaultAvatars();
 
+        // log 目录说明（如果目录存在）
+        if (Files.exists(Paths.get(FilePathConfig.LogPath))) {
+            FilePathConfig.createTextFile(
+                """
+                    日志文件存储目录
+
+                    该目录用于存放应用运行时的日志文件
+
+                    日志配置说明：
+                    1. 日志同时输出到控制台和文件
+                    2. 捕获所有控制台输出
+                    3. 单个日志文件最大 10MB，超过后自动滚动
+                    4. 保留最近 30 天的日志文件
+                    5. 日志总大小上限为 1GB
+                    6. 日志格式包含时间戳、级别、线程、类名等信息
+
+                    注意事项：
+                    1. 定期清理过期日志以释放磁盘空间
+                    2. 生产环境建议将日志级别设置为 INFO 或 WARN
+                    3. 开发环境可设置为 DEBUG 以便调试
+                    4. 所有控制台内容都会被完整记录到日志文件中
+                    """,
+                FilePathConfig.LogPath,
+                "目录说明.txt"
+            );
+        }
+
         // RSA 密钥目录说明（如果目录存在）
         String rsaKeyDir = FilePathConfig.KeyPath + "/rsa";
-        if (java.nio.file.Files.exists(java.nio.file.Paths.get(rsaKeyDir))) {
+        if (Files.exists(Paths.get(rsaKeyDir))) {
             FilePathConfig.createTextFile(
-                    "RSA 密钥存储目录\n\n" +
-                    "该目录用于存放 RSA 密钥对文件：\n" +
-                    "- public.key:  RSA 公钥（Base64 编码）\n" +
-                    "- private.key: RSA 私钥（Base64 编码）\n" +
-                    "\n" +
-                    "注意事项：\n" +
-                    "1. 私钥文件包含敏感信息，请妥善保管，不要泄露\n" +
-                    "2. 更换密钥后，使用旧密钥加密的数据将无法解密\n" +
-                    "3. 建议定期备份密钥文件\n" +
-                    "4. .bak 文件为密钥更换前的备份文件",
-                    rsaKeyDir,
-                    "目录说明.txt"
+                """
+                    RSA 密钥存储目录
+
+                    该目录用于存放 RSA 密钥对文件：
+                    - public.key:  RSA 公钥（Base64 编码）
+                    - private.key: RSA 私钥（Base64 编码）
+
+                    注意事项：
+                    1. 私钥文件包含敏感信息，请妥善保管，不要泄露
+                    2. 更换密钥后，使用旧密钥加密的数据将无法解密
+                    3. 建议定期备份密钥文件
+                    4. .bak 文件为密钥更换前的备份文件
+                    """,
+                rsaKeyDir,
+                "目录说明.txt"
             );
         }
     }
@@ -129,9 +177,9 @@ public class CreateFile {
             if (!Files.exists(targetPath)) {
                 try {
                     byte[] avatarBytes = ImageUtils.resizeImage(
-                            ResourceUtil.readBytes(resourceAvatarDir + "/" + fileName),
-                            600, 0,
-                            true
+                        ResourceUtil.readBytes(resourceAvatarDir + "/" + fileName),
+                        600, 0,
+                        true
                     );
                     FileUtil.writeBytes(avatarBytes, targetPath.toFile());
                     log.info("生成默认头像：{}", targetPath);

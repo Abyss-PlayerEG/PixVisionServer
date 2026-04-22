@@ -1,4 +1,4 @@
-package top.playereg.pix_vision.util.Aspect;
+package top.playereg.pix_vision.util;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import top.playereg.pix_vision.service.OperateLogService;
-import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.Annotation.LogRecord;
 
 /**
  * 日志切面 - 用于记录用户操作到数据库
