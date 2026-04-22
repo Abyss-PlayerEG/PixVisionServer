@@ -69,7 +69,7 @@
 
 #### MuYing日志设置
 #mu-ying-logging:
-#  open-highlight-color: on # 是否启用颜色(on为启用, off为关闭)
+#  open-highlight-color: false # 是否启用颜色(true-启用，false-禁用)
 
 #### 加密选项
 #mu-ying-secure: # 加密选项

@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -132,8 +131,9 @@ public class ConsoleOutputRedirector {
             // 替换文件名模板中的占位符
             String fileName = filePattern.replace("{timestamp}", timestamp);
 
-            // 构建完整路径（跨平台兼容）
-            String logFilePath = logDir + File.separator + fileName;
+            // 构建完整路径（跨平台兼容，统一使用 Paths.get 处理路径分隔符）
+            Path logPath = Paths.get(logDir, fileName);
+            String logFilePath = logPath.toString();
 
             // 调用静态初始化方法
             init(logFilePath);
