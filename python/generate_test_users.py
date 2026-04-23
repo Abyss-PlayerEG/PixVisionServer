@@ -63,7 +63,7 @@ def generate_users(count):
     used_emails = set()
 
     while len(users) < count:
-        username = f"user_{random.randint(100000, 999999)}"
+        username = f"user_{random.randint(10**8, 10**9-1)}"
         if username in used_usernames:
             continue
         used_usernames.add(username)
