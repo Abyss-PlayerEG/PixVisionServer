@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.WorksMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="top.playereg.pix_vision.pojo.Works">
+        <id column="work_id" property="work_id"/>
+        <result column="user_id" property="user_id"/>
+        <result column="work_title" property="work_title"/>
+        <result column="img_url" property="img_url"/>
+        <result column="series_id" property="series_id"/>
+        <result column="like_count" property="like_count"/>
+        <result column="star_count" property="star_count"/>
+        <result column="view_count" property="view_count"/>
+        <result column="is_original_work" property="is_original_work"/>
+        <result column="out_url" property="out_url"/>
+        <result column="is_delete" property="is_delete"/>
+        <result column="update_time" property="update_time"/>
+        <result column="update_user" property="update_user"/>
+        <result column="create_time" property="create_time"/>
+        <result column="create_user" property="create_user"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        work_id
+        , user_id, work_title, img_url, series_id, like_count, star_count, view_count, is_original_work, out_url, is_delete, update_time, update_user, create_time, create_user
+    </sql>
+
+</mapper>

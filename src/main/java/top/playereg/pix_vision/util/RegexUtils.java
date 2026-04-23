@@ -23,7 +23,12 @@ public class RegexUtils {
      * @return boolean 匹配结果
      * @author PlayerEG
      */
-    private static boolean isMatch(String regex, String text, String strType, String returnTextError) {
+    private static boolean isMatch(
+        String regex,
+        String text,
+        String strType,
+        String returnTextError
+    ) {
         if (text.matches(regex)) {
             log.info(StrUtil.format("{}格式匹配成功: {}", strType, text));
             return true;
@@ -116,6 +121,23 @@ public class RegexUtils {
                 pureNumber,
                 "纯数字",
                 "只能输入数字"
+        );
+    }
+
+    /**
+     * URL正则匹配
+     * 必须包含 http:// 或 https:// 协议头
+     *
+     * @param url 待匹配的URL
+     * @return boolean
+     * @author PlayerEG
+     */
+    public static boolean isURL(String url) {
+        return isMatch(
+            "^https?:\\/\\/([\\w-]+\\.)+[\\w-]+(\\/[\\w-./?%&=]*)?$",
+            url,
+            "URL",
+            "http://example.com 或 https://example.com/path"
         );
     }
 }

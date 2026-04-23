@@ -269,7 +269,7 @@ CREATE TABLE `tb_works` (
   `user_id` int NOT NULL COMMENT '用于链接到对应的用户数据',
   `work_title` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '作品标题，16个中文长度',
   `img_url` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '存储：/data/work_img/uuid.*\n数据库映射：uuid.*\n限制文件类型：jpg、jpeg、png\n限制大小：12mb',
-  `series_id` int NOT NULL DEFAULT '0' COMMENT '用于链接到对应的系列合集',
+  `series_id` int COMMENT '用于链接到对应的系列合集',
   `like_count` int NOT NULL DEFAULT '0' COMMENT '点赞数',
   `star_count` int NOT NULL DEFAULT '0' COMMENT '收藏数',
   `view_count` int NOT NULL DEFAULT '0' COMMENT '查看数',

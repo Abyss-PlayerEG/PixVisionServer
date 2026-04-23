@@ -172,7 +172,7 @@ public class StrSwitchUtils {
             bytes[i] = (byte) Integer.parseInt(uuid.substring(index, index + 2), 16);
         }
 
-        log.info("UUID 转换为 16 字节二进制：{} -> {}", uuid, bytes);
+        log.debug("UUID 转换为 16 字节二进制：{} -> {}", uuid, bytes);
         return bytes;
     }
 
