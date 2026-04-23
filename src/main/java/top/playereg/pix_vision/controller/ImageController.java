@@ -313,7 +313,7 @@ public class ImageController {
             ```
             """
     )
-    @PostMapping("/upload/avatar")
+    @PutMapping("/upload/avatar")
     public ResponseEntity<ResponsePojo<String>> uploadAvatar(
         @Parameter(description = "头像文件", required = true) @RequestParam MultipartFile file,
         HttpServletRequest request
@@ -533,7 +533,7 @@ public class ImageController {
             """
     )
     @RequireRole(value = {22, 77})
-    @PostMapping("/upload/work")
+    @PutMapping("/upload/work")
     public ResponseEntity<ResponsePojo<Integer>> uploadWork(
         @Parameter(description = "作品图片文件", required = true) @RequestParam MultipartFile file,
         @Parameter(description = "作品标题，最多16个中文字符", required = true, example = "春日樱花") @RequestParam String workTitle,
