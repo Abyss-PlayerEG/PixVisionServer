@@ -15,6 +15,7 @@ import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
@@ -49,10 +50,11 @@ public class UserProfileController {
      * @author PlayerEG
      */
     @GetMapping("/page/{current}/{size}")
+    @PublicAccess
     @Operation(
         summary = "分页查询用户信息",
         description = """
-            # 分页查询用户信息（需要登录认证）
+            # 分页查询用户信息（无需登录认证）
 
             ## 特性
             - Token 认证（通过拦截器自动验证）

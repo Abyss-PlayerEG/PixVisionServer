@@ -63,7 +63,7 @@ public class ImageController {
     @Operation(
         summary = "获取头像图片",
         description = """
-            # 获取用户头像图片
+            # 获取用户头像图片（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
@@ -124,7 +124,7 @@ public class ImageController {
     @Operation(
         summary = "获取作品图片",
         description = """
-            # 获取作品图片
+            # 获取作品图片（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
@@ -186,7 +186,7 @@ public class ImageController {
     @Operation(
         summary = "获取Logo图片",
         description = """
-            # 获取 Logo 图片
+            # 获取 Logo 图片（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
