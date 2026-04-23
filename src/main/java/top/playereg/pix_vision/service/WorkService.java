@@ -19,4 +19,14 @@ public interface WorkService {
      * @author PlayerEG
      */
     IPage<Works> selectHomepageWorks(Page<Works> page);
+
+    /**
+     * 批量删除作品（支持单条和批量删除）
+     *
+     * @param workIds 要删除的作品 ID 列表
+     * @param userId  当前用户 ID（用于权限验证）
+     * @return 删除结果
+     * @author PlayerEG
+     */
+    Boolean batchDeleteWorks(java.util.List<Integer> workIds, Integer userId);
 }
