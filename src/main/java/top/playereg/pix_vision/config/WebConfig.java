@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import top.playereg.pix_vision.enums.LogColor;
 import top.playereg.pix_vision.handler.JwtAuthenticationInterceptor;
 import top.playereg.pix_vision.handler.PermissionInterceptor;
 
@@ -48,12 +49,10 @@ public class WebConfig implements WebMvcConfigurer {
         int length = allowedOrigin.length;
         log.info("已有 {} 个源地址已进行跨域处理", length);
         log("\n\t允许的源地址列表：");
-        int i = 0;
-        for (String origin : allowedOrigin) {
-            i++;
-            log("\t\tURL[{}]: {}", i, origin);
-        }
-        log("");
+        int i = 1;
+        for (String origin : allowedOrigin)
+            log("\t\tURL[{}]: {}", LogColor.colorize(String.valueOf(i++), LogColor.GREEN), origin);
+        log();
         registry.addMapping("/**")
             // 允许的源地址（从配置文件读取）
             .allowedOriginPatterns(allowedOrigin)
