@@ -1,21 +1,15 @@
-package top.playereg.pix_vision.mapper;
+package top.playereg.pix_vision.service;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.apache.ibatis.annotations.Mapper;
 import top.playereg.pix_vision.pojo.Works;
 
 /**
- * 作品数据访问层
- * <p>
- * 继承 MyBatis-Plus 的 BaseMapper，自动提供 CRUD 方法
+ * 作品服务接口
  *
  * @author PlayerEG
- * @see Works
  */
-@Mapper
-public interface WorksMapper extends BaseMapper<Works> {
+public interface WorkService {
 
     /**
      * 分页查询首页作品列表
