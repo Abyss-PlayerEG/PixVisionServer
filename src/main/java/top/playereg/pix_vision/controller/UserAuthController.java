@@ -7,7 +7,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.pojo.userPojo.UserLogin;
@@ -378,7 +381,7 @@ public class UserAuthController {
      * @return 响应数据<Boolean>
      * @author PlayerEG
      */
-    @DeleteMapping("/delete-account")
+    @PostMapping("/delete-account")
     @Operation(
         summary = "用户注销接口",
         description = """

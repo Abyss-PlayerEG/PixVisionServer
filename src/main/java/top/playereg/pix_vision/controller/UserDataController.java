@@ -248,7 +248,7 @@ public class UserDataController {
      * @return 删除结果
      * @author PlayerEG
      */
-    @DeleteMapping("/delete")
+    @PostMapping("/delete")
     @Operation(
         summary = "删除用户拓展数据接口",
         description = """

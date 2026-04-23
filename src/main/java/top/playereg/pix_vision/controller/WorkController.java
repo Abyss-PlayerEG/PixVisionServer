@@ -93,7 +93,7 @@ public class WorkController {
             """
     )
     @RequireRole({22, 77})
-    @DeleteMapping("/delete")
+    @PostMapping("/delete")
     public ResponsePojo<Boolean> deleteWorks(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "要删除的作品 ID 列表（支持单条或多条）", required = true, example = "1,2,3") @RequestParam List<Integer> workIds
