@@ -79,6 +79,7 @@ public interface WorkService {
      * @param userId      当前用户 ID（用于权限验证）
      * @param workTitle   作品标题（可选，最多 16 个中文字符）
      * @param file        新的图片文件（可选，MultipartFile 类型）
+     * @param seriesId    系列 ID（可选，0 表示不属于任何系列）
      * @param isOriginal  是否原创（可选）
      * @param outUrl      外部转载链接（可选）
      * @return 修改结果
@@ -89,6 +90,7 @@ public interface WorkService {
         Integer userId,
         String workTitle,
         org.springframework.web.multipart.MultipartFile file,
+        Integer seriesId,
         Boolean isOriginal,
         String outUrl
     );

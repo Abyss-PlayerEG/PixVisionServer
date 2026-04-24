@@ -126,6 +126,9 @@
             <if test="imgUrl != null">
                 img_url = #{imgUrl},
             </if>
+            <if test="shouldUpdateSeries != null and shouldUpdateSeries">
+                series_id = #{seriesId},
+            </if>
             <if test="isOriginal != null">
                 is_original_work = #{isOriginal},
             </if>

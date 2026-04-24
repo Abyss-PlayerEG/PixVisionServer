@@ -298,6 +298,7 @@ public class WorkController {
      * @param workId     作品 ID
      * @param workTitle  作品标题（可选，最多 16 个中文字符）
      * @param file       新的图片文件（可选，MultipartFile 类型）
+     * @param seriesId   系列 ID（可选，0 表示不属于任何系列）
      * @param isOriginal 是否原创（可选）
      * @param outUrl     外部转载链接（可选）
      * @return 修改结果
@@ -322,6 +323,7 @@ public class WorkController {
             - workId: **作品 ID**，Integer 类型，必填
             - workTitle: **作品标题**，String 类型，可选，最多 16 个中文字符（48 字节）
             - file: **新的图片文件**，MultipartFile 类型，可选，仅支持 JPG/JPEG/PNG 格式，最大 32MB
+            - seriesId: **系列 ID**，Integer 类型，可选，传入 0 表示不属于任何系列（清空系列），传入正整数表示关联到对应系列
             - isOriginal: **是否原创**，Boolean 类型，可选，下拉框选择（true=原创，false=转载）
             - outUrl: **外部转载链接**，String 类型，可选，isOriginal=false 时必填
 
@@ -345,7 +347,7 @@ public class WorkController {
             2. 验证 Token 是否在白名单中
             3. 从 Token 中解析用户 ID
             4. 校验作品 ID 参数有效性
-            5. 检查是否所有修改参数都为空，如果是则返回“无修改内容”
+            5. 检查是否所有修改参数都为空，如果是则返回"无修改内容"
             6. 查询作品信息并验证所有权（只能修改自己的作品）
             7. **如果提供了新图片文件**：
                - 验证文件格式（JPG/JPEG/PNG）
@@ -356,7 +358,11 @@ public class WorkController {
             8. **验证作品标题**（如果提供）：
                - 长度不超过 48 字节（16 个中文字符）
                - 去除首尾空格
-            9. **处理原创/转载逻辑**：
+            9. **处理系列 ID**（如果提供）：
+               - **seriesId = 0**：将作品的 series_id 设置为 NULL（不属于任何系列）
+               - **seriesId > 0**：验证系列是否存在且属于当前用户，然后关联到该系列
+               - **seriesId = null**：不修改系列 ID
+            10. **处理原创/转载逻辑**：
                - **设置为原创（isOriginal=true）**：
                  * 不能填写 outUrl，否则报错
                  * 自动将 outUrl 清空为空字符串 ""（即使原来有转载链接）
@@ -366,18 +372,22 @@ public class WorkController {
                - **不修改原创状态（isOriginal=null）**：
                  * 可以单独修改 outUrl
                  * 如果提供了 outUrl，验证 URL 格式
-            10. 执行动态更新（只更新非空字段）
-            11. 返回修改结果
+            11. 执行动态更新（只更新非空字段）
+            12. 返回修改结果
 
             ## 注意事项：
             - **需要携带有效的 Token 才能修改作品**
             - Token 必须在白名单中（未过期、未登出）
             - **用户只能修改自己的作品**，无法修改他人的作品
             - 所有参数都是可选的，可以只修改部分字段
-            - **如果所有参数都为空或空字符串，将返回“无修改内容”**
+            - **如果所有参数都为空或空字符串，将返回"无修改内容"**
             - 作品标题限制：**最多 16 个中文字符**（48 字节）
             - 图片文件仅支持：**JPG、JPEG、PNG** 格式
             - 图片文件大小限制：**最大 32MB**
+            - **系列 ID 特殊规则**：
+              * seriesId = 0：将作品从系列中移除（series_id 设为 NULL）
+              * seriesId > 0：必须验证系列存在且属于当前用户
+              * seriesId = null：不修改系列 ID
             - **原创与转载链接约束**：
               * 原创作品（isOriginal=true）：不能填写 outUrl，系统会自动清空原有的转载链接
               * 转载作品（isOriginal=false）：必须提供有效的 outUrl
@@ -430,6 +440,22 @@ public class WorkController {
 
             workId: 1
             outUrl: https://new-example.com
+
+            # 示例6：将作品从系列中移除（seriesId=0）
+            POST /api/work/update
+            Content-Type: multipart/form-data
+            Authorization: Bearer <token>
+
+            workId: 1
+            seriesId: 0
+
+            # 示例7：将作品关联到新系列
+            POST /api/work/update
+            Content-Type: multipart/form-data
+            Authorization: Bearer <token>
+
+            workId: 1
+            seriesId: 5
             ```
             """
     )
@@ -440,6 +466,7 @@ public class WorkController {
         @Parameter(description = "作品 ID", required = true, example = "1") @RequestParam Integer workId,
         @Parameter(description = "作品标题（可选，最多 16 个中文字符）", required = false, example = "我的新作品") @RequestParam(required = false) String workTitle,
         @Parameter(description = "新的图片文件（可选，仅支持 JPG/JPEG/PNG，最大 32MB）", required = false) @RequestParam(required = false) MultipartFile file,
+        @Parameter(description = "系列 ID（可选，0 表示不属于任何系列）", required = false, example = "5") @RequestParam(required = false) Integer seriesId,
         @Schema(description = "是否原创", allowableValues = {"true", "false"}, example = "true") @RequestParam(required = false) Boolean isOriginal,
         @Parameter(description = "外部转载链接（可选，isOriginal=false 时必填）", required = false, example = "https://example.com") @RequestParam(required = false) String outUrl
     ) {
@@ -477,7 +504,7 @@ public class WorkController {
 
         try {
             // 调用服务层修改作品
-            Boolean result = workService.updateWork(workId, userId, workTitle, file, isOriginal, outUrl);
+            Boolean result = workService.updateWork(workId, userId, workTitle, file, seriesId, isOriginal, outUrl);
 
             // 检查是否为无修改内容
             if (result == null) {

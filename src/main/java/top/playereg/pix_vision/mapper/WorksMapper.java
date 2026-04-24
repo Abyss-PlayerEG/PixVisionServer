@@ -80,12 +80,14 @@ public interface WorksMapper extends BaseMapper<Works> {
     /**
      * 更新作品信息（SQL 层面验证用户权限）
      *
-     * @param workId     作品 ID
-     * @param userId     用户 ID（确保只能修改自己的作品）
-     * @param workTitle  作品标题（可为 null）
-     * @param imgUrl     图片 URL（可为 null）
-     * @param isOriginal 是否原创（可为 null）
-     * @param outUrl     外部转载链接（可为 null）
+     * @param workId             作品 ID
+     * @param userId             用户 ID（确保只能修改自己的作品）
+     * @param workTitle          作品标题（可为 null）
+     * @param imgUrl             图片 URL（可为 null）
+     * @param seriesId           系列 ID（可为 null，null 表示不更新或设置为 NULL）
+     * @param shouldUpdateSeries 是否应该更新 series_id（true=更新，false=不更新）
+     * @param isOriginal         是否原创（可为 null）
+     * @param outUrl             外部转载链接（可为 null）
      * @return 影响的行数
      */
     int updateWorkInfo(
@@ -93,6 +95,8 @@ public interface WorksMapper extends BaseMapper<Works> {
         @Param("userId") Integer userId,
         @Param("workTitle") String workTitle,
         @Param("imgUrl") String imgUrl,
+        @Param("seriesId") Integer seriesId,
+        @Param("shouldUpdateSeries") Boolean shouldUpdateSeries,
         @Param("isOriginal") Boolean isOriginal,
         @Param("outUrl") String outUrl
     );

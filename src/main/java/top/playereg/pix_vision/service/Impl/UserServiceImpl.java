@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.UserDataMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
@@ -19,12 +20,20 @@ import java.util.List;
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+
+    /**
+     * Redis Key 前缀：role:{user_id}
+     */
+    private static final String ROLE_CACHE_PREFIX = "role:";
+
     @Autowired
     private UserMapper userMapper;
     @Autowired
     private UserDataMapper userDataMapper;
     @Autowired
     private VerificationCodeServices verificationCodeServices;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 注册用户
@@ -116,6 +125,11 @@ public class UserServiceImpl implements UserService {
         return userMapper.selectAllUserInfoById(userId);
     }
 
+    @Override
+    public User selectUserRoleById(Integer userId) {
+        return userMapper.selectUserRoleById(userId);
+    }
+
     /**
      * 分页查询用户信息（支持关键词统一查询）
      *
@@ -134,13 +148,13 @@ public class UserServiceImpl implements UserService {
 
         // 构建查询条件对象
         User queryUser = new User();
-        
+
         if (uuidBytes != null) {
             // UUID 精确查询
             queryUser.setUser_uuid(uuidBytes);
             log.info("查询条件 - UUID: {}", StrSwitchUtils.bytes2Uuid(uuidBytes));
         }
-        
+
         if (keyword != null && !keyword.isEmpty()) {
             // 关键词模糊查询（同时搜索用户名、邮箱、昵称）
             queryUser.setUsername(keyword);
@@ -553,5 +567,86 @@ public class UserServiceImpl implements UserService {
             log.error("用户邮箱更新失败 - 用户 ID: {}", userId);
             return false;
         }
+    }
+
+    /**
+     * 清除用户角色缓存
+     * <p>
+     * 当用户角色发生变更时调用此方法，确保权限验证获取最新的角色信息
+     * </p>
+     *
+     * @param userId 用户 ID
+     */
+    @Override
+    public void clearUserRoleCache(Integer userId) {
+        try {
+            String key = ROLE_CACHE_PREFIX + userId;
+            Boolean deleted = redisTemplate.delete(key);
+            if (deleted != null && deleted) {
+                log.info("用户角色缓存已清除，用户 ID: {}", userId);
+            } else {
+                log.debug("用户角色缓存不存在或已过期，用户 ID: {}", userId);
+            }
+        } catch (Exception e) {
+            log.error("清除用户角色缓存失败，用户 ID: {}, 错误: {}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * 清除所有用户角色缓存
+     * <p>
+     * 批量删除 Redis 中所有 role: 前缀的用户角色缓存
+     * 使用 SCAN 命令避免阻塞 Redis
+     * </p>
+     *
+     * @return 清除的缓存数量
+     */
+    @Override
+    public int clearAllUserRoleCache() {
+        int clearedCount = 0;
+        try {
+            // 使用 SCAN 命令遍历所有 role: 前缀的键
+            // SCAN 是非阻塞的，比 KEYS 更安全
+            String pattern = ROLE_CACHE_PREFIX + "*";
+
+            // 使用 scan 方法，每次扫描 100 个键
+            org.springframework.data.redis.core.Cursor<byte[]> cursor = redisTemplate.executeWithStickyConnection(
+                connection -> {
+                    org.springframework.data.redis.core.ScanOptions scanOptions =
+                        org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(pattern)
+                            .count(100)
+                            .build();
+                    return connection.keyCommands().scan(scanOptions);
+                }
+            );
+
+            if (cursor != null) {
+                java.util.List<String> keysToDelete = new java.util.ArrayList<>();
+
+                // 收集所有匹配的键
+                while (cursor.hasNext()) {
+                    byte[] keyBytes = cursor.next();
+                    String key = new String(keyBytes);
+                    keysToDelete.add(key);
+                }
+
+                // 关闭 cursor
+                cursor.close();
+
+                // 批量删除
+                if (!keysToDelete.isEmpty()) {
+                    Long deletedCount = redisTemplate.delete(keysToDelete);
+                    clearedCount = deletedCount != null ? deletedCount.intValue() : 0;
+                    log.info("批量清除用户角色缓存成功 - 清除数量: {}", clearedCount);
+                } else {
+                    log.info("未找到需要清除的角色缓存");
+                }
+            }
+        } catch (Exception e) {
+            log.error("清除所有用户角色缓存失败 - 错误: {}", e.getMessage(), e);
+        }
+
+        return clearedCount;
     }
 }

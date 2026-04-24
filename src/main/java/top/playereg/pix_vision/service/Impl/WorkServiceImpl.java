@@ -279,6 +279,7 @@ public class WorkServiceImpl implements WorkService {
      * @param userId     当前用户 ID（用于权限验证）
      * @param workTitle  作品标题（可选，最多 16 个中文字符）
      * @param file       新的图片文件（可选，MultipartFile 类型）
+     * @param seriesId   系列 ID（可选，0 表示不属于任何系列）
      * @param isOriginal 是否原创（可选）
      * @param outUrl     外部转载链接（可选）
      * @return 修改结果
@@ -287,6 +288,7 @@ public class WorkServiceImpl implements WorkService {
     @Override
     public Boolean updateWork(Integer workId, Integer userId, String workTitle,
                               org.springframework.web.multipart.MultipartFile file,
+                              Integer seriesId,
                               Boolean isOriginal, String outUrl) {
         log.info("开始修改作品，作品 ID: {}, 用户 ID: {}", workId, userId);
 
@@ -304,6 +306,7 @@ public class WorkServiceImpl implements WorkService {
         // 检查是否所有参数都为空
         boolean allNull = (workTitle == null || workTitle.trim().isEmpty())
             && (file == null || file.isEmpty())
+            && seriesId == null
             && isOriginal == null
             && (outUrl == null || outUrl.trim().isEmpty());
 
@@ -407,6 +410,40 @@ public class WorkServiceImpl implements WorkService {
             workTitle = null; // 空字符串转为 null，不更新
         }
 
+        // 处理系列 ID（如果提供）
+        Integer finalSeriesId = null;
+        boolean shouldUpdateSeriesId = false; // 标记是否需要更新 series_id
+        if (seriesId != null) {
+            if (seriesId == 0) {
+                // seriesId = 0 表示清空系列，设置为 NULL
+                finalSeriesId = null;
+                shouldUpdateSeriesId = true; // 需要更新为 NULL
+                log.info("将作品从系列中移除，作品 ID: {}", workId);
+            } else if (seriesId > 0) {
+                // seriesId > 0 需要验证系列是否存在且属于当前用户
+                Series series = seriesMapper.selectSeriesById(seriesId);
+                if (series == null || series.getIs_delete()) {
+                    log.warn("系列不存在或已删除，系列 ID: {}", seriesId);
+                    throw new IllegalArgumentException("系列不存在或已删除");
+                }
+
+                // 验证系列是否属于当前用户
+                if (!series.getUser_id().equals(userId)) {
+                    log.warn("无权将作品关联到该系列，系列 ID: {}, 用户 ID: {}", seriesId, userId);
+                    throw new SecurityException("无权将作品关联到该系列");
+                }
+
+                // 系列验证通过，使用传入的 seriesId
+                finalSeriesId = seriesId;
+                shouldUpdateSeriesId = true; // 需要更新为具体值
+                log.info("将作品关联到系列，作品 ID: {}, 系列 ID: {}", workId, seriesId);
+            } else {
+                // seriesId < 0 是无效值
+                log.warn("无效的系列 ID: {}", seriesId);
+                throw new IllegalArgumentException("系列 ID 不能为负数");
+            }
+        }
+
         // 验证转载链接（处理原创/转载逻辑）
         Boolean finalIsOriginal = isOriginal;
         String finalOutUrl = outUrl;
@@ -450,8 +487,8 @@ public class WorkServiceImpl implements WorkService {
             }
         }
 
-        // 执行更新（使用 newImgUrl）
-        int affectedRows = worksMapper.updateWorkInfo(workId, userId, workTitle, newImgUrl, finalIsOriginal, finalOutUrl);
+        // 执行更新（使用 newImgUrl、finalSeriesId 和 shouldUpdateSeriesId）
+        int affectedRows = worksMapper.updateWorkInfo(workId, userId, workTitle, newImgUrl, finalSeriesId, shouldUpdateSeriesId, finalIsOriginal, finalOutUrl);
 
         if (affectedRows > 0) {
             log.info("作品修改成功，作品 ID: {}, 用户 ID: {}", workId, userId);
