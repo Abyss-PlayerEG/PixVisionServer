@@ -56,7 +56,7 @@ public interface UserService {
      * @param email    邮箱（可选）
      * @return 分页用户列表
      */
-    IPage<User> selectPageUserInfo(IPage<User> page, String username, byte[] uuid, String email);
+    IPage<User> selectPageUserInfo(IPage<User> page, String username, byte[] uuid, String email, String nickname);
 
     /**
      * 用户密码修改（通过邮箱）

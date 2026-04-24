@@ -99,6 +99,9 @@
         <if test="user.email != null and user.email != ''">
             AND email LIKE CONCAT('%', #{user.email}, '%')
         </if>
+        <if test="user.nickname != null and user.nickname != ''">
+            AND nickname LIKE CONCAT('%', #{user.nickname}, '%')
+        </if>
         <if test="user.user_uuid != null">
             AND user_uuid = #{user.user_uuid}
         </if>

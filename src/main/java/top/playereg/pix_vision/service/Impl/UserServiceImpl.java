@@ -130,7 +130,8 @@ public class UserServiceImpl implements UserService {
         IPage<User> page,
             String username,
             byte[] uuid,
-            String email
+            String email,
+            String nickname
     ) {
         log.info("分页查询用户信息");
 
@@ -147,6 +148,10 @@ public class UserServiceImpl implements UserService {
         if (email != null && !email.isEmpty()) {
             queryUser.setEmail(email);
             log.info("查询条件 - 邮箱：{}", email);
+        }
+        if (nickname != null && !nickname.isEmpty()) {
+            queryUser.setNickname(nickname);
+            log.info("查询条件 - 昵称：{}", nickname);
         }
 
         log.info("执行分页查询");
