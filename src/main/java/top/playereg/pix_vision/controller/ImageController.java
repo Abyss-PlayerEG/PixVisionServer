@@ -2,6 +2,7 @@ package top.playereg.pix_vision.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -530,7 +531,7 @@ public class ImageController {
         @Parameter(description = "作品图片文件", required = true) @RequestParam MultipartFile file,
         @Parameter(description = "作品标题，最多16个中文字符", required = true, example = "春日樱花") @RequestParam String workTitle,
         @Parameter(description = "系列 ID（0 表示不属于任何系列）", required = false, example = "1") @RequestParam(required = false, defaultValue = "0") Integer seriesId,
-        @Parameter(description = "是否原创：true-原创，false-转载", required = true, example = "true") @RequestParam Boolean isOriginal,
+        @Schema(description = "是否原创", allowableValues = {"true", "false"}, example = "true") @RequestParam Boolean isOriginal,
         @Parameter(description = "外部转载链接（仅转载时必填）", required = false, example = "https://example.com/original") @RequestParam(required = false) String outUrl,
         HttpServletRequest request
     ) {

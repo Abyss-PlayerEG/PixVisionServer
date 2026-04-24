@@ -93,4 +93,35 @@
           AND is_delete = 0
     </select>
 
+    <!-- 根据作品 ID 查询作品信息 -->
+    <select id="selectWorkById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tb_works
+        WHERE work_id = #{workId}
+    </select>
+
+    <!-- 更新作品信息（SQL 层面验证用户权限，动态更新非空字段） -->
+    <update id="updateWorkInfo">
+        UPDATE tb_works
+        <set>
+            <if test="workTitle != null">
+                work_title = #{workTitle},
+            </if>
+            <if test="imgUrl != null">
+                img_url = #{imgUrl},
+            </if>
+            <if test="isOriginal != null">
+                is_original_work = #{isOriginal},
+            </if>
+            <if test="outUrl != null">
+                out_url = #{outUrl},
+            </if>
+            update_time = NOW(),
+            update_user = #{userId}
+        </set>
+        WHERE work_id = #{workId}
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
 </mapper>

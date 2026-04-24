@@ -56,4 +56,32 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @return 作品 ID 列表
      */
     java.util.List<Integer> selectWorkIdsBySeriesId(@Param("seriesId") Integer seriesId, @Param("userId") Integer userId);
+
+    /**
+     * 根据作品 ID 查询作品信息
+     *
+     * @param workId 作品 ID
+     * @return 作品对象
+     */
+    Works selectWorkById(@Param("workId") Integer workId);
+
+    /**
+     * 更新作品信息（SQL 层面验证用户权限）
+     *
+     * @param workId     作品 ID
+     * @param userId     用户 ID（确保只能修改自己的作品）
+     * @param workTitle  作品标题（可为 null）
+     * @param imgUrl     图片 URL（可为 null）
+     * @param isOriginal 是否原创（可为 null）
+     * @param outUrl     外部转载链接（可为 null）
+     * @return 影响的行数
+     */
+    int updateWorkInfo(
+        @Param("workId") Integer workId,
+        @Param("userId") Integer userId,
+        @Param("workTitle") String workTitle,
+        @Param("imgUrl") String imgUrl,
+        @Param("isOriginal") Boolean isOriginal,
+        @Param("outUrl") String outUrl
+    );
 }

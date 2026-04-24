@@ -59,4 +59,25 @@ public interface WorkService {
         Boolean isOriginal,
         String outUrl
     );
+
+    /**
+     * 修改作品信息（支持部分字段修改）
+     *
+     * @param workId      作品 ID
+     * @param userId      当前用户 ID（用于权限验证）
+     * @param workTitle   作品标题（可选，最多 16 个中文字符）
+     * @param file        新的图片文件（可选，MultipartFile 类型）
+     * @param isOriginal  是否原创（可选）
+     * @param outUrl      外部转载链接（可选）
+     * @return 修改结果
+     * @author PlayerEG
+     */
+    Boolean updateWork(
+        Integer workId,
+        Integer userId,
+        String workTitle,
+        org.springframework.web.multipart.MultipartFile file,
+        Boolean isOriginal,
+        String outUrl
+    );
 }

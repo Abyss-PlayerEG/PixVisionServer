@@ -4,12 +4,14 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.TokenWhitelistService;
@@ -239,5 +241,155 @@ public class WorkController {
             current, size, result.getTotal(), result.getRecords().size());
 
         return ResponsePojo.success(result, "查询成功");
+    }
+
+    /**
+     * 修改作品信息（支持部分字段修改）
+     *
+     * @param request    HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param workId     作品 ID
+     * @param workTitle  作品标题（可选，最多 16 个中文字符）
+     * @param file       新的图片文件（可选，MultipartFile 类型）
+     * @param isOriginal 是否原创（可选）
+     * @param outUrl     外部转载链接（可选）
+     * @return 修改结果
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "修改作品信息接口",
+        description = """
+            # 修改作品信息（需要登录认证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 支持部分字段修改（所有参数可选）
+            - 支持重新上传图片（MultipartFile）
+            - SQL 层面权限验证（只能修改自己的作品）
+            - 动态更新非空字段
+            - 完整的参数校验
+            - 自动删除旧图片文件
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - workId: 作品 ID，Integer 类型，必填
+            - workTitle: 作品标题，字符串类型，可选，最多 16 个中文字符（48 字节）
+            - file: 新的图片文件，MultipartFile 类型，可选，仅支持 JPG/JPEG/PNG 格式，最大 32MB
+            - isOriginal: 是否原创，Boolean 类型，可选（true=原创，false=转载）
+            - outUrl: 外部转载链接，字符串类型，可选，如果 isOriginal=false 则必填
+
+            ## 返回说明：
+            - **修改成功**：返回 **{"data": true}** 和“作品修改成功”提示
+            - **无修改内容**：返回 **{"data": null}** 和“无修改内容”提示（所有参数均为空）
+            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
+            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
+            - **作品 ID 无效**：返回 **{"data": false}** 和“作品 ID 无效”提示
+            - **无权修改**：返回 **{"data": false}** 和“无权修改该作品”提示（作品不属于当前用户）
+            - **作品不存在**：返回 **{"data": false}** 和“作品不存在或已删除”提示
+            - **标题过长**：返回 **{"data": false}** 和“作品标题过长”提示
+            - **格式错误**：返回 **{"data": false}** 和相应的格式错误提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验作品 ID 参数有效性
+            5. 检查是否所有修改参数都为空，如果是则返回“无修改内容”
+            6. 查询作品信息并验证所有权（只能修改自己的作品）
+            7. 如果提供了新图片文件：
+               - 验证文件格式（JPG/JPEG/PNG）
+               - 验证文件大小（最大 32MB）
+               - 验证图片真实性（魔数检查）
+               - 生成唯一文件名（UUID）并保存
+               - 删除旧图片文件（重命名为 .del）
+            8. 验证其他提供的参数：
+               - 作品标题：长度不超过 48 字节（16 个中文字符）
+               - 转载链接：如果设置为非原创，必须提供有效的 URL
+            9. 执行动态更新（只更新非空字段）
+            10. 返回修改结果
+
+            ## 注意事项：
+            - **需要携带有效的 Token 才能修改作品**
+            - Token 必须在白名单中（未过期、未登出）
+            - **用户只能修改自己的作品**，无法修改他人的作品
+            - 所有参数都是可选的，可以只修改部分字段
+            - **如果所有参数都为空或空字符串，将返回“无修改内容”**
+            - 作品标题限制：**最多 16 个中文字符**（48 字节）
+            - 图片文件仅支持：**JPG、JPEG、PNG** 格式
+            - 图片文件大小限制：**最大 32MB**
+            - 如果设置 isOriginal=false，必须提供有效的 outUrl
+            - 采用动态更新机制，只提供要修改的字段即可
+            - 上传新图片后，旧图片会被自动删除（重命名为 .del）
+            - 修改成功后，update_time 和 update_user 会自动更新
+            """
+    )
+    @RequireRole({22, 77})
+    @PostMapping("/update")
+    public ResponsePojo<Boolean> updateWork(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "作品 ID", required = true, example = "1") @RequestParam Integer workId,
+        @Parameter(description = "作品标题（可选，最多 16 个中文字符）", required = false, example = "我的新作品") @RequestParam(required = false) String workTitle,
+        @Parameter(description = "新的图片文件（可选，仅支持 JPG/JPEG/PNG，最大 32MB）", required = false) @RequestParam(required = false) MultipartFile file,
+        @Schema(description = "是否原创", allowableValues = {"true", "false"}, example = "true") @RequestParam(required = false) Boolean isOriginal,
+        @Parameter(description = "外部转载链接（可选，isOriginal=false 时必填）", required = false, example = "https://example.com") @RequestParam(required = false) String outUrl
+    ) {
+        log.debug("修改作品 - 作品 ID: {}", workId);
+
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "修改作品接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("修改作品失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始修改作品，用户 ID: {}, 用户名: {}, 作品 ID: {}", userId, username, workId);
+
+        // 校验作品 ID 参数
+        if (workId == null || workId <= 0) {
+            log.warn("作品 ID 无效，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "作品 ID 无效");
+        }
+
+        try {
+            // 调用服务层修改作品
+            Boolean result = workService.updateWork(workId, userId, workTitle, file, isOriginal, outUrl);
+
+            // 检查是否为无修改内容
+            if (result == null) {
+                log.info("无修改内容，用户 ID: {}, 用户名: {}, 作品 ID: {}", userId, username, workId);
+                return ResponsePojo.error(null, "无修改内容");
+            }
+
+            if (result) {
+                log.info("作品修改成功，用户 ID: {}, 用户名: {}, 作品 ID: {}", userId, username, workId);
+                return ResponsePojo.success(true, "作品修改成功");
+            } else {
+                log.warn("作品修改失败，用户 ID: {}, 用户名: {}, 作品 ID: {}", userId, username, workId);
+                return ResponsePojo.error(false, "作品修改失败");
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("参数验证失败，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
+        } catch (SecurityException e) {
+            log.warn("权限验证失败，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
+        } catch (Exception e) {
+            log.error("作品修改异常，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage(), e);
+            return ResponsePojo.error(false, "作品修改失败：" + e.getMessage());
+        }
     }
 }
