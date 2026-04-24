@@ -12,6 +12,7 @@ import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
+import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
 
 import java.util.List;
@@ -46,10 +47,11 @@ public class SeriesController {
      * @author PlayerEG
      */
     @PostMapping("/add")
+    @RequireRole({22,77})
     @Operation(
         summary = "新增作品系列接口",
         description = """
-            # 新增作品系列（需要登录认证）
+            # 新增作品系列（需要登录认证 + 角色权限[22,77]）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -247,10 +249,11 @@ public class SeriesController {
      * @author PlayerEG
      */
     @PostMapping("/delete")
+    @RequireRole({22,77})
     @Operation(
         summary = "删除作品系列接口",
         description = """
-            # 删除作品系列（需要登录认证）
+            # 删除作品系列（需要登录认证 + 角色权限[22,77]）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）

@@ -46,7 +46,7 @@ public class WorkController {
     @Operation(
         summary = "删除作品接口",
         description = """
-            # 删除作品（需要登录认证）
+            # 删除作品（需要登录认证 + 角色权限[22,77]）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
