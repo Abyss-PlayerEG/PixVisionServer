@@ -29,8 +29,20 @@
 
     <!-- 分页查询首页作品列表（未删除，按创建时间倒序） -->
     <select id="selectHomepageWorks" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
+        SELECT work_id,
+               user_id,
+               work_title,
+               img_url,
+               series_id,
+               like_count,
+               star_count,
+               view_count,
+               is_original_work,
+               out_url,
+               update_time,
+               update_user,
+               create_time,
+               create_user
         FROM tb_works
         WHERE is_delete = 0
         ORDER BY create_time DESC

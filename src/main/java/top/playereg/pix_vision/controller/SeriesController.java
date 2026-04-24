@@ -6,15 +6,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
+
+import java.util.List;
 
 /**
  * 系列管理控制器
@@ -141,6 +141,99 @@ public class SeriesController {
         } else {
             log.error("系列新增失败，用户 ID: {}", userId);
             return ResponsePojo.error(null, "系列新增失败");
+        }
+    }
+
+    /**
+     * 查询用户的所有作品系列
+     *
+     * @param userId 用户 ID
+     * @return 作品系列列表
+     * @author PlayerEG
+     */
+    @GetMapping("/list")
+    @PublicAccess("查询用户作品系列，无需认证")
+    @Operation(
+        summary = "查询用户作品系列接口",
+        description = """
+            # 查询用户作品系列（无需登录认证）
+
+            ## 特性
+            - 公开接口（无需 Token 认证）
+            - 自动过滤逻辑删除数据
+            - 按创建时间倒序排列
+
+            ## 参数说明：
+            - userId: 用户 ID，Integer 类型，必填
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": [Series 列表]}** ，包含用户的所有作品系列
+            - **用户 ID 无效**：返回 **{"data": null}** 和“用户 ID 无效”提示
+            - **查询失败**：返回 **{"data": null}** 和“查询失败”提示
+
+            ## 返回数据结构：
+            ```json
+            {
+              "code": 200,
+              "data": [
+                {
+                  "series_id": 1,
+                  "user_id": 1,
+                  "series_title": "我的作品集",
+                  "about_text": "这是一个展示我作品的系列",
+                  "update_time": "2024-01-01 12:00:00",
+                  "update_user": 1,
+                  "create_time": "2024-01-01 12:00:00",
+                  "create_user": 1
+                },
+                {
+                  "series_id": 2,
+                  "user_id": 1,
+                  "series_title": "风景摄影",
+                  "about_text": "自然风光摄影作品",
+                  "update_time": "2024-01-02 15:30:00",
+                  "update_user": 1,
+                  "create_time": "2024-01-02 15:30:00",
+                  "create_user": 1
+                }
+              ],
+              "message": "查询成功"
+            }
+            ```
+
+            ## 业务逻辑：
+            1. 校验用户 ID 参数有效性
+            2. 查询用户的所有作品系列（自动排除逻辑删除的数据）
+            3. 按创建时间倒序返回结果
+            4. 返回系列列表
+
+            ## 注意事项：
+            - **此接口为公开接口，无需登录即可访问**
+            - 自动过滤已逻辑删除的数据（is_delete=0）
+            - 返回结果按创建时间倒序排列（最新的在前）
+            - 如果用户没有作品系列，返回空列表 []
+            """
+    )
+    public ResponsePojo<List<Series>> getSeriesList(
+        @Parameter(description = "用户 ID", required = true, example = "1") @RequestParam Integer userId
+    ) {
+        log.debug("查询用户作品系列 - 用户 ID: {}", userId);
+
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return ResponsePojo.error(null, "用户 ID 无效");
+        }
+
+        // 调用服务层查询
+        List<Series> seriesList = seriesService.getSeriesByUserId(userId);
+
+        if (seriesList != null) {
+            log.info("查询成功 - 用户 ID: {}, 系列数量: {}", userId, seriesList.size());
+            return ResponsePojo.success(seriesList, "查询成功");
+        } else {
+            log.error("查询失败 - 用户 ID: {}", userId);
+            return ResponsePojo.error(null, "查询失败");
         }
     }
 }

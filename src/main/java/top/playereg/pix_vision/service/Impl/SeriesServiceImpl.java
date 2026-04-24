@@ -8,6 +8,7 @@ import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.service.SeriesService;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * 系列服务实现类
@@ -62,5 +63,33 @@ public class SeriesServiceImpl implements SeriesService {
             log.error("系列新增失败，用户 ID: {}", userId);
             return null;
         }
+    }
+
+    /**
+     * 根据用户 ID 查询所有作品系列
+     *
+     * @param userId 用户 ID
+     * @return 作品系列列表
+     */
+    @Override
+    public List<Series> getSeriesByUserId(Integer userId) {
+        log.debug("查询用户作品系列 - 用户 ID: {}", userId);
+
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return null;
+        }
+
+        // 调用 Mapper 查询
+        List<Series> seriesList = seriesMapper.selectSeriesByUserId(userId);
+
+        if (seriesList != null) {
+            log.info("查询成功 - 用户 ID: {}, 系列数量: {}", userId, seriesList.size());
+        } else {
+            log.warn("查询失败 - 用户 ID: {}", userId);
+        }
+
+        return seriesList;
     }
 }
