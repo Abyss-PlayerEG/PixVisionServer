@@ -271,11 +271,11 @@ public class WorkController {
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
-            - workId: 作品 ID，Integer 类型，必填
-            - workTitle: 作品标题，字符串类型，可选，最多 16 个中文字符（48 字节）
-            - file: 新的图片文件，MultipartFile 类型，可选，仅支持 JPG/JPEG/PNG 格式，最大 32MB
-            - isOriginal: 是否原创，Boolean 类型，可选（true=原创，false=转载）
-            - outUrl: 外部转载链接，字符串类型，可选，如果 isOriginal=false 则必填
+            - workId: **作品 ID**，Integer 类型，必填
+            - workTitle: **作品标题**，String 类型，可选，最多 16 个中文字符（48 字节）
+            - file: **新的图片文件**，MultipartFile 类型，可选，仅支持 JPG/JPEG/PNG 格式，最大 32MB
+            - isOriginal: **是否原创**，Boolean 类型，可选，下拉框选择（true=原创，false=转载）
+            - outUrl: **外部转载链接**，String 类型，可选，isOriginal=false 时必填
 
             ## 返回说明：
             - **修改成功**：返回 **{"data": true}** 和“作品修改成功”提示
@@ -286,7 +286,11 @@ public class WorkController {
             - **无权修改**：返回 **{"data": false}** 和“无权修改该作品”提示（作品不属于当前用户）
             - **作品不存在**：返回 **{"data": false}** 和“作品不存在或已删除”提示
             - **标题过长**：返回 **{"data": false}** 和“作品标题过长”提示
-            - **格式错误**：返回 **{"data": false}** 和相应的格式错误提示
+            - **文件格式错误**：返回 **{"data": false}** 和“不支持的文件格式”提示
+            - **文件大小超限**：返回 **{"data": false}** 和“文件大小超出限制”提示
+            - **原创作品填写链接**：返回 **{"data": false}** 和“原创作品不能填写外部链接”提示
+            - **转载缺少链接**：返回 **{"data": false}** 和“转载作品必须提供外部链接”提示
+            - **URL 格式错误**：返回 **{"data": false}** 和“外部链接格式不正确”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
@@ -295,17 +299,27 @@ public class WorkController {
             4. 校验作品 ID 参数有效性
             5. 检查是否所有修改参数都为空，如果是则返回“无修改内容”
             6. 查询作品信息并验证所有权（只能修改自己的作品）
-            7. 如果提供了新图片文件：
+            7. **如果提供了新图片文件**：
                - 验证文件格式（JPG/JPEG/PNG）
                - 验证文件大小（最大 32MB）
                - 验证图片真实性（魔数检查）
                - 生成唯一文件名（UUID）并保存
                - 删除旧图片文件（重命名为 .del）
-            8. 验证其他提供的参数：
-               - 作品标题：长度不超过 48 字节（16 个中文字符）
-               - 转载链接：如果设置为非原创，必须提供有效的 URL
-            9. 执行动态更新（只更新非空字段）
-            10. 返回修改结果
+            8. **验证作品标题**（如果提供）：
+               - 长度不超过 48 字节（16 个中文字符）
+               - 去除首尾空格
+            9. **处理原创/转载逻辑**：
+               - **设置为原创（isOriginal=true）**：
+                 * 不能填写 outUrl，否则报错
+                 * 自动将 outUrl 清空为空字符串 ""（即使原来有转载链接）
+               - **设置为转载（isOriginal=false）**：
+                 * 必须提供有效的 outUrl
+                 * 验证 URL 格式
+               - **不修改原创状态（isOriginal=null）**：
+                 * 可以单独修改 outUrl
+                 * 如果提供了 outUrl，验证 URL 格式
+            10. 执行动态更新（只更新非空字段）
+            11. 返回修改结果
 
             ## 注意事项：
             - **需要携带有效的 Token 才能修改作品**
@@ -316,10 +330,59 @@ public class WorkController {
             - 作品标题限制：**最多 16 个中文字符**（48 字节）
             - 图片文件仅支持：**JPG、JPEG、PNG** 格式
             - 图片文件大小限制：**最大 32MB**
-            - 如果设置 isOriginal=false，必须提供有效的 outUrl
+            - **原创与转载链接约束**：
+              * 原创作品（isOriginal=true）：不能填写 outUrl，系统会自动清空原有的转载链接
+              * 转载作品（isOriginal=false）：必须提供有效的 outUrl
             - 采用动态更新机制，只提供要修改的字段即可
             - 上传新图片后，旧图片会被自动删除（重命名为 .del）
             - 修改成功后，update_time 和 update_user 会自动更新
+            - isOriginal 参数使用下拉框选择，避免输入错误
+
+            ## 使用示例：
+            ```
+            # 示例1：只修改标题（不上传图片）
+            POST /api/work/update
+            Content-Type: multipart/form-data
+            Authorization: Bearer <token>
+            
+            workId: 1
+            workTitle: 春日樱花
+            
+            # 示例2：上传新图片并修改标题
+            POST /api/work/update
+            Content-Type: multipart/form-data
+            Authorization: Bearer <token>
+            
+            workId: 1
+            file: [binary image data]
+            workTitle: 新标题
+            
+            # 示例3：将转载作品改为原创（自动清空 outUrl）
+            POST /api/work/update
+            Content-Type: multipart/form-data
+            Authorization: Bearer <token>
+            
+            workId: 1
+            isOriginal: true
+            # outUrl 不填或填空，系统会自动清空原有的转载链接
+            
+            # 示例4：将原创作品改为转载
+            POST /api/work/update
+            Content-Type: multipart/form-data
+            Authorization: Bearer <token>
+            
+            workId: 1
+            isOriginal: false
+            outUrl: https://example.com/original
+            
+            # 示例5：只修改外部链接（不改原创状态）
+            POST /api/work/update
+            Content-Type: multipart/form-data
+            Authorization: Bearer <token>
+            
+            workId: 1
+            outUrl: https://new-example.com
+            ```
             """
     )
     @RequireRole({22, 77})
