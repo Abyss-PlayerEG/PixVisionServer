@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.playereg.pix_vision.pojo.Works;
 
+import java.util.List;
+
 /**
  * 作品服务接口
  *
@@ -28,7 +30,10 @@ public interface WorkService {
      * @return 删除结果
      * @author PlayerEG
      */
-    Boolean batchDeleteWorks(java.util.List<Integer> workIds, Integer userId);
+    Boolean batchDeleteWorks(
+        List<Integer> workIds,
+        Integer userId
+    );
 
     /**
      * 上传作品图片
@@ -44,6 +49,14 @@ public interface WorkService {
      * @return 新创建的作品 ID
      * @author PlayerEG
      */
-    Integer uploadWork(Integer userId, byte[] fileBytes, String fileName, long fileSize,
-                       String workTitle, Integer seriesId, Boolean isOriginal, String outUrl);
+    Integer uploadWork(
+        Integer userId,
+        byte[] fileBytes,
+        String fileName,
+        long fileSize,
+        String workTitle,
+        Integer seriesId,
+        Boolean isOriginal,
+        String outUrl
+    );
 }

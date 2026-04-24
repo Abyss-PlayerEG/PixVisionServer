@@ -127,7 +127,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public IPage<User> selectPageUserInfo(
-            IPage<?> page,
+        IPage<User> page,
             String username,
             byte[] uuid,
             String email
