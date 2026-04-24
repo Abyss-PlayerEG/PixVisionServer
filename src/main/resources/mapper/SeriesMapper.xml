@@ -21,4 +21,25 @@
         , user_id, series_title, about_text, is_delete, update_time, update_user, create_time, create_user
     </sql>
 
+    <!-- 新增作品系列 -->
+    <insert id="insertSeries" parameterType="top.playereg.pix_vision.pojo.Series" useGeneratedKeys="true"
+            keyProperty="series_id">
+        INSERT INTO tb_series (user_id,
+                               series_title,
+                               about_text,
+                               is_delete,
+                               update_time,
+                               update_user,
+                               create_time,
+                               create_user)
+        VALUES (#{user_id},
+                #{series_title},
+                #{about_text},
+                0,
+                #{update_time},
+                #{update_user},
+                #{create_time},
+                #{create_user})
+    </insert>
+
 </mapper>

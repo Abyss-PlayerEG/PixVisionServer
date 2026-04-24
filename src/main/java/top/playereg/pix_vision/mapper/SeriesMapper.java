@@ -14,4 +14,12 @@ import top.playereg.pix_vision.pojo.Series;
  */
 @Mapper
 public interface SeriesMapper extends BaseMapper<Series> {
+
+    /**
+     * 新增作品系列
+     *
+     * @param series 系列对象（包含用户 ID、标题、描述等）
+     * @return 影响的行数
+     */
+    int insertSeries(Series series);
 }
