@@ -107,5 +107,5 @@ public @interface RequireRole {
      *
      * @return 是否允许更高权限
      */
-    boolean allowHigher() default true;
+    boolean allowHigher() default false;
 }
