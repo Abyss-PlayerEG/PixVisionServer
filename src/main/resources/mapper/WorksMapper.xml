@@ -27,25 +27,41 @@
         , user_id, work_title, img_url, series_id, like_count, star_count, view_count, is_original_work, out_url, is_delete, update_time, update_user, create_time, create_user
     </sql>
 
-    <!-- 分页查询首页作品列表（未删除，按创建时间倒序） -->
+    <!-- 分页查询首页作品列表（支持多条件查询，未删除，按创建时间倒序） -->
     <select id="selectHomepageWorks" resultMap="BaseResultMap">
-        SELECT work_id,
-               user_id,
-               work_title,
-               img_url,
-               series_id,
-               like_count,
-               star_count,
-               view_count,
-               is_original_work,
-               out_url,
-               update_time,
-               update_user,
-               create_time,
-               create_user
-        FROM tb_works
-        WHERE is_delete = 0
-        ORDER BY create_time DESC
+        SELECT w.work_id,
+               w.user_id,
+               w.work_title,
+               w.img_url,
+               w.series_id,
+               w.like_count,
+               w.star_count,
+               w.view_count,
+               w.is_original_work,
+               w.out_url,
+               w.update_time,
+               w.update_user,
+               w.create_time,
+               w.create_user
+        FROM tb_works w
+        LEFT JOIN tb_user u ON w.user_id = u.user_id
+        WHERE w.is_delete = 0
+        <if test="workTitle != null and workTitle != ''">
+            AND w.work_title LIKE CONCAT('%', #{workTitle}, '%')
+        </if>
+        <if test="userId != null">
+            AND w.user_id = #{userId}
+        </if>
+        <if test="username != null and username != ''">
+            AND u.username LIKE CONCAT('%', #{username}, '%')
+        </if>
+        <if test="nickname != null and nickname != ''">
+            AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
+        </if>
+        <if test="isOriginal != null">
+            AND w.is_original_work = #{isOriginal}
+        </if>
+        ORDER BY w.create_time DESC
     </select>
 
     <!-- 批量逻辑删除作品（SQL 层面验证用户权限） -->

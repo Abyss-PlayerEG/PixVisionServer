@@ -147,75 +147,123 @@ public class WorkController {
     }
 
     /**
-     * 获取首页作品列表（分页）
+     * 分页查询作品列表（支持多条件查询）
      *
-     * @param current 页码，从 1 开始
-     * @param size    每页大小，范围 1-100
+     * @param current    当前页码（从 1 开始）
+     * @param size       每页大小
+     * @param workTitle  作品标题（可选，模糊查询）
+     * @param userId     用户 ID（可选，精确查询）
+     * @param username   用户名（可选，模糊查询）
+     * @param nickname   昵称（可选，模糊查询）
+     * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页作品列表
      * @author PlayerEG
      */
     @Operation(
-        summary = "获取首页作品列表",
+        summary = "分页查询作品列表",
         description = """
-            # 获取首页作品列表（无需登录认证）
+            # 分页查询作品列表（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
-            - 分页查询
+            - MyBatis-Plus 分页支持
+            - 多条件组合查询（作品标题/用户 ID/是否原创）
+            - 模糊匹配与精确匹配
             - 仅返回未删除的作品
             - 按创建时间倒序排列（最新作品优先）
-            - 返回完整作品实体信息
 
             ## 参数说明：
-            - current: **页码**，长整数类型，必填，从 1 开始
-            - size: **每页大小**，长整数类型，必填，范围 1-100
+            - current: **当前页码**，Long 类型，必填，**从 1 开始**，默认为 1
+            - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
+            - workTitle: **作品标题**（可选），String 类型，支持模糊查询
+            - userId: **用户 ID**（可选），Integer 类型，支持精确查询
+            - username: **用户名**（可选），String 类型，支持模糊查询
+            - nickname: **昵称**（可选），String 类型，支持模糊查询
+            - isOriginal: **是否原创**（可选），Boolean 类型，支持精确查询（true=原创，false=转载）
 
             ## 返回说明：
-            - **查询成功**：返回 **{"data": IPage<Works>}** 和提示信息
-              - records: 作品列表（包含完整 Works 实体字段）
-              - total: 总记录数
-              - current: 当前页码
-              - size: 每页大小
-              - pages: 总页数
-            - **参数错误**：返回 **{"data": null}** 和错误提示
+            - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
+            - **参数错误**：返回 **{"data": null}** 和“页码或每页大小错误”提示
             - **无数据**：返回 **{"data": null}** 和“查询失败，返回结果为空”提示
 
+            ## 返回数据结构：
+            ```json
+            {
+              "code": 200,
+              "data": {
+                "records": [作品对象列表],
+                "total": 总记录数,
+                "size": 每页大小,
+                "current": 当前页,
+                "pages": 总页数
+              },
+              "message": "查询成功"
+            }
+            ```
+
             ## 业务逻辑：
-            1. 校验分页参数（current >= 1, size 在 1-100 范围内）
+            1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
             2. 构建 MyBatis-Plus 分页对象
-            3. 查询未删除的作品（is_delete = false）
-            4. 按创建时间倒序排列（create_time DESC）
-            5. 返回分页结果集（IPage<Works>）
+            3. 根据条件查询作品信息（支持多条件组合）
+            4. 仅返回未删除的作品（is_delete = false）
+            5. 按创建时间倒序排列（create_time DESC）
+            6. 返回分页结果集（IPage<Works>）
 
             ## 注意事项：
-            - 该接口**无需认证**，任何人都可以访问
-            - 仅返回**未删除**的作品（is_delete = false）
-            - 作品按**创建时间倒序**排列，最新作品在前
+            - 所有查询条件均为**可选参数**，可不传
+            - 支持多个条件组合查询
+            - 作品标题、用户名、昵称支持**模糊匹配**
+            - 用户 ID 和是否原创支持**精确匹配**
+            - 默认返回完整 Works 实体字段
+            - 已自动过滤逻辑删除的作品（is_delete=0）
+            - 每页大小限制：**1-100**
             - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
-            - 每页大小限制：**1-100**，超出范围会返回错误
-            - 返回完整的 Works 实体，包含所有字段
             - 使用 **RESTful 风格**路径参数，格式：`/homepage/{current}/{size}`
 
             ## 使用示例：
             ```
-            # 获取第 1 页，每页 10 条
+            # 示例1：获取第 1 页，每页 10 条（无条件查询）
             GET /api/work/homepage/1/10
 
-            # 获取第 2 页，每页 20 条
-            GET /api/work/homepage/2/20
+            # 示例2：根据作品标题模糊查询
+            GET /api/work/homepage/1/10?workTitle=樱花
 
-            # 获取第 1 页，每页 50 条
-            GET /api/work/homepage/1/50
+            # 示例3：根据用户 ID 精确查询
+            GET /api/work/homepage/1/10?userId=123
+
+            # 示例4：根据用户名模糊查询
+            GET /api/work/homepage/1/10?username=admin
+
+            # 示例5：根据昵称模糊查询
+            GET /api/work/homepage/1/10?nickname=测试用户
+
+            # 示例6：查询原创作品
+            GET /api/work/homepage/1/10?isOriginal=true
+
+            # 示例7：组合查询（某用户的原创作品）
+            GET /api/work/homepage/1/10?userId=123&isOriginal=true
+
+            # 示例8：组合查询（某用户名下的作品）
+            GET /api/work/homepage/1/10?username=admin&workTitle=樱花
+
+            # 示例9：组合查询（昵称含“测试”的原创作品）
+            GET /api/work/homepage/1/10?nickname=测试&isOriginal=true
+
+            # 示例10：多条件组合查询
+            GET /api/work/homepage/1/10?userId=123&workTitle=樱花&isOriginal=true
             ```
             """
     )
-    @PublicAccess("获取首页作品列表，无需认证")
+    @PublicAccess("分页查询作品列表，无需认证")
     @GetMapping("/homepage/{current}/{size}")
     public ResponsePojo<IPage<Works>> getHomepageWorks(
-        @Parameter(description = "页码，从 1 开始", required = true, example = "1")
-        @PathVariable Long current,
-        @Parameter(description = "每页大小，范围 1-100", required = true, example = "10")
-        @PathVariable Long size
+        @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
+        @Parameter(description = "每页大小，范围 1-100", required = true, example = "10") @PathVariable Long size,
+        @Parameter(description = "作品标题（可选），支持模糊查询") @RequestParam(required = false) String workTitle,
+        @Parameter(description = "用户 ID（可选），支持精确查询") @RequestParam(required = false) Integer userId,
+        @Parameter(description = "用户名（可选），支持模糊查询") @RequestParam(required = false) String username,
+        @Parameter(description = "昵称（可选），支持模糊查询") @RequestParam(required = false) String nickname,
+        @Schema(description = "是否原创（可选）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isOriginal
     ) {
         // 参数校验
         if (current == null || current < 1) {
@@ -228,8 +276,8 @@ public class WorkController {
         // 构建分页对象
         Page<Works> page = new Page<>(current, size);
 
-        // 调用服务层查询首页作品列表
-        IPage<Works> result = workService.selectHomepageWorks(page);
+        // 调用服务层查询作品列表
+        IPage<Works> result = workService.selectHomepageWorks(page, workTitle, userId, username, nickname, isOriginal);
 
         // 返回结果为空，则返回错误信息
         if (result == null || result.getRecords().isEmpty()) {
@@ -258,7 +306,7 @@ public class WorkController {
     @Operation(
         summary = "修改作品信息接口",
         description = """
-            # 修改作品信息（需要登录认证）
+            # 修改作品信息（需要登录认证 + 角色权限[22,77]）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -344,42 +392,42 @@ public class WorkController {
             POST /api/work/update
             Content-Type: multipart/form-data
             Authorization: Bearer <token>
-            
+
             workId: 1
             workTitle: 春日樱花
-            
+
             # 示例2：上传新图片并修改标题
             POST /api/work/update
             Content-Type: multipart/form-data
             Authorization: Bearer <token>
-            
+
             workId: 1
             file: [binary image data]
             workTitle: 新标题
-            
+
             # 示例3：将转载作品改为原创（自动清空 outUrl）
             POST /api/work/update
             Content-Type: multipart/form-data
             Authorization: Bearer <token>
-            
+
             workId: 1
             isOriginal: true
             # outUrl 不填或填空，系统会自动清空原有的转载链接
-            
+
             # 示例4：将原创作品改为转载
             POST /api/work/update
             Content-Type: multipart/form-data
             Authorization: Bearer <token>
-            
+
             workId: 1
             isOriginal: false
             outUrl: https://example.com/original
-            
+
             # 示例5：只修改外部链接（不改原创状态）
             POST /api/work/update
             Content-Type: multipart/form-data
             Authorization: Bearer <token>
-            
+
             workId: 1
             outUrl: https://new-example.com
             ```

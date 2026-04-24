@@ -21,13 +21,25 @@ import top.playereg.pix_vision.pojo.Works;
 public interface WorksMapper extends BaseMapper<Works> {
 
     /**
-     * 分页查询首页作品列表
+     * 分页查询首页作品列表（支持多条件查询）
      *
-     * @param page 分页对象
+     * @param page       分页对象
+     * @param workTitle  作品标题（可选，模糊查询）
+     * @param userId     用户 ID（可选，精确查询）
+     * @param username   用户名（可选，模糊查询）
+     * @param nickname   昵称（可选，模糊查询）
+     * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Works> selectHomepageWorks(Page<Works> page);
+    IPage<Works> selectHomepageWorks(
+        Page<Works> page,
+        @Param("workTitle") String workTitle,
+        @Param("userId") Integer userId,
+        @Param("username") String username,
+        @Param("nickname") String nickname,
+        @Param("isOriginal") Boolean isOriginal
+    );
 
     /**
      * 批量逻辑删除作品（SQL 层面验证用户权限）

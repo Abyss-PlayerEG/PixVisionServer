@@ -42,15 +42,20 @@ public class WorkServiceImpl implements WorkService {
     private SeriesMapper seriesMapper;
 
     /**
-     * 分页查询首页作品列表
+     * 分页查询首页作品列表（支持多条件查询）
      *
-     * @param page 分页对象
+     * @param page       分页对象
+     * @param workTitle  作品标题（可选，模糊查询）
+     * @param userId     用户 ID（可选，精确查询）
+     * @param username   用户名（可选，模糊查询）
+     * @param nickname   昵称（可选，模糊查询）
+     * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> selectHomepageWorks(Page<Works> page) {
-        return worksMapper.selectHomepageWorks(page);
+    public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, String username, String nickname, Boolean isOriginal) {
+        return worksMapper.selectHomepageWorks(page, workTitle, userId, username, nickname, isOriginal);
     }
 
     /**
