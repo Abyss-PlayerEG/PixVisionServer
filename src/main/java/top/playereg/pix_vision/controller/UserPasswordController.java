@@ -170,7 +170,7 @@ public class UserPasswordController {
     @Operation(
         summary = "忘记密码",
         description = """
-            # 忘记密码（无需登录）
+            # 忘记密码（无需登录认证）
 
             ## 特性
             - 公开接口（无需 Token 认证）

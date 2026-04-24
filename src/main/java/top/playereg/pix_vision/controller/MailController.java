@@ -31,10 +31,10 @@ import top.playereg.pix_vision.util.RegexUtils;
  * @see top.playereg.pix_vision.service.Impl.EmailTemplateServiceImpl 邮件模板服务
  */
 @RestController
+@SuppressWarnings("all")
 @RequestMapping("/api/mail")
 @RequiredArgsConstructor
 @Tag(name = "邮件服务接口")
-@SuppressWarnings("all")
 public class MailController {
 
     private static final Logger log = LoggerFactory.getLogger(MailController.class);
@@ -56,7 +56,7 @@ public class MailController {
     @Operation(
         summary = "发送注册验证码邮件",
         description = """
-            # 发送注册验证码邮件（无需登录验证）
+            # 发送注册验证码邮件（无需登录认证）
 
             ## 特性
             - 邮箱格式验证
@@ -144,7 +144,7 @@ public class MailController {
     @Operation(
         summary = "发送登录验证码邮件",
         description = """
-            # 发送登录验证码邮件（无需登录验证）
+            # 发送登录验证码邮件（无需登录认证）
 
             ## 特性
             - 支持用户名或邮箱作为收件人
@@ -236,7 +236,7 @@ public class MailController {
     @Operation(
         summary = "发送重置密码验证码邮件",
         description = """
-            # 发送重置密码验证码邮件（无需登录验证）
+            # 发送重置密码验证码邮件（无需登录认证）
 
             ## 特性
             - 支持用户名或邮箱作为收件人
@@ -328,7 +328,7 @@ public class MailController {
     @Operation(
         summary = "发送修改密码验证码邮件",
         description = """
-            # 发送修改密码验证码邮件（已登录用户）
+            # 发送修改密码验证码邮件（需要登录认证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -430,7 +430,7 @@ public class MailController {
     @Operation(
         summary = "发送注销账户验证码邮件",
         description = """
-            # 发送注销账户验证码邮件（已登录用户）
+            # 发送注销账户验证码邮件（需要登录认证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -534,7 +534,7 @@ public class MailController {
     @Operation(
         summary = "发送更改邮箱验证码邮件",
         description = """
-            # 发送更改邮箱验证码邮件（已登录用户）
+            # 发送更改邮箱验证码邮件（需要登录认证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -677,7 +677,7 @@ public class MailController {
     @Operation(
         summary = "验证\"验证码\" - 测试",
         description = """
-            # 验证用户输入的邮箱验证码是否正确（测试用）
+            # 验证用户输入的邮箱验证码是否正确（无需登录认证｜测试）
 
             ## 特性
             - 公开接口（无需认证）

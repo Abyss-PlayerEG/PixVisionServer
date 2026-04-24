@@ -153,7 +153,7 @@ public class UserAuthController {
     @Operation(
         summary = "用户登录接口",
         description = """
-            # 用户登录（无需登录验证）
+            # 用户登录（无需登录认证）
 
             ## 特性
             - 支持用户名或邮箱登录
@@ -304,7 +304,7 @@ public class UserAuthController {
     @Operation(
         summary = "用户登出接口",
         description = """
-            # 用户登出（需要登录验证）
+            # 用户登出（需要登录认证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -385,7 +385,7 @@ public class UserAuthController {
     @Operation(
         summary = "用户注销接口",
         description = """
-            # 用户注销（需要登录验证）
+            # 用户注销（需要登录认证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）

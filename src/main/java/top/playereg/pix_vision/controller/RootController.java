@@ -40,7 +40,7 @@ public class RootController {
     @Operation(
         summary = "后端首页",
         description = """
-            # 访问服务端首页
+            # 访问服务端首页（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
@@ -71,7 +71,7 @@ public class RootController {
     @Operation(
         summary = "服务健康检查",
         description = """
-            # 检查服务是否正常运行
+            # 检查服务是否正常运行（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
@@ -105,7 +105,7 @@ public class RootController {
     @Operation(
         summary = "获取系统信息",
         description = """
-            # 获取当前服务器的系统信息
+            # 获取当前服务器的系统信息（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）

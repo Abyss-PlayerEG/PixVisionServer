@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.SeriesMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="top.playereg.pix_vision.pojo.Series">
+        <id column="series_id" property="series_id"/>
+        <result column="user_id" property="user_id"/>
+        <result column="series_title" property="series_title"/>
+        <result column="about_text" property="about_text"/>
+        <result column="is_delete" property="is_delete"/>
+        <result column="update_time" property="update_time"/>
+        <result column="update_user" property="update_user"/>
+        <result column="create_time" property="create_time"/>
+        <result column="create_user" property="create_user"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        series_id
+        , user_id, series_title, about_text, is_delete, update_time, update_user, create_time, create_user
+    </sql>
+
+    <!-- 新增作品系列 -->
+    <insert id="insertSeries" parameterType="top.playereg.pix_vision.pojo.Series" useGeneratedKeys="true"
+            keyProperty="series_id">
+        INSERT INTO tb_series (user_id,
+                               series_title,
+                               about_text,
+                               is_delete,
+                               update_time,
+                               update_user,
+                               create_time,
+                               create_user)
+        VALUES (#{user_id},
+                #{series_title},
+                #{about_text},
+                0,
+                #{update_time},
+                #{update_user},
+                #{create_time},
+                #{create_user})
+    </insert>
+
+    <!-- 根据用户 ID 查询所有作品系列（排除逻辑删除） -->
+    <select id="selectSeriesByUserId" resultType="top.playereg.pix_vision.pojo.Series">
+        SELECT series_id,
+               user_id,
+               series_title,
+               about_text,
+               update_time,
+               update_user,
+               create_time,
+               create_user
+        FROM tb_series
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

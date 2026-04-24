@@ -161,7 +161,7 @@ public class UserDataController {
     @Operation(
         summary = "查询用户所有拓展数据接口",
         description = """
-            # 查询用户所有拓展数据（无需登录验证）
+            # 查询用户所有拓展数据（无需登录认证）
 
             ## 特性
             - 公开接口（无需 Token 认证）

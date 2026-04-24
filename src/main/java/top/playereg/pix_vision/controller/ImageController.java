@@ -17,7 +17,9 @@ import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
+import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.ImageUtils;
 
 import java.io.File;
@@ -48,6 +50,9 @@ public class ImageController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private WorkService workService;
+
     // 允许访问的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
         "jpg", "jpeg", "png"
@@ -63,7 +68,7 @@ public class ImageController {
     @Operation(
         summary = "获取头像图片",
         description = """
-            # 获取用户头像图片
+            # 获取用户头像图片（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
@@ -107,7 +112,7 @@ public class ImageController {
             """
     )
     @PublicAccess("获取头像图片，无需认证")
-    @GetMapping("/get/avatar")
+    @GetMapping("/avatar/get")
     public ResponseEntity<Resource> getAvatar(
         @Parameter(description = "图像相对路径，支持子目录，如：default/11.png", required = true, example = "default/1.png") @RequestParam String filePath
     ) {
@@ -124,7 +129,7 @@ public class ImageController {
     @Operation(
         summary = "获取作品图片",
         description = """
-            # 获取作品图片
+            # 获取作品图片（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
@@ -169,7 +174,7 @@ public class ImageController {
             """
     )
     @PublicAccess("获取作品图片，无需认证")
-    @GetMapping("/get/works")
+    @GetMapping("/work/get")
     public ResponseEntity<Resource> getWorkImage(
         @Parameter(description = "图像相对路径，支持子目录，如：2024/04/artwork.png", required = true, example = "artwork_001.png") @RequestParam String filePath
     ) {
@@ -186,7 +191,7 @@ public class ImageController {
     @Operation(
         summary = "获取Logo图片",
         description = """
-            # 获取 Logo 图片
+            # 获取 Logo 图片（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
@@ -231,7 +236,7 @@ public class ImageController {
             """
     )
     @PublicAccess("获取Logo图片，无需认证")
-    @GetMapping("/get/logo")
+    @GetMapping("/logo/get")
     public ResponseEntity<Resource> getLogo(
         @Parameter(description = "图像文件名，如：dark.png", required = true, example = "dark.png") @RequestParam String filePath
     ) {
@@ -300,7 +305,7 @@ public class ImageController {
             ```
             """
     )
-    @PostMapping("/upload/avatar")
+    @PostMapping("/avatar/upload")
     public ResponseEntity<ResponsePojo<String>> uploadAvatar(
         @Parameter(description = "头像文件", required = true) @RequestParam MultipartFile file,
         HttpServletRequest request
@@ -405,6 +410,179 @@ public class ImageController {
         } catch (Exception e) {
             log.error("头像上传失败: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(ResponsePojo.error(null, "头像上传失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 上传作品图片
+     *
+     * @param file       作品图片文件
+     * @param workTitle  作品标题
+     * @param seriesId   系列 ID
+     * @param isOriginal 是否原创
+     * @param outUrl     外部转载链接（转载时必填）
+     * @param request    HTTP 请求对象（用于获取用户 ID）
+     * @return 响应结果（包含作品 ID）
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "上传作品图片",
+        description = """
+            # 上传作品图片（需要登录认证 + 角色权限[22,77]）
+
+            ## 特性
+            - Token 认证（通过拦截器自动验证）
+            - 角色权限控制（仅创作者和系统管理员）
+            - 文件格式校验（JPG/JPEG/PNG）
+            - 文件大小限制（最大 32MB）
+            - 图片真实性校验（魔数检查）
+            - 系列归属验证（可选，不填则不属于任何系列）
+            - 事务一致性保证（文件保存 + 数据库插入）
+
+            ## 权限要求
+            - **角色代码 22**：创作者
+            - **角色代码 77**：系统管理员
+            - 其他角色访问将返回 **403 Forbidden**
+
+            ## 参数说明：
+            - file: **作品图片文件**，MultipartFile 类型，必填
+            - workTitle: **作品标题**，字符串类型，必填，最多 16 个中文字符（48 字节）
+            - seriesId: **系列 ID**，整数类型，可选，**不填或为 0 则不属于任何系列**
+            - isOriginal: **是否原创**，布尔类型，必填，true-原创，false-转载
+            - outUrl: **外部转载链接**，字符串类型，转载时必填，原创时可选
+
+            ## 返回说明：
+            - **上传成功**：返回 200 状态码和 **{"data": 作品 ID}**
+            - **未授权**：返回 401 状态码（Token 无效或不存在）
+            - **权限不足**：返回 403 状态码（角色不符合要求）
+            - **文件格式不支持**：返回 400 状态码
+            - **文件大小超限**：返回 400 状态码（最大 32MB）
+            - **标题过长**：返回 400 状态码（超过 16 个中文字符）
+            - **系列不存在**：返回 400 状态码
+            - **无权操作该系列**：返回 403 状态码
+            - **转载缺少链接**：返回 400 状态码
+            - **服务器错误**：返回 500 状态码
+
+            ## 业务逻辑：
+            1. 从 Token 中获取当前登录用户的 ID
+            2. 验证文件格式（仅支持 jpg/jpeg/png）
+            3. 验证文件大小（最大 32MB）
+            4. 读取上传的图片数据并验证真实性（魔数检查）
+            5. 验证作品标题长度（最多 16 个中文字符）
+            6. 验证系列 ID（如果 > 0，则检查是否存在且属于当前用户；否则设置为 NULL）
+            7. 验证转载链接（isOriginal=false 时 outUrl 必填）
+            8. 生成唯一的文件名（UUID.原始扩展名）
+            9. 保存文件到 ~/.pix_vision/data/works/ 目录
+            10. 构建 Works 对象并插入数据库
+            11. 如果数据库插入失败，删除已上传的文件（事务回滚）
+            12. 返回新创建的作品 ID
+
+            ## 注意事项：
+            - 该接口**需要认证**，必须在请求头中携带有效的 Token
+            - **仅角色代码 22（创作者）和 77（系统管理员）**可以访问
+            - **仅支持 JPG、JPEG、PNG 格式**的图片上传
+            - **不要求正方形图片**，保持原始比例和尺寸
+            - 图片**不会被缩放或压缩**，保持原始质量
+            - 文件名使用 UUID 生成，保留原始扩展名，避免冲突
+            - 文件大小限制为 **32MB**（比头像的 5MB 宽松）
+            - **seriesId 可选**，不填或为 0 则作品不属于任何系列（数据库存储为 NULL）；如填写具体系列 ID，必须是自己拥有的系列
+            - 转载作品必须提供外部链接，原创作品的 outUrl 可为空
+            - 数据库字段默认值：like_count=0, star_count=0, view_count=0
+
+            ## 使用示例：
+            ```
+            # 示例1：上传原创作品（不关联系列，seriesId 不传或为 0）
+            POST /api/image/upload/work
+            Content-Type: multipart/form-data
+            Authorization: Bearer <your-token>
+
+            file: [binary image data]
+            workTitle: 春日樱花
+            isOriginal: true
+            # seriesId 不传，数据库中存储为 NULL
+
+            # 示例2：上传原创作品（关联系列）
+            POST /api/image/upload/work
+            Content-Type: multipart/form-data
+            Authorization: Bearer <your-token>
+
+            file: [binary image data]
+            workTitle: 春日樱花
+            seriesId: 1
+            isOriginal: true
+
+            # 示例3：上传转载作品
+            POST /api/image/upload/work
+            Content-Type: multipart/form-data
+            Authorization: Bearer <your-token>
+
+            file: [binary image data]
+            workTitle: 转载作品
+            seriesId: 2
+            isOriginal: false
+            outUrl: https://example.com/original
+            ```
+            """
+    )
+    @RequireRole(value = {22, 77})
+    @PostMapping("/work/upload")
+    public ResponseEntity<ResponsePojo<Integer>> uploadWork(
+        @Parameter(description = "作品图片文件", required = true) @RequestParam MultipartFile file,
+        @Parameter(description = "作品标题，最多16个中文字符", required = true, example = "春日樱花") @RequestParam String workTitle,
+        @Parameter(description = "系列 ID（0 表示不属于任何系列）", required = false, example = "1") @RequestParam(required = false, defaultValue = "0") Integer seriesId,
+        @Parameter(description = "是否原创：true-原创，false-转载", required = true, example = "true") @RequestParam Boolean isOriginal,
+        @Parameter(description = "外部转载链接（仅转载时必填）", required = false, example = "https://example.com/original") @RequestParam(required = false) String outUrl,
+        HttpServletRequest request
+    ) {
+        try {
+            // 1. 从 request 中获取用户 ID（由 JWT 拦截器设置）
+            Integer userId = (Integer) request.getAttribute("userId");
+            if (userId == null) {
+                log.warn("未获取到用户 ID，请先登录");
+                return ResponseEntity.status(401).body(ResponsePojo.error(null, "未授权访问：请先登录"));
+            }
+
+            // 2. 验证文件是否为空
+            if (file.isEmpty()) {
+                log.warn("上传的文件为空");
+                return ResponseEntity.badRequest().body(ResponsePojo.error(null, "上传的文件不能为空"));
+            }
+
+            // 3. 验证文件名
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isEmpty()) {
+                log.warn("文件名为空");
+                return ResponseEntity.badRequest().body(ResponsePojo.error(null, "文件名不能为空"));
+            }
+
+            // 4. 读取文件数据
+            byte[] imageBytes = file.getBytes();
+
+            // 5. 调用 Service 层处理业务逻辑
+            Integer finalSeriesId = (seriesId != null && seriesId > 0) ? seriesId : null;
+            Integer workId = workService.uploadWork(
+                userId,
+                imageBytes,
+                originalFilename,
+                file.getSize(),
+                workTitle,
+                finalSeriesId,
+                isOriginal,
+                outUrl
+            );
+
+            log.info("作品上传成功，用户 ID: {}, 作品 ID: {}", userId, workId);
+            return ResponseEntity.ok(ResponsePojo.success(workId, "作品发布成功"));
+
+        } catch (IllegalArgumentException e) {
+            log.error("参数验证失败: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ResponsePojo.error(null, e.getMessage()));
+        } catch (SecurityException e) {
+            log.error("权限验证失败: {}", e.getMessage());
+            return ResponseEntity.status(403).body(ResponsePojo.error(null, e.getMessage()));
+        } catch (Exception e) {
+            log.error("作品上传失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(ResponsePojo.error(null, "作品上传失败: " + e.getMessage()));
         }
     }
 

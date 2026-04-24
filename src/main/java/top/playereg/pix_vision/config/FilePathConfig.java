@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import top.playereg.pix_vision.util.ConsoleOutputRedirector;
 import top.playereg.pix_vision.util.CreateFile;
 
 import java.nio.file.Files;
@@ -118,7 +117,7 @@ public class FilePathConfig {
             WorksPath,
             KeyPath
         };
-        ConsoleOutputRedirector.initConsoleOutputRedirector();
+        // ConsoleOutputRedirector 已通过 @PostConstruct 自动初始化，无需手动调用
         createPath();
         CreateFile.create();
     }

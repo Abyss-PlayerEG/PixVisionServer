@@ -2,21 +2,46 @@ package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.pojo.userPojo.UserData;
 
 import java.util.List;
 
 public interface UserService {
+    /**
+     * 用户注册
+     *
+     * @param username 用户名
+     * @param password 密码
+     * @param nickname 昵称
+     * @param email    邮箱
+     * @return 用户对象
+     */
     User registerUser(
-            String username,
-            String password,
-            String nickname,
-            String email
+        String username,
+        String password,
+        String nickname,
+        String email
     );
+
+    /**
+     * 根据用户名查询用户信息
+     *
+     * @param username 用户名
+     * @return 用户对象
+     */
     User selectAllUserByUsername(String username);
+
+    /**
+     * 根据邮箱查询用户信息
+     *
+     * @param email 邮箱
+     * @return 用户对象
+     */
     User selectAllUserByEmail(String email);
 
     /**
      * 根据用户 ID 查询用户信息
+     *
      * @param userId 用户 ID
      * @return 用户对象
      */
@@ -24,41 +49,40 @@ public interface UserService {
 
     /**
      * 分页查询用户信息
-     * @param page 分页参数
+     *
+     * @param page     分页参数
      * @param username 用户名（可选）
-     * @param uuid UUID（可选）
-     * @param email 邮箱（可选）
+     * @param uuid     UUID（可选）
+     * @param email    邮箱（可选）
      * @return 分页用户列表
      */
-    IPage<User> selectPageUserInfo(
-            IPage<?> page,
-            String username,
-            byte[] uuid,
-            String email
-    );
+    IPage<User> selectPageUserInfo(IPage<User> page, String username, byte[] uuid, String email);
 
     /**
      * 用户密码修改（通过邮箱）
-     * @param email 用户的邮箱
+     *
+     * @param email       用户的邮箱
      * @param oldPassword 用户的旧密码
      * @param newPassword 用户的新密码
      * @return 影响行数
-     * */
-    Integer changeUserLoginPasswordByEmail(String email, String oldPassword, String newPassword );
+     */
+    Integer changeUserLoginPasswordByEmail(String email, String oldPassword, String newPassword);
 
     /**
      * 忘记密码 - 重置密码（无需登录）
+     *
      * @param usernameOrEmail 用户名或邮箱
-     * @param newPassword 新密码
+     * @param newPassword     新密码
      * @param confirmPassword 确认新密码
-     * @param vCode 邮箱验证码
+     * @param vCode           邮箱验证码
      * @return 是否成功
      */
     Boolean resetPasswordByUsernameOrEmail(String usernameOrEmail, String newPassword, String confirmPassword, String vCode);
 
     /**
      * 更新用户头像
-     * @param userId 用户 ID
+     *
+     * @param userId    用户 ID
      * @param avatarUrl 头像路径
      * @return 是否成功
      */
@@ -89,7 +113,7 @@ public interface UserService {
      * @param userId 用户 ID
      * @return 用户拓展数据列表，如果用户不存在则返回 null
      */
-    java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData> getUserDataList(Integer userId);
+    java.util.List<UserData> getUserDataList(Integer userId);
 
     /**
      * 批量删除用户拓展数据（支持单条和批量，只能删除自己的数据）
@@ -119,9 +143,9 @@ public interface UserService {
     /**
      * 更新用户绑定邮箱（需要验证码验证）
      *
-     * @param userId 用户 ID
+     * @param userId   用户 ID
      * @param newEmail 新邮箱
-     * @param vCode 邮箱验证码
+     * @param vCode    邮箱验证码
      * @return 是否成功
      */
     Boolean updateUserEmail(Integer userId, String newEmail, String vCode);

@@ -3,6 +3,7 @@ package top.playereg.pix_vision;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import org.jetbrains.annotations.NotNull;
+import org.mybatis.spring.annotation.MapperScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -17,6 +18,7 @@ import top.playereg.pix_vision.util.IpUtil;
 import java.util.List;
 
 @SpringBootApplication
+@MapperScan("top.playereg.pix_vision.mapper")
 @SuppressWarnings("all")
 public class PixVisionApplication implements ApplicationListener<ApplicationReadyEvent> {
     private static final Logger log = LoggerFactory.getLogger(PixVisionApplication.class);

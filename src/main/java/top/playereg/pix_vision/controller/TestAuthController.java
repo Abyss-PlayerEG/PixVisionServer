@@ -32,7 +32,7 @@ public class TestAuthController {
     @Operation(
             summary = "需要登录的测试接口",
             description = """
-                # 测试接口 - 需要 JWT 认证
+                # 测试接口（需要登录认证）
 
                 ## 特性
                 - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -75,7 +75,7 @@ public class TestAuthController {
     @Operation(
             summary = "不需要登录的测试接口",
             description = """
-                # 测试接口 - 无需 JWT 认证
+                # 测试接口（无需登录认证）
 
                 ## 特性
                 - 公开接口（无需认证）
