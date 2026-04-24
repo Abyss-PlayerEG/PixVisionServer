@@ -28,7 +28,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/work")
 @RequiredArgsConstructor
-@Tag(name = "作品接口", description = "提供作品查询、展示等接口")
+@Tag(name = "作品管理相关接口")
 public class WorkController {
     private static final Logger log = LoggerFactory.getLogger(WorkController.class);
 
