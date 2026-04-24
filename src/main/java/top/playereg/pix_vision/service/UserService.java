@@ -48,15 +48,14 @@ public interface UserService {
     User selectAllUserById(Integer userId);
 
     /**
-     * 分页查询用户信息
+     * 分页查询用户信息（支持关键词统一查询）
      *
-     * @param page     分页参数
-     * @param username 用户名（可选）
-     * @param uuid     UUID（可选）
-     * @param email    邮箱（可选）
+     * @param page         分页对象
+     * @param keyword      关键词（可选，模糊查询用户名/邮箱/昵称）
+     * @param uuidBytes    UUID 字节数组（可选，精确查询）
      * @return 分页用户列表
      */
-    IPage<User> selectPageUserInfo(IPage<User> page, String username, byte[] uuid, String email, String nickname);
+    IPage<User> selectPageUserInfo(IPage<User> page, String keyword, byte[] uuidBytes);
 
     /**
      * 用户密码修改（通过邮箱）

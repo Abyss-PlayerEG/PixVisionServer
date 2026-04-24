@@ -117,41 +117,36 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 分页查询用户信息
+     * 分页查询用户信息（支持关键词统一查询）
      *
-     * @param page     分页参数
-     * @param username 用户名（可选）
-     * @param uuid     UUID（可选）
-     * @param email    邮箱（可选）
+     * @param page      分页参数
+     * @param keyword   关键词（可选，模糊查询用户名/邮箱/昵称）
+     * @param uuidBytes UUID 字节数组（可选，精确查询）
      * @return 分页用户列表
      */
     @Override
     public IPage<User> selectPageUserInfo(
         IPage<User> page,
-            String username,
-            byte[] uuid,
-            String email,
-            String nickname
+        String keyword,
+        byte[] uuidBytes
     ) {
         log.info("分页查询用户信息");
 
         // 构建查询条件对象
         User queryUser = new User();
-        if (username != null && !username.isEmpty()) {
-            queryUser.setUsername(username);
-            log.info("查询条件 - 用户名：{}", username);
+        
+        if (uuidBytes != null) {
+            // UUID 精确查询
+            queryUser.setUser_uuid(uuidBytes);
+            log.info("查询条件 - UUID: {}", StrSwitchUtils.bytes2Uuid(uuidBytes));
         }
-        if (uuid != null) {
-            queryUser.setUser_uuid(uuid);
-            log.info("查询条件 - UUID: {}", StrSwitchUtils.bytes2Uuid(uuid));
-        }
-        if (email != null && !email.isEmpty()) {
-            queryUser.setEmail(email);
-            log.info("查询条件 - 邮箱：{}", email);
-        }
-        if (nickname != null && !nickname.isEmpty()) {
-            queryUser.setNickname(nickname);
-            log.info("查询条件 - 昵称：{}", nickname);
+        
+        if (keyword != null && !keyword.isEmpty()) {
+            // 关键词模糊查询（同时搜索用户名、邮箱、昵称）
+            queryUser.setUsername(keyword);
+            queryUser.setEmail(keyword);
+            queryUser.setNickname(keyword);
+            log.info("查询条件 - 关键词（用户名/邮箱/昵称）: {}", keyword);
         }
 
         log.info("执行分页查询");

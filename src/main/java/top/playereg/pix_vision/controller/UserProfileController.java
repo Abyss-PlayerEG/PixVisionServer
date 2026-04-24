@@ -41,12 +41,9 @@ public class UserProfileController {
     /**
      * 分页查询用户信息
      *
-     * @param current  当前页码（从 1 开始）
-     * @param size     每页大小
-     * @param username 用户名（可选，模糊查询）
-     * @param uuid     UUID（可选，精确查询）
-     * @param email    邮箱（可选，模糊查询）
-     * @param nickname 昵称（可选，模糊查询）
+     * @param current 当前页码（从 1 开始）
+     * @param size    每页大小
+     * @param keyword 关键词（可选，同时模糊查询用户名/邮箱/昵称，精确查询 UUID）
      * @return 响应数据<IPage < User>>
      * @author PlayerEG
      */
@@ -60,17 +57,16 @@ public class UserProfileController {
             ## 特性
             - Token 认证（通过拦截器自动验证）
             - MyBatis-Plus 分页支持
-            - 多条件组合查询（用户名/UUID/邮箱/昵称）
+            - 关键词统一查询（同时搜索用户名/邮箱/昵称/UUID）
             - 模糊匹配与精确匹配
             - UUID 二进制转换
 
             ## 参数说明：
             - current: 当前页码，**从 1 开始**，Long 类型，必填，默认为 1
             - size: 每页大小，Long 类型，必填，默认为 10，范围 1-100
-            - username: 用户名（可选），字符串类型，支持模糊查询
-            - uuid: 用户 UUID（可选），字符串类型，支持精确查询
-            - email: 邮箱（可选），字符串类型，支持模糊查询
-            - nickname: 昵称（可选），字符串类型，支持模糊查询
+            - keyword: **关键词**（可选），字符串类型
+              * 如果输入的是标准 UUID 格式，则进行**精确匹配**
+              * 否则同时对用户名、邮箱、昵称进行**模糊匹配**
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": {IPage<User>对象}}** ，包含用户列表和分页信息
@@ -94,16 +90,17 @@ public class UserProfileController {
 
             ## 业务逻辑：
             1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
-            2. 转换 UUID 字符串为 byte 数组（如提供）
+            2. 判断关键词类型：
+               - 如果是标准 UUID 格式，转换为 byte 数组进行精确查询
+               - 否则作为普通关键词，同时对用户名、邮箱、昵称进行模糊查询
             3. 构建 MyBatis-Plus 分页对象
-            4. 根据条件查询用户信息（支持多条件组合）
+            4. 根据条件查询用户信息
             5. 返回分页结果集
 
             ## 注意事项：
-            - 所有查询条件均为**可选参数**，可不传
-            - 支持多个条件组合查询
-            - 用户名、邮箱、昵称支持**模糊匹配**
-            - UUID 支持**精确匹配**
+            - **关键词为可选参数**，可不传
+            - 如果关键词是标准 UUID 格式（如：550e8400-e29b-41d4-a716-446655440000），则进行**精确匹配**
+            - 如果关键词不是 UUID 格式，则同时对用户名、邮箱、昵称进行**模糊匹配**
             - 默认返回 8 个核心字段（user_id, user_uuid, username, password, nickname, avatar_url, email, status）
             - 已自动过滤逻辑删除的用户（is_delete=0）
             - 每页大小限制：**1-100**
@@ -112,10 +109,7 @@ public class UserProfileController {
     public ResponsePojo<IPage<User>> getPageUserInfo(
         @Parameter(description = "当前页码，从 1 开始", example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小，范围 1-100", example = "10") @PathVariable Long size,
-        @Parameter(description = "用户名（可选），支持模糊查询") @RequestParam(required = false) String username,
-        @Parameter(description = "用户 UUID（可选），支持精确查询，标准 UUID 格式") @RequestParam(required = false) String uuid,
-        @Parameter(description = "邮箱（可选），支持模糊查询") @RequestParam(required = false) String email,
-        @Parameter(description = "昵称（可选），支持模糊查询") @RequestParam(required = false) String nickname
+        @Parameter(description = "关键词（可选），支持 UUID 精确查询或用户名/邮箱/昵称模糊查询") @RequestParam(required = false) String keyword
     ) {
         // 参数校验
         if (current == null || current < 1) {
@@ -124,21 +118,28 @@ public class UserProfileController {
         if (size == null || size < 1 || size > 100) {
             return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
         }
-        if (uuid != null && !uuid.isEmpty() && !RegexUtils.isUUID(uuid)) {
-            return ResponsePojo.error(null, "UUID 格式错误");
-        }
 
-        // 转换 UUID 字符串为 byte 数组
+        // 判断关键词类型：UUID 精确查询 or 普通关键词模糊查询
         byte[] uuidBytes = null;
-        if (uuid != null && !uuid.isEmpty()) {
-            uuidBytes = StrSwitchUtils.uuid2Bytes(uuid);
+        String searchKeyword = null;
+        
+        if (keyword != null && !keyword.isEmpty()) {
+            if (RegexUtils.isUUID(keyword)) {
+                // UUID 格式，进行精确查询
+                uuidBytes = StrSwitchUtils.uuid2Bytes(keyword);
+                log.info("关键词识别为 UUID，进行精确查询: {}", keyword);
+            } else {
+                // 非 UUID 格式，进行模糊查询
+                searchKeyword = keyword;
+                log.info("关键词识别为普通文本，进行模糊查询: {}", keyword);
+            }
         }
 
         // 构建分页对象
         Page<User> page = new Page<>(current, size);
 
-        // 将查询到的用户的 16 字节二进制数组转为 16 进制字符串
-        IPage<User> result = userService.selectPageUserInfo(page, username, uuidBytes, email, nickname);
+        // 调用服务层查询用户信息
+        IPage<User> result = userService.selectPageUserInfo(page, searchKeyword, uuidBytes);
 
         // 返回结果为空，则返回错误信息
         if (result == null || result.getRecords().size() == 0) {

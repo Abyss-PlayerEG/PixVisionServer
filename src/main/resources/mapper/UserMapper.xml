@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="top.playereg.pix_vision.mapper.UserMapper">
     <!-- 添加用户 -->
     <insert id="insertUser"
@@ -9,8 +9,7 @@
             useGeneratedKeys="true"
             keyProperty="user_id"
     >
-        INSERT INTO tb_user (
-                             user_uuid,
+        INSERT INTO tb_user (user_uuid,
                              username,
                              password,
                              nickname,
@@ -21,8 +20,7 @@
                              update_time,
                              update_user,
                              create_time,
-                             create_user
-        )
+                             create_user)
         VALUES (#{user_uuid}, #{username}, #{password}, #{nickname}, #{avatar_url}, #{email}, #{is_delete}, #{status},
                 #{update_time}, #{update_user}, #{create_time}, #{create_user})
     </insert>
@@ -93,17 +91,15 @@
         create_time
         FROM tb_user
         WHERE is_delete = 0
-        <if test="user.username != null and user.username != ''">
-            AND username LIKE CONCAT('%', #{user.username}, '%')
-        </if>
-        <if test="user.email != null and user.email != ''">
-            AND email LIKE CONCAT('%', #{user.email}, '%')
-        </if>
-        <if test="user.nickname != null and user.nickname != ''">
-            AND nickname LIKE CONCAT('%', #{user.nickname}, '%')
-        </if>
         <if test="user.user_uuid != null">
             AND user_uuid = #{user.user_uuid}
+        </if>
+        <if test="user.username != null and user.username != ''">
+            AND (
+            username LIKE CONCAT('%', #{user.username}, '%')
+            OR email LIKE CONCAT('%', #{user.email}, '%')
+            OR nickname LIKE CONCAT('%', #{user.nickname}, '%')
+            )
         </if>
     </select>
 
@@ -111,11 +107,11 @@
     <update id="changeUserPassword">
         UPDATE tb_user
         SET password = #{newPassword},
-            update_time = NOW()
+        update_time = NOW()
         WHERE email = #{email}
-          AND is_delete = 0
+        AND is_delete = 0
         <if test="oldPassword != null and oldPassword != ''">
-          AND password = #{oldPassword}
+            AND password = #{oldPassword}
         </if>
     </update>
 
@@ -142,7 +138,7 @@
     <!-- 逻辑删除用户账户 -->
     <update id="deleteUserAccount">
         UPDATE tb_user
-        SET is_delete = 1,
+        SET is_delete   = 1,
             update_time = NOW(),
             update_user = #{userId}
         WHERE user_id = #{userId}
