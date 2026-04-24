@@ -73,4 +73,24 @@
         </foreach>
     </select>
 
+    <!-- 将指定系列的所有作品 series_id 置空（SQL 层面验证用户权限） -->
+    <update id="clearSeriesIdBySeriesId">
+        UPDATE tb_works
+        SET series_id   = NULL,
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE series_id = #{seriesId}
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
+    <!-- 根据系列 ID 查询所有作品 ID（用于删除系列内作品） -->
+    <select id="selectWorkIdsBySeriesId" resultType="java.lang.Integer">
+        SELECT work_id
+        FROM tb_works
+        WHERE series_id = #{seriesId}
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </select>
+
 </mapper>

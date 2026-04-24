@@ -195,7 +195,7 @@ public class WorkServiceImpl implements WorkService {
         // 6. 验证系列 ID（null 表示无系列）
         Integer finalSeriesId = null; // 默认为 null，表示不属于任何系列
         if (seriesId != null && seriesId > 0) {
-            Series series = seriesMapper.selectById(seriesId);
+            Series series = seriesMapper.selectSeriesById(seriesId);
             if (series == null || series.getIs_delete()) {
                 log.warn("系列不存在或已删除，系列 ID: {}", seriesId);
                 throw new IllegalArgumentException("系列不存在或已删除");

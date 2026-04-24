@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.Works;
 
@@ -37,4 +38,22 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @author PlayerEG
      */
     int batchDeleteWorks(java.util.List<Integer> workIds, Integer userId);
+
+    /**
+     * 将指定系列的所有作品 series_id 置空（SQL 层面验证用户权限）
+     *
+     * @param seriesId 系列 ID
+     * @param userId   用户 ID（确保只能操作自己的作品）
+     * @return 影响的行数
+     */
+    int clearSeriesIdBySeriesId(@Param("seriesId") Integer seriesId, @Param("userId") Integer userId);
+
+    /**
+     * 根据系列 ID 查询所有作品 ID（用于删除系列内作品）
+     *
+     * @param seriesId 系列 ID
+     * @param userId   用户 ID（确保只能查询自己的作品）
+     * @return 作品 ID 列表
+     */
+    java.util.List<Integer> selectWorkIdsBySeriesId(@Param("seriesId") Integer seriesId, @Param("userId") Integer userId);
 }

@@ -58,4 +58,22 @@
         ORDER BY create_time DESC
     </select>
 
+    <!-- 根据系列 ID 查询系列信息 -->
+    <select id="selectSeriesById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tb_series
+        WHERE series_id = #{seriesId}
+    </select>
+
+    <!-- 逻辑删除系列（SQL 层面验证用户权限） -->
+    <update id="deleteSeriesById">
+        UPDATE tb_series
+        SET is_delete   = 1,
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE series_id = #{seriesId}
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
 </mapper>

@@ -28,4 +28,14 @@ public interface SeriesService {
      * @return 作品系列列表
      */
     List<Series> getSeriesByUserId(Integer userId);
+
+    /**
+     * 删除作品系列（支持保留或删除系列内作品）
+     *
+     * @param seriesId   系列 ID
+     * @param userId     当前用户 ID（用于权限验证）
+     * @param deleteWorks 是否删除系列内的作品（true=删除作品，false=将作品的 series_id 置空）
+     * @return 删除结果
+     */
+    Boolean deleteSeries(Integer seriesId, Integer userId, Boolean deleteWorks);
 }
