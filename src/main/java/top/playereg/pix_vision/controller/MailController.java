@@ -31,10 +31,10 @@ import top.playereg.pix_vision.util.RegexUtils;
  * @see top.playereg.pix_vision.service.Impl.EmailTemplateServiceImpl 邮件模板服务
  */
 @RestController
+@SuppressWarnings("all")
 @RequestMapping("/api/mail")
 @RequiredArgsConstructor
 @Tag(name = "邮件服务接口")
-@SuppressWarnings("all")
 public class MailController {
 
     private static final Logger log = LoggerFactory.getLogger(MailController.class);

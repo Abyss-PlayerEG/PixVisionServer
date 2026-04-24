@@ -168,7 +168,7 @@ public class UserProfileController {
      * @return 修改结果
      * @author Playereg
      */
-    @PostMapping("/change/nickname")
+    @PostMapping("/nickname/change")
     @Operation(
         summary = "修改用户昵称接口",
         description = """
@@ -267,7 +267,7 @@ public class UserProfileController {
      * @return 修改结果
      * @author PlayerEG
      */
-    @PostMapping("/change/email")
+    @PostMapping("/email/change")
     @Operation(
         summary = "更改账号绑定邮箱接口",
         description = """

@@ -29,4 +29,21 @@ public interface WorkService {
      * @author PlayerEG
      */
     Boolean batchDeleteWorks(java.util.List<Integer> workIds, Integer userId);
+
+    /**
+     * 上传作品图片
+     *
+     * @param userId     用户 ID
+     * @param fileBytes  图片文件字节数组
+     * @param fileName   原始文件名
+     * @param fileSize   文件大小
+     * @param workTitle  作品标题
+     * @param seriesId   系列 ID（null 表示不属于任何系列）
+     * @param isOriginal 是否原创
+     * @param outUrl     外部转载链接
+     * @return 新创建的作品 ID
+     * @author PlayerEG
+     */
+    Integer uploadWork(Integer userId, byte[] fileBytes, String fileName, long fileSize,
+                       String workTitle, Integer seriesId, Boolean isOriginal, String outUrl);
 }
