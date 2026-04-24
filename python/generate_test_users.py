@@ -19,15 +19,6 @@ DB_CONFIG = {
 ADJECTIVES = ['happy', 'sunny', 'gentle', 'brave', 'clever', 'kind', 'quick', 'bright', 'warm', 'cool', 'lovely', 'peaceful', 'friendly', 'cute', 'sweet']
 NOUNS = ['cat', 'dog', 'bird', 'fish', 'fox', 'bear', 'panda', 'rabbit', 'lion', 'tiger', 'eagle', 'owl', 'wolf', 'deer', 'moon', 'star', 'sun', 'cloud', 'rain', 'wind']
 
-def passwd_to_hash256(password):
-    temp_str = hashlib.sha1(password.encode()).hexdigest()
-    for _ in range(5):
-        temp_str = encrypt_string(temp_str)
-        temp_str = number2str(temp_str)
-    temp_str = encrypt_string(temp_str)
-    res_str = hashlib.sha256(temp_str.encode()).hexdigest()
-    return res_str
-
 def encrypt_string(s):
     result = []
     for i, c in enumerate(s):
