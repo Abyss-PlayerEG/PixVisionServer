@@ -44,6 +44,13 @@ public class SeriesServiceImpl implements SeriesService {
     public Series addSeries(Integer userId, String seriesTitle, String aboutText) {
         log.info("开始新增系列，用户 ID: {}, 系列标题: {}", userId, seriesTitle);
 
+        // 检查系列标题是否已存在
+        int count = seriesMapper.countSeriesByTitle(userId, seriesTitle);
+        if (count > 0) {
+            log.warn("系列标题已存在，用户 ID: {}, 系列标题: {}", userId, seriesTitle);
+            throw new IllegalArgumentException("系列标题已存在，请使用其他标题");
+        }
+
         // 创建系列对象
         Series series = new Series();
         series.setUser_id(userId);

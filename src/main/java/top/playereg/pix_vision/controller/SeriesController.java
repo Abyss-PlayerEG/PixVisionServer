@@ -67,26 +67,29 @@ public class SeriesController {
             ## 返回说明：
             - **成功**：返回 **{"data": Series 对象}** 和提示信息
             - **Token 失效**：返回 **{"data": null}** 和 "Token 已失效" 提示
-            - **标题为空**：返回 **{"data": null}** 和 "系列标题不能为空" 提示
-            - **标题过长**：返回 **{"data": null}** 和 "系列标题长度不能超过 16 个字符" 提示
-            - **描述过长**：返回 **{"data": null}** 和 "系列描述长度不能超过 24 个字符" 提示
+            - **标题为空**：返回 **{"data": false}** 和 "系列标题不能为空" 提示
+            - **标题过长**：返回 **{"data": false}** 和 "系列标题长度不能超过 16 个字符" 提示
+            - **描述过长**：返回 **{"data": false}** 和 "系列描述长度不能超过 24 个字符" 提示
+            - **标题重复**：返回 **{"data": false}** 和 "系列标题已存在，请使用其他标题" 提示
 
             ## 业务逻辑：
             1. 从请求中提取并验证 Token
             2. 检查 Token 是否在白名单中
             3. 从 Token 中解析用户 ID
             4. 校验系列标题和描述的长度
-            5. 创建系列对象并设置用户 ID、时间戳等信息
-            6. 插入数据库并返回结果
+            5. **检查系列标题是否已存在（同一用户下不能重复）**
+            6. 创建系列对象并设置用户 ID、时间戳等信息
+            7. 插入数据库并返回结果
 
             ## 注意事项：
             - 系列标题**必填**，长度不超过 16 个字符
             - 系列描述**可选**，长度不超过 24 个字符
+            - **同一用户下系列标题不能重复**
             - 系统自动记录创建者 ID 和创建时间
             - 返回的 Series 对象包含自动生成的 series_id
             """
     )
-    public ResponsePojo<Series> addSeries(
+    public ResponsePojo<Boolean> addSeries(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "系列标题，最多 16 个中文字符", required = true, example = "我的作品集") @RequestParam String seriesTitle,
         @Parameter(description = "系列描述文本，最多 24 个中文字符", required = false, example = "这是一个展示我作品的系列") @RequestParam(required = false, defaultValue = "") String aboutText
@@ -98,20 +101,20 @@ public class SeriesController {
 
         if (token == null || token.isEmpty()) {
             log.error("新增系列失败 - Token 不存在");
-            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
         }
 
         // 检查 Token 是否在白名单中
         if (!tokenWhitelistService.isInWhitelist(token)) {
             log.warn("Token 不在白名单中，可能已过期或被移除");
-            return ResponsePojo.error(null, "Token 已失效");
+            return ResponsePojo.error(false, "Token 已失效");
         }
 
         // 从 Token 中获取用户 ID
         Integer userId = JWTUtils.getUserIdFromToken(token);
         if (userId == null) {
             log.error("从 Token 中解析用户 ID 失败");
-            return ResponsePojo.error(null, "Token 无效");
+            return ResponsePojo.error(false, "Token 无效");
         }
 
         String username = JWTUtils.getUsernameFromToken(token);
@@ -120,29 +123,34 @@ public class SeriesController {
         // 校验系列标题参数
         if (seriesTitle == null || seriesTitle.isEmpty()) {
             log.warn("系列标题为空，用户 ID: {}", userId);
-            return ResponsePojo.error(null, "系列标题不能为空");
+            return ResponsePojo.error(false, "系列标题不能为空");
         }
 
         if (seriesTitle.length() > 16) {
             log.warn("系列标题长度不符合要求，用户 ID: {}, 标题长度: {}", userId, seriesTitle.length());
-            return ResponsePojo.error(null, "系列标题长度不能超过 16 个字符");
+            return ResponsePojo.error(false, "系列标题长度不能超过 16 个字符");
         }
 
         // 校验系列描述参数
         if (aboutText != null && aboutText.length() > 24) {
             log.warn("系列描述长度不符合要求，用户 ID: {}, 描述长度: {}", userId, aboutText.length());
-            return ResponsePojo.error(null, "系列描述长度不能超过 24 个字符");
+            return ResponsePojo.error(false, "系列描述长度不能超过 24 个字符");
         }
 
         // 调用服务层新增系列
-        Series series = seriesService.addSeries(userId, seriesTitle, aboutText);
+        try {
+            Series series = seriesService.addSeries(userId, seriesTitle, aboutText);
 
-        if (series != null) {
-            log.info("系列新增成功，系列 ID: {}, 用户 ID: {}", series.getSeries_id(), userId);
-            return ResponsePojo.success(series, "系列新增成功");
-        } else {
-            log.error("系列新增失败，用户 ID: {}", userId);
-            return ResponsePojo.error(null, "系列新增失败");
+            if (series != null) {
+                log.info("系列新增成功，系列 ID: {}, 用户 ID: {}", series.getSeries_id(), userId);
+                return ResponsePojo.success(true, "系列新增成功");
+            } else {
+                log.error("系列新增失败，用户 ID: {}", userId);
+                return ResponsePojo.error(false, "系列新增失败");
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("系列新增参数错误，用户 ID: {}, 错误: {}", userId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
         }
     }
 

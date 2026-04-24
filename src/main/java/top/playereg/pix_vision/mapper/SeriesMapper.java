@@ -43,6 +43,15 @@ public interface SeriesMapper extends BaseMapper<Series> {
     Series selectSeriesById(@Param("seriesId") Integer seriesId);
 
     /**
+     * 检查用户的系列标题是否已存在（排除逻辑删除）
+     *
+     * @param userId      用户 ID
+     * @param seriesTitle 系列标题
+     * @return 存在的系列数量
+     */
+    int countSeriesByTitle(@Param("userId") Integer userId, @Param("seriesTitle") String seriesTitle);
+
+    /**
      * 逻辑删除系列（SQL 层面验证用户权限）
      *
      * @param seriesId 系列 ID
