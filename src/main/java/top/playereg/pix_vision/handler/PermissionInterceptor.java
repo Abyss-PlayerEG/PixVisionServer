@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.handler;
 
+import cn.hutool.core.util.StrUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -120,7 +121,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
             log.warn("权限不足 - 用户ID:{}, 用户名:{}, 用户角色:{}, 需要角色:{}, URI:{}",
                 userId, user.getUsername(), userRole, Arrays.toString(allowedRoles), request.getRequestURI());
 
-            String message = String.format("权限不足，需要角色:%s", Arrays.toString(allowedRoles));
+            String message = StrUtil.format("权限不足，需要角色:{}", Arrays.toString(allowedRoles));
             sendForbiddenResponse(response, message);
             return false;
         }
@@ -140,14 +141,9 @@ public class PermissionInterceptor implements HandlerInterceptor {
     private boolean checkPermission(int userRole, int[] allowedRoles, boolean allowHigher) {
         for (int role : allowedRoles) {
             // 精确匹配
-            if (userRole == role) {
-                return true;
-            }
-
+            if (userRole == role) return true;
             // 如果允许更高权限，检查用户角色是否大于当前角色
-            if (allowHigher && userRole > role) {
-                return true;
-            }
+            if (allowHigher && userRole > role) return true;
         }
         return false;
     }
@@ -220,10 +216,17 @@ public class PermissionInterceptor implements HandlerInterceptor {
         try {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write(String.format(
-                "{\"code\":403,\"message\":\"%s\",\"data\":null}",
-                message
-            ));
+            response.getWriter().write(
+                StrUtil.format(
+                    """
+                        {
+                            "code":403,
+                            "message":"{}",
+                            "data":null
+                        }
+                        """, message
+                )
+            );
         } catch (Exception e) {
             log.error("发送 403 响应失败: {}", e.getMessage());
         }
