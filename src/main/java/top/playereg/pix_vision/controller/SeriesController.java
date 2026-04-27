@@ -47,7 +47,7 @@ public class SeriesController {
      * @author PlayerEG
      */
     @PostMapping("/add")
-    @RequireRole({22,77})
+    @RequireRole(value = {22,77})
     @Operation(
         summary = "新增作品系列接口",
         description = """
@@ -257,7 +257,7 @@ public class SeriesController {
      * @author PlayerEG
      */
     @PostMapping("/delete")
-    @RequireRole({22,77})
+    @RequireRole(value = {22,77})
     @Operation(
         summary = "删除作品系列接口",
         description = """

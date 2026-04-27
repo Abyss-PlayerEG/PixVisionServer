@@ -94,7 +94,7 @@ public class WorkController {
             - 单条删除时传入单个元素的数组，如 [1]
             """
     )
-    @RequireRole({22, 77})
+    @RequireRole(value = {22, 77})
     @PostMapping("/delete")
     public ResponsePojo<Boolean> deleteWorks(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
@@ -459,7 +459,7 @@ public class WorkController {
             ```
             """
     )
-    @RequireRole({22, 77})
+    @RequireRole(value = {22, 77})
     @PostMapping("/update")
     public ResponsePojo<Boolean> updateWork(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
