@@ -33,17 +33,6 @@ public class AdminController {
     private final UserService userService;
 
     /**
-     * 测试接口
-     *
-     * @return 测试成功
-     */
-    @Tag(name = "测试接口")
-    @PostMapping("/test")
-    public String test() {
-        return "测试成功";
-    }
-
-    /**
      * 刷新所有用户权限缓存
      * <p>
      * 清除 Redis 中所有 role: 前缀的用户角色缓存，确保所有用户的权限验证获取最新的角色信息
