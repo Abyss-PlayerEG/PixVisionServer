@@ -180,4 +180,17 @@ public interface UserService {
      * @return 清除的缓存数量
      */
     int clearAllUserRoleCache();
+
+    /**
+     * 更新用户角色（仅系统管理员可调用）
+     * <p>
+     * 修改指定用户的角色，并清除该用户的角色缓存以确保权限验证获取最新信息
+     * </p>
+     *
+     * @param targetUserId 目标用户 ID
+     * @param newRole      新角色代码（11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）
+     * @param adminId      执行操作的管理员 ID
+     * @return 是否成功
+     */
+    Boolean updateUserRole(Integer targetUserId, Integer newRole, Integer adminId);
 }

@@ -649,4 +649,74 @@ public class UserServiceImpl implements UserService {
 
         return clearedCount;
     }
+
+    /**
+     * 更新用户角色（仅系统管理员可调用）
+     *
+     * @param targetUserId 目标用户 ID
+     * @param newRole      新角色代码
+     * @param adminId      执行操作的管理员 ID
+     * @return 是否成功
+     */
+    @Override
+    public Boolean updateUserRole(Integer targetUserId, Integer newRole, Integer adminId) {
+        log.info("开始更新用户角色 - 目标用户 ID: {}, 新角色: {}, 管理员 ID: {}", targetUserId, newRole, adminId);
+
+        // 参数校验
+        if (targetUserId == null || targetUserId <= 0) {
+            log.error("目标用户 ID 无效: {}", targetUserId);
+            return false;
+        }
+
+        if (newRole == null) {
+            log.error("新角色不能为空");
+            return false;
+        }
+
+        // 验证角色代码是否合法
+        List<Integer> validRoles = List.of(11, 22, 55, 66, 77);
+        if (!validRoles.contains(newRole)) {
+            log.error("无效的角色代码: {}，允许的角色代码: {}", newRole, validRoles);
+            return false;
+        }
+
+        // 检查目标用户是否存在
+        User targetUser = userMapper.selectAllUserInfoById(targetUserId);
+        if (targetUser == null) {
+            log.warn("目标用户不存在 - 用户 ID: {}", targetUserId);
+            return false;
+        }
+
+        // 检查管理员是否存在
+        User adminUser = userMapper.selectAllUserInfoById(adminId);
+        if (adminUser == null) {
+            log.error("管理员不存在 - 管理员 ID: {}", adminId);
+            return false;
+        }
+
+        // 防止修改自己的角色（可选的安全措施）
+        if (targetUserId.equals(adminId)) {
+            log.warn("管理员不能修改自己的角色 - 用户 ID: {}", adminId);
+            return false;
+        }
+
+        Integer oldRole = targetUser.getUser_role();
+        log.info("当前用户角色: {}, 准备更新为: {}", oldRole, newRole);
+
+        // 执行角色更新
+        int result = userMapper.updateUserRole(targetUserId, newRole, adminId);
+
+        if (result > 0) {
+            log.info("用户角色更新成功 - 用户 ID: {}, 旧角色: {}, 新角色: {}, 管理员: {}",
+                    targetUserId, oldRole, newRole, adminId);
+
+            // 清除该用户的角色缓存，确保下次请求时获取最新的角色信息
+            clearUserRoleCache(targetUserId);
+
+            return true;
+        } else {
+            log.error("用户角色更新失败 - 用户 ID: {}", targetUserId);
+            return false;
+        }
+    }
 }

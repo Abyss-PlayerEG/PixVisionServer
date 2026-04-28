@@ -113,4 +113,14 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 影响行数
      */
     int updateUserEmail(@Param("userId") Integer userId, @Param("email") String email);
+
+    /**
+     * 更新用户角色（仅系统管理员可调用）
+     *
+     * @param userId   用户 ID
+     * @param newRole  新角色代码
+     * @param adminId  执行操作的管理员 ID
+     * @return 影响行数
+     */
+    int updateUserRole(@Param("userId") Integer userId, @Param("newRole") Integer newRole, @Param("adminId") Integer adminId);
 }
