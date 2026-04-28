@@ -30,7 +30,7 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/password")
 @RequiredArgsConstructor
-@Tag(name = "用户密码管理相关接口")
+@Tag(name = "用户密码管理接口")
 public class UserPasswordController {
     private static final Logger log = LoggerFactory.getLogger(UserPasswordController.class);
 

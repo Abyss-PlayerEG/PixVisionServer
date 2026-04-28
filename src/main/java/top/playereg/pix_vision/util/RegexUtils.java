@@ -140,4 +140,21 @@ public class RegexUtils {
             "http://example.com 或 https://example.com/path"
         );
     }
+
+    /**
+     * 密码正则匹配
+     * 6-16位, 只允许字母、数字和_
+     *
+     * @param password 待匹配的密码
+     * @return boolean
+     * @author PlayerEG
+     */
+    public static boolean isPassword(String password) {
+        return isMatch(
+            "^[a-zA-Z0-9_]{5,16}$",
+                password,
+                "密码",
+                "6-16位, 只允许字母、数字、下划线、英文句号"
+        );
+    }
 }

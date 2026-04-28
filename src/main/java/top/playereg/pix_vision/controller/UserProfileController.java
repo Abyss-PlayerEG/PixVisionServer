@@ -30,7 +30,7 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/profile")
 @RequiredArgsConstructor
-@Tag(name = "用户资料管理相关接口")
+@Tag(name = "用户资料管理接口")
 public class UserProfileController {
     private static final Logger log = LoggerFactory.getLogger(UserProfileController.class);
 
@@ -122,7 +122,7 @@ public class UserProfileController {
         // 判断关键词类型：UUID 精确查询 or 普通关键词模糊查询
         byte[] uuidBytes = null;
         String searchKeyword = null;
-        
+
         if (keyword != null && !keyword.isEmpty()) {
             if (RegexUtils.isUUID(keyword)) {
                 // UUID 格式，进行精确查询

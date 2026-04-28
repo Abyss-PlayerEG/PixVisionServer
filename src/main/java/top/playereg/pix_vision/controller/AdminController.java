@@ -2,6 +2,7 @@ package top.playereg.pix_vision.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
@@ -39,6 +41,7 @@ public class AdminController {
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
     private final UserService userService;
+    private final TokenWhitelistService tokenWhitelistService;
 
     /**
      * 刷新所有用户权限缓存
@@ -64,7 +67,7 @@ public class AdminController {
             - 无需参数
 
             ## 返回说明：
-            - **成功**：返回 **{"data": {"clearedCount": 清除数量}}** 和"权限缓存刷新成功"提示
+            - **成功**：返回 **{"data": 清除数量}** 和"权限缓存刷新成功"提示
             - **失败**：返回 **{"data": null}** 和错误提示
 
             ## 业务逻辑：
@@ -109,9 +112,9 @@ public class AdminController {
      * 11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员
      * </p>
      *
-     * @param request HTTP 请求对象（用于获取当前管理员信息）
+     * @param request      HTTP 请求对象（用于获取当前管理员信息）
      * @param targetUserId 目标用户 ID
-     * @param newRole 新角色代码
+     * @param newRole      新角色代码
      * @return 操作结果
      * @author PlayerEG
      */
@@ -161,11 +164,15 @@ public class AdminController {
     )
     @PostMapping("/update-user-role")
     public ResponsePojo<Boolean> updateUserRole(
-            HttpServletRequest request,
-            @Parameter(description = "目标用户 ID", required = true, example = "123")
-            @RequestParam Integer targetUserId,
-            @Parameter(description = "新角色代码（11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）", required = true, example = "22")
-            @RequestParam Integer newRole
+        HttpServletRequest request,
+        @Parameter(description = "目标用户 ID", required = true, example = "123")
+        @RequestParam Integer targetUserId,
+        @Schema(
+            description = "新角色代码（11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）",
+            allowableValues = {"11", "22", "55", "66", "77"},
+            example = "22"
+        )
+        @RequestParam Integer newRole
     ) {
         log.info("管理员开始修改用户角色 - 目标用户 ID: {}, 新角色: {}", targetUserId, newRole);
 
@@ -209,35 +216,15 @@ public class AdminController {
     }
 
     /**
-     * 根据角色代码获取角色名称
-     *
-     * @param roleCode 角色代码
-     * @return 角色名称
-     */
-    private String getRoleName(Integer roleCode) {
-        if (roleCode == null) {
-            return "未知";
-        }
-        return switch (roleCode) {
-            case 11 -> "普通用户";
-            case 22 -> "创作者";
-            case 55 -> "审核员";
-            case 66 -> "工单管理员";
-            case 77 -> "系统管理员";
-            default -> "未知角色(" + roleCode + ")";
-        };
-    }
-
-    /**
      * 修改用户状态
      * <p>
      * 系统管理员可以修改指定用户的账户状态，支持的状态代码：
      * 10-正常, 20-冻结, 30-封禁
      * </p>
      *
-     * @param request HTTP 请求对象（用于获取当前管理员信息）
+     * @param request      HTTP 请求对象（用于获取当前管理员信息）
      * @param targetUserId 目标用户 ID
-     * @param newStatus 新状态代码
+     * @param newStatus    新状态代码
      * @return 操作结果
      * @author PlayerEG
      */
@@ -250,6 +237,7 @@ public class AdminController {
             - 仅系统管理员可调用
             - 可以修改任意用户的状态（除自己外）
             - 记录操作日志（通过 update_user 字段）
+            - 自动移除该用户所有 Token，强制所有设备下线
 
             ## 参数说明：
             - **targetUserId**: 目标用户 ID（必填）
@@ -268,7 +256,8 @@ public class AdminController {
             3. 验证目标用户是否存在
             4. 验证新状态代码是否合法
             5. 更新用户状态到数据库
-            6. 返回操作结果
+            6. 将该用户所有 Token 从白名单移除，强制所有设备下线
+            7. 返回操作结果
 
             ## 安全限制：
             - 管理员不能修改自己的状态
@@ -284,11 +273,11 @@ public class AdminController {
     )
     @PostMapping("/update-user-status")
     public ResponsePojo<Boolean> updateUserStatus(
-            HttpServletRequest request,
-            @Parameter(description = "目标用户 ID", required = true, example = "123")
-            @RequestParam Integer targetUserId,
-            @Parameter(description = "新状态代码（10-正常, 20-冻结, 30-封禁）", required = true, example = "20")
-            @RequestParam Integer newStatus
+        HttpServletRequest request,
+        @Parameter(description = "目标用户 ID", required = true, example = "123")
+        @RequestParam Integer targetUserId,
+        @Parameter(description = "新状态代码（10-正常, 20-冻结, 30-封禁）", required = true, example = "20")
+        @RequestParam Integer newStatus
     ) {
         log.info("管理员开始修改用户状态 - 目标用户 ID: {}, 新状态: {}", targetUserId, newStatus);
 
@@ -314,8 +303,17 @@ public class AdminController {
             if (success) {
                 log.info("用户状态修改成功 - 目标用户 ID: {}, 新状态: {}", targetUserId, newStatus);
 
+                // 获取目标用户信息用于移除 Token
+                User targetUser = userService.selectAllUserById(targetUserId);
+                if (targetUser != null) {
+                    // 将该用户所有 Token 从白名单移除，强制下线
+                    int removedCount = tokenWhitelistService.removeAllUserTokens(targetUserId, targetUser.getUsername());
+                    log.info("已移除用户所有 Token，用户 ID: {}, 用户名: {}, 移除数量: {}",
+                        targetUserId, targetUser.getUsername(), removedCount);
+                }
+
                 String statusName = getStatusName(newStatus);
-                return ResponsePojo.success(true, "用户状态修改成功，已更新为：" + statusName);
+                return ResponsePojo.success(true, "用户状态修改成功，已更新为：" + statusName + "，已强制该用户所有设备下线");
             } else {
                 log.warn("用户状态修改失败 - 目标用户 ID: {}", targetUserId);
                 return ResponsePojo.error(false, "用户状态修改失败，请检查用户是否存在或状态代码是否正确");
@@ -350,7 +348,7 @@ public class AdminController {
      * 系统管理员可以删除指定用户的账户（逻辑删除），并清除该用户的所有 Token
      * </p>
      *
-     * @param request HTTP 请求对象（用于获取当前管理员信息）
+     * @param request      HTTP 请求对象（用于获取当前管理员信息）
      * @param targetUserId 目标用户 ID
      * @return 操作结果
      * @author PlayerEG
@@ -397,9 +395,9 @@ public class AdminController {
     )
     @PostMapping("/delete-user")
     public ResponsePojo<Boolean> deleteUser(
-            HttpServletRequest request,
-            @Parameter(description = "目标用户 ID", required = true, example = "123")
-            @RequestParam Integer targetUserId
+        HttpServletRequest request,
+        @Parameter(description = "目标用户 ID", required = true, example = "123")
+        @RequestParam Integer targetUserId
     ) {
         log.info("管理员开始删除用户账户 - 目标用户 ID: {}", targetUserId);
 
@@ -441,13 +439,14 @@ public class AdminController {
      * 系统管理员可以直接创建新用户，无需验证码验证
      * </p>
      *
-     * @param request HTTP 请求对象（用于获取当前管理员信息）
-     * @param username 用户名
-     * @param password 密码（明文）
-     * @param nickname 昵称
-     * @param email 邮箱
-     * @param role 角色代码（可选，默认为 11-普通用户）
-     * @param status 状态代码（可选，默认为 10-正常）
+     * @param request         HTTP 请求对象（用于获取当前管理员信息）
+     * @param username        用户名
+     * @param password        密码（明文）
+     * @param confirmPassword 确认密码
+     * @param nickname        昵称
+     * @param email           邮箱
+     * @param role            角色代码（可选，默认为 11-普通用户）
+     * @param status          状态代码（可选，默认为 10-正常）
      * @return 操作结果
      * @author PlayerEG
      */
@@ -463,10 +462,12 @@ public class AdminController {
             - 自动生成 UUID 和随机头像
             - 可指定角色和状态
             - 记录创建者（adminId）
+            - 密码二次确认
 
             ## 参数说明：
             - **username**: 用户名（必填，唯一）
             - **password**: 密码（必填，明文，将自动加密）
+            - **confirmPassword**: 确认密码（必填，必须与 password 一致）
             - **nickname**: 昵称（必填）
             - **email**: 邮箱（必填，唯一）
             - **role**: 角色代码（可选，默认 11），可选值：
@@ -481,62 +482,75 @@ public class AdminController {
               - 30: 封禁
 
             ## 返回说明：
-            - **成功**：返回 **{"data": {User 对象}}** 和“用户创建成功”提示
+            - **成功**：返回 **{"data": {User 对象}}** 和"用户创建成功"提示
+            - **两次密码不一致**：返回 **{"data": null}** 和"两次输入的密码不一致"提示
             - **失败**：返回 **{"data": null}** 和错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
             2. 从 Token 中获取当前管理员 ID
             3. 验证参数合法性
-            4. 检查用户名和邮箱是否已存在
-            5. 加密密码（SHA-256）
-            6. 生成 UUID 和随机头像
-            7. 创建用户记录
-            8. 返回创建的用户信息
+            4. 验证两次输入的密码是否一致
+            5. 检查用户名和邮箱是否已存在
+            6. 加密密码（SHA-256）
+            7. 生成 UUID 和随机头像
+            8. 创建用户记录
+            9. 返回创建的用户信息
 
             ## 安全限制：
             - 用户名必须唯一
             - 邮箱必须唯一
             - 密码会自动加密，不会存储明文
             - 角色和状态代码必须在允许范围内
+            - 两次输入的密码必须完全一致
 
             ## 注意事项：
             - 管理员可以直接设置用户角色，包括高权限角色
             - 建议谨慎分配高权限角色（如 77-系统管理员）
             - 创建的用户初始状态为正常，可以立即登录
             - 密码在传输过程中建议使用 HTTPS 加密
+            - 两次输入的密码必须完全一致
             """
     )
     @PostMapping("/create-user")
-    public ResponsePojo<User> createUser(
-            HttpServletRequest request,
-            @Parameter(description = "用户名（必填，唯一）", required = true, example = "new_user")
-            @RequestParam String username,
-            @Parameter(description = "密码（必填，明文，将自动加密）", required = true, example = "password123")
-            @RequestParam String password,
-            @Parameter(description = "昵称（必填）", required = true, example = "新用户")
-            @RequestParam String nickname,
-            @Parameter(description = "邮箱（必填，唯一）", required = true, example = "newuser@example.com")
-            @RequestParam String email,
-            @Parameter(description = "角色代码（可选，默认 11-普通用户）", required = false, example = "11")
-            @RequestParam(required = false, defaultValue = "11") Integer role,
-            @Parameter(description = "状态代码（可选，默认 10-正常）", required = false, example = "10")
-            @RequestParam(required = false, defaultValue = "10") Integer status
+    public ResponsePojo<Boolean> createUser(
+        HttpServletRequest request,
+        @Parameter(description = "用户名（必填，唯一）", required = true, example = "new_user") @RequestParam String username,
+        @Parameter(description = "密码（必填，明文，将自动加密）", required = true, example = "123456") @RequestParam String password,
+        @Parameter(description = "确认密码（必填，必须与密码一致）", required = true, example = "123456") @RequestParam String confirmPassword,
+        @Parameter(description = "昵称（必填）", required = true, example = "新用户") @RequestParam String nickname,
+        @Parameter(description = "邮箱（必填，唯一）", required = true, example = "newuser@example.com") @RequestParam String email,
+        @Schema(
+            description = "角色代码（可选，默认 11-普通用户）",
+            allowableValues = {"11", "22", "55", "66", "77"},
+            example = "11"
+        ) @RequestParam(required = false, defaultValue = "11") Integer role,
+        @Schema(
+            description = "状态代码（可选，默认 10-正常）",
+            allowableValues = {"10", "20", "30"},
+            example = "10"
+        ) @RequestParam(required = false, defaultValue = "10") Integer status
     ) {
         log.info("管理员开始创建新用户 - 用户名: {}, 邮箱: {}", username, email);
 
         try {
+            // 验证两次密码是否一致
+            if (!password.equals(confirmPassword)) {
+                log.warn("两次输入的密码不一致 - 用户名: {}", username);
+                return ResponsePojo.error(false, "两次输入的密码不一致");
+            }
+
             // 从 Token 中获取当前管理员 ID
             String token = JWTUtils.extractTokenWithLog(request, "创建新用户");
             if (token == null || token.isEmpty()) {
                 log.error("Token 不存在");
-                return ResponsePojo.error(null, "未授权访问");
+                return ResponsePojo.error(false, "未授权访问");
             }
 
             Integer adminId = JWTUtils.getUserIdFromToken(token);
             if (adminId == null) {
                 log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(null, "Token 无效");
+                return ResponsePojo.error(false, "Token 无效");
             }
 
             log.info("当前管理员 ID: {}", adminId);
@@ -546,14 +560,36 @@ public class AdminController {
 
             if (newUser != null) {
                 log.info("用户创建成功 - 用户名: {}, 用户 ID: {}", username, newUser.getUser_id());
-                return ResponsePojo.success(newUser, "用户创建成功");
+                return ResponsePojo.success(true, "用户创建成功");
             } else {
                 log.warn("用户创建失败 - 用户名: {}", username);
-                return ResponsePojo.error(null, "用户创建失败，请检查用户名或邮箱是否已存在，以及参数是否正确");
+                return ResponsePojo.error(false, "用户创建失败，请检查用户名或邮箱是否已存在，以及参数是否正确");
             }
         } catch (Exception e) {
             log.error("创建用户异常 - 错误: {}", e.getMessage(), e);
-            return ResponsePojo.error(null, "系统错误: " + e.getMessage());
+            return ResponsePojo.error(false, "系统错误: " + e.getMessage());
         }
+    }
+
+    // ================================================================================
+
+    /**
+     * 根据角色代码获取角色名称
+     *
+     * @param roleCode 角色代码
+     * @return 角色名称
+     */
+    private String getRoleName(Integer roleCode) {
+        if (roleCode == null) {
+            return "未知";
+        }
+        return switch (roleCode) {
+            case 11 -> "普通用户";
+            case 22 -> "创作者";
+            case 55 -> "审核员";
+            case 66 -> "工单管理员";
+            case 77 -> "系统管理员";
+            default -> "未知角色(" + roleCode + ")";
+        };
     }
 }
