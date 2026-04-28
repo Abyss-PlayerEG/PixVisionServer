@@ -42,15 +42,20 @@ public class WorkServiceImpl implements WorkService {
     private SeriesMapper seriesMapper;
 
     /**
-     * 分页查询首页作品列表
+     * 分页查询首页作品列表（支持多条件查询）
      *
-     * @param page 分页对象
+     * @param page       分页对象
+     * @param workTitle  作品标题（可选，模糊查询）
+     * @param userId     用户 ID（可选，精确查询）
+     * @param username   用户名（可选，模糊查询）
+     * @param nickname   昵称（可选，模糊查询）
+     * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> selectHomepageWorks(Page<Works> page) {
-        return worksMapper.selectHomepageWorks(page);
+    public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, String username, String nickname, Boolean isOriginal) {
+        return worksMapper.selectHomepageWorks(page, workTitle, userId, username, nickname, isOriginal);
     }
 
     /**
@@ -195,7 +200,7 @@ public class WorkServiceImpl implements WorkService {
         // 6. 验证系列 ID（null 表示无系列）
         Integer finalSeriesId = null; // 默认为 null，表示不属于任何系列
         if (seriesId != null && seriesId > 0) {
-            Series series = seriesMapper.selectById(seriesId);
+            Series series = seriesMapper.selectSeriesById(seriesId);
             if (series == null || series.getIs_delete()) {
                 log.warn("系列不存在或已删除，系列 ID: {}", seriesId);
                 throw new IllegalArgumentException("系列不存在或已删除");
@@ -268,6 +273,233 @@ public class WorkServiceImpl implements WorkService {
     }
 
     /**
+     * 修改作品信息（支持部分字段修改）
+     *
+     * @param workId     作品 ID
+     * @param userId     当前用户 ID（用于权限验证）
+     * @param workTitle  作品标题（可选，最多 16 个中文字符）
+     * @param file       新的图片文件（可选，MultipartFile 类型）
+     * @param seriesId   系列 ID（可选，0 表示不属于任何系列）
+     * @param isOriginal 是否原创（可选）
+     * @param outUrl     外部转载链接（可选）
+     * @return 修改结果
+     * @author PlayerEG
+     */
+    @Override
+    public Boolean updateWork(Integer workId, Integer userId, String workTitle,
+                              org.springframework.web.multipart.MultipartFile file,
+                              Integer seriesId,
+                              Boolean isOriginal, String outUrl) {
+        log.info("开始修改作品，作品 ID: {}, 用户 ID: {}", workId, userId);
+
+        // 参数校验
+        if (workId == null || workId <= 0) {
+            log.warn("作品 ID 无效: {}", workId);
+            return false;
+        }
+
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return false;
+        }
+
+        // 检查是否所有参数都为空
+        boolean allNull = (workTitle == null || workTitle.trim().isEmpty())
+            && (file == null || file.isEmpty())
+            && seriesId == null
+            && isOriginal == null
+            && (outUrl == null || outUrl.trim().isEmpty());
+
+        if (allNull) {
+            log.warn("所有修改参数均为空，作品 ID: {}", workId);
+            return null; // 返回 null 表示无修改内容
+        }
+
+        // 验证作品是否存在且属于当前用户
+        Works existingWork = worksMapper.selectWorkById(workId);
+        if (existingWork == null || existingWork.getIs_delete()) {
+            log.warn("作品不存在或已删除，作品 ID: {}", workId);
+            throw new IllegalArgumentException("作品不存在或已删除");
+        }
+
+        if (!existingWork.getUser_id().equals(userId)) {
+            log.warn("无权修改该作品，作品 ID: {}, 用户 ID: {}", workId, userId);
+            throw new SecurityException("无权修改该作品");
+        }
+
+        // 保存旧图片文件名，用于后续删除
+        String oldImgUrl = existingWork.getImg_url();
+        String newImgUrl = null; // 新图片文件名
+
+        // 处理图片文件上传（如果提供）
+        if (file != null && !file.isEmpty()) {
+            // 1. 验证文件格式
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isEmpty()) {
+                log.warn("文件名为空");
+                throw new IllegalArgumentException("文件名不能为空");
+            }
+
+            String extension = getFileExtension(originalFilename);
+            if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
+                log.warn("不支持的文件格式: {}", extension);
+                throw new IllegalArgumentException("不支持的文件格式，仅支持: " + String.join(", ", ALLOWED_EXTENSIONS));
+            }
+
+            // 2. 验证文件大小（最大 32MB）
+            long fileSize = file.getSize();
+            long maxSize = 32 * 1024 * 1024; // 32MB
+            if (fileSize > maxSize) {
+                log.warn("文件大小超出限制: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
+                throw new IllegalArgumentException("文件大小超出限制，最大允许 32MB");
+            }
+
+            // 3. 读取文件字节数组
+            byte[] fileBytes;
+            try {
+                fileBytes = file.getBytes();
+            } catch (java.io.IOException e) {
+                log.error("读取文件失败: {}", e.getMessage());
+                throw new RuntimeException("文件读取失败");
+            }
+
+            // 4. 验证是否为真实的图片格式（通过魔数检查）
+            if (!ImageUtils.isValidImage(fileBytes)) {
+                log.warn("文件不是有效的图片格式，文件大小: {} bytes", fileBytes.length);
+                throw new IllegalArgumentException("文件不是有效的图片格式，请上传 JPG/JPEG/PNG 格式的图片");
+            }
+
+            // 5. 生成唯一文件名（保留原始扩展名）
+            String uniqueFileName = UUID.randomUUID().toString().replace("-", "") + "." + extension;
+            String savePath = Paths.get(FilePathConfig.WorksPath, uniqueFileName).toString();
+
+            // 6. 保存新文件
+            File saveFile = new File(savePath);
+            File parentDir = saveFile.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+
+            cn.hutool.core.io.FileUtil.writeBytes(fileBytes, saveFile);
+            log.info("新作品图片保存成功: {}", savePath);
+
+            // 7. 删除旧图片文件
+            if (oldImgUrl != null && !oldImgUrl.isEmpty()) {
+                deleteOldImageFile(oldImgUrl);
+            }
+
+            // 8. 设置新图片 URL
+            newImgUrl = uniqueFileName;
+        }
+
+        // 验证作品标题长度（如果提供）
+        if (workTitle != null && !workTitle.trim().isEmpty()) {
+            String trimmedTitle = workTitle.trim();
+            try {
+                int byteLength = trimmedTitle.getBytes("UTF-8").length;
+                if (byteLength > 48) {
+                    log.warn("作品标题过长: {} 字节", byteLength);
+                    throw new IllegalArgumentException("作品标题过长，最多 16 个中文字符（48 字节），当前: " + byteLength + " 字节");
+                }
+                workTitle = trimmedTitle; // 使用去除空格后的标题
+            } catch (java.io.UnsupportedEncodingException e) {
+                log.error("系统不支持 UTF-8 编码: {}", e.getMessage());
+                throw new RuntimeException("系统编码配置错误");
+            }
+        } else {
+            workTitle = null; // 空字符串转为 null，不更新
+        }
+
+        // 处理系列 ID（如果提供）
+        Integer finalSeriesId = null;
+        boolean shouldUpdateSeriesId = false; // 标记是否需要更新 series_id
+        if (seriesId != null) {
+            if (seriesId == 0) {
+                // seriesId = 0 表示清空系列，设置为 NULL
+                finalSeriesId = null;
+                shouldUpdateSeriesId = true; // 需要更新为 NULL
+                log.info("将作品从系列中移除，作品 ID: {}", workId);
+            } else if (seriesId > 0) {
+                // seriesId > 0 需要验证系列是否存在且属于当前用户
+                Series series = seriesMapper.selectSeriesById(seriesId);
+                if (series == null || series.getIs_delete()) {
+                    log.warn("系列不存在或已删除，系列 ID: {}", seriesId);
+                    throw new IllegalArgumentException("系列不存在或已删除");
+                }
+
+                // 验证系列是否属于当前用户
+                if (!series.getUser_id().equals(userId)) {
+                    log.warn("无权将作品关联到该系列，系列 ID: {}, 用户 ID: {}", seriesId, userId);
+                    throw new SecurityException("无权将作品关联到该系列");
+                }
+
+                // 系列验证通过，使用传入的 seriesId
+                finalSeriesId = seriesId;
+                shouldUpdateSeriesId = true; // 需要更新为具体值
+                log.info("将作品关联到系列，作品 ID: {}, 系列 ID: {}", workId, seriesId);
+            } else {
+                // seriesId < 0 是无效值
+                log.warn("无效的系列 ID: {}", seriesId);
+                throw new IllegalArgumentException("系列 ID 不能为负数");
+            }
+        }
+
+        // 验证转载链接（处理原创/转载逻辑）
+        Boolean finalIsOriginal = isOriginal;
+        String finalOutUrl = outUrl;
+
+        if (finalIsOriginal != null) {
+            if (!finalIsOriginal) {
+                // 设置为非原创（转载）
+                // 必须提供外部链接
+                if (finalOutUrl == null || finalOutUrl.trim().isEmpty()) {
+                    log.warn("转载作品未提供外部链接");
+                    throw new IllegalArgumentException("转载作品必须提供外部链接");
+                }
+                // URL 格式校验
+                if (!RegexUtils.isURL(finalOutUrl.trim())) {
+                    log.warn("外部链接格式不正确: {}", finalOutUrl);
+                    throw new IllegalArgumentException("外部链接格式不正确，请输入有效的 URL 地址");
+                }
+                finalOutUrl = finalOutUrl.trim();
+            } else {
+                // 设置为原创
+                // 如果提供了 outUrl，报错
+                if (finalOutUrl != null && !finalOutUrl.trim().isEmpty()) {
+                    log.warn("原创作品不能填写外部链接");
+                    throw new IllegalArgumentException("原创作品不能填写外部链接");
+                }
+                // 将 outUrl 设置为空字符串（清空原有的转载链接）
+                finalOutUrl = "";
+            }
+        } else {
+            // isOriginal 为 null，不修改原创状态
+            // 但如果提供了 outUrl，需要验证格式
+            if (finalOutUrl != null && !finalOutUrl.trim().isEmpty()) {
+                finalOutUrl = finalOutUrl.trim();
+                // 验证 URL 格式
+                if (!RegexUtils.isURL(finalOutUrl)) {
+                    log.warn("外部链接格式不正确: {}", finalOutUrl);
+                    throw new IllegalArgumentException("外部链接格式不正确，请输入有效的 URL 地址");
+                }
+            } else {
+                finalOutUrl = null; // 空字符串转为 null，不更新
+            }
+        }
+
+        // 执行更新（使用 newImgUrl、finalSeriesId 和 shouldUpdateSeriesId）
+        int affectedRows = worksMapper.updateWorkInfo(workId, userId, workTitle, newImgUrl, finalSeriesId, shouldUpdateSeriesId, finalIsOriginal, finalOutUrl);
+
+        if (affectedRows > 0) {
+            log.info("作品修改成功，作品 ID: {}, 用户 ID: {}", workId, userId);
+            return true;
+        } else {
+            log.error("作品修改失败，作品 ID: {}, 用户 ID: {}", workId, userId);
+            return false;
+        }
+    }
+
+    /**
      * 获取文件扩展名
      *
      * @param filename 文件名
@@ -280,5 +512,33 @@ public class WorkServiceImpl implements WorkService {
             return filename.substring(lastDotIndex + 1);
         }
         return "";
+    }
+
+    /**
+     * 删除旧图片文件（重命名为 .del 后缀）
+     *
+     * @param imgFileName 图片文件名
+     * @author PlayerEG
+     */
+    private void deleteOldImageFile(String imgFileName) {
+        if (imgFileName == null || imgFileName.isEmpty()) {
+            return;
+        }
+
+        File originalFile = new File(FilePathConfig.WorksPath, imgFileName);
+        File deletedFile = new File(FilePathConfig.WorksPath, imgFileName + ".del");
+
+        if (originalFile.exists() && !deletedFile.exists()) {
+            boolean renamed = originalFile.renameTo(deletedFile);
+            if (renamed) {
+                log.info("旧图片文件重命名为 .del 成功: {} -> {}", imgFileName, imgFileName + ".del");
+            } else {
+                log.error("旧图片文件重命名失败: {}", imgFileName);
+            }
+        } else if (!originalFile.exists()) {
+            log.warn("旧图片文件不存在，跳过删除: {}", imgFileName);
+        } else {
+            log.warn("旧图片文件已标记为删除，跳过重命名: {}", imgFileName);
+        }
     }
 }

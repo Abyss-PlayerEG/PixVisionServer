@@ -2,6 +2,7 @@ package top.playereg.pix_vision.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -526,11 +527,11 @@ public class ImageController {
     )
     @RequireRole(value = {22, 77})
     @PostMapping("/work/upload")
-    public ResponseEntity<ResponsePojo<Integer>> uploadWork(
+    public ResponseEntity<ResponsePojo<Boolean>> uploadWork(
         @Parameter(description = "作品图片文件", required = true) @RequestParam MultipartFile file,
         @Parameter(description = "作品标题，最多16个中文字符", required = true, example = "春日樱花") @RequestParam String workTitle,
         @Parameter(description = "系列 ID（0 表示不属于任何系列）", required = false, example = "1") @RequestParam(required = false, defaultValue = "0") Integer seriesId,
-        @Parameter(description = "是否原创：true-原创，false-转载", required = true, example = "true") @RequestParam Boolean isOriginal,
+        @Schema(description = "是否原创", allowableValues = {"true", "false"}, example = "true") @RequestParam Boolean isOriginal,
         @Parameter(description = "外部转载链接（仅转载时必填）", required = false, example = "https://example.com/original") @RequestParam(required = false) String outUrl,
         HttpServletRequest request
     ) {
@@ -539,20 +540,20 @@ public class ImageController {
             Integer userId = (Integer) request.getAttribute("userId");
             if (userId == null) {
                 log.warn("未获取到用户 ID，请先登录");
-                return ResponseEntity.status(401).body(ResponsePojo.error(null, "未授权访问：请先登录"));
+                return ResponseEntity.status(401).body(ResponsePojo.error(false, "未授权访问：请先登录"));
             }
 
             // 2. 验证文件是否为空
             if (file.isEmpty()) {
                 log.warn("上传的文件为空");
-                return ResponseEntity.badRequest().body(ResponsePojo.error(null, "上传的文件不能为空"));
+                return ResponseEntity.badRequest().body(ResponsePojo.error(false, "上传的文件不能为空"));
             }
 
             // 3. 验证文件名
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null || originalFilename.isEmpty()) {
                 log.warn("文件名为空");
-                return ResponseEntity.badRequest().body(ResponsePojo.error(null, "文件名不能为空"));
+                return ResponseEntity.badRequest().body(ResponsePojo.error(false, "文件名不能为空"));
             }
 
             // 4. 读取文件数据
@@ -572,17 +573,17 @@ public class ImageController {
             );
 
             log.info("作品上传成功，用户 ID: {}, 作品 ID: {}", userId, workId);
-            return ResponseEntity.ok(ResponsePojo.success(workId, "作品发布成功"));
+            return ResponseEntity.ok(ResponsePojo.success(true, "作品发布成功"));
 
         } catch (IllegalArgumentException e) {
             log.error("参数验证失败: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ResponsePojo.error(null, e.getMessage()));
+            return ResponseEntity.badRequest().body(ResponsePojo.error(false, e.getMessage()));
         } catch (SecurityException e) {
             log.error("权限验证失败: {}", e.getMessage());
-            return ResponseEntity.status(403).body(ResponsePojo.error(null, e.getMessage()));
+            return ResponseEntity.status(403).body(ResponsePojo.error(false, e.getMessage()));
         } catch (Exception e) {
             log.error("作品上传失败: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(ResponsePojo.error(null, "作品上传失败: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponsePojo.error(false, "作品上传失败: " + e.getMessage()));
         }
     }
 

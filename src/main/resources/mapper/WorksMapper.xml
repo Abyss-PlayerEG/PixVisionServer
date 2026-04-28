@@ -27,25 +27,41 @@
         , user_id, work_title, img_url, series_id, like_count, star_count, view_count, is_original_work, out_url, is_delete, update_time, update_user, create_time, create_user
     </sql>
 
-    <!-- 分页查询首页作品列表（未删除，按创建时间倒序） -->
+    <!-- 分页查询首页作品列表（支持多条件查询，未删除，按创建时间倒序） -->
     <select id="selectHomepageWorks" resultMap="BaseResultMap">
-        SELECT work_id,
-               user_id,
-               work_title,
-               img_url,
-               series_id,
-               like_count,
-               star_count,
-               view_count,
-               is_original_work,
-               out_url,
-               update_time,
-               update_user,
-               create_time,
-               create_user
-        FROM tb_works
-        WHERE is_delete = 0
-        ORDER BY create_time DESC
+        SELECT w.work_id,
+               w.user_id,
+               w.work_title,
+               w.img_url,
+               w.series_id,
+               w.like_count,
+               w.star_count,
+               w.view_count,
+               w.is_original_work,
+               w.out_url,
+               w.update_time,
+               w.update_user,
+               w.create_time,
+               w.create_user
+        FROM tb_works w
+        LEFT JOIN tb_user u ON w.user_id = u.user_id
+        WHERE w.is_delete = 0
+        <if test="workTitle != null and workTitle != ''">
+            AND w.work_title LIKE CONCAT('%', #{workTitle}, '%')
+        </if>
+        <if test="userId != null">
+            AND w.user_id = #{userId}
+        </if>
+        <if test="username != null and username != ''">
+            AND u.username LIKE CONCAT('%', #{username}, '%')
+        </if>
+        <if test="nickname != null and nickname != ''">
+            AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
+        </if>
+        <if test="isOriginal != null">
+            AND w.is_original_work = #{isOriginal}
+        </if>
+        ORDER BY w.create_time DESC
     </select>
 
     <!-- 批量逻辑删除作品（SQL 层面验证用户权限） -->
@@ -72,5 +88,59 @@
             #{id}
         </foreach>
     </select>
+
+    <!-- 将指定系列的所有作品 series_id 置空（SQL 层面验证用户权限） -->
+    <update id="clearSeriesIdBySeriesId">
+        UPDATE tb_works
+        SET series_id   = NULL,
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE series_id = #{seriesId}
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
+    <!-- 根据系列 ID 查询所有作品 ID（用于删除系列内作品） -->
+    <select id="selectWorkIdsBySeriesId" resultType="java.lang.Integer">
+        SELECT work_id
+        FROM tb_works
+        WHERE series_id = #{seriesId}
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </select>
+
+    <!-- 根据作品 ID 查询作品信息 -->
+    <select id="selectWorkById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tb_works
+        WHERE work_id = #{workId}
+    </select>
+
+    <!-- 更新作品信息（SQL 层面验证用户权限，动态更新非空字段） -->
+    <update id="updateWorkInfo">
+        UPDATE tb_works
+        <set>
+            <if test="workTitle != null">
+                work_title = #{workTitle},
+            </if>
+            <if test="imgUrl != null">
+                img_url = #{imgUrl},
+            </if>
+            <if test="shouldUpdateSeries != null and shouldUpdateSeries">
+                series_id = #{seriesId},
+            </if>
+            <if test="isOriginal != null">
+                is_original_work = #{isOriginal},
+            </if>
+            <if test="outUrl != null">
+                out_url = #{outUrl},
+            </if>
+            update_time = NOW(),
+            update_user = #{userId}
+        </set>
+        WHERE work_id = #{workId}
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </update>
 
 </mapper>

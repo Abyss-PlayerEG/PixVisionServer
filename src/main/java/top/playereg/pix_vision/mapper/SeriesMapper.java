@@ -33,4 +33,30 @@ public interface SeriesMapper extends BaseMapper<Series> {
      * @return 作品系列列表
      */
     List<Series> selectSeriesByUserId(@Param("userId") Integer userId);
+
+    /**
+     * 根据系列 ID 查询系列信息
+     *
+     * @param seriesId 系列 ID
+     * @return 系列对象
+     */
+    Series selectSeriesById(@Param("seriesId") Integer seriesId);
+
+    /**
+     * 检查用户的系列标题是否已存在（排除逻辑删除）
+     *
+     * @param userId      用户 ID
+     * @param seriesTitle 系列标题
+     * @return 存在的系列数量
+     */
+    int countSeriesByTitle(@Param("userId") Integer userId, @Param("seriesTitle") String seriesTitle);
+
+    /**
+     * 逻辑删除系列（SQL 层面验证用户权限）
+     *
+     * @param seriesId 系列 ID
+     * @param userId   用户 ID（确保只能删除自己的系列）
+     * @return 影响的行数
+     */
+    int deleteSeriesById(@Param("seriesId") Integer seriesId, @Param("userId") Integer userId);
 }

@@ -14,13 +14,25 @@ import java.util.List;
 public interface WorkService {
 
     /**
-     * 分页查询首页作品列表
+     * 分页查询首页作品列表（支持多条件查询）
      *
-     * @param page 分页对象
+     * @param page       分页对象
+     * @param workTitle  作品标题（可选，模糊查询）
+     * @param userId     用户 ID（可选，精确查询）
+     * @param username   用户名（可选，模糊查询）
+     * @param nickname   昵称（可选，模糊查询）
+     * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Works> selectHomepageWorks(Page<Works> page);
+    IPage<Works> selectHomepageWorks(
+        Page<Works> page,
+        String workTitle,
+        Integer userId,
+        String username,
+        String nickname,
+        Boolean isOriginal
+    );
 
     /**
      * 批量删除作品（支持单条和批量删除）
@@ -55,6 +67,29 @@ public interface WorkService {
         String fileName,
         long fileSize,
         String workTitle,
+        Integer seriesId,
+        Boolean isOriginal,
+        String outUrl
+    );
+
+    /**
+     * 修改作品信息（支持部分字段修改）
+     *
+     * @param workId      作品 ID
+     * @param userId      当前用户 ID（用于权限验证）
+     * @param workTitle   作品标题（可选，最多 16 个中文字符）
+     * @param file        新的图片文件（可选，MultipartFile 类型）
+     * @param seriesId    系列 ID（可选，0 表示不属于任何系列）
+     * @param isOriginal  是否原创（可选）
+     * @param outUrl      外部转载链接（可选）
+     * @return 修改结果
+     * @author PlayerEG
+     */
+    Boolean updateWork(
+        Integer workId,
+        Integer userId,
+        String workTitle,
+        org.springframework.web.multipart.MultipartFile file,
         Integer seriesId,
         Boolean isOriginal,
         String outUrl

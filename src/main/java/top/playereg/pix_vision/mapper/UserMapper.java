@@ -50,6 +50,17 @@ public interface UserMapper extends BaseMapper<User> {
     User selectAllUserInfoById(Integer userId);
 
     /**
+     * 根据用户 ID 查询用户角色和用户名（用于权限验证）
+     * <p>
+     * 仅查询 user_id, username, user_role 三个字段，提升性能
+     * </p>
+     *
+     * @param userId 用户 ID
+     * @return 用户实体（仅包含 id, username, user_role）
+     */
+    User selectUserRoleById(@Param("userId") Integer userId);
+
+    /**
      * 分页查询用户信息 - 支持用户名、UUID、邮箱查询
      * @param page 分页参数
      * @param user 查询条件对象（可选属性：username, user_uuid, email）

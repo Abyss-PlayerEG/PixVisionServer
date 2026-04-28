@@ -48,15 +48,25 @@ public interface UserService {
     User selectAllUserById(Integer userId);
 
     /**
-     * 分页查询用户信息
+     * 根据用户 ID 查询用户角色和用户名（用于权限验证）
+     * <p>
+     * 仅查询 user_id, username, user_role 三个字段，提升性能
+     * </p>
      *
-     * @param page     分页参数
-     * @param username 用户名（可选）
-     * @param uuid     UUID（可选）
-     * @param email    邮箱（可选）
+     * @param userId 用户 ID
+     * @return 用户对象（仅包含 id, username, user_role）
+     */
+    User selectUserRoleById(Integer userId);
+
+    /**
+     * 分页查询用户信息（支持关键词统一查询）
+     *
+     * @param page         分页对象
+     * @param keyword      关键词（可选，模糊查询用户名/邮箱/昵称）
+     * @param uuidBytes    UUID 字节数组（可选，精确查询）
      * @return 分页用户列表
      */
-    IPage<User> selectPageUserInfo(IPage<User> page, String username, byte[] uuid, String email);
+    IPage<User> selectPageUserInfo(IPage<User> page, String keyword, byte[] uuidBytes);
 
     /**
      * 用户密码修改（通过邮箱）
@@ -149,4 +159,25 @@ public interface UserService {
      * @return 是否成功
      */
     Boolean updateUserEmail(Integer userId, String newEmail, String vCode);
+
+    /**
+     * 清除用户角色缓存
+     * <p>
+     * 当用户角色发生变更时调用此方法，确保权限验证获取最新的角色信息
+     * </p>
+     *
+     * @param userId 用户 ID
+     */
+    void clearUserRoleCache(Integer userId);
+
+    /**
+     * 清除所有用户角色缓存
+     * <p>
+     * 批量删除 Redis 中所有 role: 前缀的用户角色缓存
+     * 适用于批量修改用户角色后的缓存清理
+     * </p>
+     *
+     * @return 清除的缓存数量
+     */
+    int clearAllUserRoleCache();
 }
