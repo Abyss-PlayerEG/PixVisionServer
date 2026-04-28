@@ -176,4 +176,30 @@
         WHERE user_id = #{userId}
           AND is_delete = 0
     </update>
+
+    <!-- 更新用户状态（仅系统管理员可调用） -->
+    <update id="updateUserStatus">
+        UPDATE tb_user
+        SET status      = #{newStatus},
+            update_time = NOW(),
+            update_user = #{adminId}
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
+    <!-- 检查用户名是否存在 -->
+    <select id="countByUsername" resultType="int">
+        SELECT COUNT(1)
+        FROM tb_user
+        WHERE username = #{username}
+          AND is_delete = 0
+    </select>
+
+    <!-- 检查邮箱是否存在 -->
+    <select id="countByEmail" resultType="int">
+        SELECT COUNT(1)
+        FROM tb_user
+        WHERE email = #{email}
+          AND is_delete = 0
+    </select>
 </mapper>
