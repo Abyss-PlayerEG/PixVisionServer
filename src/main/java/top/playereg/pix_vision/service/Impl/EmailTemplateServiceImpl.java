@@ -77,7 +77,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
      * @return 占位符映射表
      */
     private Map<String, String> buildVerificationPlaceholders(String code, String username, String emailText) {
-        log.info("验证码：{}", code);
+        log.debug("验证码：{}", code);
         Map<String, String> placeholders = new HashMap<>();
 
         // 基础信息

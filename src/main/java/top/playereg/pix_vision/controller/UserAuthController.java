@@ -45,11 +45,12 @@ public class UserAuthController {
     /**
      * 用户注册
      *
-     * @param username 用户名
-     * @param password 密码
-     * @param nickname 昵称
-     * @param email    邮箱
-     * @param vCode    验证码
+     * @param username        用户名
+     * @param password        密码
+     * @param confirmPassword 确认密码
+     * @param nickname        昵称
+     * @param email           邮箱
+     * @param vCode           验证码
      * @return 响应数据<User>
      * @author PlayerEG
      */
@@ -59,49 +60,55 @@ public class UserAuthController {
         summary = "用户注册接口",
         description = """
             # 用户注册（无需登录验证）
-
+    
             ## 特性
             - 用户名/邮箱唯一性校验
             - 邮箱验证码验证（Redis 存储）
             - SHA-256 密码加密
             - 自动生成随机昵称（可选）
-
+            - 密码二次确认
+    
             ## 参数说明：
             - username: 用户名，6-16 位，只允许字母、数字和下划线，字符串类型，必填
             - password: 登录密码，字符串类型，必填，建议使用强密码组合
+            - confirmPassword: 确认密码，必须与 password 一致，字符串类型，必填
             - nickname: 用户昵称，字符串类型，**可为空**，为空时自动生成随机昵称
             - email: 邮箱地址，字符串类型，必填，用于接收验证码和后续找回密码
             - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
-
+    
             ## 返回说明：
-            - **注册成功**：返回 **{"data": {User 对象}}** 和“注册成功”提示
-            - **用户名格式错误**：返回 **{"data": null}** 和“用户名格式错误”提示
-            - **邮箱格式错误**：返回 **{"data": null}** 和“邮箱格式错误”提示
-            - **验证码格式错误**：返回 **{"data": null}** 和“验证码格式错误”提示
-            - **验证码错误**：返回 **{"data": null}** 和“验证码错误”提示
-            - **注册失败**：返回 **{"data": null}** 和“注册失败：该用户名或邮箱已注册”提示
-
+            - **注册成功**：返回 **{"data": {User 对象}}** 和"注册成功"提示
+            - **用户名格式错误**：返回 **{"data": null}** 和"用户名格式错误"提示
+            - **邮箱格式错误**：返回 **{"data": null}** 和"邮箱格式错误"提示
+            - **验证码格式错误**：返回 **{"data": null}** 和"验证码格式错误"提示
+            - **两次密码不一致**：返回 **{"data": null}** 和"两次输入的密码不一致"提示
+            - **验证码错误**：返回 **{"data": null}** 和"验证码错误"提示
+            - **注册失败**：返回 **{"data": null}** 和"注册失败：该用户名或邮箱已注册"提示
+    
             ## 业务逻辑：
             1. 校验用户名格式是否符合规范（6-16 位字母、数字、下划线）
             2. 校验邮箱格式是否正确
             3. 校验验证码格式是否正确（6 位大写字母或数字）
-            4. 验证邮箱验证码是否与 Redis 中存储的一致
-            5. 如果昵称为空，生成随机默认昵称（格式：user+ 随机词）
-            6. 对密码进行 SHA-256 哈希加密处理
-            7. 创建用户并保存到数据库
-            8. 返回用户信息和成功提示
-
+            4. 验证两次输入的密码是否一致
+            5. 验证邮箱验证码是否与 Redis 中存储的一致
+            6. 如果昵称为空，生成随机默认昵称（格式：user+ 随机词）
+            7. 对密码进行 SHA-256 哈希加密处理
+            8. 创建用户并保存到数据库
+            9. 返回用户信息和成功提示
+    
             ## 注意事项：
             - 昵称参数为**可选参数**，不传或为空时自动生成
             - 验证码有效期由 Redis 配置决定（默认 5 分钟）
             - 密码会使用 **SHA-256** 进行加密存储
             - **用户名**和**邮箱**不可重复注册
             - 建议使用强密码组合（大小写字母 + 数字 + 特殊字符）
+            - 两次输入的密码必须完全一致
             """
     )
     public ResponsePojo<User> register(
         @Parameter(description = "用户名，6-16 位字母/数字/下划线", required = true, example = "dev_user") @RequestParam String username,
         @Parameter(description = "登录密码，会使用 SHA-256 加密存储", required = true, example = "123456") @RequestParam String password,
+        @Parameter(description = "确认密码，必须与密码一致", required = true, example = "123456") @RequestParam String confirmPassword,
         @Parameter(description = "用户昵称（可选，为空时自动生成）", required = false, example = "测试用户") @RequestParam(required = false) String nickname,
         @Parameter(description = "邮箱地址，用于接收验证码", required = true, example = "test@example.com") @RequestParam String email,
         @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
@@ -115,6 +122,10 @@ public class UserAuthController {
         }
         if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(null, "验证码格式错误");
+        }
+        // 验证两次密码是否一致
+        if (!password.equals(confirmPassword)) {
+            return ResponsePojo.error(null, "两次输入的密码不一致");
         }
         // 验证码验证
         boolean isTrue = verificationCodeServices.verificationCodeVerify(email, vCode);
