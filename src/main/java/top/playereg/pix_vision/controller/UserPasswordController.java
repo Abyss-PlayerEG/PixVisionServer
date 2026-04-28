@@ -99,6 +99,13 @@ public class UserPasswordController {
         @Parameter(description = "确认新密码", required = true, example = "123456789") @RequestParam String confirmPassword,
         @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
+        // 参数校验
+        if (!RegexUtils.isPassword(newPassword) || !RegexUtils.isPassword(confirmPassword)){
+            return ResponsePojo.error(false, "密码格式不正确");
+        }
+        if (!RegexUtils.isVCode(vCode, 6)){
+            return ResponsePojo.error(false, "验证码格式错误");
+        }
         // 从 Token 中获取用户 ID
         Integer userId = (Integer) request.getAttribute("userId");
         if (userId == null) {
@@ -223,6 +230,9 @@ public class UserPasswordController {
         // 基础数据校验
         if (!RegexUtils.isUsername(usernameOrEmail) && !RegexUtils.isEmail(usernameOrEmail)) {
             return ResponsePojo.error(false, "用户名或邮箱格式错误");
+        }
+        if (!RegexUtils.isPassword(newPassword) || !RegexUtils.isPassword(confirmPassword)) {
+            return ResponsePojo.error(false, "密码格式不正确");
         }
         if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(false, "验证码格式错误");

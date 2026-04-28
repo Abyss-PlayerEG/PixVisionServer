@@ -18,6 +18,7 @@ import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.RegexUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -325,24 +326,6 @@ public class AdminController {
     }
 
     /**
-     * 根据状态代码获取状态名称
-     *
-     * @param statusCode 状态代码
-     * @return 状态名称
-     */
-    private String getStatusName(Integer statusCode) {
-        if (statusCode == null) {
-            return "未知";
-        }
-        return switch (statusCode) {
-            case 10 -> "正常";
-            case 20 -> "冻结";
-            case 30 -> "封禁";
-            default -> "未知状态(" + statusCode + ")";
-        };
-    }
-
-    /**
      * 删除用户账户
      * <p>
      * 系统管理员可以删除指定用户的账户（逻辑删除），并清除该用户的所有 Token
@@ -534,6 +517,17 @@ public class AdminController {
         log.info("管理员开始创建新用户 - 用户名: {}, 邮箱: {}", username, email);
 
         try {
+            // 参数验证
+            if (!RegexUtils.isUsername(username)) {
+                return ResponsePojo.error(false, "用户名格式不正确");
+            }
+            if (!RegexUtils.isEmail(email)) {
+                return ResponsePojo.error(false, "邮箱格式不正确");
+            }
+            if (!RegexUtils.isPassword(password) || !RegexUtils.isPassword(confirmPassword)) {
+                return ResponsePojo.error(false, "密码格式不正确");
+            }
+
             // 验证两次密码是否一致
             if (!password.equals(confirmPassword)) {
                 log.warn("两次输入的密码不一致 - 用户名: {}", username);
@@ -590,6 +584,24 @@ public class AdminController {
             case 66 -> "工单管理员";
             case 77 -> "系统管理员";
             default -> "未知角色(" + roleCode + ")";
+        };
+    }
+
+    /**
+     * 根据状态代码获取状态名称
+     *
+     * @param statusCode 状态代码
+     * @return 状态名称
+     */
+    private String getStatusName(Integer statusCode) {
+        if (statusCode == null) {
+            return "未知";
+        }
+        return switch (statusCode) {
+            case 10 -> "正常";
+            case 20 -> "冻结";
+            case 30 -> "封禁";
+            default -> "未知状态(" + statusCode + ")";
         };
     }
 }

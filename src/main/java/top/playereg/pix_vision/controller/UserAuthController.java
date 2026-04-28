@@ -115,13 +115,16 @@ public class UserAuthController {
     ) {
         // 基础数据校验
         if (!RegexUtils.isUsername(username)) {
-            return ResponsePojo.error(null, "用户名格式错误");
+            return ResponsePojo.error(null, "用户名格式不正确");
         }
         if (!RegexUtils.isEmail(email)) {
-            return ResponsePojo.error(null, "邮箱格式错误");
+            return ResponsePojo.error(null, "邮箱格式不正确");
         }
         if (!RegexUtils.isVCode(vCode, 6)) {
-            return ResponsePojo.error(null, "验证码格式错误");
+            return ResponsePojo.error(null, "验证码格式不正确");
+        }
+        if (!RegexUtils.isPassword(password) || !RegexUtils.isPassword(confirmPassword)) {
+            return ResponsePojo.error(null, "密码格式不正确");
         }
         // 验证两次密码是否一致
         if (!password.equals(confirmPassword)) {
@@ -217,6 +220,9 @@ public class UserAuthController {
         // 基础数据校验
         if (!RegexUtils.isUsername(usernameOrEmail) && !RegexUtils.isEmail(usernameOrEmail)) {
             return ResponsePojo.error(null, "用户名或邮箱格式错误");
+        }
+        if (!RegexUtils.isPassword(password)){
+            return ResponsePojo.error(null, "密码格式错误");
         }
         if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(null, "验证码格式错误");
@@ -441,6 +447,10 @@ public class UserAuthController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
+        // 数据校验
+        if (!RegexUtils.isVCode(vCode, 6)){
+            return ResponsePojo.error(false, "邮箱验证码错误");
+        }
         // 提取 Token
         String token = JWTUtils.extractTokenWithLog(request, "注销接口");
 

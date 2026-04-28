@@ -30,11 +30,11 @@ public class RegexUtils {
         String returnTextError
     ) {
         if (text.matches(regex)) {
-            log.info(StrUtil.format("{}格式匹配成功: {}", strType, text));
+            log.debug(StrUtil.format("{}格式匹配成功: {}", strType, text));
             return true;
         } else {
-            log.error(StrUtil.format("{}格式匹配失败: {}", strType, text));
-            log.info(StrUtil.format("{}格式要求: {}"), strType, returnTextError);
+            log.debug(StrUtil.format("{}格式匹配失败: {}", strType, text));
+            log.debug(StrUtil.format("{}格式要求: {}"), strType, returnTextError);
             return false;
         }
     }
@@ -151,7 +151,7 @@ public class RegexUtils {
      */
     public static boolean isPassword(String password) {
         return isMatch(
-            "^[a-zA-Z0-9_]{5,16}$",
+            "^[a-zA-Z0-9_.]{6,16}$",
                 password,
                 "密码",
                 "6-16位, 只允许字母、数字、下划线、英文句号"
