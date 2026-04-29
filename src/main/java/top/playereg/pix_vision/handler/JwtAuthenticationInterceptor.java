@@ -43,9 +43,16 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 获取请求的 URI
         String requestURI = request.getRequestURI();
+        String method = request.getMethod();
 
         // 打印请求日志（debug 级别，避免生产环境日志过多）
-        log.debug("JWT 拦截请求: {} {}", request.getMethod(), requestURI);
+        log.debug("JWT 拦截请求: {} {}", method, requestURI);
+
+        // OPTIONS 预检请求直接放行（CORS 跨域请求需要）
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            log.debug("OPTIONS 预检请求，跳过认证 - URI: {}", requestURI);
+            return true;
+        }
 
         // 检查是否是公开访问接口（基于 @PublicAccess 注解）
         if (isPublicAccess(handler)) {

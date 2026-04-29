@@ -72,18 +72,19 @@ public class UserAuthController {
             - username: 用户名，6-16 位，只允许字母、数字和下划线，字符串类型，必填
             - password: 登录密码，字符串类型，必填，建议使用强密码组合
             - confirmPassword: 确认密码，必须与 password 一致，字符串类型，必填
-            - nickname: 用户昵称，字符串类型，**可为空**，为空时自动生成随机昵称
+            - nickname: 用户昵称，字符串类型，**可为空**，为空时自动生成随机昵称，长度 **1-20 个字符**
             - email: 邮箱地址，字符串类型，必填，用于接收验证码和后续找回密码
             - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
 
             ## 返回说明：
-            - **注册成功**：返回 **{"data": {User 对象}}** 和"注册成功"提示
-            - **用户名格式错误**：返回 **{"data": null}** 和"用户名格式错误"提示
-            - **邮箱格式错误**：返回 **{"data": null}** 和"邮箱格式错误"提示
-            - **验证码格式错误**：返回 **{"data": null}** 和"验证码格式错误"提示
-            - **两次密码不一致**：返回 **{"data": null}** 和"两次输入的密码不一致"提示
-            - **验证码错误**：返回 **{"data": null}** 和"验证码错误"提示
-            - **注册失败**：返回 **{"data": null}** 和"注册失败：该用户名或邮箱已注册"提示
+            - **注册成功**：返回 **{"data": {User 对象}}** 和“注册成功”提示
+            - **用户名格式错误**：返回 **{"data": null}** 和“用户名格式错误”提示
+            - **邮箱格式错误**：返回 **{"data": null}** 和“邮箱格式错误”提示
+            - **验证码格式错误**：返回 **{"data": null}** 和“验证码格式错误”提示
+            - **两次密码不一致**：返回 **{"data": null}** 和“两次输入的密码不一致”提示
+            - **验证码错误**：返回 **{"data": null}** 和“验证码错误”提示
+            - **昵称长度错误**：返回 **{"data": null}** 和“昵称长度必须在 1-20 个字符之间”提示
+            - **注册失败**：返回 **{"data": null}** 和“注册失败：该用户名或邮箱已注册”提示
 
             ## 业务逻辑：
             1. 校验用户名格式是否符合规范（6-16 位字母、数字、下划线）
@@ -92,9 +93,10 @@ public class UserAuthController {
             4. 验证两次输入的密码是否一致
             5. 验证邮箱验证码是否与 Redis 中存储的一致
             6. 如果昵称为空，生成随机默认昵称（格式：user+ 随机词）
-            7. 对密码进行 SHA-256 哈希加密处理
-            8. 创建用户并保存到数据库
-            9. 返回用户信息和成功提示
+            7. **如果昵称不为空，验证长度是否在 1-20 个字符之间**
+            8. 对密码进行 SHA-256 哈希加密处理
+            9. 创建用户并保存到数据库
+            10. 返回用户信息和成功提示
 
             ## 注意事项：
             - 昵称参数为**可选参数**，不传或为空时自动生成
@@ -135,9 +137,16 @@ public class UserAuthController {
         if (!isTrue) {
             return ResponsePojo.error(null, "验证码错误");
         }
+
         // 如果昵称为空，则生成一个随机昵称
         if (nickname == null || nickname.isEmpty()) {
             nickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
+        } else {
+            // 验证昵称长度（1-20 个字符）
+            if (nickname.length() < 1 || nickname.length() > 20) {
+                log.warn("昵称长度不符合要求: {}", nickname.length());
+                return ResponsePojo.error(null, "昵称长度必须在 1-20 个字符之间");
+            }
         }
         // 密码加密
         password = StrSwitchUtils.PasswdToHash256(password);
