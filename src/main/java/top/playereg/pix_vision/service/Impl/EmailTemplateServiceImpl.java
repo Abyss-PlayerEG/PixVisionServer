@@ -3,11 +3,13 @@ package top.playereg.pix_vision.service.Impl;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.util.ImageUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.io.File;
 import java.util.HashMap;
@@ -25,9 +27,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author PlayerEG
  */
-@Slf4j
 @Service
+@RequiredArgsConstructor
 public class EmailTemplateServiceImpl implements EmailTemplateService {
+    private static final PixVisionLogger log = PixVisionLogger.create(EmailTemplateServiceImpl.class);
+
+    private final EmailConfig emailConfig;
 
     /**
      * Logo Base64 缓存（线程安全）
@@ -77,7 +82,10 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
      * @return 占位符映射表
      */
     private Map<String, String> buildVerificationPlaceholders(String code, String username, String emailText) {
-        log.debug("验证码：{}", code);
+        // 开发模式
+        if (emailConfig.devMode) {
+            log.info("控制台模拟验证码发送：{}", code);
+        }
         Map<String, String> placeholders = new HashMap<>();
 
         // 基础信息

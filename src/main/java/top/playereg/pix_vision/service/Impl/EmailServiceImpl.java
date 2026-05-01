@@ -3,23 +3,24 @@ package top.playereg.pix_vision.service.Impl;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.service.EmailService;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 /**
  * 邮件服务实现类
  *
  * @author PlayerEG
  */
-@Slf4j
 @Service
 @SuppressWarnings("unused")
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
+    private static final PixVisionLogger log = PixVisionLogger.create(EmailServiceImpl.class);
+
     private final EmailConfig emailConfig;
     private final JavaMailSender mailSender;
 
@@ -47,6 +48,11 @@ public class EmailServiceImpl implements EmailService {
         String subject,
         String content
     ) {
+        // 开发模式
+        if (emailConfig.devMode) {
+            log.info("已开启开发模式模拟邮箱发送");
+            return "SUCCESS";
+        }
         try {
             log.info("开始发送 HTML 邮件到: {}", to);
             MimeMessage message = createMimeMessage();
@@ -81,6 +87,11 @@ public class EmailServiceImpl implements EmailService {
         String content,
         String... tos
     ) {
+        // 开发者模式
+        if (emailConfig.devMode) {
+            log.info("已开启开发模式模拟邮箱发送");
+            return "SUCCESS";
+        }
         try {
             log.info("开始群发邮件到: {}", String.join(", ", tos));
 

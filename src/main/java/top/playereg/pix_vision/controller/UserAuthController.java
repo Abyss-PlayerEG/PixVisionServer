@@ -288,12 +288,13 @@ public class UserAuthController {
         // 检查用户状态（status=10 表示正常）
         if (user.getStatus() != null && user.getStatus() != 10) {
             log.warn("账户已被禁用，用户名：{}, 状态：{}", usernameOrEmail, user.getStatus());
-//            return ResponsePojo.error(null, "账户已被禁用");
-            if (user.getStatus() == 20) {
-                return ResponsePojo.error(null, "账户被禁用");
-            }
-            if (user.getStatus() == 30) {
-                return ResponsePojo.error(null, "账户被锁定");
+            switch (user.getStatus()){
+                case 20:
+                    return ResponsePojo.error(null, "账户被禁用");
+                case 30:
+                    return ResponsePojo.error(null, "账户被锁定");
+                default:
+                    return ResponsePojo.error(null, "账户状态异常");
             }
         }
 
@@ -312,6 +313,8 @@ public class UserAuthController {
         UserLogin userLogin = new UserLogin();
         userLogin.setUser_id(user.getUser_id());
         userLogin.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
+        // 将user_uuid设置为null，因为二进制UUID不需要返回给前端，其中string_user_uuid属性用于存储二进制UUID的十六进制字符串表示
+        userLogin.setUser_uuid(null);
         userLogin.setUsername(user.getUsername());
         userLogin.setNickname(user.getNickname());
         userLogin.setAvatar_url(user.getAvatar_url());
