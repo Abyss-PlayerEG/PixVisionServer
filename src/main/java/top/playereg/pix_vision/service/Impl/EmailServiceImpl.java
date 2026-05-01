@@ -23,6 +23,7 @@ public class EmailServiceImpl implements EmailService {
 
     private final EmailConfig emailConfig;
     private final JavaMailSender mailSender;
+    private final String devSuccessLog = "模拟邮箱发送已开启";
 
     /**
      * 创建 MimeMessage
@@ -50,7 +51,7 @@ public class EmailServiceImpl implements EmailService {
     ) {
         // 开发模式
         if (emailConfig.devMode) {
-            log.info("已开启开发模式模拟邮箱发送");
+            log.info(devSuccessLog);
             return "SUCCESS";
         }
         try {
@@ -89,7 +90,7 @@ public class EmailServiceImpl implements EmailService {
     ) {
         // 开发者模式
         if (emailConfig.devMode) {
-            log.info("已开启开发模式模拟邮箱发送");
+            log.info(devSuccessLog);
             return "SUCCESS";
         }
         try {
