@@ -161,7 +161,7 @@ public class RegexUtils {
 
         int length = password.length();
         String strType = "密码";
-        String returnTextError = "6-16位, 只允许字母、数字、下划线、英文句号；或者哈希密码";
+        String returnTextError = "6-16位, 只允许字母、数字、下划线、英文句号";
 
         // 根据长度判断密码类型
         if (length >= 6 && length <= 16) {

@@ -4,8 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.Series;
@@ -14,6 +12,7 @@ import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
 
@@ -27,7 +26,7 @@ import java.util.List;
 @RequestMapping("/api/work/series")
 public class SeriesController {
 
-    private static final Logger log = LoggerFactory.getLogger(SeriesController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(SeriesController.class);
 
     private final SeriesService seriesService;
     private final TokenWhitelistService tokenWhitelistService;

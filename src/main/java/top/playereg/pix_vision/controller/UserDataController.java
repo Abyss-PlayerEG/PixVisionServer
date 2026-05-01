@@ -5,8 +5,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
@@ -14,6 +12,7 @@ import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
 
@@ -29,7 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "用户拓展数据管理相关接口")
 public class UserDataController {
-    private static final Logger log = LoggerFactory.getLogger(UserDataController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(UserDataController.class);
 
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;

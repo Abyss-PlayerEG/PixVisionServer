@@ -3,8 +3,6 @@ package top.playereg.pix_vision.handler;
 import cn.hutool.core.util.StrUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -12,6 +10,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("all")
 public class PermissionInterceptor implements HandlerInterceptor {
 
-    private static final Logger log = LoggerFactory.getLogger(PermissionInterceptor.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(PermissionInterceptor.class);
 
     /**
      * Redis Key 前缀：role:{user_id}

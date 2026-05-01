@@ -12,12 +12,15 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.time.Duration;
 
 @Configuration // 配置类
 @EnableCaching // 开启缓存功能
 public class RedisConfig {
+    final private static PixVisionLogger log = PixVisionLogger.create(RedisConfig.class);
+
     /**
      * 创建RedisTemplate对象，缓存操作类
      */
@@ -39,6 +42,7 @@ public class RedisConfig {
         template.setHashValueSerializer(serializer);
         template.afterPropertiesSet();
 
+        log.info("RedisTemplate创建成功");
         return template;
     }
 
@@ -61,6 +65,7 @@ public class RedisConfig {
                         )
                 );
 
+        log.info("CacheManager创建成功");
         return RedisCacheManager.builder(connectionFactory).cacheDefaults(config).build();
     }
 }

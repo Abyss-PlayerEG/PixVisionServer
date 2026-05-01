@@ -3,11 +3,10 @@ package top.playereg.pix_vision.config;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.CharsetUtil;
 import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import top.playereg.pix_vision.util.CreateFile;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,7 +20,7 @@ import java.nio.file.Paths;
 @SuppressWarnings("all")
 @Component
 public class FilePathConfig {
-    private static final Logger log = LoggerFactory.getLogger(FilePathConfig.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(FilePathConfig.class);
     @Value("${workspace-name}")
     private String WorkSpaceName;
 

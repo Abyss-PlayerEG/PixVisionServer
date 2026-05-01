@@ -1,8 +1,6 @@
 package top.playereg.pix_vision.config;
 
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.playereg.pix_vision.enums.LogColor;
 import top.playereg.pix_vision.handler.JwtAuthenticationInterceptor;
 import top.playereg.pix_vision.handler.PermissionInterceptor;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import static cn.hutool.core.lang.Console.log;
 
@@ -22,7 +21,7 @@ import static cn.hutool.core.lang.Console.log;
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-    private static final Logger log = LoggerFactory.getLogger(WebConfig.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(WebConfig.class);
 
     @Autowired
     private JwtAuthenticationInterceptor jwtAuthenticationInterceptor;

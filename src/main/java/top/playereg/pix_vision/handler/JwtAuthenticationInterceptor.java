@@ -2,8 +2,6 @@ package top.playereg.pix_vision.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -11,6 +9,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 /**
  * JWT 认证拦截器
@@ -25,7 +24,7 @@ import top.playereg.pix_vision.util.JWTUtils;
 @SuppressWarnings("all")
 public class JwtAuthenticationInterceptor implements HandlerInterceptor {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationInterceptor.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(JwtAuthenticationInterceptor.class);
 
     @Autowired
     private TokenWhitelistService tokenWhitelistService;

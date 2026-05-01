@@ -8,8 +8,6 @@ import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.crypto.symmetric.AES;
 import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import top.playereg.pix_vision.config.FilePathConfig;
@@ -39,7 +37,7 @@ import java.nio.file.Paths;
 @SuppressWarnings("all")
 @Component
 public class RSACipher {
-    private static final Logger log = LoggerFactory.getLogger(RSACipher.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(RSACipher.class);
 
     // 密钥文件名
     private static final String PUBLIC_KEY_FILE = "public.key";

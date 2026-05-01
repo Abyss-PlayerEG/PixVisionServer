@@ -5,8 +5,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +15,7 @@ import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
+import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
@@ -32,7 +31,7 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
 @RequiredArgsConstructor
 @Tag(name = "用户密码管理接口")
 public class UserPasswordController {
-    private static final Logger log = LoggerFactory.getLogger(UserPasswordController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(UserPasswordController.class);
 
     private final UserService userService;
     private final VerificationCodeServices verificationCodeServices;

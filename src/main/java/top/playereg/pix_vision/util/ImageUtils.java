@@ -4,8 +4,6 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -15,7 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 
 public class ImageUtils {
-    private static final Logger log = LoggerFactory.getLogger(ImageUtils.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(ImageUtils.class);
 
     /**
      * 验证文件是否为有效的图片格式（通过魔数检查）

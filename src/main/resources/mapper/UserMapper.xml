@@ -97,10 +97,10 @@
         user_id,
         avatar_url,
         username,
+        email,
         user_role,
         user_uuid,
-        status,
-        create_time
+        status
         FROM tb_user
         WHERE is_delete = 0
         <if test="user.user_uuid != null">

@@ -4,8 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -23,7 +21,7 @@ import top.playereg.pix_vision.util.Annotation.LogRecord;
 @SuppressWarnings("unused")
 public class LogAspect {
 
-    private static final Logger logger = LoggerFactory.getLogger(LogAspect.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(LogAspect.class);
 
     @Autowired
     private OperateLogService operateLogService;
@@ -46,7 +44,7 @@ public class LogAspect {
             // 获取当前请求
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attributes == null) {
-                logger.warn("无法获取请求上下文，跳过日志记录");
+                log.warn("无法获取请求上下文，跳过日志记录");
                 return result;
             }
 
@@ -55,7 +53,7 @@ public class LogAspect {
             // 从 Token 中获取用户 ID
             Integer userId = extractUserIdFromRequest(request);
             if (userId == null || userId <= 0) {
-                logger.debug("未获取到有效的用户 ID，跳过日志记录");
+                log.debug("未获取到有效的用户 ID，跳过日志记录");
                 return result;
             }
 
@@ -67,12 +65,12 @@ public class LogAspect {
             // 记录日志到数据库
             boolean success = operateLogService.recordLog(userId, logEvent);
             if (!success) {
-                logger.warn("操作日志记录失败 - 用户 ID: {}, 事件: {}", userId, logEvent);
+                log.warn("操作日志记录失败 - 用户 ID: {}, 事件: {}", userId, logEvent);
             }
 
         } catch (Exception e) {
             // 日志记录失败不应影响业务逻辑，仅记录错误
-            logger.error("日志记录过程中发生异常: {}", e.getMessage(), e);
+            log.error("日志记录过程中发生异常: {}", e.getMessage(), e);
         }
 
         return result;

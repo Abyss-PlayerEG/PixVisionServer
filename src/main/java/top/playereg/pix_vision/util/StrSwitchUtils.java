@@ -6,8 +6,6 @@ import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import top.playereg.pix_vision.config.SecureConfig;
 
 import java.nio.charset.StandardCharsets;
@@ -21,7 +19,7 @@ import java.util.UUID;
  */
 @SuppressWarnings("all") // 忽略所有警告
 public class StrSwitchUtils {
-    private static final Logger log = LoggerFactory.getLogger(StrSwitchUtils.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(StrSwitchUtils.class);
 
     /**
      * 哈希加密处理
@@ -46,6 +44,7 @@ public class StrSwitchUtils {
 
         // 将字符串进行256哈希加密
         resStr = SecureUtil.sha256(tempStr);
+        log.debug("密码加密处理：{} -> {}", str, resStr);
         return resStr;
     }
 
@@ -148,7 +147,7 @@ public class StrSwitchUtils {
         String res = UUID.randomUUID().toString();
         res = res.replace("-", ""); // 去分隔线
         res = res.toLowerCase(); // 转换为小写
-        log.info("生成 UUID: {}", res);
+        log.debug("生成 UUID: {}", res);
         return res;
     }
 
@@ -195,8 +194,8 @@ public class StrSwitchUtils {
         }
 
         String result = sb.toString().toLowerCase();
-        log.info("16 字节二进制 UUID: {}", bytes);
-        log.info("转换后 UUID: {}", result);
+        log.debug("16 字节二进制 UUID: {}", bytes);
+        log.debug("转换后 UUID: {}", result);
         return result;
     }
 
