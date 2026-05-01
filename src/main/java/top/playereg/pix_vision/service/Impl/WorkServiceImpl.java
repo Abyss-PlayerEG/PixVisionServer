@@ -2,8 +2,6 @@ package top.playereg.pix_vision.service.Impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.FilePathConfig;
@@ -13,6 +11,7 @@ import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.ImageUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
 
 import java.io.File;
@@ -29,7 +28,7 @@ import java.util.UUID;
  */
 @Service
 public class WorkServiceImpl implements WorkService {
-    private static final Logger log = LoggerFactory.getLogger(WorkServiceImpl.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(WorkServiceImpl.class);
 
     @Autowired
     private WorksMapper worksMapper;

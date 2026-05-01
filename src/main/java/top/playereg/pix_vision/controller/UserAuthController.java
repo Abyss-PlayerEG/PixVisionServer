@@ -5,8 +5,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,6 +17,7 @@ import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
@@ -34,9 +33,9 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/auth")
 @RequiredArgsConstructor
-@Tag(name = "用户认证相关接口")
+@Tag(name = "用户认证接口")
 public class UserAuthController {
-    private static final Logger log = LoggerFactory.getLogger(UserAuthController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(UserAuthController.class);
 
     private final UserService userService;
     private final VerificationCodeServices verificationCodeServices;
@@ -60,31 +59,32 @@ public class UserAuthController {
         summary = "用户注册接口",
         description = """
             # 用户注册（无需登录验证）
-    
+
             ## 特性
             - 用户名/邮箱唯一性校验
             - 邮箱验证码验证（Redis 存储）
             - SHA-256 密码加密
             - 自动生成随机昵称（可选）
             - 密码二次确认
-    
+
             ## 参数说明：
             - username: 用户名，6-16 位，只允许字母、数字和下划线，字符串类型，必填
             - password: 登录密码，字符串类型，必填，建议使用强密码组合
             - confirmPassword: 确认密码，必须与 password 一致，字符串类型，必填
-            - nickname: 用户昵称，字符串类型，**可为空**，为空时自动生成随机昵称
+            - nickname: 用户昵称，字符串类型，**可为空**，为空时自动生成随机昵称，长度 **1-20 个字符**
             - email: 邮箱地址，字符串类型，必填，用于接收验证码和后续找回密码
             - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
-    
+
             ## 返回说明：
-            - **注册成功**：返回 **{"data": {User 对象}}** 和"注册成功"提示
-            - **用户名格式错误**：返回 **{"data": null}** 和"用户名格式错误"提示
-            - **邮箱格式错误**：返回 **{"data": null}** 和"邮箱格式错误"提示
-            - **验证码格式错误**：返回 **{"data": null}** 和"验证码格式错误"提示
-            - **两次密码不一致**：返回 **{"data": null}** 和"两次输入的密码不一致"提示
-            - **验证码错误**：返回 **{"data": null}** 和"验证码错误"提示
-            - **注册失败**：返回 **{"data": null}** 和"注册失败：该用户名或邮箱已注册"提示
-    
+            - **注册成功**：返回 **{"data": {User 对象}}** 和“注册成功”提示
+            - **用户名格式错误**：返回 **{"data": null}** 和“用户名格式错误”提示
+            - **邮箱格式错误**：返回 **{"data": null}** 和“邮箱格式错误”提示
+            - **验证码格式错误**：返回 **{"data": null}** 和“验证码格式错误”提示
+            - **两次密码不一致**：返回 **{"data": null}** 和“两次输入的密码不一致”提示
+            - **验证码错误**：返回 **{"data": null}** 和“验证码错误”提示
+            - **昵称长度错误**：返回 **{"data": null}** 和“昵称长度必须在 1-20 个字符之间”提示
+            - **注册失败**：返回 **{"data": null}** 和“注册失败：该用户名或邮箱已注册”提示
+
             ## 业务逻辑：
             1. 校验用户名格式是否符合规范（6-16 位字母、数字、下划线）
             2. 校验邮箱格式是否正确
@@ -92,10 +92,11 @@ public class UserAuthController {
             4. 验证两次输入的密码是否一致
             5. 验证邮箱验证码是否与 Redis 中存储的一致
             6. 如果昵称为空，生成随机默认昵称（格式：user+ 随机词）
-            7. 对密码进行 SHA-256 哈希加密处理
-            8. 创建用户并保存到数据库
-            9. 返回用户信息和成功提示
-    
+            7. **如果昵称不为空，验证长度是否在 1-20 个字符之间**
+            8. 对密码进行 SHA-256 哈希加密处理
+            9. 创建用户并保存到数据库
+            10. 返回用户信息和成功提示
+
             ## 注意事项：
             - 昵称参数为**可选参数**，不传或为空时自动生成
             - 验证码有效期由 Redis 配置决定（默认 5 分钟）
@@ -115,13 +116,16 @@ public class UserAuthController {
     ) {
         // 基础数据校验
         if (!RegexUtils.isUsername(username)) {
-            return ResponsePojo.error(null, "用户名格式错误");
+            return ResponsePojo.error(null, "用户名格式不正确");
         }
         if (!RegexUtils.isEmail(email)) {
-            return ResponsePojo.error(null, "邮箱格式错误");
+            return ResponsePojo.error(null, "邮箱格式不正确");
         }
         if (!RegexUtils.isVCode(vCode, 6)) {
-            return ResponsePojo.error(null, "验证码格式错误");
+            return ResponsePojo.error(null, "验证码格式不正确");
+        }
+        if (!RegexUtils.isPassword(password) || !RegexUtils.isPassword(confirmPassword)) {
+            return ResponsePojo.error(null, "密码格式不正确");
         }
         // 验证两次密码是否一致
         if (!password.equals(confirmPassword)) {
@@ -132,9 +136,16 @@ public class UserAuthController {
         if (!isTrue) {
             return ResponsePojo.error(null, "验证码错误");
         }
+
         // 如果昵称为空，则生成一个随机昵称
         if (nickname == null || nickname.isEmpty()) {
             nickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
+        } else {
+            // 验证昵称长度（1-20 个字符）
+            if (nickname.length() < 1 || nickname.length() > 20) {
+                log.warn("昵称长度不符合要求: {}", nickname.length());
+                return ResponsePojo.error(null, "昵称长度必须在 1-20 个字符之间");
+            }
         }
         // 密码加密
         password = StrSwitchUtils.PasswdToHash256(password);
@@ -218,6 +229,9 @@ public class UserAuthController {
         if (!RegexUtils.isUsername(usernameOrEmail) && !RegexUtils.isEmail(usernameOrEmail)) {
             return ResponsePojo.error(null, "用户名或邮箱格式错误");
         }
+        if (!RegexUtils.isPassword(password)){
+            return ResponsePojo.error(null, "密码格式错误");
+        }
         if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(null, "验证码格式错误");
         }
@@ -274,7 +288,14 @@ public class UserAuthController {
         // 检查用户状态（status=10 表示正常）
         if (user.getStatus() != null && user.getStatus() != 10) {
             log.warn("账户已被禁用，用户名：{}, 状态：{}", usernameOrEmail, user.getStatus());
-            return ResponsePojo.error(null, "账户已被禁用");
+            switch (user.getStatus()){
+                case 20:
+                    return ResponsePojo.error(null, "账户被禁用");
+                case 30:
+                    return ResponsePojo.error(null, "账户被锁定");
+                default:
+                    return ResponsePojo.error(null, "账户状态异常");
+            }
         }
 
         // 生成 JWT Token
@@ -292,6 +313,8 @@ public class UserAuthController {
         UserLogin userLogin = new UserLogin();
         userLogin.setUser_id(user.getUser_id());
         userLogin.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
+        // 将user_uuid设置为null，因为二进制UUID不需要返回给前端，其中string_user_uuid属性用于存储二进制UUID的十六进制字符串表示
+        userLogin.setUser_uuid(null);
         userLogin.setUsername(user.getUsername());
         userLogin.setNickname(user.getNickname());
         userLogin.setAvatar_url(user.getAvatar_url());
@@ -435,6 +458,10 @@ public class UserAuthController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
+        // 数据校验
+        if (!RegexUtils.isVCode(vCode, 6)){
+            return ResponsePojo.error(false, "邮箱验证码错误");
+        }
         // 提取 Token
         String token = JWTUtils.extractTokenWithLog(request, "注销接口");
 

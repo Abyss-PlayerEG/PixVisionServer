@@ -7,8 +7,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
@@ -17,6 +15,7 @@ import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
@@ -30,9 +29,9 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/profile")
 @RequiredArgsConstructor
-@Tag(name = "用户资料管理相关接口")
+@Tag(name = "用户资料管理接口")
 public class UserProfileController {
-    private static final Logger log = LoggerFactory.getLogger(UserProfileController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(UserProfileController.class);
 
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;
@@ -122,7 +121,7 @@ public class UserProfileController {
         // 判断关键词类型：UUID 精确查询 or 普通关键词模糊查询
         byte[] uuidBytes = null;
         String searchKeyword = null;
-        
+
         if (keyword != null && !keyword.isEmpty()) {
             if (RegexUtils.isUUID(keyword)) {
                 // UUID 格式，进行精确查询

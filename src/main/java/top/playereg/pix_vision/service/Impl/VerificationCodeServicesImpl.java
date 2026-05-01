@@ -2,12 +2,11 @@ package top.playereg.pix_vision.service.Impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @SuppressWarnings("all")
 public class VerificationCodeServicesImpl implements VerificationCodeServices {
-    private static final Logger log = LoggerFactory.getLogger(VerificationCodeServicesImpl.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(VerificationCodeServicesImpl.class);
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 

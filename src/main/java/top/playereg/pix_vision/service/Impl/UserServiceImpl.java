@@ -1,9 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -11,15 +8,17 @@ import top.playereg.pix_vision.mapper.UserDataMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
+import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
 import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(UserServiceImpl.class);
 
     /**
      * Redis Key 前缀：role:{user_id}
@@ -34,6 +33,8 @@ public class UserServiceImpl implements UserService {
     private VerificationCodeServices verificationCodeServices;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private TokenWhitelistService tokenWhitelistService;
 
     /**
      * 注册用户
@@ -99,16 +100,14 @@ public class UserServiceImpl implements UserService {
      * 检查用户名是否存在
      */
     private boolean isUsernameExists(String username) {
-        return userMapper.selectCount(new LambdaQueryWrapper<User>()
-                .eq(User::getUsername, username)) > 0;
+        return userMapper.countByUsername(username) > 0;
     }
 
     /**
      * 检查邮箱是否存在
      */
     private boolean isEmailExists(String email) {
-        return userMapper.selectCount(new LambdaQueryWrapper<User>()
-                .eq(User::getEmail, email)) > 0;
+        return userMapper.countByEmail(email) > 0;
     }
     @Override
     public User selectAllUserByUsername(String username) {
@@ -718,5 +717,260 @@ public class UserServiceImpl implements UserService {
             log.error("用户角色更新失败 - 用户 ID: {}", targetUserId);
             return false;
         }
+    }
+
+    /**
+     * 更新用户状态（仅系统管理员可调用）
+     *
+     * @param targetUserId 目标用户 ID
+     * @param newStatus    新状态代码
+     * @param adminId      执行操作的管理员 ID
+     * @return 是否成功
+     */
+    @Override
+    public Boolean updateUserStatus(Integer targetUserId, Integer newStatus, Integer adminId) {
+        log.info("开始更新用户状态 - 目标用户 ID: {}, 新状态: {}, 管理员 ID: {}", targetUserId, newStatus, adminId);
+
+        // 参数校验
+        if (targetUserId == null || targetUserId <= 0) {
+            log.error("目标用户 ID 无效: {}", targetUserId);
+            return false;
+        }
+
+        if (newStatus == null) {
+            log.error("新状态不能为空");
+            return false;
+        }
+
+        // 验证状态代码是否合法
+        List<Integer> validStatuses = List.of(10, 20, 30);
+        if (!validStatuses.contains(newStatus)) {
+            log.error("无效的状态代码: {}，允许的状态代码: {}", newStatus, validStatuses);
+            return false;
+        }
+
+        // 检查目标用户是否存在
+        User targetUser = userMapper.selectAllUserInfoById(targetUserId);
+        if (targetUser == null) {
+            log.warn("目标用户不存在 - 用户 ID: {}", targetUserId);
+            return false;
+        }
+
+        // 检查管理员是否存在
+        User adminUser = userMapper.selectAllUserInfoById(adminId);
+        if (adminUser == null) {
+            log.error("管理员不存在 - 管理员 ID: {}", adminId);
+            return false;
+        }
+
+        // 防止修改自己的状态（可选的安全措施）
+        if (targetUserId.equals(adminId)) {
+            log.warn("管理员不能修改自己的状态 - 用户 ID: {}", adminId);
+            return false;
+        }
+
+        Integer oldStatus = targetUser.getStatus();
+        log.info("当前用户状态: {}, 准备更新为: {}", oldStatus, newStatus);
+
+        // 执行状态更新
+        int result = userMapper.updateUserStatus(targetUserId, newStatus, adminId);
+
+        if (result > 0) {
+            log.info("用户状态更新成功 - 用户 ID: {}, 旧状态: {}, 新状态: {}, 管理员: {}",
+                    targetUserId, oldStatus, newStatus, adminId);
+            return true;
+        } else {
+            log.error("用户状态更新失败 - 用户 ID: {}", targetUserId);
+            return false;
+        }
+    }
+
+    /**
+     * 删除用户账户（仅系统管理员可调用）
+     *
+     * @param targetUserId 目标用户 ID
+     * @param adminId      执行操作的管理员 ID
+     * @return 是否成功
+     */
+    @Override
+    public Boolean deleteUserAccountByAdmin(Integer targetUserId, Integer adminId) {
+        log.info("管理员开始删除用户账户 - 目标用户 ID: {}, 管理员 ID: {}", targetUserId, adminId);
+
+        // 参数校验
+        if (targetUserId == null || targetUserId <= 0) {
+            log.error("目标用户 ID 无效: {}", targetUserId);
+            return false;
+        }
+
+        if (adminId == null || adminId <= 0) {
+            log.error("管理员 ID 无效: {}", adminId);
+            return false;
+        }
+
+        // 检查目标用户是否存在
+        User targetUser = userMapper.selectAllUserInfoById(targetUserId);
+        if (targetUser == null) {
+            log.warn("目标用户不存在 - 用户 ID: {}", targetUserId);
+            return false;
+        }
+
+        // 检查管理员是否存在
+        User adminUser = userMapper.selectAllUserInfoById(adminId);
+        if (adminUser == null) {
+            log.error("管理员不存在 - 管理员 ID: {}", adminId);
+            return false;
+        }
+
+        // 防止删除自己（安全措施）
+        if (targetUserId.equals(adminId)) {
+            log.warn("管理员不能删除自己的账户 - 用户 ID: {}", adminId);
+            return false;
+        }
+
+        log.info("准备删除用户 - 用户名: {}, 邮箱: {}", targetUser.getUsername(), targetUser.getEmail());
+
+        // 执行逻辑删除
+        int result = userMapper.deleteUserAccount(targetUserId);
+
+        if (result > 0) {
+            log.info("用户账户删除成功 - 用户 ID: {}, 用户名: {}, 管理员: {}",
+                    targetUserId, targetUser.getUsername(), adminId);
+
+            // 清除该用户的所有 Token，强制所有设备下线
+            int removedTokens = tokenWhitelistService.removeAllUserTokens(
+                    targetUserId, targetUser.getUsername());
+            log.info("已清除用户 Token - 用户 ID: {}, 清除数量: {}", targetUserId, removedTokens);
+
+            // 清除用户角色缓存
+            clearUserRoleCache(targetUserId);
+
+            return true;
+        } else {
+            log.error("用户账户删除失败 - 用户 ID: {}", targetUserId);
+            return false;
+        }
+    }
+
+    /**
+     * 管理员创建新用户（仅系统管理员可调用）
+     *
+     * @param username 用户名
+     * @param password 密码（明文）
+     * @param nickname 昵称
+     * @param email    邮箱
+     * @param role     角色代码（可选，默认为 11-普通用户）
+     * @param status   状态代码（可选，默认为 10-正常）
+     * @param adminId  执行操作的管理员 ID
+     * @return 创建的用户对象，失败返回 null
+     */
+    @Override
+    public User createUserByAdmin(String username, String password, String nickname, String email,
+                                  Integer role, Integer status, Integer adminId) {
+        log.info("管理员开始创建新用户 - 用户名: {}, 邮箱: {}, 管理员 ID: {}", username, email, adminId);
+
+        // 参数校验
+        if (username == null || username.isEmpty()) {
+            log.error("用户名不能为空");
+            return null;
+        }
+
+        if (password == null || password.isEmpty()) {
+            log.error("密码不能为空");
+            return null;
+        }
+
+        if (nickname == null || nickname.isEmpty()) {
+            log.error("昵称不能为空");
+            return null;
+        }
+
+        if (email == null || email.isEmpty()) {
+            log.error("邮箱不能为空");
+            return null;
+        }
+
+        if (adminId == null || adminId <= 0) {
+            log.error("管理员 ID 无效: {}", adminId);
+            return null;
+        }
+
+        // 检查用户名是否已存在
+        if (isUsernameExists(username)) {
+            log.warn("创建失败 - 用户名已存在: {}", username);
+            return null;
+        }
+
+        // 检查邮箱是否已存在
+        if (isEmailExists(email)) {
+            log.warn("创建失败 - 邮箱已存在: {}", email);
+            return null;
+        }
+
+        // 检查管理员是否存在
+        User adminUser = userMapper.selectAllUserInfoById(adminId);
+        if (adminUser == null) {
+            log.error("管理员不存在 - 管理员 ID: {}", adminId);
+            return null;
+        }
+
+        // 设置默认值
+        if (role == null) {
+            role = 11; // 默认为普通用户
+        }
+        if (status == null) {
+            status = 10; // 默认为正常状态
+        }
+
+        // 验证角色代码是否合法
+        List<Integer> validRoles = List.of(11, 22, 55, 66, 77);
+        if (!validRoles.contains(role)) {
+            log.error("无效的角色代码: {}，允许的角色代码: {}", role, validRoles);
+            return null;
+        }
+
+        // 验证状态代码是否合法
+        List<Integer> validStatuses = List.of(10, 20, 30);
+        if (!validStatuses.contains(status)) {
+            log.error("无效的状态代码: {}，允许的状态代码: {}", status, validStatuses);
+            return null;
+        }
+
+        // 创建用户对象
+        User user = new User();
+
+        // 设置用户信息
+        user.setUsername(username);
+        // 密码加密（SHA-256）
+        user.setPassword(StrSwitchUtils.PasswdToHash256(password));
+        user.setNickname(nickname);
+        user.setEmail(email);
+
+        // 生成用户 UUID（16 字节二进制）
+        user.setUser_uuid(StrSwitchUtils.uuid2Bytes(StrSwitchUtils.generateUUID()));
+
+        // 默认随机头像（1.png-21.png）
+        int randomAvatarNum = (int) (Math.random() * 21) + 1;
+        String randomAvatar = randomAvatarNum + ".png";
+        user.setAvatar_url("default/" + randomAvatar);
+
+        // 设置角色和状态
+        user.setUser_role(role);
+        user.setStatus(status);
+        user.setIs_delete(false);
+
+        // 创建时间
+        user.setCreate_time(new java.sql.Timestamp(System.currentTimeMillis()));
+        user.setCreate_user(adminId); // 记录创建者为管理员
+
+        // 插入数据库
+        boolean success = userMapper.insertUser(user) > 0;
+        if (success) {
+            log.info("管理员创建用户成功 - 用户名: {}, 用户 ID: {}, 角色: {}, 状态: {}, 管理员: {}",
+                    username, user.getUser_id(), role, status, adminId);
+        } else {
+            log.error("管理员创建用户失败 - 用户名: {}", username);
+        }
+
+        return success ? user : null;
     }
 }

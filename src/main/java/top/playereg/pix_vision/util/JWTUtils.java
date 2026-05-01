@@ -6,8 +6,6 @@ import cn.hutool.jwt.JWTValidator;
 import cn.hutool.jwt.signers.JWTSigner;
 import cn.hutool.jwt.signers.JWTSignerUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import top.playereg.pix_vision.config.SecureConfig;
 
@@ -22,7 +20,7 @@ import java.util.Map;
  */
 @Component
 public class JWTUtils {
-    private static final Logger log = LoggerFactory.getLogger(JWTUtils.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(JWTUtils.class);
 
     /**
      * JWT 密钥 - 从配置文件中读取

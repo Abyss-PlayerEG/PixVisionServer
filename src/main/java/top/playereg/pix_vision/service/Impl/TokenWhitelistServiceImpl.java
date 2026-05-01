@@ -1,11 +1,10 @@
 package top.playereg.pix_vision.service.Impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.service.TokenWhitelistService;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class TokenWhitelistServiceImpl implements TokenWhitelistService {
 
-    private static final Logger log = LoggerFactory.getLogger(TokenWhitelistServiceImpl.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(TokenWhitelistServiceImpl.class);
 
     /**
      * Redis Key 命名规则：

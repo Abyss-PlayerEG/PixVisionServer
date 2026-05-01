@@ -2,15 +2,11 @@ package top.playereg.pix_vision.util;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import top.playereg.pix_vision.config.FilePathConfig;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import static cn.hutool.core.util.URLUtil.getPath;
 
 /**
  * 文件创建类
@@ -18,7 +14,7 @@ import static cn.hutool.core.util.URLUtil.getPath;
  * @author PlayerEG
  */
 public class CreateFile {
-    private static final Logger log = LoggerFactory.getLogger(CreateFile.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(CreateFile.class);
 
     public static void create() {
         // 根目录说明文件

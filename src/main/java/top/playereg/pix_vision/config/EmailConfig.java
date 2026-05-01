@@ -20,6 +20,7 @@ import java.util.Map;
 @Component
 @ConfigurationProperties(prefix = "spring.mail")
 public class EmailConfig {
+    public Boolean devMode;
     private String host;
     private Integer port;
     private String from;
@@ -28,10 +29,10 @@ public class EmailConfig {
     private String protocol;
     private String defaultEncoding = "UTF-8";
 
-    // 自定义属性 - 从 properties.mail.smtp.ssl.enable 读取
+    // 自定义属性 - 从 properties.mail.smtp.ssl.devMode 读取
     private boolean sslEnable = true;
 
-    // 自定义属性 - 从 properties.mail.smtp.starttls.enable 读取
+    // 自定义属性 - 从 properties.mail.smtp.starttls.devMode 读取
     private boolean starttlsEnable = false;
 
     /**
@@ -46,10 +47,10 @@ public class EmailConfig {
     public static String renderVerificationEmailTemplate(String code, String username, String emailText) {
         // 构建占位符映射
         Map<String, String> placeholders = buildPlaceholders(code, username, emailText);
-        
+
         // 读取模板文件
         String template = loadTemplate();
-        
+
         // 执行占位符替换
         return replacePlaceholders(template, placeholders);
     }
@@ -65,7 +66,7 @@ public class EmailConfig {
      */
     private static Map<String, String> buildPlaceholders(String code, String username, String emailText) {
         Map<String, String> placeholders = new HashMap<>();
-        
+
         // 基础占位符
         placeholders.put("{{username}}", username);
         placeholders.put("{{email_text}}", emailText);
@@ -73,11 +74,11 @@ public class EmailConfig {
         placeholders.put("{{expireTime}}", "5");
         placeholders.put("{{year}}", String.valueOf(DateUtil.thisYear()));
         placeholders.put("{{systemName}}", "Pixie Vision");
-        
+
         // Logo 占位符（Base64 编码）
         placeholders.put("{{logoUriLight}}", loadLogoBase64("light.png"));
         placeholders.put("{{logoUriDark}}", loadLogoBase64("dark.png"));
-        
+
         return placeholders;
     }
 
@@ -92,7 +93,7 @@ public class EmailConfig {
                 "{}/email-verification.html",
                 FilePathConfig.EmailHtmlPath
         );
-        
+
         try {
             return ResourceUtil.readUtf8Str(templatePath);
         } catch (Exception e) {
@@ -109,7 +110,7 @@ public class EmailConfig {
      */
     private static String loadLogoBase64(String logoFileName) {
         String logoPath = StrUtil.format("{}/{}", FilePathConfig.LogoPath, logoFileName);
-        
+
         try {
             return ImageUtils.imageToBase64(logoPath);
         } catch (Exception e) {
@@ -127,16 +128,16 @@ public class EmailConfig {
      */
     private static String replacePlaceholders(String template, Map<String, String> placeholders) {
         String result = template;
-        
+
         for (Map.Entry<String, String> entry : placeholders.entrySet()) {
             String placeholder = entry.getKey();
             String value = entry.getValue();
-            
+
             if (value != null) {
                 result = result.replace(placeholder, value);
             }
         }
-        
+
         return result;
     }
 }

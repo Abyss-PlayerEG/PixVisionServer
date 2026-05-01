@@ -34,6 +34,7 @@
 #      password: 123456
 #      username: root
 #  mail: # 邮件配置
+#    dev-mode: false                  # 开发者模式（生产环境建议关闭）
 #    host: smtp.qq.com               # SMTP服务器地址
 #    port: 465                       # 端口
 #    from: your-email@example.com    # 发件人
@@ -41,8 +42,8 @@
 #    password: your_auth_code        # 授权码
 #    protocol: smtp                  # 协议
 #    default-encoding: UTF-8         # 编码
-#    ssl-enable: false               # 不直接建立 SSL 连接
-#    starttls-enable: false          # 启用 STARTTLS 升级
+#    ssl-devMode: false               # 不直接建立 SSL 连接
+#    starttls-devMode: false          # 启用 STARTTLS 升级
 
 #### SpringDoc文档配置项
 #springdoc:

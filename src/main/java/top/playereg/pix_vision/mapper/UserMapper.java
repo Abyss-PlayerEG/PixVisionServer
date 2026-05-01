@@ -123,4 +123,30 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 影响行数
      */
     int updateUserRole(@Param("userId") Integer userId, @Param("newRole") Integer newRole, @Param("adminId") Integer adminId);
+
+    /**
+     * 更新用户状态（仅系统管理员可调用）
+     *
+     * @param userId   用户 ID
+     * @param newStatus 新状态代码（10-正常, 20-冻结, 30-封禁）
+     * @param adminId  执行操作的管理员 ID
+     * @return 影响行数
+     */
+    int updateUserStatus(@Param("userId") Integer userId, @Param("newStatus") Integer newStatus, @Param("adminId") Integer adminId);
+
+    /**
+     * 检查用户名是否存在
+     *
+     * @param username 用户名
+     * @return 存在返回 1，不存在返回 0
+     */
+    int countByUsername(@Param("username") String username);
+
+    /**
+     * 检查邮箱是否存在
+     *
+     * @param email 邮箱
+     * @return 存在返回 1，不存在返回 0
+     */
+    int countByEmail(@Param("email") String email);
 }

@@ -193,4 +193,48 @@ public interface UserService {
      * @return 是否成功
      */
     Boolean updateUserRole(Integer targetUserId, Integer newRole, Integer adminId);
+
+    /**
+     * 更新用户状态（仅系统管理员可调用）
+     * <p>
+     * 修改指定用户的账户状态，支持的状态代码：
+     * 10-正常, 20-冻结, 30-封禁
+     * </p>
+     *
+     * @param targetUserId 目标用户 ID
+     * @param newStatus    新状态代码（10-正常, 20-冻结, 30-封禁）
+     * @param adminId      执行操作的管理员 ID
+     * @return 是否成功
+     */
+    Boolean updateUserStatus(Integer targetUserId, Integer newStatus, Integer adminId);
+
+    /**
+     * 删除用户账户（仅系统管理员可调用）
+     * <p>
+     * 管理员可以删除指定用户的账户（逻辑删除），并清除该用户的所有 Token
+     * </p>
+     *
+     * @param targetUserId 目标用户 ID
+     * @param adminId      执行操作的管理员 ID
+     * @return 是否成功
+     */
+    Boolean deleteUserAccountByAdmin(Integer targetUserId, Integer adminId);
+
+    /**
+     * 管理员创建新用户（仅系统管理员可调用）
+     * <p>
+     * 管理员可以直接创建新用户，无需验证码验证
+     * </p>
+     *
+     * @param username 用户名
+     * @param password 密码（明文，将在 Service 层加密）
+     * @param nickname 昵称
+     * @param email    邮箱
+     * @param role     角色代码（可选，默认为 11-普通用户）
+     * @param status   状态代码（可选，默认为 10-正常）
+     * @param adminId  执行操作的管理员 ID
+     * @return 创建的用户对象，失败返回 null
+     */
+    User createUserByAdmin(String username, String password, String nickname, String email,
+                          Integer role, Integer status, Integer adminId);
 }

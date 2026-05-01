@@ -2,8 +2,6 @@ package top.playereg.pix_vision.util;
 
 import cn.hutool.core.date.DateUtil;
 import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +33,7 @@ import java.util.Date;
 @SuppressWarnings("all")
 @Component
 public class ConsoleOutputRedirector {
-    private static final Logger log = LoggerFactory.getLogger(ConsoleOutputRedirector.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(ConsoleOutputRedirector.class);
 
     // 配置项（从 application.yml 读取）
     @Value("${console-output.enabled:true}")

@@ -5,8 +5,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -22,6 +20,7 @@ import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.ImageUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -46,7 +45,7 @@ import java.util.UUID;
 @RequestMapping("/api/image")
 @Tag(name = "图片访问接口", description = "提供头像、作品、Logo 等图片资源的访问接口")
 public class ImageController {
-    private static final Logger log = LoggerFactory.getLogger(ImageController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(ImageController.class);
 
     @Autowired
     private UserService userService;

@@ -71,6 +71,11 @@ Integer userId = JWTUtils.getUserIdFromToken(token);
 | 20 | 冻结 |
 | 30 | 封禁 |
 
+**注意**：
+- 冻结状态（20）：用户无法登录，但数据保留
+- 封禁状态（30）：用户无法登录，严重违规使用
+- 只有系统管理员（角色 77）可以修改用户状态
+
 ---
 
 ## Spring Boot 3 依赖注入
@@ -134,6 +139,24 @@ String hash = StrSwitchUtils.PasswdToHash256(password);
 // UUID 转换
 byte[] bytes = StrSwitchUtils.uuid2Bytes(uuidString);
 String uuid = StrSwitchUtils.bytes2Uuid(bytes);
+
+// 自定义日志（推荐使用，自动带颜色）
+// 非 Spring Bean 类（如工具类）：
+private static final PixVisionLogger log = PixVisionLogger.create(ClassName.class);
+log.info("消息内容");
+log.debug("调试信息：{}", variable);
+log.error("错误：", exception);
+```
+
+### 日志颜色
+
+```java
+// 使用 LogColor 为日志内容添加颜色
+LogColor.colorize("消息内容", LogColor.GREEN);  // 绿色
+LogColor.colorize("警告", LogColor.YELLOW);      // 黄色
+LogColor.colorize("错误", LogColor.RED);        // 红色
+LogColor.colorize("调试", LogColor.BLUE);       // 蓝色
+LogColor.colorize("跟踪", LogColor.GRAY);       // 灰色
 ```
 
 ---
@@ -160,14 +183,80 @@ src/main/resources/application.yml  ← 基础配置（不修改）
 
 ```
 top.playereg.pix_vision
-├── controller/      # REST API
-├── service/         # 业务逻辑
+├── controller/      # REST API（C - Controller）
+├── service/         # 业务逻辑（M - Model/Service）
 │   └── Impl/
-├── mapper/          # 继承 BaseMapper<T>
-├── pojo/            # 实体类
+├── mapper/          # 数据访问层接口（M - Model/Mapper）
+├── pojo/            # 实体类（M - Model/Entity）
 ├── handler/         # 拦截器
 ├── config/          # 配置类
 └── util/           # 工具类
+```
+
+**资源文件**：
+```
+src/main/resources/mapper/*.xml  # MyBatis 自定义 SQL（V - View/XML）
+```
+
+---
+
+## MVC 架构规范
+
+### 严格遵循 MVC 分层
+
+**Controller 层**：
+- 仅负责接收请求、参数验证、调用 Service、返回响应
+- 不包含业务逻辑
+- 不直接操作数据库
+
+**Service 层**：
+- 实现核心业务逻辑
+- 事务控制
+- 调用 Mapper 进行数据操作
+- 不直接编写 SQL
+
+**Mapper 层**：
+- 定义数据访问接口
+- 所有 SQL 必须在 XML 文件中编写
+- **禁止使用 MyBatis-Plus 的自动生成的 SQL 方法**
+
+**XML 文件**：
+- 所有 SQL 语句必须写在 `src/main/resources/mapper/*.xml` 中
+- 使用自定义 SQL，不使用 MyBatis-Plus 的 Wrapper
+
+### SQL 编写规范
+
+```java
+// ❌ 错误：使用 MyBatis-Plus 的 LambdaQueryWrapper
+userMapper.selectCount(new LambdaQueryWrapper<User>()
+    .eq(User::getUsername, username));
+
+// ✅ 正确：使用自定义 XML SQL
+userMapper.countByUsername(username);
+```
+
+```xml
+<!-- UserMapper.xml -->
+<select id="countByUsername" resultType="int">
+    SELECT COUNT(1)
+    FROM tb_user
+    WHERE username = #{username}
+      AND is_delete = 0
+</select>
+```
+
+### Mapper 接口规范
+
+```java
+@Mapper
+@Repository
+public interface UserMapper extends BaseMapper<User> {
+    // ✅ 推荐：自定义方法 + XML 实现
+    int countByUsername(@Param("username") String username);
+    
+    // ❌ 避免：直接使用 BaseMapper 的方法（除非必要）
+    // selectCount, selectList 等应通过自定义 XML 实现
+}
 ```
 
 ---

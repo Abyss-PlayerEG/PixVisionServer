@@ -8,8 +8,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.pojo.ResponsePojo;
@@ -19,6 +17,7 @@ import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
 
@@ -30,9 +29,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/work")
 @RequiredArgsConstructor
-@Tag(name = "作品管理相关接口")
+@Tag(name = "作品管理接口")
 public class WorkController {
-    private static final Logger log = LoggerFactory.getLogger(WorkController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(WorkController.class);
 
     private final WorkService workService;
     private final TokenWhitelistService tokenWhitelistService;
