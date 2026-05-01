@@ -1,12 +1,11 @@
 package top.playereg.pix_vision.service.Impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.OperateLogMapper;
 import top.playereg.pix_vision.pojo.OperateLog;
 import top.playereg.pix_vision.service.OperateLogService;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.sql.Timestamp;
 
@@ -18,7 +17,7 @@ import java.sql.Timestamp;
 @Service
 public class OperateLogServiceImpl implements OperateLogService {
 
-    private static final Logger log = LoggerFactory.getLogger(OperateLogServiceImpl.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(OperateLogServiceImpl.class);
 
     @Autowired
     private OperateLogMapper operateLogMapper;

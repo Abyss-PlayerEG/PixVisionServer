@@ -1,8 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -13,13 +11,14 @@ import top.playereg.pix_vision.pojo.userPojo.UserData;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
 import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(UserServiceImpl.class);
 
     /**
      * Redis Key 前缀：role:{user_id}

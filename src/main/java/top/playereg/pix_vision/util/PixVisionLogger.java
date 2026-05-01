@@ -1,5 +1,7 @@
 package top.playereg.pix_vision.util;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.playereg.pix_vision.enums.LogColor;
@@ -18,7 +20,8 @@ public interface PixVisionLogger {
      * @param clazz 类对象
      * @return PixVisionLogger 实例
      */
-    static PixVisionLogger create(Class<?> clazz) {
+    @Contract(value = "_ -> new", pure = true)
+    static @NotNull PixVisionLogger create(Class<?> clazz) {
         return new PixVisionLogger() {
             private final Logger logger = LoggerFactory.getLogger(clazz);
 

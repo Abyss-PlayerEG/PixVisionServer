@@ -139,6 +139,24 @@ String hash = StrSwitchUtils.PasswdToHash256(password);
 // UUID 转换
 byte[] bytes = StrSwitchUtils.uuid2Bytes(uuidString);
 String uuid = StrSwitchUtils.bytes2Uuid(bytes);
+
+// 自定义日志（推荐使用，自动带颜色）
+// 非 Spring Bean 类（如工具类）：
+private static final PixVisionLogger log = PixVisionLogger.create(ClassName.class);
+log.info("消息内容");
+log.debug("调试信息：{}", variable);
+log.error("错误：", exception);
+```
+
+### 日志颜色
+
+```java
+// 使用 LogColor 为日志内容添加颜色
+LogColor.colorize("消息内容", LogColor.GREEN);  // 绿色
+LogColor.colorize("警告", LogColor.YELLOW);      // 黄色
+LogColor.colorize("错误", LogColor.RED);        // 红色
+LogColor.colorize("调试", LogColor.BLUE);       // 蓝色
+LogColor.colorize("跟踪", LogColor.GRAY);       // 灰色
 ```
 
 ---

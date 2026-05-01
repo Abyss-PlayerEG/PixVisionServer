@@ -1,13 +1,12 @@
 package top.playereg.pix_vision.service.Impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.service.SeriesService;
+import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.io.File;
 import java.sql.Timestamp;
@@ -21,7 +20,7 @@ import java.util.List;
 @Service
 public class SeriesServiceImpl implements SeriesService {
 
-    private static final Logger log = LoggerFactory.getLogger(SeriesServiceImpl.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(SeriesServiceImpl.class);
 
     private final SeriesMapper seriesMapper;
 
