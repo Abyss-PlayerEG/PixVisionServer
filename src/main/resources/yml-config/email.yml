@@ -1,7 +1,7 @@
 # 邮件配置
 spring:
   mail:
-    dev-mode: true                  # 开发者模式
+    dev-mode: false                 # 开发者模式
     host: smtp.qq.com               # SMTP服务器地址
     port: 465                       # 端口
     from: your-email@example.com    # 发件人
