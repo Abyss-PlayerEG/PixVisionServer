@@ -36,10 +36,10 @@ public class ConsoleOutputRedirector {
     private static final PixVisionLogger log = PixVisionLogger.create(ConsoleOutputRedirector.class);
 
     // 配置项（从 application.yml 读取）
-    @Value("${console-output.enabled:true}")
+    @Value("${console-output.enabled:false}")
     private boolean enabled;
 
-    @Value("${console-output.log-dir:${user.home}/.pix_vision/log}")
+    @Value("${console-output.log-dir:${user.home}/${workspace-name}/log}")
     private String logDir;
 
     @Value("${console-output.file-pattern:pix_vision[{timestamp}].log}")
