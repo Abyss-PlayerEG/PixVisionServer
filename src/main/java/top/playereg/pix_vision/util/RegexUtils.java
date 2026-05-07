@@ -1,8 +1,6 @@
 package top.playereg.pix_vision.util;
 
 import cn.hutool.core.util.StrUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 正则匹配工具类
@@ -11,7 +9,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("all")
 public class RegexUtils {
-    private static final Logger log = LoggerFactory.getLogger(RegexUtils.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(RegexUtils.class);
 
     /**
      * 正则表达模板
