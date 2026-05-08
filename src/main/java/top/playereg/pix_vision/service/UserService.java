@@ -69,6 +69,15 @@ public interface UserService {
     IPage<User> selectPageUserInfo(IPage<User> page, String keyword, byte[] uuidBytes);
 
     /**
+     * 按角色分页查询用户信息（支持单个或多个角色）
+     *
+     * @param page      分页对象
+     * @param userRoles 用户角色列表（可选，支持多个角色，OR 关系）
+     * @return 分页用户列表
+     */
+    IPage<User> selectPageUserInfoByRole(IPage<User> page, java.util.List<Integer> userRoles);
+
+    /**
      * 用户密码修改（通过邮箱）
      *
      * @param email       用户的邮箱

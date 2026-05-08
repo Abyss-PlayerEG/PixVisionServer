@@ -72,6 +72,21 @@ public interface UserMapper extends BaseMapper<User> {
     );
 
     /**
+     * 分页查询所有用户（无筛选条件）
+     * @param page 分页参数
+     * @return 分页用户列表
+     */
+    IPage<User> selectAllUsers(IPage<?> page);
+
+    /**
+     * 按角色列表分页查询用户（支持多个角色，OR 关系）
+     * @param page 分页参数
+     * @param userRoles 用户角色列表
+     * @return 分页用户列表
+     */
+    IPage<User> selectUsersByRoles(IPage<?> page, @Param("userRoles") java.util.List<Integer> userRoles);
+
+    /**
      * 用户密码修改 / 重置密码（通用）
      * @param email 用户的邮箱
      * @param oldPassword 用户的旧密码（可选，为空时不验证旧密码）

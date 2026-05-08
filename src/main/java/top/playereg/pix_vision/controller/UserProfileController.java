@@ -19,6 +19,8 @@ import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
+import java.util.List;
+
 /**
  * 用户资料管理相关接口（分页查询、修改昵称）
  *
@@ -152,6 +154,126 @@ public class UserProfileController {
         }
 
         log.info("分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}",
+            current, size, result.getTotal(), result.getRecords().size());
+
+        return ResponsePojo.success(result, "查询成功");
+    }
+
+    /**
+     * 按角色分页查询用户信息
+     *
+     * @param current   当前页码（从 1 开始）
+     * @param size      每页大小
+     * @param userRoles 用户角色列表（可选，支持多个角色）
+     * @return 响应数据<IPage < User>>
+     * @author PlayerEG
+     */
+    @GetMapping("/page-by-role/{current}/{size}")
+    @PublicAccess
+    @Operation(
+        summary = "按角色分页查询用户信息",
+        description = """
+            # 按角色分页查询用户信息（无需登录认证）
+
+            ## 特性
+            - 公开接口（无需 Token 认证）
+            - MyBatis-Plus 分页支持
+            - 支持单个或多个角色筛选
+            - 已自动过滤逻辑删除的用户
+
+            ## 参数说明：
+            - current: 当前页码，**从 1 开始**，Long 类型，必填，默认为 1
+            - size: 每页大小，Long 类型，必填，默认为 10，范围 1-100
+            - userRoles: **用户角色列表**（可选），Integer 数组类型，支持传递多个角色
+              * 11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员
+              * 可以传递单个角色或多个角色，如：?userRoles=11 或 ?userRoles=11&userRoles=22
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": {IPage<User>对象}}** ，包含用户列表和分页信息
+            - **参数错误**：返回 **{"data": null}** 和"页码或每页大小错误"提示
+            - **无符合条件的用户**：返回 **{"data": null}** 和"查询失败，返回结果为空"提示
+
+            ## 返回数据结构：
+            ```json
+            {
+              "code": 200,
+              "data": {
+                "records": [用户对象列表],
+                "total": 总记录数，
+                "size": 每页大小，
+                "current": 当前页，
+                "pages": 总页数
+              },
+              "message": "查询成功"
+            }
+            ```
+
+            ## 业务逻辑：
+            1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
+            2. 如果提供了 userRoles 参数，则按角色筛选用户（支持多角色 OR 查询）
+            3. 如果未提供 userRoles 参数，则查询所有用户
+            4. 构建 MyBatis-Plus 分页对象
+            5. 根据条件查询用户信息
+            6. 将二进制 UUID 转换为字符串格式
+            7. 返回分页结果集
+
+            ## 注意事项：
+            - **userRoles 为可选参数**，可不传，不传则查询所有用户
+            - 支持传递多个角色，多个角色之间是 OR 关系（满足任一角色即可）
+            - 默认返回 8 个核心字段（user_id, user_uuid, username, password, nickname, avatar_url, email, status, user_role）
+            - 已自动过滤逻辑删除的用户（is_delete=0）
+            - 每页大小限制：**1-100**
+            - 合法的角色代码：11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员
+
+            ## 使用示例：
+            ```
+            # 示例1：查询所有用户（无角色筛选）
+            GET /api/user/profile/page-by-role/1/10
+
+            # 示例2：查询普通用户（单个角色）
+            GET /api/user/profile/page-by-role/1/10?userRoles=11
+
+            # 示例3：查询普通用户和创作者（多个角色）
+            GET /api/user/profile/page-by-role/1/10?userRoles=11&userRoles=22
+
+            # 示例4：查询审核员和系统管理员
+            GET /api/user/profile/page-by-role/1/10?userRoles=55&userRoles=77
+            ```
+            """
+    )
+    public ResponsePojo<IPage<User>> getPageUserInfoByRole(
+        @Parameter(description = "当前页码，从 1 开始", example = "1") @PathVariable Long current,
+        @Parameter(description = "每页大小，范围 1-100", example = "10") @PathVariable Long size,
+        @Parameter(description = "用户角色列表（可选），支持多个角色", example = "11") @RequestParam(required = false) List<Integer> userRoles
+    ) {
+        // 参数校验
+        if (current == null || current < 1) {
+            return ResponsePojo.error(null, "页码必须大于 0");
+        }
+        if (size == null || size < 1 || size > 100) {
+            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        }
+
+        log.info("按角色分页查询用户信息 - 页码: {}, 每页: {}, 角色列表: {}", current, size, userRoles != null ? userRoles.toString() : "无");
+
+        // 构建分页对象
+        Page<User> page = new Page<>(current, size);
+
+        // 调用服务层查询用户信息
+        IPage<User> result = userService.selectPageUserInfoByRole(page, userRoles);
+
+        // 返回结果为空，则返回错误信息
+        if (result == null || result.getRecords().isEmpty()) {
+            log.warn("按角色分页查询返回结果为空 - 页码：{}, 每页：{}, 角色：{}", current, size, userRoles != null ? userRoles.toString() : "无");
+            return ResponsePojo.error(null, "查询失败，返回结果为空");
+        }
+
+        // 将用户的 16 字节二进制UUID转换成字符串UUID
+        for (User user : result.getRecords()) {
+            user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
+        }
+
+        log.info("按角色分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}",
             current, size, result.getTotal(), result.getRecords().size());
 
         return ResponsePojo.success(result, "查询成功");

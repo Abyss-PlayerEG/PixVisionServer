@@ -167,6 +167,36 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 按角色分页查询用户信息（支持单个或多个角色）
+     *
+     * @param page      分页参数
+     * @param userRoles 用户角色列表（可选，支持多个角色，OR 关系）
+     * @return 分页用户列表
+     */
+    @Override
+    public IPage<User> selectPageUserInfoByRole(IPage<User> page, java.util.List<Integer> userRoles) {
+        log.info("按角色分页查询用户信息 - 角色列表: {}", userRoles);
+
+        // 如果未提供角色列表或列表为空，则查询所有用户
+        if (userRoles == null || userRoles.isEmpty()) {
+            log.info("未提供角色筛选条件，查询所有用户");
+            return userMapper.selectAllUsers(page);
+        }
+
+        // 验证角色代码是否合法
+        java.util.List<Integer> validRoles = java.util.List.of(11, 22, 55, 66, 77);
+        for (Integer role : userRoles) {
+            if (!validRoles.contains(role)) {
+                log.warn("无效的角色代码: {}，允许的角色代码: {}", role, validRoles);
+                return null;
+            }
+        }
+
+        log.info("执行按角色分页查询 - 角色列表: {}", userRoles);
+        return userMapper.selectUsersByRoles(page, userRoles);
+    }
+
+    /**
      * 用户密码修改（通过邮箱）
      * @param email 用户的邮箱
      * @param oldPassword 用户的旧密码

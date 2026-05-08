@@ -115,6 +115,44 @@
         </if>
     </select>
 
+    <!-- 分页查询所有用户（无筛选条件） -->
+    <select id="selectAllUsers"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+        SELECT nickname,
+               user_id,
+               avatar_url,
+               username,
+               email,
+               user_role,
+               user_uuid,
+               status
+        FROM tb_user
+        WHERE is_delete = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 按角色列表分页查询用户（支持多个角色，OR 关系） -->
+    <select id="selectUsersByRoles"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+        SELECT nickname,
+               user_id,
+               avatar_url,
+               username,
+               email,
+               user_role,
+               user_uuid,
+               status
+        FROM tb_user
+        WHERE is_delete = 0
+        <if test="userRoles != null and userRoles.size() > 0">
+            AND user_role IN
+            <foreach collection="userRoles" item="role" open="(" separator="," close=")">
+                #{role}
+            </foreach>
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
     <!-- 修改密码 / 重置密码（通用） -->
     <update id="changeUserPassword">
         UPDATE tb_user
