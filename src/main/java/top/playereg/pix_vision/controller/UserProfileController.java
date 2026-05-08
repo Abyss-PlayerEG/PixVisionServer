@@ -74,21 +74,6 @@ public class UserProfileController {
             - **参数错误**：返回 **{"data": null}** 和"页码或每页大小错误"提示
             - **UUID 格式错误**：返回 **{"data": null}** 和"UUID 格式错误"提示
 
-            ## 返回数据结构：
-            ```json
-            {
-              "code": 200,
-              "data": {
-                "records": [用户对象列表],
-                "total": 总记录数，
-                "size": 每页大小，
-                "current": 当前页，
-                "pages": 总页数
-              },
-              "message": "查询成功"
-            }
-            ```
-
             ## 业务逻辑：
             1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
             2. 判断关键词类型：
@@ -193,21 +178,6 @@ public class UserProfileController {
             - **参数错误**：返回 **{"data": null}** 和"页码或每页大小错误"提示
             - **无符合条件的用户**：返回 **{"data": null}** 和"查询失败，返回结果为空"提示
 
-            ## 返回数据结构：
-            ```json
-            {
-              "code": 200,
-              "data": {
-                "records": [用户对象列表],
-                "total": 总记录数，
-                "size": 每页大小，
-                "current": 当前页，
-                "pages": 总页数
-              },
-              "message": "查询成功"
-            }
-            ```
-
             ## 业务逻辑：
             1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
             2. 如果提供了 userRoles 参数，则按角色筛选用户（支持多角色 OR 查询）
@@ -224,21 +194,6 @@ public class UserProfileController {
             - 已自动过滤逻辑删除的用户（is_delete=0）
             - 每页大小限制：**1-100**
             - 合法的角色代码：11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员
-
-            ## 使用示例：
-            ```
-            # 示例1：查询所有用户（无角色筛选）
-            GET /api/user/profile/page-by-role/1/10
-
-            # 示例2：查询普通用户（单个角色）
-            GET /api/user/profile/page-by-role/1/10?userRoles=11
-
-            # 示例3：查询普通用户和创作者（多个角色）
-            GET /api/user/profile/page-by-role/1/10?userRoles=11&userRoles=22
-
-            # 示例4：查询审核员和系统管理员
-            GET /api/user/profile/page-by-role/1/10?userRoles=55&userRoles=77
-            ```
             """
     )
     public ResponsePojo<IPage<User>> getPageUserInfoByRole(

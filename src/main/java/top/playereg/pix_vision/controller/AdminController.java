@@ -171,18 +171,6 @@ public class AdminController {
             - 建议谨慎分配高权限角色（如 77-系统管理员）
             - 冻结状态（20）：用户无法登录，但数据保留
             - 封禁状态（30）：用户无法登录，严重违规使用
-
-            ## 使用示例：
-            ```
-            # 示例1：仅修改角色
-            POST /api/admin/update-user-info?targetUserId=123&newRole=22
-
-            # 示例2：仅修改状态
-            POST /api/admin/update-user-info?targetUserId=123&newStatus=20
-
-            # 示例3：同时修改角色和状态
-            POST /api/admin/update-user-info?targetUserId=123&newRole=22&newStatus=10
-            ```
             """
     )
     @PostMapping("/update-user-info")

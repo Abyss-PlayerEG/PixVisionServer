@@ -176,28 +176,6 @@ public class UserDataController {
             - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
             - **查询失败**：返回 **{"data": null}** 和"查询失败"提示
 
-            ## 返回数据结构：
-            ```json
-            {
-              "code": 200,
-              "data": [
-                {
-                  "data_id": 2,
-                  "user_id": 1,
-                  "user_data_name": "微信",
-                  "user_data": "wx_test_user"
-                },
-                {
-                  "data_id": 1,
-                  "user_id": 1,
-                  "user_data_name": "电话",
-                  "user_data": "13800138000"
-                }
-              ],
-              "message": "查询成功"
-            }
-            ```
-
             ## 业务逻辑：
             1. 校验用户 ID 参数有效性
             2. 检查用户是否存在

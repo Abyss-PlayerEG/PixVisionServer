@@ -177,39 +177,9 @@ public class SeriesController {
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": [Series 列表]}** ，包含用户的所有作品系列
-            - **用户 ID 无效**：返回 **{"data": null}** 和“用户 ID 无效”提示
-            - **查询失败**：返回 **{"data": null}** 和“查询失败”提示
-
-            ## 返回数据结构：
-            ```json
-            {
-              "code": 200,
-              "data": [
-                {
-                  "series_id": 1,
-                  "user_id": 1,
-                  "series_title": "我的作品集",
-                  "about_text": "这是一个展示我作品的系列",
-                  "update_time": "2024-01-01 12:00:00",
-                  "update_user": 1,
-                  "create_time": "2024-01-01 12:00:00",
-                  "create_user": 1
-                },
-                {
-                  "series_id": 2,
-                  "user_id": 1,
-                  "series_title": "风景摄影",
-                  "about_text": "自然风光摄影作品",
-                  "update_time": "2024-01-02 15:30:00",
-                  "update_user": 1,
-                  "create_time": "2024-01-02 15:30:00",
-                  "create_user": 1
-                }
-              ],
-              "message": "查询成功"
-            }
-            ```
-
+            - **用户 ID 无效**：返回 **{"data": null}** 和"用户 ID 无效"提示
+            - **查询失败**：返回 **{"data": null}** 和"查询失败"提示
+            
             ## 业务逻辑：
             1. 校验用户 ID 参数有效性
             2. 查询用户的所有作品系列（自动排除逻辑删除的数据）

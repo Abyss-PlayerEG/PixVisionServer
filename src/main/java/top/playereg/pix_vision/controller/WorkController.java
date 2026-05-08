@@ -182,24 +182,9 @@ public class WorkController {
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
-            - **参数错误**：返回 **{"data": null}** 和“页码或每页大小错误”提示
-            - **无数据**：返回 **{"data": null}** 和“查询失败，返回结果为空”提示
-
-            ## 返回数据结构：
-            ```json
-            {
-              "code": 200,
-              "data": {
-                "records": [作品对象列表],
-                "total": 总记录数,
-                "size": 每页大小,
-                "current": 当前页,
-                "pages": 总页数
-              },
-              "message": "查询成功"
-            }
-            ```
-
+            - **参数错误**：返回 **{"data": null}** 和"页码或每页大小错误"提示
+            - **无数据**：返回 **{"data": null}** 和"查询失败，返回结果为空"提示
+            
             ## 业务逻辑：
             1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
             2. 构建 MyBatis-Plus 分页对象
@@ -218,39 +203,6 @@ public class WorkController {
             - 每页大小限制：**1-100**
             - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
             - 使用 **RESTful 风格**路径参数，格式：`/homepage/{current}/{size}`
-
-            ## 使用示例：
-            ```
-            # 示例1：获取第 1 页，每页 10 条（无条件查询）
-            GET /api/work/homepage/1/10
-
-            # 示例2：根据作品标题模糊查询
-            GET /api/work/homepage/1/10?workTitle=樱花
-
-            # 示例3：根据用户 ID 精确查询
-            GET /api/work/homepage/1/10?userId=123
-
-            # 示例4：根据用户名模糊查询
-            GET /api/work/homepage/1/10?username=admin
-
-            # 示例5：根据昵称模糊查询
-            GET /api/work/homepage/1/10?nickname=测试用户
-
-            # 示例6：查询原创作品
-            GET /api/work/homepage/1/10?isOriginal=true
-
-            # 示例7：组合查询（某用户的原创作品）
-            GET /api/work/homepage/1/10?userId=123&isOriginal=true
-
-            # 示例8：组合查询（某用户名下的作品）
-            GET /api/work/homepage/1/10?username=admin&workTitle=樱花
-
-            # 示例9：组合查询（昵称含“测试”的原创作品）
-            GET /api/work/homepage/1/10?nickname=测试&isOriginal=true
-
-            # 示例10：多条件组合查询
-            GET /api/work/homepage/1/10?userId=123&workTitle=樱花&isOriginal=true
-            ```
             """
     )
     @PublicAccess("分页查询作品列表，无需认证")
@@ -313,33 +265,9 @@ public class WorkController {
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": {Works对象}}** ，包含作品详细信息
-            - **作品不存在**：返回 **{"data": null}** 和“作品不存在或已删除”提示
-            - **参数错误**：返回 **{"data": null}** 和“作品 ID 无效”提示
-
-            ## 返回数据结构：
-            ```json
-            {
-              "code": 200,
-              "data": {
-                "work_id": 1,
-                "user_id": 123,
-                "work_title": "春日樱花",
-                "img_url": "abc123.jpg",
-                "series_id": 5,
-                "like_count": 100,
-                "star_count": 50,
-                "view_count": 1000,
-                "is_original_work": true,
-                "out_url": "",
-                "update_time": "2024-01-01 12:00:00",
-                "update_user": 123,
-                "create_time": "2024-01-01 12:00:00",
-                "create_user": 123
-              },
-              "message": "查询成功"
-            }
-            ```
-
+            - **作品不存在**：返回 **{"data": null}** 和"作品不存在或已删除"提示
+            - **参数错误**：返回 **{"data": null}** 和"作品 ID 无效"提示
+            
             ## 业务逻辑：
             1. 校验作品 ID 参数有效性
             2. 查询作品信息
@@ -351,15 +279,6 @@ public class WorkController {
             - 只能查询**未删除**的作品（is_delete=0）
             - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
             - 如果作品不存在或已删除，返回 null
-
-            ## 使用示例：
-            ```
-            # 示例1：查询作品 ID 为 1 的作品
-            GET /api/work/detail/1
-
-            # 示例2：查询作品 ID 为 123 的作品
-            GET /api/work/detail/123
-            ```
             """
     )
     @PublicAccess("查询单个作品，无需认证")
@@ -498,68 +417,6 @@ public class WorkController {
             - 上传新图片后，旧图片会被自动删除（重命名为 .del）
             - 修改成功后，update_time 和 update_user 会自动更新
             - isOriginal 参数使用下拉框选择，避免输入错误
-
-            ## 使用示例：
-            ```
-            # 示例1：只修改标题（不上传图片）
-            POST /api/work/update
-            Content-Type: multipart/form-data
-            Authorization: Bearer <token>
-
-            workId: 1
-            workTitle: 春日樱花
-
-            # 示例2：上传新图片并修改标题
-            POST /api/work/update
-            Content-Type: multipart/form-data
-            Authorization: Bearer <token>
-
-            workId: 1
-            file: [binary image data]
-            workTitle: 新标题
-
-            # 示例3：将转载作品改为原创（自动清空 outUrl）
-            POST /api/work/update
-            Content-Type: multipart/form-data
-            Authorization: Bearer <token>
-
-            workId: 1
-            isOriginal: true
-            # outUrl 不填或填空，系统会自动清空原有的转载链接
-
-            # 示例4：将原创作品改为转载
-            POST /api/work/update
-            Content-Type: multipart/form-data
-            Authorization: Bearer <token>
-
-            workId: 1
-            isOriginal: false
-            outUrl: https://example.com/original
-
-            # 示例5：只修改外部链接（不改原创状态）
-            POST /api/work/update
-            Content-Type: multipart/form-data
-            Authorization: Bearer <token>
-
-            workId: 1
-            outUrl: https://new-example.com
-
-            # 示例6：将作品从系列中移除（seriesId=0）
-            POST /api/work/update
-            Content-Type: multipart/form-data
-            Authorization: Bearer <token>
-
-            workId: 1
-            seriesId: 0
-
-            # 示例7：将作品关联到新系列
-            POST /api/work/update
-            Content-Type: multipart/form-data
-            Authorization: Bearer <token>
-
-            workId: 1
-            seriesId: 5
-            ```
             """
     )
     @RequireRole(value = {22, 77})

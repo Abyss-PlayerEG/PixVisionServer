@@ -102,13 +102,6 @@ public class ImageController {
             - 支持子目录结构，如：`default/11.png`、`custom/user_avatar.jpg`
             - **仅支持 JPG、JPEG、PNG 格式**的图片
             - 文件路径相对于 `~/.pix_vision/data/avatar/` 目录
-
-            ## 使用示例：
-            ```
-            GET /image/avatar?filePath=default/1.png
-            GET /image/avatar?filePath=default/11.jpg
-            GET /image/avatar?filePath=custom/my_avatar.jpeg
-            ```
             """
     )
     @PublicAccess("获取头像图片，无需认证")
@@ -164,13 +157,6 @@ public class ImageController {
             - **仅支持 JPG、JPEG、PNG 格式**的图片
             - 文件路径相对于 `~/.pix_vision/data/works/` 目录
             - 适用于展示用户上传的作品图片
-
-            ## 使用示例：
-            ```
-            GET /image/works?filePath=artwork_001.png
-            GET /image/works?filePath=2024/04/spring_art.jpg
-            GET /image/works?filePath=user123/gallery/photo.jpeg
-            ```
             """
     )
     @PublicAccess("获取作品图片，无需认证")
@@ -226,13 +212,6 @@ public class ImageController {
             - **仅支持 JPG、JPEG、PNG 格式**的图片
             - 文件路径相对于 `~/.pix_vision/data/logo-img/` 目录
             - 适用于网站 Logo、品牌标识等静态图片资源
-
-            ## 使用示例：
-            ```
-            GET /image/logo?filePath=dark.png
-            GET /image/logo?filePath=light.jpg
-            GET /image/logo?filePath=brand_logo.jpeg
-            ```
             """
     )
     @PublicAccess("获取Logo图片，无需认证")
@@ -294,15 +273,6 @@ public class ImageController {
             - 文件名使用 UUID 生成，避免冲突
             - 旧头像文件不会被自动删除，建议定期清理
             - 文件大小限制为 **5MB**
-
-            ## 使用示例：
-            ```
-            POST /api/get-image/upload-avatar
-            Content-Type: multipart/form-data
-            Authorization: Bearer <your-token>
-
-            file: [binary image data]
-            ```
             """
     )
     @PostMapping("/avatar/upload")
@@ -488,40 +458,6 @@ public class ImageController {
             - **seriesId 可选**，不填或为 0 则作品不属于任何系列（数据库存储为 NULL）；如填写具体系列 ID，必须是自己拥有的系列
             - 转载作品必须提供外部链接，原创作品的 outUrl 可为空
             - 数据库字段默认值：like_count=0, star_count=0, view_count=0
-
-            ## 使用示例：
-            ```
-            # 示例1：上传原创作品（不关联系列，seriesId 不传或为 0）
-            POST /api/image/upload/work
-            Content-Type: multipart/form-data
-            Authorization: Bearer <your-token>
-
-            file: [binary image data]
-            workTitle: 春日樱花
-            isOriginal: true
-            # seriesId 不传，数据库中存储为 NULL
-
-            # 示例2：上传原创作品（关联系列）
-            POST /api/image/upload/work
-            Content-Type: multipart/form-data
-            Authorization: Bearer <your-token>
-
-            file: [binary image data]
-            workTitle: 春日樱花
-            seriesId: 1
-            isOriginal: true
-
-            # 示例3：上传转载作品
-            POST /api/image/upload/work
-            Content-Type: multipart/form-data
-            Authorization: Bearer <your-token>
-
-            file: [binary image data]
-            workTitle: 转载作品
-            seriesId: 2
-            isOriginal: false
-            outUrl: https://example.com/original
-            ```
             """
     )
     @RequireRole(value = {22, 77})
