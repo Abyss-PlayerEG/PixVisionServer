@@ -59,4 +59,20 @@ public interface SeriesMapper extends BaseMapper<Series> {
      * @return 影响的行数
      */
     int deleteSeriesById(@Param("seriesId") Integer seriesId, @Param("userId") Integer userId);
+
+    /**
+     * 更新系列信息（SQL 层面验证用户权限，动态更新非空字段）
+     *
+     * @param seriesId    系列 ID
+     * @param userId      用户 ID（确保只能修改自己的系列）
+     * @param seriesTitle 系列标题（可为 null）
+     * @param aboutText   系列描述（可为 null）
+     * @return 影响的行数
+     */
+    int updateSeriesInfo(
+        @Param("seriesId") Integer seriesId,
+        @Param("userId") Integer userId,
+        @Param("seriesTitle") String seriesTitle,
+        @Param("aboutText") String aboutText
+    );
 }

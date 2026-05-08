@@ -2,6 +2,7 @@ package top.playereg.pix_vision.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +47,7 @@ public class SeriesController {
      * @author PlayerEG
      */
     @PostMapping("/add")
-    @RequireRole(value = {22,77})
+    @RequireRole(value = {22, 77})
     @Operation(
         summary = "新增作品系列接口",
         description = """
@@ -179,7 +180,7 @@ public class SeriesController {
             - **查询成功**：返回 **{"data": [Series 列表]}** ，包含用户的所有作品系列
             - **用户 ID 无效**：返回 **{"data": null}** 和"用户 ID 无效"提示
             - **查询失败**：返回 **{"data": null}** 和"查询失败"提示
-            
+
             ## 业务逻辑：
             1. 校验用户 ID 参数有效性
             2. 查询用户的所有作品系列（自动排除逻辑删除的数据）
@@ -226,7 +227,7 @@ public class SeriesController {
      * @author PlayerEG
      */
     @PostMapping("/delete")
-    @RequireRole(value = {22,77})
+    @RequireRole(value = {22, 77})
     @Operation(
         summary = "删除作品系列接口",
         description = """
@@ -281,7 +282,11 @@ public class SeriesController {
     public ResponsePojo<Boolean> deleteSeries(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "系列 ID", required = true, example = "1") @RequestParam Integer seriesId,
-        @Parameter(description = "是否删除系列内的作品（true=删除作品，false=保留作品）", required = true, example = "false") @RequestParam Boolean deleteWorks
+        @Schema(
+            description = "是否删除系列内的作品（true=删除作品，false=保留作品）",
+            allowableValues = {"true", "false"},
+            example = "false"
+        ) @RequestParam Boolean deleteWorks
     ) {
         log.debug("删除系列 - 系列 ID: {}, 是否删除作品: {}", seriesId, deleteWorks);
 
@@ -325,6 +330,133 @@ public class SeriesController {
         } else {
             log.warn("系列删除失败，用户 ID: {}, 用户名: {}, 系列 ID: {}", userId, username, seriesId);
             return ResponsePojo.error(false, "系列删除失败");
+        }
+    }
+
+    /**
+     * 更新系列信息（支持部分字段修改）
+     *
+     * @param request     HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param seriesId    系列 ID
+     * @param seriesTitle 系列标题（可选，最多 16 个中文字符）
+     * @param aboutText   系列描述（可选，最多 24 个中文字符）
+     * @return 修改结果
+     * @author PlayerEG
+     */
+    @PostMapping("/update")
+    @RequireRole(value = {22, 77})
+    @Operation(
+        summary = "更新系列信息接口",
+        description = """
+            # 更新系列信息（需要登录认证 + 角色权限[22,77]）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 支持部分字段修改（所有参数可选）
+            - SQL 层面权限验证（只能修改自己的系列）
+            - 动态更新非空字段
+            - 完整的参数校验
+            - 标题唯一性检查（同一用户下不能重复）
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - seriesId: **系列 ID**，Integer 类型，必填
+            - seriesTitle: **系列标题**，String 类型，可选，最多 16 个中文字符
+            - aboutText: **系列描述**，String 类型，可选，最多 24 个中文字符
+
+            ## 返回说明：
+            - **修改成功**：返回 **{"data": true}** 和“系列信息更新成功”提示
+            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
+            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
+            - **系列 ID 无效**：返回 **{"data": false}** 和“系列 ID 无效”提示
+            - **无修改内容**：返回 **{"data": false}** 和“无修改内容”提示
+            - **系列不存在**：返回 **{"data": false}** 和“系列不存在或已删除”提示
+            - **无权修改**：返回 **{"data": false}** 和“无权修改该系列”提示
+            - **标题过长**：返回 **{"data": false}** 和“系列标题长度不能超过 16 个字符”提示
+            - **描述过长**：返回 **{"data": false}** 和“系列描述长度不能超过 24 个字符”提示
+            - **标题重复**：返回 **{"data": false}** 和“系列标题已存在，请使用其他标题”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验系列 ID 参数有效性
+            5. 检查是否至少有一个参数不为空
+            6. 查询系列信息并验证所有权（只能修改自己的系列）
+            7. 如果提供了新标题，验证长度并检查是否与当前标题不同且未被其他系列使用
+            8. 如果提供了新描述，验证长度并检查是否与当前描述不同
+            9. 执行动态更新（只更新非空且发生变化的字段）
+            10. 自动更新 update_time 和 update_user
+            11. 返回修改结果
+
+            ## 注意事项：
+            - **需要携带有效的 Token 才能修改系列**
+            - Token 必须在白名单中（未过期、未登出）
+            - **用户只能修改自己的系列**，无法修改他人的系列
+            - 所有参数都是可选的，可以只修改部分字段
+            - **如果所有参数都为空或与当前值相同，将返回“无修改内容”**
+            - 系列标题限制：**最多 16 个字符**
+            - 系列描述限制：**最多 24 个字符**
+            - **同一用户下系列标题不能重复**（修改时也会检查）
+            - 采用动态更新机制，只提供要修改的字段即可
+            - 修改成功后，update_time 和 update_user 会自动更新
+            """
+    )
+    public ResponsePojo<Boolean> updateSeriesInfo(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "系列 ID", required = true, example = "1") @RequestParam Integer seriesId,
+        @Parameter(description = "系列标题（可选），最多 16 个中文字符", required = false) @RequestParam(required = false) String seriesTitle,
+        @Parameter(description = "系列描述（可选），最多 24 个中文字符", required = false) @RequestParam(required = false) String aboutText
+    ) {
+        log.debug("更新系列信息 - 系列 ID: {}", seriesId);
+
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "更新系列信息接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("更新系列信息失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始更新系列信息，用户 ID: {}, 用户名: {}, 系列 ID: {}", userId, username, seriesId);
+
+        // 校验系列 ID 参数
+        if (seriesId == null || seriesId <= 0) {
+            log.warn("系列 ID 无效，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "系列 ID 无效");
+        }
+
+        // 调用服务层更新系列信息
+        try {
+            Boolean result = seriesService.updateSeriesInfo(seriesId, userId, seriesTitle, aboutText);
+
+            if (result) {
+                log.info("系列信息更新成功，用户 ID: {}, 用户名: {}, 系列 ID: {}", userId, username, seriesId);
+                return ResponsePojo.success(true, "系列信息更新成功");
+            } else {
+                log.error("系列信息更新失败，用户 ID: {}, 用户名: {}, 系列 ID: {}", userId, username, seriesId);
+                return ResponsePojo.error(false, "系列信息更新失败");
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("系列信息更新参数错误，用户 ID: {}, 错误: {}", userId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
+        } catch (SecurityException e) {
+            log.warn("系列信息更新权限错误，用户 ID: {}, 错误: {}", userId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
         }
     }
 }

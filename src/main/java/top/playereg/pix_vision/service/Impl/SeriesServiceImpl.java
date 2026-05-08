@@ -55,7 +55,7 @@ public class SeriesServiceImpl implements SeriesService {
         series.setUser_id(userId);
         series.setSeries_title(seriesTitle);
         series.setAbout_text(aboutText);
-        series.setIs_delete(false);
+        series.setIs_delete(Boolean.FALSE);
 
         // 设置时间戳和操作者
         Timestamp now = new Timestamp(System.currentTimeMillis());
@@ -97,7 +97,7 @@ public class SeriesServiceImpl implements SeriesService {
         List<Series> seriesList = seriesMapper.selectSeriesByUserId(userId);
 
         if (seriesList != null) {
-            log.info("查询成功 - 用户 ID: {}, 系列数量: {}", userId, seriesList.size());
+            log.info("查询成功 - 用户 ID: {}, 系列数量: {}", userId, Integer.valueOf(seriesList.size()));
         } else {
             log.warn("查询失败 - 用户 ID: {}", userId);
         }
@@ -120,29 +120,29 @@ public class SeriesServiceImpl implements SeriesService {
         // 参数校验
         if (seriesId == null || seriesId <= 0) {
             log.warn("系列 ID 无效: {}", seriesId);
-            return false;
+            return Boolean.FALSE;
         }
 
         if (userId == null || userId <= 0) {
             log.warn("用户 ID 无效: {}", userId);
-            return false;
+            return Boolean.FALSE;
         }
 
         if (deleteWorks == null) {
             log.warn("删除作品标志为空，默认为 false");
-            deleteWorks = false;
+            deleteWorks = Boolean.FALSE;
         }
 
         // 1. 验证系列是否存在且属于当前用户
         Series series = seriesMapper.selectSeriesById(seriesId);
         if (series == null || series.getIs_delete()) {
             log.warn("系列不存在或已删除，系列 ID: {}", seriesId);
-            return false;
+            return Boolean.FALSE;
         }
 
         if (!series.getUser_id().equals(userId)) {
             log.warn("无权删除该系列，系列 ID: {}, 用户 ID: {}", seriesId, userId);
-            return false;
+            return Boolean.FALSE;
         }
 
         // 2. 处理系列内的作品
@@ -150,24 +150,24 @@ public class SeriesServiceImpl implements SeriesService {
             // 选择删除作品：查询系列下所有作品 ID，然后批量删除
             List<Integer> workIds = worksMapper.selectWorkIdsBySeriesId(seriesId, userId);
             if (workIds != null && !workIds.isEmpty()) {
-                log.info("系列包含 {} 个作品，将一并删除", workIds.size());
+                log.info("系列包含 {} 个作品，将一并删除", Integer.valueOf(workIds.size()));
 
                 // 调用 WorkService 的批量删除方法（会重命名文件为 .del）
                 // 注意：这里需要注入 WorkService，但为了避免循环依赖，我们直接使用 WorksMapper
                 // 先重命名文件
                 int renamedCount = renameWorksFilesToDelete(workIds);
-                log.info("作品文件重命名完成，成功: {}/{}", renamedCount, workIds.size());
+                log.info("作品文件重命名完成，成功: {}/{}", Integer.valueOf(renamedCount), Integer.valueOf(workIds.size()));
 
                 // 执行逻辑删除
                 int deletedCount = worksMapper.batchDeleteWorks(workIds, userId);
-                log.info("作品删除完成，删除数量: {}", deletedCount);
+                log.info("作品删除完成，删除数量: {}", Integer.valueOf(deletedCount));
             } else {
                 log.info("系列下没有作品，跳过作品删除");
             }
         } else {
             // 选择保留作品：将系列下所有作品的 series_id 置空
             int clearedCount = worksMapper.clearSeriesIdBySeriesId(seriesId, userId);
-            log.info("已将 {} 个作品的 series_id 置空", clearedCount);
+            log.info("已将 {} 个作品的 series_id 置空", Integer.valueOf(clearedCount));
         }
 
         // 3. 逻辑删除系列
@@ -175,10 +175,113 @@ public class SeriesServiceImpl implements SeriesService {
 
         if (affectedRows > 0) {
             log.info("系列删除成功，系列 ID: {}, 用户 ID: {}", seriesId, userId);
-            return true;
+            return Boolean.TRUE;
         } else {
             log.error("系列删除失败，系列 ID: {}, 用户 ID: {}", seriesId, userId);
-            return false;
+            return Boolean.FALSE;
+        }
+    }
+
+    /**
+     * 更新系列信息（支持部分字段修改）
+     *
+     * @param seriesId    系列 ID
+     * @param userId      当前用户 ID（用于权限验证）
+     * @param seriesTitle 系列标题（可选，最多 16 个中文字符）
+     * @param aboutText   系列描述（可选，最多 24 个中文字符）
+     * @return 修改结果
+     */
+    @Override
+    public Boolean updateSeriesInfo(Integer seriesId, Integer userId, String seriesTitle, String aboutText) {
+        log.info("开始更新系列信息，系列 ID: {}, 用户 ID: {}", seriesId, userId);
+
+        // 参数校验
+        if (seriesId == null || seriesId <= 0) {
+            log.warn("系列 ID 无效: {}", seriesId);
+            return Boolean.FALSE;
+        }
+
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return Boolean.FALSE;
+        }
+
+        // 检查是否所有参数都为空
+        boolean allParamsEmpty = (seriesTitle == null || seriesTitle.trim().isEmpty()) 
+                              && (aboutText == null || aboutText.trim().isEmpty());
+        
+        if (allParamsEmpty) {
+            log.warn("无修改内容，系列 ID: {}, 用户 ID: {}", seriesId, userId);
+            throw new IllegalArgumentException("无修改内容");
+        }
+
+        // 验证系列是否存在且属于当前用户
+        Series series = seriesMapper.selectSeriesById(seriesId);
+        if (series == null || series.getIs_delete()) {
+            log.warn("系列不存在或已删除，系列 ID: {}", seriesId);
+            throw new IllegalArgumentException("系列不存在或已删除");
+        }
+
+        if (!series.getUser_id().equals(userId)) {
+            log.warn("无权修改该系列，系列 ID: {}, 用户 ID: {}", seriesId, userId);
+            throw new SecurityException("无权修改该系列");
+        }
+
+        // 如果提供了新的标题，需要验证长度和唯一性
+        String finalSeriesTitle = null;
+        if (seriesTitle != null && !seriesTitle.trim().isEmpty()) {
+            String trimmedTitle = seriesTitle.trim();
+            
+            // 验证标题长度
+            if (trimmedTitle.length() > 16) {
+                log.warn("系列标题长度不符合要求，系列 ID: {}, 标题长度: {}", seriesId, Integer.valueOf(trimmedTitle.length()));
+                throw new IllegalArgumentException("系列标题长度不能超过 16 个字符");
+            }
+
+            // 检查标题是否与当前标题不同
+            if (!trimmedTitle.equals(series.getSeries_title())) {
+                // 检查新标题是否已被其他系列使用
+                int count = seriesMapper.countSeriesByTitle(userId, trimmedTitle);
+                if (count > 0) {
+                    log.warn("系列标题已存在，用户 ID: {}, 新标题: {}", userId, trimmedTitle);
+                    throw new IllegalArgumentException("系列标题已存在，请使用其他标题");
+                }
+                finalSeriesTitle = trimmedTitle;
+            }
+        }
+
+        // 如果提供了新的描述，需要验证长度
+        String finalAboutText = null;
+        if (aboutText != null && !aboutText.trim().isEmpty()) {
+            String trimmedText = aboutText.trim();
+            
+            // 验证描述长度
+            if (trimmedText.length() > 24) {
+                log.warn("系列描述长度不符合要求，系列 ID: {}, 描述长度: {}", seriesId, Integer.valueOf(trimmedText.length()));
+                throw new IllegalArgumentException("系列描述长度不能超过 24 个字符");
+            }
+
+            // 检查描述是否与当前描述不同
+            if (!trimmedText.equals(series.getAbout_text())) {
+                finalAboutText = trimmedText;
+            }
+        }
+
+        // 再次检查是否有实际修改
+        if (finalSeriesTitle == null && finalAboutText == null) {
+            log.warn("无修改内容（内容与当前相同），系列 ID: {}, 用户 ID: {}", seriesId, userId);
+            throw new IllegalArgumentException("无修改内容");
+        }
+
+        // 执行更新
+        int affectedRows = seriesMapper.updateSeriesInfo(seriesId, userId, finalSeriesTitle, finalAboutText);
+
+        if (affectedRows > 0) {
+            log.info("系列信息更新成功，系列 ID: {}, 用户 ID: {}", seriesId, userId);
+            return Boolean.TRUE;
+        } else {
+            log.error("系列信息更新失败，系列 ID: {}, 用户 ID: {}", seriesId, userId);
+            return Boolean.FALSE;
         }
     }
 

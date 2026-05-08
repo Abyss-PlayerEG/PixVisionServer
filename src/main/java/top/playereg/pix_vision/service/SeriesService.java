@@ -38,4 +38,15 @@ public interface SeriesService {
      * @return 删除结果
      */
     Boolean deleteSeries(Integer seriesId, Integer userId, Boolean deleteWorks);
+
+    /**
+     * 更新系列信息（支持部分字段修改）
+     *
+     * @param seriesId    系列 ID
+     * @param userId      当前用户 ID（用于权限验证）
+     * @param seriesTitle 系列标题（可选，最多 16 个中文字符）
+     * @param aboutText   系列描述（可选，最多 24 个中文字符）
+     * @return 修改结果
+     */
+    Boolean updateSeriesInfo(Integer seriesId, Integer userId, String seriesTitle, String aboutText);
 }
