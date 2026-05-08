@@ -48,13 +48,14 @@ public class WorkServiceImpl implements WorkService {
      * @param userId     用户 ID（可选，精确查询）
      * @param username   用户名（可选，模糊查询）
      * @param nickname   昵称（可选，模糊查询）
+     * @param seriesId   系列 ID（可选，精确查询）
      * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, String username, String nickname, Boolean isOriginal) {
-        return worksMapper.selectHomepageWorks(page, workTitle, userId, username, nickname, isOriginal);
+    public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, String username, String nickname, Integer seriesId, Boolean isOriginal) {
+        return worksMapper.selectHomepageWorks(page, workTitle, userId, username, nickname, seriesId, isOriginal);
     }
 
     /**

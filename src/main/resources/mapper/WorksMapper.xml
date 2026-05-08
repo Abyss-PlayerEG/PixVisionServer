@@ -58,6 +58,9 @@
         <if test="nickname != null and nickname != ''">
             AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
         </if>
+        <if test="seriesId != null">
+            AND w.series_id = #{seriesId}
+        </if>
         <if test="isOriginal != null">
             AND w.is_original_work = #{isOriginal}
         </if>

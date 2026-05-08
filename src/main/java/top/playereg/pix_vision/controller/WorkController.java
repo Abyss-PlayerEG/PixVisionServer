@@ -154,6 +154,7 @@ public class WorkController {
      * @param userId     用户 ID（可选，精确查询）
      * @param username   用户名（可选，模糊查询）
      * @param nickname   昵称（可选，模糊查询）
+     * @param seriesId   系列 ID（可选，精确查询）
      * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页作品列表
      * @author PlayerEG
@@ -166,7 +167,7 @@ public class WorkController {
             ## 特性
             - 公开接口（无需认证）
             - MyBatis-Plus 分页支持
-            - 多条件组合查询（作品标题/用户 ID/是否原创）
+            - 多条件组合查询（作品标题/用户 ID/系列 ID/是否原创）
             - 模糊匹配与精确匹配
             - 仅返回未删除的作品
             - 按创建时间倒序排列（最新作品优先）
@@ -178,6 +179,7 @@ public class WorkController {
             - userId: **用户 ID**（可选），Integer 类型，支持精确查询
             - username: **用户名**（可选），String 类型，支持模糊查询
             - nickname: **昵称**（可选），String 类型，支持模糊查询
+            - seriesId: **系列 ID**（可选），Integer 类型，支持精确查询
             - isOriginal: **是否原创**（可选），Boolean 类型，支持精确查询（true=原创，false=转载）
 
             ## 返回说明：
@@ -197,7 +199,7 @@ public class WorkController {
             - 所有查询条件均为**可选参数**，可不传
             - 支持多个条件组合查询
             - 作品标题、用户名、昵称支持**模糊匹配**
-            - 用户 ID 和是否原创支持**精确匹配**
+            - 用户 ID、系列 ID 和是否原创支持**精确匹配**
             - 默认返回完整 Works 实体字段
             - 已自动过滤逻辑删除的作品（is_delete=0）
             - 每页大小限制：**1-100**
@@ -214,6 +216,7 @@ public class WorkController {
         @Parameter(description = "用户 ID（可选），支持精确查询") @RequestParam(required = false) Integer userId,
         @Parameter(description = "用户名（可选），支持模糊查询") @RequestParam(required = false) String username,
         @Parameter(description = "昵称（可选），支持模糊查询") @RequestParam(required = false) String nickname,
+        @Parameter(description = "系列 ID（可选），支持精确查询") @RequestParam(required = false) Integer seriesId,
         @Schema(description = "是否原创（可选）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isOriginal
     ) {
         // 参数校验
@@ -228,7 +231,7 @@ public class WorkController {
         Page<Works> page = new Page<>(current, size);
 
         // 调用服务层查询作品列表
-        IPage<Works> result = workService.selectHomepageWorks(page, workTitle, userId, username, nickname, isOriginal);
+        IPage<Works> result = workService.selectHomepageWorks(page, workTitle, userId, username, nickname, seriesId, isOriginal);
 
         // 返回结果为空，则返回错误信息
         if (result == null || result.getRecords().isEmpty()) {
