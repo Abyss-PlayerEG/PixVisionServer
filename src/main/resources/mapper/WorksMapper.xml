@@ -143,4 +143,13 @@
           AND is_delete = 0
     </update>
 
+    <!-- 增加作品浏览次数 -->
+    <update id="incrementViewCount">
+        UPDATE tb_works
+        SET view_count = view_count + 1,
+            update_time = NOW()
+        WHERE work_id = #{workId}
+          AND is_delete = 0
+    </update>
+
 </mapper>

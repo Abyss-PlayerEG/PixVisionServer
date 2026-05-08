@@ -291,6 +291,110 @@ public class WorkController {
     }
 
     /**
+     * 根据 ID 查询单个作品
+     *
+     * @param workId 作品 ID
+     * @return 作品信息
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "查询单个作品",
+        description = """
+            # 查询单个作品（无需登录认证）
+
+            ## 特性
+            - 公开接口（无需认证）
+            - 根据作品 ID 精确查询
+            - 仅返回未删除的作品
+            - 返回完整的 Works 实体字段
+
+            ## 参数说明：
+            - workId: **作品 ID**，Integer 类型，必填
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": {Works对象}}** ，包含作品详细信息
+            - **作品不存在**：返回 **{"data": null}** 和“作品不存在或已删除”提示
+            - **参数错误**：返回 **{"data": null}** 和“作品 ID 无效”提示
+
+            ## 返回数据结构：
+            ```json
+            {
+              "code": 200,
+              "data": {
+                "work_id": 1,
+                "user_id": 123,
+                "work_title": "春日樱花",
+                "img_url": "abc123.jpg",
+                "series_id": 5,
+                "like_count": 100,
+                "star_count": 50,
+                "view_count": 1000,
+                "is_original_work": true,
+                "out_url": "",
+                "update_time": "2024-01-01 12:00:00",
+                "update_user": 123,
+                "create_time": "2024-01-01 12:00:00",
+                "create_user": 123
+              },
+              "message": "查询成功"
+            }
+            ```
+
+            ## 业务逻辑：
+            1. 校验作品 ID 参数有效性
+            2. 查询作品信息
+            3. 验证作品是否存在且未删除
+            4. 返回作品详细信息
+
+            ## 注意事项：
+            - 这是一个**公开接口**，无需 Token 认证
+            - 只能查询**未删除**的作品（is_delete=0）
+            - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
+            - 如果作品不存在或已删除，返回 null
+
+            ## 使用示例：
+            ```
+            # 示例1：查询作品 ID 为 1 的作品
+            GET /api/work/detail/1
+
+            # 示例2：查询作品 ID 为 123 的作品
+            GET /api/work/detail/123
+            ```
+            """
+    )
+    @PublicAccess("查询单个作品，无需认证")
+    @GetMapping("/detail/{workId}")
+    public ResponsePojo<Works> getWorkById(
+        @Parameter(description = "作品 ID", required = true, example = "1") @PathVariable Integer workId
+    ) {
+        // 参数校验
+        if (workId == null || workId <= 0) {
+            log.warn("作品 ID 无效: {}", workId);
+            return ResponsePojo.error(null, "作品 ID 无效");
+        }
+
+        // 调用服务层查询作品
+        Works work = workService.getWorkById(workId);
+
+        // 返回结果为空，则返回错误信息
+        if (work == null) {
+            log.warn("作品不存在或已删除，作品 ID: {}", workId);
+            return ResponsePojo.error(null, "作品不存在或已删除");
+        }
+
+        // 增加浏览次数（异步执行，不影响主流程）
+        try {
+            workService.incrementViewCount(workId);
+        } catch (Exception e) {
+            // 即使增加浏览次数失败，也不影响查询结果
+            log.error("增加浏览次数异常，作品 ID: {}, 错误: {}", workId, e.getMessage());
+        }
+
+        log.info("查询作品成功，作品 ID: {}, 标题: {}", workId, work.getWork_title());
+        return ResponsePojo.success(work, "查询成功");
+    }
+
+    /**
      * 修改作品信息（支持部分字段修改）
      *
      * @param request    HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token

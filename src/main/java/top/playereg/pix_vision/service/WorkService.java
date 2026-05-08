@@ -73,6 +73,24 @@ public interface WorkService {
     );
 
     /**
+     * 根据 ID 查询单个作品
+     *
+     * @param workId 作品 ID
+     * @return 作品信息，如果不存在或已删除则返回 null
+     * @author PlayerEG
+     */
+    Works getWorkById(Integer workId);
+
+    /**
+     * 增加作品浏览次数
+     *
+     * @param workId 作品 ID
+     * @return 是否成功
+     * @author PlayerEG
+     */
+    Boolean incrementViewCount(Integer workId);
+
+    /**
      * 修改作品信息（支持部分字段修改）
      *
      * @param workId      作品 ID

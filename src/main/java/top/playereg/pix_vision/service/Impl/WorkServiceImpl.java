@@ -272,6 +272,57 @@ public class WorkServiceImpl implements WorkService {
     }
 
     /**
+     * 根据 ID 查询单个作品
+     *
+     * @param workId 作品 ID
+     * @return 作品信息，如果不存在或已删除则返回 null
+     * @author PlayerEG
+     */
+    @Override
+    public Works getWorkById(Integer workId) {
+        if (workId == null || workId <= 0) {
+            log.warn("作品 ID 无效: {}", workId);
+            return null;
+        }
+
+        Works work = worksMapper.selectWorkById(workId);
+        
+        // 检查作品是否存在且未删除
+        if (work == null || work.getIs_delete()) {
+            log.warn("作品不存在或已删除，作品 ID: {}", workId);
+            return null;
+        }
+
+        log.info("查询作品成功，作品 ID: {}", workId);
+        return work;
+    }
+
+    /**
+     * 增加作品浏览次数
+     *
+     * @param workId 作品 ID
+     * @return 是否成功
+     * @author PlayerEG
+     */
+    @Override
+    public Boolean incrementViewCount(Integer workId) {
+        if (workId == null || workId <= 0) {
+            log.warn("作品 ID 无效，无法增加浏览次数: {}", workId);
+            return false;
+        }
+
+        int affectedRows = worksMapper.incrementViewCount(workId);
+        
+        if (affectedRows > 0) {
+            log.debug("作品浏览次数 +1，作品 ID: {}", workId);
+            return true;
+        } else {
+            log.warn("增加浏览次数失败，作品可能不存在或已删除，作品 ID: {}", workId);
+            return false;
+        }
+    }
+
+    /**
      * 修改作品信息（支持部分字段修改）
      *
      * @param workId     作品 ID

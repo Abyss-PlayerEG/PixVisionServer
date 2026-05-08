@@ -100,4 +100,13 @@ public interface WorksMapper extends BaseMapper<Works> {
         @Param("isOriginal") Boolean isOriginal,
         @Param("outUrl") String outUrl
     );
+
+    /**
+     * 增加作品浏览次数
+     *
+     * @param workId 作品 ID
+     * @return 影响的行数
+     * @author PlayerEG
+     */
+    int incrementViewCount(@Param("workId") Integer workId);
 }
