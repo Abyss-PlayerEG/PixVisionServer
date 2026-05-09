@@ -1,8 +1,7 @@
 package top.playereg.pix_vision.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import top.playereg.pix_vision.pojo.Series;
-
-import java.util.List;
 
 /**
  * 系列服务接口
@@ -22,12 +21,14 @@ public interface SeriesService {
     Series addSeries(Integer userId, String seriesTitle, String aboutText);
 
     /**
-     * 根据用户 ID 查询所有作品系列
+     * 根据用户 ID 分页查询所有作品系列
      *
      * @param userId 用户 ID
-     * @return 作品系列列表
+     * @param current 当前页码
+     * @param size 每页数量
+     * @return 分页作品系列列表
      */
-    List<Series> getSeriesByUserId(Integer userId);
+    IPage<Series> getSeriesByUserId(Integer userId, Integer current, Integer size);
 
     /**
      * 删除作品系列（支持保留或删除系列内作品）
