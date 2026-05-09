@@ -510,48 +510,64 @@ public class WorkController {
     }
 
     /**
-     * 查看个人访问历史记录
+     * 查看个人访问历史记录（分页）
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @return 个人访问历史记录列表
+     * @param current 当前页码（从 1 开始）
+     * @param size    每页大小
+     * @return 个人访问历史记录分页列表
      * @author PlayerEG
      */
     @Operation(
         summary = "查看个人访问历史记录",
         description = """
-            # 查看个人访问历史记录（需要登录认证）
+            # 查看个人访问历史记录（需要登录认证 + 分页）
 
             ## 特性
             - 需要 Token 认证
+            - MyBatis-Plus 分页支持
             - 返回当前用户访问过的作品列表
             - 仅返回未删除的作品
-            - 按访问时间倒序排列
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - current: **当前页码**，Long 类型，必填，**从 1 开始**，默认为 1
+            - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
 
             ## 返回说明：
-            - **查询成功**：返回 **{"data": [Works对象列表]}** 
+            - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
             - **Token 不存在或失效**：返回 **{"data": null}** 和错误提示
-            - **无历史记录**：返回 **{"data": []}** 和空列表
+            - **无历史记录**：返回 **{"data": null}** 和空列表
 
             ## 业务逻辑：
-            1. 从请求头或 URL 参数中提取 Token
-            2. 验证 Token 是否在白名单中
-            3. 从 Token 中解析用户 ID
-            4. 调用 Service 层查询该用户的访问历史记录
-            5. 返回关联的作品详细信息列表
+            1. 校验页码和每页大小参数
+            2. 从请求头或 URL 参数中提取 Token
+            3. 验证 Token 是否在白名单中
+            4. 从 Token 中解析用户 ID
+            5. 构建分页对象并调用 Service 层查询该用户的访问历史记录
+            6. 返回关联的作品详细信息分页列表
 
             ## 注意事项：
             - **必须携带有效的 Token**
             - 只有已登录用户才能查看自己的历史记录
             - 如果作品已被删除，则不会出现在历史记录列表中
+            - 每页大小限制：**1-100**
             """
     )
-    @GetMapping("/history")
-    public ResponsePojo<java.util.List<Works>> getUserHistory(
-        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request
+    @GetMapping("/history/{current}/{size}")
+    public ResponsePojo<com.baomidou.mybatisplus.core.metadata.IPage<Works>> getUserHistory(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
+        @Parameter(description = "每页大小，范围 1-100", required = true, example = "10") @PathVariable Long size
     ) {
+        // 参数校验
+        if (current == null || current < 1) {
+            return ResponsePojo.error(null, "页码必须大于 0");
+        }
+        if (size == null || size < 1 || size > 100) {
+            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        }
+
         // 提取 Token
         String token = JWTUtils.extractTokenWithLog(request, "查看个人历史记录接口");
 
@@ -574,12 +590,21 @@ public class WorkController {
         }
 
         String username = JWTUtils.getUsernameFromToken(token);
-        log.info("开始查询个人历史记录，用户 ID: {}, 用户名: {}", userId, username);
+        log.info("开始查询个人历史记录，用户 ID: {}, 用户名: {}, 页码: {}, 每页: {}", userId, username, current, size);
+
+        // 构建分页对象
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(current, size);
 
         // 调用服务层查询历史记录
-        java.util.List<Works> historyList = workService.getUserHistory(userId);
+        com.baomidou.mybatisplus.core.metadata.IPage<Works> historyPage = workService.getUserHistory(page, userId);
 
-        log.info("查询个人历史记录成功，用户 ID: {}, 记录数: {}", userId, historyList.size());
-        return ResponsePojo.success(historyList, "查询成功");
+        // 返回结果为空，则返回错误信息
+        if (historyPage == null || historyPage.getRecords().isEmpty()) {
+            log.warn("分页查询历史记录返回结果为空 - 用户 ID: {}, 页码：{}, 每页：{}", userId, current, size);
+            return ResponsePojo.error(null, "查询失败，返回结果为空");
+        }
+
+        log.info("查询个人历史记录成功，用户 ID: {}, 记录数: {}", userId, historyPage.getTotal());
+        return ResponsePojo.success(historyPage, "查询成功");
     }
 }

@@ -28,8 +28,12 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
      * 查询用户的访问历史记录（关联作品表）
      *
      * @param userId 用户 ID
+     * @param page   分页对象
      * @return 历史记录列表（包含作品信息）
      * @author PlayerEG
      */
-    java.util.List<top.playereg.pix_vision.pojo.Works> selectUserHistory(@org.apache.ibatis.annotations.Param("userId") Integer userId);
+    com.baomidou.mybatisplus.core.metadata.IPage<top.playereg.pix_vision.pojo.Works> selectUserHistory(
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<top.playereg.pix_vision.pojo.Works> page,
+        @org.apache.ibatis.annotations.Param("userId") Integer userId
+    );
 }

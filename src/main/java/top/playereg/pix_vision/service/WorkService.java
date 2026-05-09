@@ -102,13 +102,17 @@ public interface WorkService {
     void addHistory(Integer userId, Integer workId);
 
     /**
-     * 获取用户个人访问历史记录
+     * 获取用户个人访问历史记录（分页）
      *
+     * @param page   分页对象
      * @param userId 用户 ID
-     * @return 作品列表
+     * @return 分页作品列表
      * @author PlayerEG
      */
-    java.util.List<Works> getUserHistory(Integer userId);
+    com.baomidou.mybatisplus.core.metadata.IPage<Works> getUserHistory(
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page,
+        Integer userId
+    );
 
     /**
      * 修改作品信息（支持部分字段修改）
