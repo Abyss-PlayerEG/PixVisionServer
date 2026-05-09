@@ -24,8 +24,8 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
      * @return 影响行数
      * @author PlayerEG
      */
-    int insertHistory(@org.apache.ibatis.annotations.Param("userId") Integer userId,
-                      @org.apache.ibatis.annotations.Param("workId") Integer workId);
+    int insertHistory(@Param("userId") Integer userId,
+                      @Param("workId") Integer workId);
 
     /**
      * 查询用户的访问历史记录（关联作品表）
@@ -48,6 +48,6 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
      * @return 影响行数
      * @author PlayerEG
      */
-    int batchDeleteHistory(@org.apache.ibatis.annotations.Param("userId") Integer userId,
-                           @org.apache.ibatis.annotations.Param("workIds") java.util.List<Integer> workIds);
+    int batchDeleteHistory(@Param("userId") Integer userId,
+                           @Param("workIds") java.util.List<Integer> workIds);
 }
