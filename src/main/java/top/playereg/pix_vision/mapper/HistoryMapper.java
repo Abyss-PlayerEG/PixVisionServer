@@ -36,4 +36,15 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<top.playereg.pix_vision.pojo.Works> page,
         @org.apache.ibatis.annotations.Param("userId") Integer userId
     );
+
+    /**
+     * 批量删除用户的历史记录
+     *
+     * @param userId 用户 ID
+     * @param workIds 作品 ID 列表
+     * @return 影响行数
+     * @author PlayerEG
+     */
+    int batchDeleteHistory(@org.apache.ibatis.annotations.Param("userId") Integer userId, 
+                           @org.apache.ibatis.annotations.Param("workIds") java.util.List<Integer> workIds);
 }

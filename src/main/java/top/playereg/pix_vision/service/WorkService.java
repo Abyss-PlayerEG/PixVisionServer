@@ -115,6 +115,16 @@ public interface WorkService {
     );
 
     /**
+     * 批量删除用户访问历史记录
+     *
+     * @param workIds 作品 ID 列表
+     * @param userId  当前用户 ID（用于权限验证）
+     * @return 删除结果
+     * @author PlayerEG
+     */
+    Boolean batchDeleteHistory(List<Integer> workIds, Integer userId);
+
+    /**
      * 修改作品信息（支持部分字段修改）
      *
      * @param workId      作品 ID

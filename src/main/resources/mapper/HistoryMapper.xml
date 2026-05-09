@@ -33,4 +33,15 @@
           AND w.is_delete = 0
     </select>
 
+    <!-- 批量删除用户的历史记录 -->
+    <update id="batchDeleteHistory">
+        UPDATE tb_history
+        SET is_delete = 1
+        WHERE user_id = #{userId}
+          AND work_id IN
+        <foreach collection="workIds" item="workId" open="(" separator="," close=")">
+            #{workId}
+        </foreach>
+    </update>
+
 </mapper>

@@ -375,6 +375,33 @@ public class WorkServiceImpl implements WorkService {
     }
 
     /**
+     * 批量删除用户访问历史记录
+     *
+     * @param workIds 作品 ID 列表
+     * @param userId  当前用户 ID（用于权限验证）
+     * @return 删除结果
+     * @author PlayerEG
+     */
+    @Override
+    public Boolean batchDeleteHistory(List<Integer> workIds, Integer userId) {
+        if (workIds == null || workIds.isEmpty()) {
+            log.warn("作品 ID 列表为空，用户 ID: {}", userId);
+            return false;
+        }
+
+        // 执行数据库逻辑删除（SQL 层面验证 user_id，确保只能删除自己的历史记录）
+        int affectedRows = historyMapper.batchDeleteHistory(userId, workIds);
+
+        if (affectedRows > 0) {
+            log.info("历史记录删除成功，用户 ID: {}, 删除数量: {}", userId, affectedRows);
+            return true;
+        } else {
+            log.warn("历史记录删除失败或无匹配记录，用户 ID: {}, 作品 ID 列表: {}", userId, workIds);
+            return false;
+        }
+    }
+
+    /**
      * 修改作品信息（支持部分字段修改）
      *
      * @param workId     作品 ID
