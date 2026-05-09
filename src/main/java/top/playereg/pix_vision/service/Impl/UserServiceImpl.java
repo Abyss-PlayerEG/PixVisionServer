@@ -1003,4 +1003,67 @@ public class UserServiceImpl implements UserService {
 
         return success ? user : null;
     }
+
+    /**
+     * 管理员批量重置用户密码（仅系统管理员可调用）
+     *
+     * @param userIds 目标用户 ID 列表
+     * @return 重置结果列表，每个元素包含 user_id, email, username, plainPassword
+     */
+    @Override
+    public java.util.List<java.util.Map<String, Object>> batchResetUserPasswords(java.util.List<Integer> userIds) {
+        log.info("开始批量重置用户密码 - 用户数量: {}", userIds != null ? userIds.size() : 0);
+
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("用户 ID 列表为空");
+            return new java.util.ArrayList<>();
+        }
+
+        java.util.List<java.util.Map<String, Object>> resultList = new java.util.ArrayList<>();
+
+        for (Integer userId : userIds) {
+            try {
+                // 1. 查询用户信息
+                User user = userMapper.selectAllUserInfoById(userId);
+                if (user == null) {
+                    log.warn("用户不存在，跳过 - 用户 ID: {}", userId);
+                    continue;
+                }
+
+                // 2. 生成随机密码
+                String plainPassword = StrSwitchUtils.generateRandomPassword();
+                log.debug("为用户生成临时密码 - 用户名: {}", user.getUsername());
+
+                // 3. 加密密码
+                String hashedPassword = StrSwitchUtils.PasswdToHash256(plainPassword);
+
+                // 4. 更新数据库密码 (changeUserPassword 接受 email, oldPassword, newPassword)
+                // 注意：这里我们直接更新，不验证旧密码，因为这是管理员操作
+                int res = userMapper.changeUserPassword(user.getEmail(), null, hashedPassword);
+                if (res != 1) {
+                    log.error("更新密码失败 - 用户 ID: {}", userId);
+                    continue;
+                }
+
+                // 5. 强制下线所有设备
+                tokenWhitelistService.removeAllUserTokens(user.getUser_id(), user.getUsername());
+
+                // 6. 记录结果
+                java.util.Map<String, Object> resultItem = new java.util.HashMap<>();
+                resultItem.put("user_id", user.getUser_id());
+                resultItem.put("username", user.getUsername());
+                resultItem.put("email", user.getEmail());
+                resultItem.put("plainPassword", plainPassword);
+                resultList.add(resultItem);
+
+                log.info("用户密码重置成功 - 用户 ID: {}, 用户名: {}", userId, user.getUsername());
+
+            } catch (Exception e) {
+                log.error("处理用户密码重置时发生异常 - 用户 ID: {}, 错误: {}", userId, e.getMessage(), e);
+            }
+        }
+
+        log.info("批量重置密码完成 - 成功数量: {}", resultList.size());
+        return resultList;
+    }
 }

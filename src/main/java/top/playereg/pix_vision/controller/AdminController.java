@@ -12,12 +12,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.service.EmailService;
+import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
+
+import java.util.List;
 
 /**
  * 系统管理员控制器 - 提供系统管理相关的接口
@@ -39,6 +43,8 @@ public class AdminController {
 
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;
+    private final EmailService emailService;
+    private final EmailTemplateService emailTemplateService;
 
     /**
      * 刷新所有用户权限缓存
@@ -522,6 +528,105 @@ public class AdminController {
             }
         } catch (Exception e) {
             log.error("创建用户异常 - 错误: {}", e.getMessage(), e);
+            return ResponsePojo.error(false, "系统错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员批量重置用户密码
+     *
+     * @param userIds 目标用户 ID 列表
+     * @return 操作结果
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "管理员批量重置用户密码",
+        description = """
+            # 管理员批量重置用户密码（需要登录认证 + 角色权限[77]）
+
+            ## 特性
+            - **管理员专属接口**：仅系统管理员可调用
+            - **批量处理**：支持一次性重置多个用户的密码
+            - **自动生成随机密码**：使用安全随机算法生成 12 位临时密码
+            - **强制所有设备下线**：移除用户所有 Token，确保账户安全
+            - **邮件通知**：所有用户密码重置完成后，批量发送新密码到对应邮箱
+            - **密码加密存储**：使用 SHA-256 加密后存储
+
+            ## 参数说明：
+            - userIds: **用户 ID 列表**，Integer 数组类型，必填
+              * 单个用户：传入 [1]
+              * 批量用户：传入 [1, 2, 3]
+
+            ## 返回说明：
+            - **重置成功**：返回 **{"data": true}** 和“批量重置密码成功，已发送邮件”提示
+            - **用户 ID 列表为空**：返回 **{"data": false}** 和“用户 ID 列表不能为空”提示
+            - **部分失败**：返回 **{"data": true}** 并提示实际成功的数量
+
+            ## 业务逻辑：
+            1. 校验用户 ID 列表参数有效性
+            2. 遍历用户 ID 列表，逐个处理：
+               a. 查询用户信息
+               b. 生成 12 位随机密码
+               c. 对密码进行 SHA-256 加密
+               d. 更新数据库中的用户密码
+               e. 强制移除用户所有 Token（使所有设备下线）
+            3. 所有用户密码重置完成后，批量渲染邮件模板并发送
+            4. 记录操作日志
+
+            ## 注意事项：
+            - 这是一个**管理员接口**，需要管理员身份认证
+            - 调用后用户的**所有登录会话将被强制终止**
+            - 新生成的密码为**临时密码**，建议用户登录后立即修改
+            - 密码以**明文形式**通过邮件发送，请确保邮件传输安全
+            - 原密码会被覆盖，**无法恢复**
+            - 如果某个用户不存在或处理失败，会跳过该用户并继续处理下一个
+            """
+    )
+    @PostMapping("/batch-reset-password")
+    public ResponsePojo<Boolean> batchResetUserPassword(
+        @Parameter(description = "目标用户 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> userIds
+    ) {
+        log.info("管理员开始批量重置用户密码 - 用户 ID 数量: {}", userIds != null ? userIds.size() : 0);
+
+        // 参数校验
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("用户 ID 列表为空");
+            return ResponsePojo.error(false, "用户 ID 列表不能为空");
+        }
+
+        try {
+            // 1. 调用 Service 层批量重置密码（返回包含明文密码的结果列表）
+            java.util.List<java.util.Map<String, Object>> resetResults = userService.batchResetUserPasswords(userIds);
+
+            if (resetResults.isEmpty()) {
+                log.warn("没有用户成功重置密码");
+                return ResponsePojo.error(false, "没有用户成功重置密码，请检查用户 ID 是否正确");
+            }
+
+            // 2. 批量发送邮件
+            int successEmailCount = 0;
+            for (java.util.Map<String, Object> result : resetResults) {
+                String username = (String) result.get("username");
+                String email = (String) result.get("email");
+                String plainPassword = (String) result.get("plainPassword");
+
+                // 渲染邮件 HTML
+                String html = emailTemplateService.renderResetPasswordEmail(username, plainPassword);
+
+                try {
+                    emailService.sendEMail(email, "PixVision 重置用户密码", html);
+                    successEmailCount++;
+                    log.info("密码重置邮件发送成功 - 用户名: {}, 邮箱: {}", username, email);
+                } catch (Exception e) {
+                    log.error("密码重置邮件发送失败 - 用户名: {}, 邮箱: {}, 错误: {}", username, email, e.getMessage());
+                }
+            }
+
+            log.info("批量重置密码完成 - 成功重置: {} 人, 成功发送邮件: {} 人", resetResults.size(), successEmailCount);
+            return ResponsePojo.success(true, "批量重置密码成功，共重置 " + resetResults.size() + " 个用户，已发送邮件 " + successEmailCount + " 封");
+
+        } catch (Exception e) {
+            log.error("批量重置密码异常 - 错误: {}", e.getMessage(), e);
             return ResponsePojo.error(false, "系统错误: " + e.getMessage());
         }
     }
