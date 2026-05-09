@@ -93,6 +93,38 @@ public interface WorkService {
     Boolean incrementViewCount(Integer workId);
 
     /**
+     * 添加用户访问历史记录
+     *
+     * @param userId 用户 ID
+     * @param workId 作品 ID
+     * @author PlayerEG
+     */
+    void addHistory(Integer userId, Integer workId);
+
+    /**
+     * 获取用户个人访问历史记录（分页）
+     *
+     * @param page   分页对象
+     * @param userId 用户 ID
+     * @return 分页作品列表
+     * @author PlayerEG
+     */
+    com.baomidou.mybatisplus.core.metadata.IPage<Works> getUserHistory(
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page,
+        Integer userId
+    );
+
+    /**
+     * 批量删除用户访问历史记录
+     *
+     * @param workIds 作品 ID 列表
+     * @param userId  当前用户 ID（用于权限验证）
+     * @return 删除结果
+     * @author PlayerEG
+     */
+    Boolean batchDeleteHistory(List<Integer> workIds, Integer userId);
+
+    /**
      * 修改作品信息（支持部分字段修改）
      *
      * @param workId      作品 ID
