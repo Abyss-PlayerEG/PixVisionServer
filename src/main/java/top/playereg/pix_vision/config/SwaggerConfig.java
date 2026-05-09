@@ -25,7 +25,6 @@ public class SwaggerConfig {
         );
     }
 
-    //
     @Bean
     public GroupedOpenApi rootApi() {
         return GroupedOpenApi.builder()
