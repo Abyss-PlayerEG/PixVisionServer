@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.HistoryMapper">
+
+    <!-- 添加用户访问历史记录 -->
+    <insert id="insertHistory">
+        INSERT INTO tb_history (user_id, work_id, is_delete)
+        VALUES (#{userId}, #{workId}, 0)
+    </insert>
+
+</mapper>

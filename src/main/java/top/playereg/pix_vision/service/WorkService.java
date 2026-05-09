@@ -93,6 +93,15 @@ public interface WorkService {
     Boolean incrementViewCount(Integer workId);
 
     /**
+     * 添加用户访问历史记录
+     *
+     * @param userId 用户 ID
+     * @param workId 作品 ID
+     * @author PlayerEG
+     */
+    void addHistory(Integer userId, Integer workId);
+
+    /**
      * 修改作品信息（支持部分字段修改）
      *
      * @param workId      作品 ID

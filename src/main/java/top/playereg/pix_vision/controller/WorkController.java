@@ -264,6 +264,7 @@ public class WorkController {
             - 返回完整的 Works 实体字段
 
             ## 参数说明：
+            - Authorization: Header 中的 Token（可选），格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递。如果提供有效 Token，将记录访问历史。
             - workId: **作品 ID**，Integer 类型，必填
 
             ## 返回说明：
@@ -287,6 +288,7 @@ public class WorkController {
     @PublicAccess("查询单个作品，无需认证")
     @GetMapping("/detail/{workId}")
     public ResponsePojo<Works> getWorkById(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "作品 ID", required = true, example = "1") @PathVariable Integer workId
     ) {
         // 参数校验
@@ -310,6 +312,19 @@ public class WorkController {
         } catch (Exception e) {
             // 即使增加浏览次数失败，也不影响查询结果
             log.error("增加浏览次数异常，作品 ID: {}, 错误: {}", workId, e.getMessage());
+        }
+
+        // 记录访问历史（如果提供了有效的 Token）
+        String token = JWTUtils.extractTokenWithLog(request, "查询作品详情接口");
+        if (token != null && !token.isEmpty()) {
+            Integer userId = JWTUtils.getUserIdFromToken(token);
+            if (userId != null) {
+                try {
+                    workService.addHistory(userId, workId);
+                } catch (Exception e) {
+                    log.error("添加历史记录异常，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage());
+                }
+            }
         }
 
         log.info("查询作品成功，作品 ID: {}, 标题: {}", workId, work.getWork_title());

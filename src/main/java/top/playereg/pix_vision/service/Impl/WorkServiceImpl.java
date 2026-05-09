@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.FilePathConfig;
+import top.playereg.pix_vision.mapper.HistoryMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.Series;
@@ -32,6 +33,9 @@ public class WorkServiceImpl implements WorkService {
 
     @Autowired
     private WorksMapper worksMapper;
+
+    @Autowired
+    private HistoryMapper historyMapper;
 
     // 允许上传的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
@@ -287,7 +291,7 @@ public class WorkServiceImpl implements WorkService {
         }
 
         Works work = worksMapper.selectWorkById(workId);
-        
+
         // 检查作品是否存在且未删除
         if (work == null || work.getIs_delete()) {
             log.warn("作品不存在或已删除，作品 ID: {}", workId);
@@ -313,13 +317,38 @@ public class WorkServiceImpl implements WorkService {
         }
 
         int affectedRows = worksMapper.incrementViewCount(workId);
-        
+
         if (affectedRows > 0) {
             log.debug("作品浏览次数 +1，作品 ID: {}", workId);
             return true;
         } else {
             log.warn("增加浏览次数失败，作品可能不存在或已删除，作品 ID: {}", workId);
             return false;
+        }
+    }
+
+    /**
+     * 添加用户访问历史记录
+     *
+     * @param userId 用户 ID
+     * @param workId 作品 ID
+     * @author PlayerEG
+     */
+    @Override
+    public void addHistory(Integer userId, Integer workId) {
+        if (userId == null || workId == null) {
+            return;
+        }
+
+        try {
+            int rows = historyMapper.insertHistory(userId, workId);
+            if (rows > 0) {
+                log.debug("添加历史记录成功，用户 ID: {}, 作品 ID: {}", userId, workId);
+            } else {
+                log.warn("添加历史记录失败（影响行数为 0），用户 ID: {}, 作品 ID: {}", userId, workId);
+            }
+        } catch (Exception e) {
+            log.error("添加历史记录异常，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage());
         }
     }
 
