@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import top.playereg.pix_vision.pojo.AdminResetPasswordResult;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.EmailService;
@@ -21,7 +22,7 @@ import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * 系统管理员控制器 - 提供系统管理相关的接口
@@ -583,7 +584,7 @@ public class AdminController {
             """
     )
     @PostMapping("/batch-reset-password")
-    public ResponsePojo<Boolean> batchResetUserPassword(
+    public ResponsePojo<AdminResetPasswordResult> batchResetUserPassword(
         @Parameter(description = "目标用户 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> userIds
     ) {
         log.info("管理员开始批量重置用户密码 - 用户 ID 数量: {}", userIds != null ? userIds.size() : 0);
@@ -591,20 +592,41 @@ public class AdminController {
         // 参数校验
         if (userIds == null || userIds.isEmpty()) {
             log.warn("用户 ID 列表为空");
-            return ResponsePojo.error(false, "用户 ID 列表不能为空");
+            return ResponsePojo.error(null, "用户 ID 列表不能为空");
         }
 
+        int totalCount = userIds.size();
+        List<Integer> failedUserIds = new ArrayList<>();
         try {
             // 1. 调用 Service 层批量重置密码（返回包含明文密码的结果列表）
-            java.util.List<java.util.Map<String, Object>> resetResults = userService.batchResetUserPasswords(userIds);
+            List<Map<String, Object>> resetResults = userService.batchResetUserPasswords(userIds);
 
-            if (resetResults.isEmpty()) {
+            int successCount = resetResults.size();
+
+            // 计算失败的用户 ID (总数 - 成功数，但这里需要更精确的逻辑)
+            // 由于 Service 层目前只返回成功的，我们需要在 Controller 层对比或者修改 Service 层
+            // 为了简单且符合“一次性重置多个用户”的逻辑，我们假设 Service 层返回的都是成功的。
+            // 失败的通常是那些不存在的 ID。我们可以通过遍历原始 ID 和结果来找出失败的 ID。
+
+            Set<Integer> successIds = new HashSet<>();
+            for (java.util.Map<String, Object> result : resetResults) {
+                successIds.add((Integer) result.get("user_id"));
+            }
+
+            for (Integer id : userIds) {
+                if (!successIds.contains(id)) {
+                    failedUserIds.add(id);
+                }
+            }
+
+            if (successCount == 0 && totalCount > 0) {
                 log.warn("没有用户成功重置密码");
-                return ResponsePojo.error(false, "没有用户成功重置密码，请检查用户 ID 是否正确");
+                AdminResetPasswordResult result = new AdminResetPasswordResult(totalCount, 0, 0, failedUserIds);
+                return ResponsePojo.error(result, "没有用户成功重置密码，请检查用户 ID 是否正确");
             }
 
             // 2. 批量发送邮件
-            int successEmailCount = 0;
+            int emailSentCount = 0;
             for (java.util.Map<String, Object> result : resetResults) {
                 String username = (String) result.get("username");
                 String email = (String) result.get("email");
@@ -615,19 +637,21 @@ public class AdminController {
 
                 try {
                     emailService.sendEMail(email, "PixVision 重置用户密码", html);
-                    successEmailCount++;
+                    emailSentCount++;
                     log.info("密码重置邮件发送成功 - 用户名: {}, 邮箱: {}", username, email);
                 } catch (Exception e) {
                     log.error("密码重置邮件发送失败 - 用户名: {}, 邮箱: {}, 错误: {}", username, email, e.getMessage());
                 }
             }
 
-            log.info("批量重置密码完成 - 成功重置: {} 人, 成功发送邮件: {} 人", resetResults.size(), successEmailCount);
-            return ResponsePojo.success(true, "批量重置密码成功，共重置 " + resetResults.size() + " 个用户，已发送邮件 " + successEmailCount + " 封");
+            log.info("批量重置密码完成 - 总数: {}, 成功重置: {} 人, 成功发送邮件: {} 人, 失败: {} 人", totalCount, successCount, emailSentCount, failedUserIds.size());
+            AdminResetPasswordResult responseResult = new AdminResetPasswordResult(totalCount, successCount, emailSentCount, failedUserIds);
+            return ResponsePojo.success(responseResult, "批量重置密码处理完成");
 
         } catch (Exception e) {
             log.error("批量重置密码异常 - 错误: {}", e.getMessage(), e);
-            return ResponsePojo.error(false, "系统错误: " + e.getMessage());
+            AdminResetPasswordResult result = new AdminResetPasswordResult(totalCount, 0, 0, userIds); // 异常时所有都视为失败
+            return ResponsePojo.error(result, "系统错误: " + e.getMessage());
         }
     }
 

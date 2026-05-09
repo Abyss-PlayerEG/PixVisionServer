@@ -273,21 +273,6 @@ public class StrSwitchUtils {
     }
 
     /**
-     * 随机密码长度
-     */
-    private static final int RANDOM_PASSWORD_LENGTH = 12;
-
-    /**
-     * 安全随机数生成器（复用实例，提高性能）
-     */
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-
-    /**
-     * 随机字符集（大小写字母 + 数字）
-     */
-    private static final String ALPHANUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    /**
      * 随机生成密码
      * <p>
      * 生成的密码包含大小写字母和数字，长度为 12 位
@@ -296,6 +281,21 @@ public class StrSwitchUtils {
      * @author blue_sky_ks
      */
     public static String generateRandomPassword() {
+        /**
+         * 随机密码长度
+         */
+        final int RANDOM_PASSWORD_LENGTH = 12;
+
+        /**
+         * 安全随机数生成器（复用实例，提高性能）
+         */
+        final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+        /**
+         * 随机字符集（大小写字母 + 数字）
+         */
+        final String ALPHANUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ0123456789._";
+
         StringBuilder sb = new StringBuilder(RANDOM_PASSWORD_LENGTH);
 
         // 确保至少包含一个大写字母、一个小写字母和一个数字
