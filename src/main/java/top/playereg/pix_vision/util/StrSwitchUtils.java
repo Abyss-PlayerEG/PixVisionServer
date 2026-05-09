@@ -14,19 +14,70 @@ import java.util.UUID;
 
 /**
  * 字符串处理工具类
+ * <p>
+ * 提供密码加密、UUID 生成与转换、Markdown 转 HTML、随机密码生成等字符串处理功能。
+ * 密码加密采用自定义算法（SHA1 + 盐值 + 循环加密），确保安全性。
+ * </p>
+ *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>用户密码加密存储（PasswdToHash256）</li>
+ *   <li>UUID 与字节数组互转（数据库存储优化）</li>
+ *   <li>邮件模板 Markdown 转 HTML</li>
+ *   <li>重置密码时生成随机密码</li>
+ * </ol>
+ *
+ * <h3>使用示例</h3>
+ * <pre>{@code
+ * // 示例1：密码加密
+ * String hashedPassword = StrSwitchUtils.PasswdToHash256("userPassword");
+ *
+ * // 示例2：UUID 转字节数组
+ * byte[] uuidBytes = StrSwitchUtils.uuid2Bytes(uuidString);
+ *
+ * // 示例3：字节数组转 UUID
+ * String uuid = StrSwitchUtils.bytes2Uuid(uuidBytes);
+ *
+ * // 示例4：生成随机密码
+ * String randomPassword = StrSwitchUtils.generateRandomPassword();
+ *
+ * // 示例5：Markdown 转 HTML
+ * String html = StrSwitchUtils.markdownToHtml(markdown, "UTF-8", "标题", cssStyle);
+ * }</pre>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>密码加密使用配置中的盐值，更换盐值会导致旧密码失效</li>
+ *   <li>UUID 转换要求输入为 32 位无分隔符格式</li>
+ *   <li>字节数组与字符串转换统一使用 UTF-8 编码</li>
+ *   <li>随机密码长度为 12 位，包含大小写字母和数字</li>
+ *   <li>encryptString 和 number2Str 为内部加密算法，不建议单独使用</li>
+ * </ul>
  *
  * @author PlayerEG
+ * @see top.playereg.pix_vision.config.SecureConfig 安全配置（盐值和数字映射）
+ * @since DEV-2.0.0
  */
 @SuppressWarnings("all") // 忽略所有警告
 public class StrSwitchUtils {
     private static final PixVisionLogger log = PixVisionLogger.create(StrSwitchUtils.class);
 
     /**
-     * 哈希加密处理
+     * 密码哈希加密
+     * <p>
+     * 使用自定义算法对密码进行多次加密处理：
+     * <ol>
+     *   <li>获取配置中的盐值并进行 SHA1 哈希</li>
+     *   <li>将原始密码与盐值拼接</li>
+     *   <li>进行 5 次自定义加密（键盘字符位移 + 数字替换）</li>
+     *   <li>最终使用 SHA256 生成 64 位哈希值</li>
+     * </ol>
+     * </p>
      *
-     * @param str 待加密的密码
-     * @return 加密后的字符串
+     * @param str 待加密的明文密码
+     * @return 64 位 SHA256 哈希字符串
      * @author PlayerEG
+     * @see top.playereg.pix_vision.config.SecureConfig 盐值配置
      */
     public static String PasswdToHash256(String str) {
         String resStr;
@@ -152,10 +203,15 @@ public class StrSwitchUtils {
     }
 
     /**
-     * 将 UUID 字符串转换为 16 字节二进制数组
+     * UUID 字符串转换为 16 字节二进制数组
+     * <p>
+     * 将 32 位无分隔符的 UUID 字符串转换为 16 字节数组，
+     * 用于数据库存储优化（BINARY(16) 比 CHAR(32) 更节省空间）。
+     * </p>
      *
-     * @param uuid UUID 字符串（32 位，无分隔符）
-     * @return byte[] 16 字节的二进制数组
+     * @param uuid UUID 字符串（32 位，无分隔符，如：abc123...）
+     * @return 16 字节的二进制数组
+     * @throws IllegalArgumentException 如果 UUID 格式不正确（非 32 位）
      * @author PlayerEG
      */
     public static byte[] uuid2Bytes(String uuid) {
@@ -176,10 +232,15 @@ public class StrSwitchUtils {
     }
 
     /**
-     * 将 16 字节二进制数组转换为 UUID 字符串
+     * 16 字节二进制数组转换为 UUID 字符串
+     * <p>
+     * 将数据库存储的 16 字节 BINARY 数据还原为 32 位 UUID 字符串。
+     * 与 uuid2Bytes 方法互为逆操作。
+     * </p>
      *
      * @param bytes 16 字节的二进制数组
-     * @return String UUID 字符串（32 位，无分隔符，小写）
+     * @return UUID 字符串（32 位，无分隔符，小写）
+     * @throws IllegalArgumentException 如果字节数组长度不为 16
      * @author PlayerEG
      */
     public static String bytes2Uuid(byte[] bytes) {
@@ -273,12 +334,15 @@ public class StrSwitchUtils {
     }
 
     /**
-     * 随机生成密码
+     * 随机密码生成
      * <p>
-     * 生成的密码包含大小写字母和数字，长度为 12 位
+     * 生成包含大小写字母、数字、下划线和英文句号的 12 位随机密码。
+     * 确保至少包含一个大写字母、一个小写字母和一个数字，
+     * 并使用 Fisher-Yates 算法打乱字符顺序，避免固定位置模式。
+     * </p>
      *
-     * @return 随机生成的密码字符串
-     * @author blue_sky_ks
+     * @return 12 位随机密码字符串
+     * @author blue_sky_ks, PlayerEG
      */
     public static String generateRandomPassword() {
         /**

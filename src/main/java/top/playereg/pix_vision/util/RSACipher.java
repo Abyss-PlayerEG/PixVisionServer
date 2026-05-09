@@ -18,21 +18,61 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * RSA加解密工具类（支持混合加密）
+ * RSA 加解密工具类（支持混合加密）
  * <p>
- * 密钥存储位置：${user.home}/.pix_vision/key/rsa/
- * - public.key: RSA公钥（Base64编码）
- * - private.key: RSA私钥（Base64编码）
- * <p>
- * 加密策略：<p>
- * - 小数据（&lt; 200字节）：直接使用 RSA 加密<p>
- * - 大数据（≥ 200字节）或二进制数据：使用 AES + RSA 混合加密<p>
- *   1. 生成随机 AES 密钥<p>
- *   2. 用 AES 加密原始数据<p>
- *   3. 用 RSA 加密 AES 密钥<p>
- *   4. 返回格式：RSA加密的AES密钥 + "::" + AES加密的数据（均Base64编码）<p>
+ * 基于 Hutool 实现的 RSA 加密工具，支持纯 RSA 和 AES+RSA 混合加密两种模式。
+ * 密钥自动管理，首次启动时生成并保存到用户目录。
+ * </p>
  *
- * @author PlayerEG
+ * <h3>密钥存储位置</h3>
+ * <pre>${user.home}/.pix_vision/key/rsa/
+ * - public.key:  RSA 公钥（Base64 编码）
+ * - private.key: RSA 私钥（Base64 编码）</pre>
+ *
+ * <h3>加密策略</h3>
+ * <ul>
+ *   <li><b>小数据（&lt; 200字节）</b>：直接使用 RSA 加密，返回格式："RSA:" + Base64(密文)</li>
+ *   <li><b>大数据（≥ 200字节）或二进制数据</b>：使用 AES + RSA 混合加密
+ *     <ol>
+ *       <li>生成随机 AES-256 密钥</li>
+ *       <li>用 AES 加密原始数据</li>
+ *       <li>用 RSA 加密 AES 密钥</li>
+ *       <li>返回格式："HYBRID:" + Base64(RSA(AES密钥)) + "::" + Base64(AES(数据))</li>
+ *     </ol>
+ *   </li>
+ * </ul>
+ *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>敏感数据加密存储（密码、Token）</li>
+ *   <li>API 传输数据加密</li>
+ *   <li>配置文件中的敏感信息加密</li>
+ * </ol>
+ *
+ * <h3>使用示例</h3>
+ * <pre>{@code
+ * // 示例1：加密字符串
+ * String encrypted = RSACipher.encryptToBase64("sensitive data");
+ *
+ * // 示例2：解密字符串
+ * String decrypted = RSACipher.decryptToString(encrypted);
+ *
+ * // 示例3：更换密钥对
+ * String[] newKeys = rsaCipher.regenerateKeys();
+ * }</pre>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>密钥在应用启动时自动生成，无需手动创建</li>
+ *   <li>更换密钥后，使用旧密钥加密的数据将无法解密</li>
+ *   <li>私钥文件包含敏感信息，请妥善保管，不要泄露</li>
+ *   <li>建议定期备份密钥文件到安全位置</li>
+ *   <li>混合加密适用于大文件或二进制数据，性能更优</li>
+ * </ul>
+ *
+ * @author PlayerEG, blue_sky_ks
+ * @see cn.hutool.crypto.asymmetric.RSA Hutool RSA 实现
+ * @since DEV-2.0.0
  */
 @SuppressWarnings("all")
 @Component
@@ -120,13 +160,16 @@ public class RSACipher {
     /**
      * 公钥加密（自动选择加密策略）
      * <p>
-     * 根据数据大小自动选择：
-     * - 小数据：直接 RSA 加密
-     * - 大数据：AES + RSA 混合加密
+     * 根据数据大小自动选择最优加密方式：
+     * <ul>
+     *   <li><b>小数据（&lt; 200字节）</b>：直接 RSA 加密，返回格式 "RSA:" + Base64(密文)</li>
+     *   <li><b>大数据（≥ 200字节）</b>：AES + RSA 混合加密，返回格式 "HYBRID:" + Base64(RSA(AES密钥)) + "::" + Base64(AES(数据))</li>
+     * </ul>
+     * </p>
      *
      * @param plainText 明文字符串
-     * @return Base64 编码的密文
-     * @author blue_sky_ks
+     * @return Base64 编码的密文，带加密策略前缀
+     * @author blue_sky_ks, PlayerEG
      */
     public static String encryptToBase64(String plainText) {
         if (StrUtil.isBlank(plainText)) {
@@ -169,10 +212,18 @@ public class RSACipher {
 
     /**
      * 私钥解密（自动识别加密策略）
+     * <p>
+     * 根据密文前缀自动识别加密方式并解密：
+     * <ul>
+     *   <li><b>RSA:</b> 前缀 - 纯 RSA 解密</li>
+     *   <li><b>HYBRID:</b> 前缀 - AES + RSA 混合解密</li>
+     *   <li><b>无前缀:</b> 兼容旧格式，尝试纯 RSA 解密</li>
+     * </ul>
+     * </p>
      *
      * @param encryptedBase64 Base64 编码的密文
-     * @return 解密后的明文字符串
-     * @author blue_sky_ks
+     * @return 解密后的明文字符串，如果输入为空则返回 null
+     * @author blue_sky_ks, PlayerEG
      */
     public static String decryptToString(String encryptedBase64) {
         if (StrUtil.isBlank(encryptedBase64)) {
@@ -321,10 +372,12 @@ public class RSACipher {
     /**
      * 更换 RSA 密钥对
      * <p>
-     * 生成新的密钥对并覆盖原有密钥文件
-     * <strong>注意：</strong>更换密钥后，使用旧密钥加密的数据将无法解密
+     * 生成新的密钥对并覆盖原有密钥文件，旧密钥会自动备份为 .bak 文件。
+     * <strong>警告：</strong>更换密钥后，使用旧密钥加密的数据将无法解密！
+     * </p>
      *
      * @return 新的密钥数组，[0] 为公钥，[1] 为私钥
+     * @throws IllegalStateException 如果 FilePathConfig 未正确初始化
      * @author PlayerEG
      */
     public String[] regenerateKeys() {

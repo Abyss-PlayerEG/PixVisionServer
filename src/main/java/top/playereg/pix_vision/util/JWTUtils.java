@@ -14,9 +14,47 @@ import java.util.Date;
 import java.util.Map;
 
 /**
- * JWT 工具类 - 基于 Hutool
+ * JWT 工具类
+ * <p>
+ * 基于 Hutool 实现的 JWT Token 生成、验证和解析工具。
+ * 支持用户 ID 和用户名的编码解码，Token 有效期为 7 天。
+ * </p>
+ *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>用户登录成功后生成认证 Token</li>
+ *   <li>拦截器中验证 Token 有效性</li>
+ *   <li>从 Token 中提取用户身份信息</li>
+ *   <li>检查 Token 是否过期或计算剩余有效期</li>
+ * </ol>
+ *
+ * <h3>使用示例</h3>
+ * <pre>{@code
+ * // 示例1：生成 Token
+ * String token = JWTUtils.createToken(userId, username);
+ *
+ * // 示例2：验证 Token
+ * boolean isValid = JWTUtils.verifyToken(token);
+ *
+ * // 示例3：从 Token 获取用户 ID
+ * Integer userId = JWTUtils.getUserIdFromToken(token);
+ *
+ * // 示例4：从 HTTP 请求提取 Token
+ * String token = JWTUtils.extractToken(request);
+ * }</pre>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>密钥从 SecureConfig 配置中读取，支持自定义</li>
+ *   <li>Token 包含 userId 和 username 两个核心字段</li>
+ *   <li>验证失败不会抛出异常，而是返回 false 或 null</li>
+ *   <li>支持从 URL 参数或 Authorization Header 提取 Token</li>
+ *   <li>Authorization Header 支持带 Bearer 前缀或不带前缀的格式</li>
+ * </ul>
  *
  * @author PlayerEG
+ * @see top.playereg.pix_vision.config.SecureConfig 安全配置
+ * @since DEV-2.0.0
  */
 @Component
 public class JWTUtils {
@@ -45,8 +83,12 @@ public class JWTUtils {
 
     /**
      * 生成 JWT Token
+     * <p>
+     * 根据提供的载荷数据生成包含标准声明（过期时间、签发时间、签发者）的 JWT Token。
+     * Token 有效期为 7 天，使用 HS256 算法签名。
+     * </p>
      *
-     * @param payload 载荷数据，包含用户信息等
+     * @param payload 载荷数据 Map，包含用户信息等自定义字段
      * @return 生成的 JWT 字符串
      * @author PlayerEG
      */
@@ -72,10 +114,15 @@ public class JWTUtils {
 
     /**
      * 生成 JWT Token（简化版）
+     * <p>
+     * 便捷方法，仅需提供用户 ID 和用户名即可生成 Token。
+     * 内部自动构建包含 userId 和 username 的载荷数据。
+     * </p>
      *
-     * @param userId 用户 ID
-     * @param username 用户名
+     * @param userId   用户 ID（不能为 null）
+     * @param username 用户名（不能为 null）
      * @return 生成的 JWT 字符串
+     * @throws IllegalArgumentException 如果 userId 或 username 为 null
      * @author PlayerEG
      */
     public static String createToken(Integer userId, String username) {
@@ -92,9 +139,13 @@ public class JWTUtils {
 
     /**
      * 验证 JWT Token 是否有效
+     * <p>
+     * 验证内容包括：签名有效性、Token 是否过期。
+     * 任何验证失败都会返回 false，不会抛出异常。
+     * </p>
      *
      * @param token JWT 字符串
-     * @return true-有效，false-无效
+     * @return true-有效，false-无效（包括 null、空字符串、签名错误、已过期）
      * @author PlayerEG
      */
     public static boolean verifyToken(String token) {
@@ -237,10 +288,14 @@ public class JWTUtils {
 
     /**
      * 从 HTTP 请求中提取 Token
-     * 优先从 URL 参数获取，如果没有则从 Authorization Header 获取
+     * <p>
+     * 优先从 URL 参数获取，如果没有则从 Authorization Header 获取。
+     * 支持两种 Header 格式：带 "Bearer " 前缀或不带前缀。
+     * </p>
      *
      * @param request HTTP 请求对象
      * @return Token 字符串，如果不存在则返回 null
+     * @author PlayerEG
      */
     public static String extractToken(HttpServletRequest request) {
         // 优先从 URL 参数获取 Token

@@ -16,19 +16,38 @@ import java.util.Date;
 /**
  * 控制台输出重定向工具类
  * <p>
- * 将 System.out 和 System.err 的所有输出重定向到日志文件
- * 确保捕获所有控制台内容，包括直接使用 System.out.println() 的输出
+ * 将 System.out 和 System.err 的所有输出重定向到日志文件，
+ * 确保捕获所有控制台内容，包括直接使用 System.out.println() 的输出。
+ * 支持 ANSI 转义码过滤，保证日志文件的纯净性。
  * </p>
  *
  * <h3>配置项说明</h3>
  * <ul>
- *   <li>console-output.enabled: 是否启用重定向（默认 true）</li>
+ *   <li>console-output.enabled: 是否启用重定向（默认 false）</li>
  *   <li>console-output.log-dir: 日志目录路径</li>
  *   <li>console-output.file-pattern: 文件名模板，支持 {timestamp} 占位符</li>
  *   <li>console-output.timestamp-format: 时间戳格式</li>
  * </ul>
  *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>生产环境完整记录所有控制台输出</li>
+ *   <li>调试时保留彩色输出的同时写入文件</li>
+ *   <li>第三方库直接输出到控制台的日志捕获</li>
+ * </ol>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>仅在 Spring Boot 应用启动时自动初始化</li>
+ *   <li>文件写入失败时会降级为仅控制台输出</li>
+ *   <li>使用 ThreadLocal 防止递归调用导致的栈溢出</li>
+ *   <li>日志文件会自动过滤 ANSI 颜色代码</li>
+ *   <li>控制台输出保留原始颜色代码</li>
+ * </ul>
+ *
  * @author PlayerEG
+ * @see top.playereg.pix_vision.config.PVSLogConfig 日志配置
+ * @since DEV-2.0.0
  */
 @SuppressWarnings("all")
 @Component
