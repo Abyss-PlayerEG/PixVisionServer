@@ -31,11 +31,11 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
  */
 @RestController
 @SuppressWarnings("all")
-@RequestMapping("/api/user/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "用户认证接口")
-public class UserAuthController {
-    private static final PixVisionLogger log = PixVisionLogger.create(UserAuthController.class);
+@Tag(name = "认证接口")
+public class AuthController {
+    private static final PixVisionLogger log = PixVisionLogger.create(AuthController.class);
 
     private final UserService userService;
     private final VerificationCodeServices verificationCodeServices;
@@ -54,11 +54,11 @@ public class UserAuthController {
      * @author PlayerEG
      */
     @PostMapping("/register")
-    @PublicAccess("用户注册接口，无需认证")
+    @PublicAccess("注册接口，无需认证")
     @Operation(
-        summary = "用户注册接口",
+        summary = "注册接口",
         description = """
-            # 用户注册（无需登录验证）
+            # 注册（无需登录验证）
 
             ## 特性
             - 用户名/邮箱唯一性校验
@@ -171,11 +171,11 @@ public class UserAuthController {
      * @author PlayerEG
      */
     @PostMapping("/login")
-    @PublicAccess("用户登录接口，无需认证")
+    @PublicAccess("登录接口，无需认证")
     @Operation(
-        summary = "用户登录接口",
+        summary = "登录接口",
         description = """
-            # 用户登录（无需登录认证）
+            # 登录（无需登录认证）
 
             ## 特性
             - 支持用户名或邮箱登录
@@ -336,9 +336,9 @@ public class UserAuthController {
      */
     @PostMapping("/logout")
     @Operation(
-        summary = "用户登出接口",
+        summary = "登出接口",
         description = """
-            # 用户登出（需要登录认证）
+            # 登出（需要登录认证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
@@ -417,9 +417,9 @@ public class UserAuthController {
      */
     @PostMapping("/delete-account")
     @Operation(
-        summary = "用户注销接口",
+        summary = "注销接口",
         description = """
-            # 用户注销（需要登录认证）
+            # 注销（需要登录认证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）

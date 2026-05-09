@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.FilePathConfig;
+import top.playereg.pix_vision.mapper.HistoryMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.Series;
@@ -33,6 +34,9 @@ public class WorkServiceImpl implements WorkService {
     @Autowired
     private WorksMapper worksMapper;
 
+    @Autowired
+    private HistoryMapper historyMapper;
+
     // 允许上传的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
         "jpg", "jpeg", "png"
@@ -46,16 +50,14 @@ public class WorkServiceImpl implements WorkService {
      * @param page       分页对象
      * @param workTitle  作品标题（可选，模糊查询）
      * @param userId     用户 ID（可选，精确查询）
-     * @param username   用户名（可选，模糊查询）
-     * @param nickname   昵称（可选，模糊查询）
      * @param seriesId   系列 ID（可选，精确查询）
      * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, String username, String nickname, Integer seriesId, Boolean isOriginal) {
-        return worksMapper.selectHomepageWorks(page, workTitle, userId, username, nickname, seriesId, isOriginal);
+    public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, Integer seriesId, Boolean isOriginal) {
+        return worksMapper.selectHomepageWorks(page, workTitle, userId, seriesId, isOriginal);
     }
 
     /**
@@ -287,7 +289,7 @@ public class WorkServiceImpl implements WorkService {
         }
 
         Works work = worksMapper.selectWorkById(workId);
-        
+
         // 检查作品是否存在且未删除
         if (work == null || work.getIs_delete()) {
             log.warn("作品不存在或已删除，作品 ID: {}", workId);
@@ -313,12 +315,86 @@ public class WorkServiceImpl implements WorkService {
         }
 
         int affectedRows = worksMapper.incrementViewCount(workId);
-        
+
         if (affectedRows > 0) {
             log.debug("作品浏览次数 +1，作品 ID: {}", workId);
             return true;
         } else {
             log.warn("增加浏览次数失败，作品可能不存在或已删除，作品 ID: {}", workId);
+            return false;
+        }
+    }
+
+    /**
+     * 添加用户访问历史记录
+     *
+     * @param userId 用户 ID
+     * @param workId 作品 ID
+     * @author PlayerEG
+     */
+    @Override
+    public void addHistory(Integer userId, Integer workId) {
+        if (userId == null || workId == null) {
+            return;
+        }
+
+        try {
+            int rows = historyMapper.insertHistory(userId, workId);
+            if (rows > 0) {
+                log.debug("添加历史记录成功，用户 ID: {}, 作品 ID: {}", userId, workId);
+            } else {
+                log.warn("添加历史记录失败（影响行数为 0），用户 ID: {}, 作品 ID: {}", userId, workId);
+            }
+        } catch (Exception e) {
+            log.error("添加历史记录异常，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户个人访问历史记录（分页）
+     *
+     * @param page   分页对象
+     * @param userId 用户 ID
+     * @return 分页作品列表
+     * @author PlayerEG
+     */
+    @Override
+    public com.baomidou.mybatisplus.core.metadata.IPage<Works> getUserHistory(
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page,
+        Integer userId
+    ) {
+        if (userId == null || userId <= 0) {
+            log.warn("无效的用户 ID，无法查询历史记录: {}", userId);
+            return new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>();
+        }
+
+        log.info("查询用户历史记录，用户 ID: {}, 页码: {}, 每页大小: {}", userId, page.getCurrent(), page.getSize());
+        return historyMapper.selectUserHistory(page, userId);
+    }
+
+    /**
+     * 批量删除用户访问历史记录
+     *
+     * @param workIds 作品 ID 列表
+     * @param userId  当前用户 ID（用于权限验证）
+     * @return 删除结果
+     * @author PlayerEG
+     */
+    @Override
+    public Boolean batchDeleteHistory(List<Integer> workIds, Integer userId) {
+        if (workIds == null || workIds.isEmpty()) {
+            log.warn("作品 ID 列表为空，用户 ID: {}", userId);
+            return false;
+        }
+
+        // 执行数据库逻辑删除（SQL 层面验证 user_id，确保只能删除自己的历史记录）
+        int affectedRows = historyMapper.batchDeleteHistory(userId, workIds);
+
+        if (affectedRows > 0) {
+            log.info("历史记录删除成功，用户 ID: {}, 删除数量: {}", userId, affectedRows);
+            return true;
+        } else {
+            log.warn("历史记录删除失败或无匹配记录，用户 ID: {}, 作品 ID 列表: {}", userId, workIds);
             return false;
         }
     }

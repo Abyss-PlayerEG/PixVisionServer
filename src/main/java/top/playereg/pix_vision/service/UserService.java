@@ -246,4 +246,16 @@ public interface UserService {
      */
     User createUserByAdmin(String username, String password, String nickname, String email,
                           Integer role, Integer status, Integer adminId);
+
+    /**
+     * 管理员批量重置用户密码（仅系统管理员可调用）
+     * <p>
+     * 为指定用户列表生成随机密码，更新数据库并强制下线所有设备。
+     * 返回包含用户 ID、邮箱和明文密码的列表，用于后续邮件发送。
+     * </p>
+     *
+     * @param userIds 目标用户 ID 列表
+     * @return 重置结果列表，每个元素包含 user_id, email, username, plainPassword
+     */
+    java.util.List<java.util.Map<String, Object>> batchResetUserPasswords(java.util.List<Integer> userIds);
 }

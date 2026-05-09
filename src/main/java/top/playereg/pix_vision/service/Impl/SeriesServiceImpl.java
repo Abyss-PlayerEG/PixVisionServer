@@ -1,5 +1,7 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.SeriesMapper;
@@ -78,31 +80,37 @@ public class SeriesServiceImpl implements SeriesService {
     }
 
     /**
-     * 根据用户 ID 查询所有作品系列
+     * 根据用户 ID 分页查询所有作品系列
      *
-     * @param userId 用户 ID
-     * @return 作品系列列表
+     * @param userId  用户 ID
+     * @param current 当前页码
+     * @param size    每页数量
+     * @return 分页作品系列列表
      */
     @Override
-    public List<Series> getSeriesByUserId(Integer userId) {
-        log.debug("查询用户作品系列 - 用户 ID: {}", userId);
+    public IPage<Series> getSeriesByUserId(Integer userId, Integer current, Integer size) {
+        log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}", userId, current, size);
 
         // 参数校验
         if (userId == null || userId <= 0) {
             log.warn("用户 ID 无效: {}", userId);
-            return null;
+            return new Page<>(current != null ? current : 1, size != null ? size : 10);
         }
 
-        // 调用 Mapper 查询
-        List<Series> seriesList = seriesMapper.selectSeriesByUserId(userId);
+        // 创建分页对象
+        Page<Series> page = new Page<>(current != null ? current : 1, size != null ? size : 10);
 
-        if (seriesList != null) {
-            log.info("查询成功 - 用户 ID: {}, 系列数量: {}", userId, Integer.valueOf(seriesList.size()));
+        // 调用 Mapper 分页查询
+        IPage<Series> result = seriesMapper.selectSeriesByUserId(page, userId);
+
+        if (result != null) {
+            log.info("分页查询成功 - 用户 ID: {}, 总记录数: {}, 当前页记录数: {}",
+                    userId, result.getTotal(), result.getRecords().size());
         } else {
-            log.warn("查询失败 - 用户 ID: {}", userId);
+            log.warn("分页查询失败 - 用户 ID: {}", userId);
         }
 
-        return seriesList;
+        return result;
     }
 
     /**

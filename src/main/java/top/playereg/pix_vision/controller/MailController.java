@@ -10,10 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
-import top.playereg.pix_vision.service.EmailService;
-import top.playereg.pix_vision.service.EmailTemplateService;
-import top.playereg.pix_vision.service.UserService;
-import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.service.*;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -41,6 +38,7 @@ public class MailController {
     private final UserService userService;
     private final VerificationCodeServices verificationCodeServices;
     private final EmailTemplateService emailTemplateService;
+    private final TokenWhitelistService tokenWhitelistService;
 
     /**
      * 发送注册验证码邮件

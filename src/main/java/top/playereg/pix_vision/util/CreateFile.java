@@ -78,6 +78,18 @@ public class CreateFile {
                     {{code}}：验证码
                     {{year}}：当前年份
                     {{systemName}}：系统名称
+                    {{expireTime}}：过期时间
+
+                密码重置邮件模板 email-reset-password.html:
+
+                占位符说明：
+                    {{logoUriLight}}: 浅色模式 logo Base64
+                    {{logoUriDark}}: 深色模式 logo Base64
+                    {{username}}：用户名
+                    {{email_text}}：邮件主题（用户密码重置）
+                    {{code}}：新生成的随机密码
+                    {{year}}：当前年份
+                    {{systemName}}：系统名称
                 """,
             FilePathConfig.EmailHtmlPath,
             "目录说明.txt"
@@ -88,6 +100,13 @@ public class CreateFile {
             ResourceUtil.readUtf8Str("template/email-html/email-verification.html"),
             FilePathConfig.EmailHtmlPath,
             "email-verification.html"
+        );
+
+        // 密码重置 HTML 模板
+        FilePathConfig.createTextFile(
+            ResourceUtil.readUtf8Str("template/email-html/email-reset-password.html"),
+            FilePathConfig.EmailHtmlPath,
+            "email-reset-password.html"
         );
 
         // 默认头像

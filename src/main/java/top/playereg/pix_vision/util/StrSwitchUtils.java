@@ -272,4 +272,51 @@ public class StrSwitchUtils {
         return StrUtil.format(htmlTemplate, charset, title, cssStyle, html);
     }
 
+    /**
+     * 随机生成密码
+     * <p>
+     * 生成的密码包含大小写字母和数字，长度为 12 位
+     *
+     * @return 随机生成的密码字符串
+     * @author blue_sky_ks
+     */
+    public static String generateRandomPassword() {
+        /**
+         * 随机密码长度
+         */
+        final int RANDOM_PASSWORD_LENGTH = 12;
+
+        /**
+         * 安全随机数生成器（复用实例，提高性能）
+         */
+        final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+        /**
+         * 随机字符集（大小写字母 + 数字）
+         */
+        final String ALPHANUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ0123456789._";
+
+        StringBuilder sb = new StringBuilder(RANDOM_PASSWORD_LENGTH);
+
+        // 确保至少包含一个大写字母、一个小写字母和一个数字
+        sb.append(ALPHANUM.charAt(SECURE_RANDOM.nextInt(26))); // A-Z
+        sb.append(ALPHANUM.charAt(SECURE_RANDOM.nextInt(26) + 26)); // a-z
+        sb.append(ALPHANUM.charAt(SECURE_RANDOM.nextInt(10) + 52)); // 0-9
+
+        // 剩余字符随机生成
+        for (int i = 3; i < RANDOM_PASSWORD_LENGTH; i++) {
+            sb.append(ALPHANUM.charAt(SECURE_RANDOM.nextInt(ALPHANUM.length())));
+        }
+
+        // 打乱顺序，避免前三个字符固定位置
+        char[] chars = sb.toString().toCharArray();
+        for (int i = chars.length - 1; i > 0; i--) {
+            int j = SECURE_RANDOM.nextInt(i + 1);
+            char temp = chars[i];
+            chars[i] = chars[j];
+            chars[j] = temp;
+        }
+
+        return new String(chars);
+    }
 }

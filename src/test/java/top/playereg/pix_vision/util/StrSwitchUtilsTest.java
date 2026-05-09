@@ -102,4 +102,12 @@ class StrSwitchUtilsTest {
         System.out.println(html);
         FileUtil.writeUtf8String(html, System.getProperty("user.home") + "/Desktop/md2html.html");
     }
+
+    @Test
+    void testGenerateRandomPassword(){
+        String res = StrSwitchUtils.generateRandomPassword();
+
+        System.out.println( "密码生成: " + res);
+
+    }
 }

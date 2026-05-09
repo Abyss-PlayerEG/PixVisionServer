@@ -115,10 +115,11 @@ public interface UserMapper extends BaseMapper<User> {
     /**
      * 逻辑删除用户账户
      *
-     * @param userId 用户 ID
+     * @param userId  用户 ID
+     * @param adminId 执行操作的管理员 ID
      * @return 影响行数
      */
-    int deleteUserAccount(@Param("userId") Integer userId);
+    int deleteUserAccount(@Param("userId") Integer userId, @Param("adminId") Integer adminId);
 
     /**
      * 更新用户邮箱
