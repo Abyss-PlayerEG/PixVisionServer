@@ -1,4 +1,4 @@
-package top.playereg.pix_vision.pojo;
+package top.playereg.pix_vision.pojo.adminPojo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
