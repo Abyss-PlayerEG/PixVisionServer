@@ -62,6 +62,16 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
+    public String renderResetPasswordEmail(String username, String password){
+        log.debug("开始渲染重置密码邮件模板 - 用户: {}", username);
+
+        // 构建占位符
+        Map<String, String> placeholders = buildVerificationPlaceholders(password, username, "用户密码重置");
+
+        return renderTemplate("email-reset-password", placeholders);
+    }
+
+    @Override
     public String renderTemplate(String templateName, Map<String, String> placeholders) {
         // 加载模板文件
         String template = loadTemplate(templateName);
@@ -125,20 +135,17 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     /**
-     * 加载模板文件
+     * 加载模板文件（从 classpath 资源加载）
      *
      * @param templateName 模板名称（不含扩展名）
      * @return 模板内容
      */
     private String loadTemplate(String templateName) {
-        String templatePath = StrUtil.format(
-            "{}{}{}.html",
-            FilePathConfig.EmailHtmlPath,
-            File.separator,
-            templateName
-        );
+        // 从 classpath 的 template/email-html/ 目录加载
+        String templatePath = StrUtil.format("template/email-html/{}.html", templateName);
 
         try {
+            // 从 classpath 加载资源文件
             String template = ResourceUtil.readUtf8Str(templatePath);
             log.debug("模板加载成功: {}", templatePath);
             return template;
