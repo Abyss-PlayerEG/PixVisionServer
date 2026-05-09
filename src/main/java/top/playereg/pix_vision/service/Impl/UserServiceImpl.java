@@ -488,8 +488,8 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        // 执行逻辑删除
-        int result = userMapper.deleteUserAccount(userId);
+        // 执行逻辑删除，update_user 设置为当前用户 ID（即自己注销）
+        int result = userMapper.deleteUserAccount(userId, userId);
 
         if (result > 0) {
             log.info("用户账户注销成功，用户 ID: {}, 用户名: {}", userId, user.getUsername());
@@ -859,8 +859,8 @@ public class UserServiceImpl implements UserService {
 
         log.info("准备删除用户 - 用户名: {}, 邮箱: {}", targetUser.getUsername(), targetUser.getEmail());
 
-        // 执行逻辑删除
-        int result = userMapper.deleteUserAccount(targetUserId);
+        // 执行逻辑删除，update_user 设置为管理员 ID
+        int result = userMapper.deleteUserAccount(targetUserId, adminId);
 
         if (result > 0) {
             log.info("用户账户删除成功 - 用户 ID: {}, 用户名: {}, 管理员: {}",
