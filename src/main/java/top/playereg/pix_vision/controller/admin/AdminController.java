@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchDeleteUserResult;
 import top.playereg.pix_vision.pojo.adminPojo.AdminResetPasswordResult;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.EmailService;
@@ -294,43 +295,42 @@ public class AdminController {
     }
 
     /**
-     * 删除用户账户
+     * 批量删除用户账户
      * <p>
-     * 系统管理员可以删除指定用户的账户（逻辑删除），并清除该用户的所有 Token
+     * 系统管理员可以批量删除指定用户的账户（逻辑删除），并清除这些用户的所有 Token
      * </p>
      *
-     * @param request      HTTP 请求对象（用于获取当前管理员信息）
-     * @param targetUserId 目标用户 ID
+     * @param request HTTP 请求对象（用于获取当前管理员信息）
+     * @param userIds 目标用户 ID 列表
      * @return 操作结果
      * @author PlayerEG
      */
     @Operation(
-        summary = "删除用户账户",
+        summary = "批量删除用户账户",
         description = """
-            # 删除用户账户（需要登录认证 + 角色权限[77]）
+            # 批量删除用户账户（需要登录认证 + 角色权限[77]）
 
             ## 特性
             - 仅系统管理员可调用
-            - 逻辑删除用户账户（is_delete = 1）
-            - 自动清除该用户的所有 Token，强制所有设备下线
-            - 清除用户角色缓存
-            - 记录操作日志（通过 update_user 字段）
+            - 支持批量逻辑删除用户账户（is_delete = 1）
+            - 自动清除被删用户的所有 Token，强制所有设备下线
+            - 清除被删用户的角色缓存
+            - 记录操作日志（update_user 字段设置为执行操作的管理员 ID）
 
             ## 参数说明：
-            - **targetUserId**: 目标用户 ID（必填）
+            - **userIds**: 目标用户 ID 列表（必填）
 
             ## 返回说明：
-            - **成功**：返回 **{"data": true}** 和“用户账户删除成功”提示
-            - **失败**：返回 **{"data": false}** 和错误提示
+            - **成功**：返回 **{"data": {AdminBatchDeleteUserResult}}** 包含统计信息
+            - **失败**：返回 **{"data": null}** 和错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
             2. 从 Token 中获取当前管理员 ID
-            3. 验证目标用户是否存在
-            4. 执行逻辑删除（is_delete = 1）
-            5. 清除该用户的所有 Token
-            6. 清除用户角色缓存
-            7. 返回操作结果
+            3. 遍历用户 ID 列表，逐个执行逻辑删除
+            4. 清除每个被删用户的所有 Token
+            5. 清除每个被删用户的角色缓存
+            6. 返回包含总数、成功数和失败 ID 列表的结果
 
             ## 安全限制：
             - 管理员不能删除自己的账户
@@ -341,46 +341,62 @@ public class AdminController {
             - 这是逻辑删除，不是物理删除
             - 删除后用户的所有 Token 立即失效
             - 建议谨慎使用，确保有充分的理由
-            - 删除操作不可逆（除非手动修改数据库）
             """
     )
-    @PostMapping("/delete-user")
-    public ResponsePojo<Boolean> deleteUser(
+    @PostMapping("/delete-users")
+    public ResponsePojo<AdminBatchDeleteUserResult> batchDeleteUsers(
         HttpServletRequest request,
-        @Parameter(description = "目标用户 ID", required = true, example = "123")
-        @RequestParam Integer targetUserId
+        @Parameter(description = "目标用户 ID 列表", required = true, example = "123,456") @RequestParam List<Integer> userIds
     ) {
-        log.info("管理员开始删除用户账户 - 目标用户 ID: {}", targetUserId);
+        log.info("管理员开始批量删除用户账户 - 用户 ID 数量: {}", userIds != null ? userIds.size() : 0);
+
+        // 参数校验
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("用户 ID 列表为空");
+            return ResponsePojo.error(null, "用户 ID 列表不能为空");
+        }
 
         try {
             // 从 Token 中获取当前管理员 ID
-            String token = JWTUtils.extractTokenWithLog(request, "删除用户账户");
+            String token = JWTUtils.extractTokenWithLog(request, "批量删除用户账户");
             if (token == null || token.isEmpty()) {
                 log.error("Token 不存在");
-                return ResponsePojo.error(false, "未授权访问");
+                return ResponsePojo.error(null, "未授权访问");
             }
 
             Integer adminId = JWTUtils.getUserIdFromToken(token);
             if (adminId == null) {
                 log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(false, "Token 无效");
+                return ResponsePojo.error(null, "Token 无效");
             }
 
-            log.info("当前管理员 ID: {}", adminId);
-
-            // 调用 Service 层删除用户账户
-            Boolean success = userService.deleteUserAccountByAdmin(targetUserId, adminId);
-
-            if (success) {
-                log.info("用户账户删除成功 - 目标用户 ID: {}", targetUserId);
-                return ResponsePojo.success(true, "用户账户删除成功，已强制该用户所有设备下线");
-            } else {
-                log.warn("用户账户删除失败 - 目标用户 ID: {}", targetUserId);
-                return ResponsePojo.error(false, "用户账户删除失败，请检查用户是否存在或是否已被删除");
+            int totalCount = userIds.size();
+            java.util.Set<Integer> successIds = new java.util.HashSet<>();
+            
+            // 循环调用 Service 层删除方法
+            for (Integer userId : userIds) {
+                Boolean res = userService.deleteUserAccountByAdmin(userId, adminId);
+                if (res) {
+                    successIds.add(userId);
+                }
             }
+            
+            // 计算失败的 ID
+            java.util.List<Integer> failedUserIds = new java.util.ArrayList<>();
+            for (Integer id : userIds) {
+                if (!successIds.contains(id)) {
+                    failedUserIds.add(id);
+                }
+            }
+
+            AdminBatchDeleteUserResult result = new AdminBatchDeleteUserResult(totalCount, successIds.size(), failedUserIds);
+            log.info("批量删除用户账户完成 - 总数: {}, 成功: {}, 失败: {}", totalCount, successIds.size(), failedUserIds.size());
+            
+            return ResponsePojo.success(result, "批量删除用户账户处理完成");
+
         } catch (Exception e) {
-            log.error("删除用户账户异常 - 错误: {}", e.getMessage(), e);
-            return ResponsePojo.error(false, "系统错误: " + e.getMessage());
+            log.error("批量删除用户账户异常 - 错误: {}", e.getMessage(), e);
+            return ResponsePojo.error(null, "系统错误: " + e.getMessage());
         }
     }
 
