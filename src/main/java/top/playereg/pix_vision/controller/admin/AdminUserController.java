@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchDeleteUserResult;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchUpdateUserResult;
 import top.playereg.pix_vision.pojo.adminPojo.AdminResetPasswordResult;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.EmailService;
@@ -36,12 +37,12 @@ import java.util.*;
  * @since DEV-2.0.0
  */
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admin/user")
 @RequiredArgsConstructor
-@Tag(name = "系统管理员相关接口")
+@Tag(name = "系统管理员相关接口 - 用户管理")
 @RequireRole(value = {77})
-public class AdminController {
-    private static final PixVisionLogger log = PixVisionLogger.create(AdminController.class);
+public class AdminUserController {
+    private static final PixVisionLogger log = PixVisionLogger.create(AdminUserController.class);
 
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;
@@ -111,36 +112,32 @@ public class AdminController {
     }
 
     /**
-     * 更新用户信息（角色和/或状态）
+     * 批量更新用户信息（角色和/或状态）
      * <p>
-     * 系统管理员可以修改指定用户的角色和/或状态，支持的操作：
-     * - 仅修改角色
-     * - 仅修改状态
-     * - 同时修改角色和状态
+     * 系统管理员可以批量修改指定用户的角色和/或状态
      * </p>
      *
-     * @param request      HTTP 请求对象（用于获取当前管理员信息）
-     * @param targetUserId 目标用户 ID
-     * @param newRole      新角色代码（可选）
-     * @param newStatus    新状态代码（可选）
+     * @param request   HTTP 请求对象（用于获取当前管理员信息）
+     * @param userIds   目标用户 ID 列表
+     * @param newRole   新角色代码（可选）
+     * @param newStatus 新状态代码（可选）
      * @return 操作结果
      * @author PlayerEG
      */
     @Operation(
-        summary = "更新用户信息（角色或状态）",
+        summary = "批量更新用户信息",
         description = """
-            # 更新用户信息（需要登录认证 + 角色权限[77]）
+            # 批量更新用户信息（需要登录认证 + 角色权限[77]）
 
             ## 特性
             - 仅系统管理员可调用
-            - 可以修改任意用户的角色和/或状态（除自己外）
-            - 支持单独修改角色、单独修改状态或同时修改
-            - 自动清除目标用户的角色缓存
+            - 支持批量修改用户的角色和/或状态
+            - 自动清除被更新用户的角色缓存
             - 修改状态时自动移除该用户所有 Token，强制所有设备下线
-            - 记录操作日志（通过 update_user 字段）
+            - 记录操作日志（update_user 字段设置为执行操作的管理员 ID）
 
             ## 参数说明：
-            - **targetUserId**: 目标用户 ID（必填）
+            - **userIds**: 目标用户 ID 列表（必填）
             - **newRole**: 新角色代码（可选），可选值：
               - 11: 普通用户
               - 22: 创作者
@@ -153,39 +150,32 @@ public class AdminController {
               - 30: 封禁
 
             ## 返回说明：
-            - **成功**：返回 **{"data": true}** 和操作详情提示
-            - **失败**：返回 **{"data": false}** 和错误提示
+            - **成功**：返回 **{"data": {AdminBatchUpdateUserResult}}** 包含统计信息
+            - **失败**：返回 **{"data": null}** 和错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
             2. 从 Token 中获取当前管理员 ID
-            3. 验证目标用户是否存在
-            4. 如果提供了 newRole，验证并更新用户角色
-            5. 如果提供了 newStatus，验证并更新用户状态
-            6. 清除目标用户的角色缓存（如果修改了角色）
-            7. 将该用户所有 Token 从白名单移除（如果修改了状态）
-            8. 返回操作结果
+            3. 遍历用户 ID 列表，逐个执行更新逻辑
+            4. 清除每个被更新用户的角色缓存
+            5. 如果修改了状态，强制下线该用户的所有 Token
+            6. 返回包含总数、成功数和失败 ID 列表的结果
 
             ## 安全限制：
-            - 管理员不能修改自己的角色或状态
+            - 管理员不能修改自己的信息
             - 目标用户必须存在且未被删除
             - 至少需要提供 newRole 或 newStatus 中的一个
-            - 角色代码和状态代码必须在允许范围内
 
             ## 注意事项：
             - 修改角色后，目标用户下次请求时会自动获取新的角色信息
             - 修改状态后，会强制该用户所有设备下线
-            - 如果需要立即生效，可以调用 /refresh-permission-cache 接口
             - 建议谨慎分配高权限角色（如 77-系统管理员）
-            - 冻结状态（20）：用户无法登录，但数据保留
-            - 封禁状态（30）：用户无法登录，严重违规使用
             """
     )
-    @PostMapping("/update-user-info")
-    public ResponsePojo<Boolean> updateUserInfo(
+    @PostMapping("/update/user-role-status")
+    public ResponsePojo<AdminBatchUpdateUserResult> batchUpdateUserInfo(
         HttpServletRequest request,
-        @Parameter(description = "目标用户 ID", required = true, example = "123")
-        @RequestParam Integer targetUserId,
+        @Parameter(description = "目标用户 ID 列表", required = true, example = "123,456") @RequestParam List<Integer> userIds,
         @Schema(
             description = "新角色代码（可选，11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）",
             allowableValues = {"11", "22", "55", "66", "77"},
@@ -199,98 +189,88 @@ public class AdminController {
         )
         @RequestParam(required = false) Integer newStatus
     ) {
-        log.info("管理员开始更新用户信息 - 目标用户 ID: {}, 新角色: {}, 新状态: {}", targetUserId, newRole, newStatus);
+        log.info("管理员开始批量更新用户信息 - 用户数量: {}, 新角色: {}, 新状态: {}",
+                userIds != null ? userIds.size() : 0, newRole, newStatus);
 
-        // 参数校验：至少提供一个更新字段
+        // 参数校验
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("用户 ID 列表为空");
+            return ResponsePojo.error(null, "用户 ID 列表不能为空");
+        }
+
         if (newRole == null && newStatus == null) {
-            log.warn("未提供任何更新字段 - 目标用户 ID: {}", targetUserId);
-            return ResponsePojo.error(false, "请至少提供 newRole 或 newStatus 中的一个参数");
+            log.warn("未提供任何更新字段");
+            return ResponsePojo.error(null, "请至少提供 newRole 或 newStatus 中的一个参数");
         }
 
         try {
             // 从 Token 中获取当前管理员 ID
-            String token = JWTUtils.extractTokenWithLog(request, "更新用户信息");
+            String token = JWTUtils.extractTokenWithLog(request, "批量更新用户信息");
             if (token == null || token.isEmpty()) {
                 log.error("Token 不存在");
-                return ResponsePojo.error(false, "未授权访问");
+                return ResponsePojo.error(null, "未授权访问");
             }
 
             Integer adminId = JWTUtils.getUserIdFromToken(token);
             if (adminId == null) {
                 log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(false, "Token 无效");
+                return ResponsePojo.error(null, "Token 无效");
             }
 
-            log.info("当前管理员 ID: {}", adminId);
+            int totalCount = userIds.size();
+            java.util.Set<Integer> successIds = new java.util.HashSet<>();
 
-            // 检查目标用户是否存在
-            User targetUser = userService.selectAllUserById(targetUserId);
-            if (targetUser == null) {
-                log.warn("目标用户不存在 - 用户 ID: {}", targetUserId);
-                return ResponsePojo.error(false, "目标用户不存在");
-            }
-
-            // 防止修改自己的信息
-            if (targetUserId.equals(adminId)) {
-                log.warn("管理员不能修改自己的信息 - 用户 ID: {}", adminId);
-                return ResponsePojo.error(false, "不能修改自己的信息");
-            }
-
-            boolean roleUpdated = false;
-            boolean statusUpdated = false;
-            StringBuilder messageBuilder = new StringBuilder();
-
-            // 更新角色
-            if (newRole != null) {
-                log.info("开始更新用户角色 - 目标用户 ID: {}, 新角色: {}", targetUserId, newRole);
-                Boolean roleSuccess = userService.updateUserRole(targetUserId, newRole, adminId);
-                if (!roleSuccess) {
-                    log.warn("用户角色更新失败 - 目标用户 ID: {}", targetUserId);
-                    return ResponsePojo.error(false, "用户角色更新失败，请检查角色代码是否正确");
+            // 循环调用 Service 层更新方法
+            for (Integer targetUserId : userIds) {
+                // 防止修改自己的信息
+                if (targetUserId.equals(adminId)) {
+                    log.warn("管理员不能修改自己的信息，跳过 - 用户 ID: {}", adminId);
+                    continue;
                 }
-                roleUpdated = true;
-                String roleName = getRoleName(newRole);
-                messageBuilder.append("角色已更新为：").append(roleName);
-                log.info("用户角色更新成功 - 目标用户 ID: {}, 新角色: {}", targetUserId, newRole);
-            }
 
-            // 更新状态
-            if (newStatus != null) {
-                log.info("开始更新用户状态 - 目标用户 ID: {}, 新状态: {}", targetUserId, newStatus);
-                Boolean statusSuccess = userService.updateUserStatus(targetUserId, newStatus, adminId);
-                if (!statusSuccess) {
-                    log.warn("用户状态更新失败 - 目标用户 ID: {}", targetUserId);
-                    return ResponsePojo.error(false, "用户状态更新失败，请检查状态代码是否正确");
+                boolean success = true;
+
+                // 更新角色
+                if (newRole != null) {
+                    Boolean roleRes = userService.updateUserRole(targetUserId, newRole, adminId);
+                    if (!roleRes) success = false;
                 }
-                statusUpdated = true;
 
-                // 将该用户所有 Token 从白名单移除，强制下线
-                int removedCount = tokenWhitelistService.removeAllUserTokens(targetUserId, targetUser.getUsername());
-                log.info("已移除用户所有 Token，用户 ID: {}, 用户名: {}, 移除数量: {}",
-                    targetUserId, targetUser.getUsername(), removedCount);
+                // 更新状态
+                if (newStatus != null) {
+                    Boolean statusRes = userService.updateUserStatus(targetUserId, newStatus, adminId);
+                    if (!statusRes) success = false;
 
-                if (messageBuilder.length() > 0) {
-                    messageBuilder.append("，");
+                    // 如果状态更新成功，强制下线
+                    if (success) {
+                        User targetUser = userService.selectAllUserById(targetUserId);
+                        if (targetUser != null) {
+                            tokenWhitelistService.removeAllUserTokens(targetUserId, targetUser.getUsername());
+                        }
+                    }
                 }
-                String statusName = getStatusName(newStatus);
-                messageBuilder.append("状态已更新为：").append(statusName).append("，已强制该用户所有设备下线");
-                log.info("用户状态更新成功 - 目标用户 ID: {}, 新状态: {}", targetUserId, newStatus);
+
+                if (success) {
+                    successIds.add(targetUserId);
+                }
             }
 
-            // 构建返回消息
-            String message = messageBuilder.toString();
-            if (message.isEmpty()) {
-                message = "用户信息更新成功";
-            } else {
-                message = "用户信息更新成功，" + message;
+            // 计算失败的 ID
+            java.util.List<Integer> failedUserIds = new java.util.ArrayList<>();
+            for (Integer id : userIds) {
+                if (!successIds.contains(id)) {
+                    failedUserIds.add(id);
+                }
             }
 
-            log.info("用户信息更新完成 - 目标用户 ID: {}, 角色更新: {}, 状态更新: {}", targetUserId, roleUpdated, statusUpdated);
-            return ResponsePojo.success(true, message);
+            AdminBatchUpdateUserResult result = new AdminBatchUpdateUserResult(totalCount, successIds.size(), failedUserIds);
+            log.info("批量更新用户信息完成 - 总数: {}, 成功: {}, 失败: {}", totalCount, successIds.size(), failedUserIds.size());
+
+            return ResponsePojo.success(result, "批量更新用户信息处理完成");
 
         } catch (Exception e) {
-            log.error("更新用户信息异常 - 错误: {}", e.getMessage(), e);
-            return ResponsePojo.error(false, "系统错误: " + e.getMessage());
+            log.error("批量更新用户信息异常 - 错误: {}", e.getMessage(), e);
+            return ResponsePojo.error(null, "系统错误: " + e.getMessage());
         }
     }
 
@@ -343,7 +323,7 @@ public class AdminController {
             - 建议谨慎使用，确保有充分的理由
             """
     )
-    @PostMapping("/delete-users")
+    @PostMapping("/delete")
     public ResponsePojo<AdminBatchDeleteUserResult> batchDeleteUsers(
         HttpServletRequest request,
         @Parameter(description = "目标用户 ID 列表", required = true, example = "123,456") @RequestParam List<Integer> userIds
@@ -372,7 +352,7 @@ public class AdminController {
 
             int totalCount = userIds.size();
             java.util.Set<Integer> successIds = new java.util.HashSet<>();
-            
+
             // 循环调用 Service 层删除方法
             for (Integer userId : userIds) {
                 Boolean res = userService.deleteUserAccountByAdmin(userId, adminId);
@@ -380,7 +360,7 @@ public class AdminController {
                     successIds.add(userId);
                 }
             }
-            
+
             // 计算失败的 ID
             java.util.List<Integer> failedUserIds = new java.util.ArrayList<>();
             for (Integer id : userIds) {
@@ -391,7 +371,7 @@ public class AdminController {
 
             AdminBatchDeleteUserResult result = new AdminBatchDeleteUserResult(totalCount, successIds.size(), failedUserIds);
             log.info("批量删除用户账户完成 - 总数: {}, 成功: {}, 失败: {}", totalCount, successIds.size(), failedUserIds.size());
-            
+
             return ResponsePojo.success(result, "批量删除用户账户处理完成");
 
         } catch (Exception e) {
@@ -479,7 +459,7 @@ public class AdminController {
             - 两次输入的密码必须完全一致
             """
     )
-    @PostMapping("/create-user")
+    @PostMapping("/create")
     public ResponsePojo<Boolean> createUser(
         HttpServletRequest request,
         @Parameter(description = "用户名（必填，唯一）", required = true, example = "new_user") @RequestParam String username,
@@ -557,9 +537,9 @@ public class AdminController {
      * @author PlayerEG
      */
     @Operation(
-        summary = "管理员批量重置用户密码",
+        summary = "批量重置用户密码",
         description = """
-            # 管理员批量重置用户密码（需要登录认证 + 角色权限[77]）
+            # 批量重置用户密码（需要登录认证 + 角色权限[77]）
 
             ## 特性
             - **管理员专属接口**：仅系统管理员可调用
@@ -599,8 +579,8 @@ public class AdminController {
             - 如果某个用户不存在或处理失败，会跳过该用户并继续处理下一个
             """
     )
-    @PostMapping("/batch-reset-password")
-    public ResponsePojo<AdminResetPasswordResult> batchResetUserPassword(
+    @PostMapping("/update/password")
+    public ResponsePojo<AdminResetPasswordResult> batchUpdateUserPassword(
         @Parameter(description = "目标用户 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> userIds
     ) {
         log.info("管理员开始批量重置用户密码 - 用户 ID 数量: {}", userIds != null ? userIds.size() : 0);
