@@ -120,12 +120,6 @@ public class HistoryController {
         // 调用服务层查询历史记录
         IPage<Works> historyPage = workService.getUserHistory(page, userId);
 
-        // 返回结果为空，则返回错误信息
-        if (historyPage == null || historyPage.getRecords().isEmpty()) {
-            log.warn("分页查询历史记录返回结果为空 - 用户 ID: {}, 页码：{}, 每页：{}", userId, current, size);
-            return ResponsePojo.error(null, "查询失败，返回结果为空");
-        }
-
         log.info("查询个人历史记录成功，用户 ID: {}, 记录数: {}", userId, historyPage.getTotal());
         return ResponsePojo.success(historyPage, "查询成功");
     }

@@ -127,12 +127,6 @@ public class UserProfileController {
         // 调用服务层查询用户信息
         IPage<User> result = userService.selectPageUserInfo(page, searchKeyword, uuidBytes);
 
-        // 返回结果为空，则返回错误信息
-        if (result == null || result.getRecords().size() == 0) {
-            log.error("分页查询返回结果为空 - 页码：{}, 每页：{}", current, size);
-            return ResponsePojo.error(null, "查询失败，返回结果为空");
-        }
-
         // 将用户的 16 字节二进制UUID转换成字符串UUID
         for (User user : result.getRecords()) {
             user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
@@ -216,12 +210,6 @@ public class UserProfileController {
 
         // 调用服务层查询用户信息
         IPage<User> result = userService.selectPageUserInfoByRole(page, userRoles);
-
-        // 返回结果为空，则返回错误信息
-        if (result == null || result.getRecords().isEmpty()) {
-            log.warn("按角色分页查询返回结果为空 - 页码：{}, 每页：{}, 角色：{}", current, size, userRoles != null ? userRoles.toString() : "无");
-            return ResponsePojo.error(null, "查询失败，返回结果为空");
-        }
 
         // 将用户的 16 字节二进制UUID转换成字符串UUID
         for (User user : result.getRecords()) {
