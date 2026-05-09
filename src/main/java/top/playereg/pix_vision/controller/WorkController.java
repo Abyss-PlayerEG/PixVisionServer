@@ -508,4 +508,78 @@ public class WorkController {
             return ResponsePojo.error(false, "作品修改失败：" + e.getMessage());
         }
     }
+
+    /**
+     * 查看个人访问历史记录
+     *
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @return 个人访问历史记录列表
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "查看个人访问历史记录",
+        description = """
+            # 查看个人访问历史记录（需要登录认证）
+
+            ## 特性
+            - 需要 Token 认证
+            - 返回当前用户访问过的作品列表
+            - 仅返回未删除的作品
+            - 按访问时间倒序排列
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": [Works对象列表]}** 
+            - **Token 不存在或失效**：返回 **{"data": null}** 和错误提示
+            - **无历史记录**：返回 **{"data": []}** 和空列表
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 调用 Service 层查询该用户的访问历史记录
+            5. 返回关联的作品详细信息列表
+
+            ## 注意事项：
+            - **必须携带有效的 Token**
+            - 只有已登录用户才能查看自己的历史记录
+            - 如果作品已被删除，则不会出现在历史记录列表中
+            """
+    )
+    @GetMapping("/history")
+    public ResponsePojo<java.util.List<Works>> getUserHistory(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request
+    ) {
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "查看个人历史记录接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("查看历史记录失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始查询个人历史记录，用户 ID: {}, 用户名: {}", userId, username);
+
+        // 调用服务层查询历史记录
+        java.util.List<Works> historyList = workService.getUserHistory(userId);
+
+        log.info("查询个人历史记录成功，用户 ID: {}, 记录数: {}", userId, historyList.size());
+        return ResponsePojo.success(historyList, "查询成功");
+    }
 }

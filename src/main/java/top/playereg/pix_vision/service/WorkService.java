@@ -102,6 +102,15 @@ public interface WorkService {
     void addHistory(Integer userId, Integer workId);
 
     /**
+     * 获取用户个人访问历史记录
+     *
+     * @param userId 用户 ID
+     * @return 作品列表
+     * @author PlayerEG
+     */
+    java.util.List<Works> getUserHistory(Integer userId);
+
+    /**
      * 修改作品信息（支持部分字段修改）
      *
      * @param workId      作品 ID

@@ -8,4 +8,29 @@
         VALUES (#{userId}, #{workId}, 0)
     </insert>
 
+    <!-- 查询用户的访问历史记录（关联作品表） -->
+    <select id="selectUserHistory" resultType="top.playereg.pix_vision.pojo.Works">
+        SELECT 
+            w.work_id,
+            w.user_id,
+            w.work_title,
+            w.img_url,
+            w.series_id,
+            w.like_count,
+            w.star_count,
+            w.view_count,
+            w.is_original_work,
+            w.out_url,
+            w.is_delete,
+            w.update_time,
+            w.update_user,
+            w.create_time,
+            w.create_user
+        FROM tb_history h
+        JOIN tb_works w ON h.work_id = w.work_id
+        WHERE h.user_id = #{userId}
+          AND h.is_delete = 0
+          AND w.is_delete = 0
+    </select>
+
 </mapper>

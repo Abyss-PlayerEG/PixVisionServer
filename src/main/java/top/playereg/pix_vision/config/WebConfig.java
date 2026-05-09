@@ -46,6 +46,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(@NotNull CorsRegistry registry) {
         int length = allowedOrigin.length;
+        if (length == 0) {
+            log.warn("未配置跨域源地址");
+            return;
+        }
         log.info("已有 {} 个源地址已进行跨域处理", length);
         log("\n\t允许的源地址列表：");
         int i = 1;

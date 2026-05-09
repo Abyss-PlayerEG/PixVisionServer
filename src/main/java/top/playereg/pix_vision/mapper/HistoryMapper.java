@@ -23,4 +23,13 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
      */
     int insertHistory(@org.apache.ibatis.annotations.Param("userId") Integer userId, 
                       @org.apache.ibatis.annotations.Param("workId") Integer workId);
+
+    /**
+     * 查询用户的访问历史记录（关联作品表）
+     *
+     * @param userId 用户 ID
+     * @return 历史记录列表（包含作品信息）
+     * @author PlayerEG
+     */
+    java.util.List<top.playereg.pix_vision.pojo.Works> selectUserHistory(@org.apache.ibatis.annotations.Param("userId") Integer userId);
 }
