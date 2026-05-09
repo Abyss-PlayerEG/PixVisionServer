@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * 管理员批量重置密码结果对象
  *
@@ -26,5 +28,5 @@ public class AdminResetPasswordResult {
     private Integer emailSentCount;
 
     @Schema(description = "失败用户的 ID 列表", example = "[4, 7]")
-    private java.util.List<Integer> failedUserIds;
+    private List<Integer> failedUserIds;
 }
