@@ -186,7 +186,7 @@ public class WorkController {
             - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
             - **参数错误**：返回 **{"data": null}** 和"页码或每页大小错误"提示
             - **无数据**：返回 **{"data": null}** 和"查询失败，返回结果为空"提示
-            
+
             ## 业务逻辑：
             1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
             2. 构建 MyBatis-Plus 分页对象
@@ -208,7 +208,7 @@ public class WorkController {
             """
     )
     @PublicAccess("分页查询作品列表，无需认证")
-    @GetMapping("/homepage/{current}/{size}")
+    @GetMapping("/page/{current}/{size}")
     public ResponsePojo<IPage<Works>> getHomepageWorks(
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小，范围 1-100", required = true, example = "10") @PathVariable Long size,
@@ -271,7 +271,7 @@ public class WorkController {
             - **查询成功**：返回 **{"data": {Works对象}}** ，包含作品详细信息
             - **作品不存在**：返回 **{"data": null}** 和"作品不存在或已删除"提示
             - **参数错误**：返回 **{"data": null}** 和"作品 ID 无效"提示
-            
+
             ## 业务逻辑：
             1. 校验作品 ID 参数有效性
             2. 查询作品信息

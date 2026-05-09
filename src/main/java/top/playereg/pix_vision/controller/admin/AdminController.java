@@ -1,4 +1,4 @@
-package top.playereg.pix_vision.controller;
+package top.playereg.pix_vision.controller.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
