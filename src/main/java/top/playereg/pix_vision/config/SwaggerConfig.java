@@ -18,27 +18,47 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI createRestApi() {
         return new OpenAPI().info(
-                new Info()
-                        .title("像素视觉")
-                        .description("像素视觉后端服务器")
-                        .version(AppVersion)
+            new Info()
+                .title("像素视觉")
+                .description("像素视觉后端服务器")
+                .version(AppVersion)
         );
     }
+
     //
     @Bean
     public GroupedOpenApi rootApi() {
         return GroupedOpenApi.builder()
-                .group("1_Root")
-                .pathsToMatch("/**")
-                .packagesToScan("top.playereg.pix_vision.controller")
-                .build();
+            .group("1_RootApi")
+            .pathsToMatch("/**")
+            .packagesToScan("top.playereg.pix_vision.controller")
+            .build();
     }
+
     @Bean
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
-                .group("2_PixelVisionApi")
-                .pathsToMatch("/api/**")
-                .packagesToScan("top.playereg.pix_vision.controller")
-                .build();
+            .group("2_PixelVisionApi")
+            .pathsToMatch("/api/**")
+            .packagesToScan("top.playereg.pix_vision.controller")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi adminApi() {
+        return GroupedOpenApi.builder()
+            .group("3_AdminApi")
+            .pathsToMatch("/api/admin/**")
+            .packagesToScan("top.playereg.pix_vision.controller")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi userApi() {
+        return GroupedOpenApi.builder()
+            .group("4_UserApi")
+            .pathsToMatch("/api/user/**")
+            .packagesToScan("top.playereg.pix_vision.controller")
+            .build();
     }
 }
