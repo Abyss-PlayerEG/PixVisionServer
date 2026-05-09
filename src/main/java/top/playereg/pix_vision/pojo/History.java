@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "历史记录实体")
-public class History {
+public class History extends Works {
 
     @Schema(description = "用户 ID")
     Integer user_id;

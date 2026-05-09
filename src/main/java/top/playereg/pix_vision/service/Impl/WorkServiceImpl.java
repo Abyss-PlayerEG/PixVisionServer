@@ -8,6 +8,7 @@ import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.mapper.HistoryMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
+import top.playereg.pix_vision.pojo.History;
 import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.WorkService;
@@ -359,13 +360,13 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
-    public com.baomidou.mybatisplus.core.metadata.IPage<Works> getUserHistory(
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page,
+    public IPage<History> getUserHistory(
+        Page<History> page,
         Integer userId
     ) {
         if (userId == null || userId <= 0) {
             log.warn("无效的用户 ID，无法查询历史记录: {}", userId);
-            return new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>();
+            return new Page<>();
         }
 
         log.info("查询用户历史记录，用户 ID: {}, 页码: {}, 每页大小: {}", userId, page.getCurrent(), page.getSize());

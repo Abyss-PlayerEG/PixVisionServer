@@ -2,6 +2,8 @@ package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.web.multipart.MultipartFile;
+import top.playereg.pix_vision.pojo.History;
 import top.playereg.pix_vision.pojo.Works;
 
 import java.util.List;
@@ -105,8 +107,8 @@ public interface WorkService {
      * @return 分页作品列表
      * @author PlayerEG
      */
-    com.baomidou.mybatisplus.core.metadata.IPage<Works> getUserHistory(
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page,
+    IPage<History> getUserHistory(
+        Page<History> page,
         Integer userId
     );
 
@@ -137,7 +139,7 @@ public interface WorkService {
         Integer workId,
         Integer userId,
         String workTitle,
-        org.springframework.web.multipart.MultipartFile file,
+        MultipartFile file,
         Integer seriesId,
         Boolean isOriginal,
         String outUrl

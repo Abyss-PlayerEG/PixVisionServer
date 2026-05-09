@@ -9,10 +9,10 @@
     </insert>
 
     <!-- 查询用户的访问历史记录（关联作品表） -->
-    <select id="selectUserHistory" resultType="top.playereg.pix_vision.pojo.Works">
+    <select id="selectUserHistory" resultType="top.playereg.pix_vision.pojo.History">
         SELECT 
             w.work_id,
-            w.user_id,
+            w.user_id AS work_user_id,
             w.work_title,
             w.img_url,
             w.series_id,
@@ -21,11 +21,8 @@
             w.view_count,
             w.is_original_work,
             w.out_url,
-            w.is_delete,
-            w.update_time,
-            w.update_user,
-            w.create_time,
-            w.create_user
+            h.user_id,
+            h.time
         FROM tb_history h
         JOIN tb_works w ON h.work_id = w.work_id
         WHERE h.user_id = #{userId}
