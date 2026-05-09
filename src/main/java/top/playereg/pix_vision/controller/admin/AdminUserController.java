@@ -39,7 +39,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/admin/user")
 @RequiredArgsConstructor
-@Tag(name = "系统管理员相关接口 - 用户管理")
+@Tag(name = "系统管理员接口 - 用户管理")
 @RequireRole(value = {77})
 public class AdminUserController {
     private static final PixVisionLogger log = PixVisionLogger.create(AdminUserController.class);

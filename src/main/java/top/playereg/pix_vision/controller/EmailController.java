@@ -31,9 +31,9 @@ import top.playereg.pix_vision.util.RegexUtils;
 @RequestMapping("/api/mail")
 @RequiredArgsConstructor
 @Tag(name = "邮件服务接口")
-public class MailController {
+public class EmailController {
 
-    private static final PixVisionLogger log = PixVisionLogger.create(MailController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(EmailController.class);
     private final EmailService emailService;
     private final UserService userService;
     private final VerificationCodeServices verificationCodeServices;

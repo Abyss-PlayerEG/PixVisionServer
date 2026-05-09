@@ -21,7 +21,7 @@ import top.playereg.pix_vision.util.PixVisionLogger;
  *
  * @author PlayerEG
  */
-@Tag(name = "作品系列管理接口")
+@Tag(name = "作品合集接口")
 @RestController
 @RequestMapping("/api/work/series")
 public class SeriesController {

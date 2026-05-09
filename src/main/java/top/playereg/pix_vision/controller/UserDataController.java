@@ -26,7 +26,7 @@ import java.util.List;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/data")
 @RequiredArgsConstructor
-@Tag(name = "用户拓展数据管理相关接口")
+@Tag(name = "用户拓展数据接口")
 public class UserDataController {
     private static final PixVisionLogger log = PixVisionLogger.create(UserDataController.class);
 

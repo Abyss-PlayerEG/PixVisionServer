@@ -21,4 +21,7 @@ public class History {
     @TableLogic
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
     Boolean is_delete;
+
+    @Schema(description = "操作时间戳（ISO 8601格式）")
+    String time;
 }

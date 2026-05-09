@@ -43,7 +43,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/image")
-@Tag(name = "图片管理接口", description = "提供头像、作品、Logo 等图片资源的访问接口")
+@Tag(name = "图像接口", description = "提供头像、作品、Logo 等图片资源的访问接口")
 public class ImageController {
     private static final PixVisionLogger log = PixVisionLogger.create(ImageController.class);
 

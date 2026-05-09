@@ -4,8 +4,8 @@
 
     <!-- 添加用户访问历史记录 -->
     <insert id="insertHistory">
-        INSERT INTO tb_history (user_id, work_id, is_delete)
-        VALUES (#{userId}, #{workId}, 0)
+        INSERT INTO tb_history (user_id, work_id, is_delete, time)
+        VALUES (#{userId}, #{workId}, 0, NOW())
     </insert>
 
     <!-- 查询用户的访问历史记录（关联作品表） -->

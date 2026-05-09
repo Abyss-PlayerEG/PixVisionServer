@@ -24,7 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/history")
 @RequiredArgsConstructor
-@Tag(name = "用户访问历史管理接口")
+@Tag(name = "历史记录接口")
 public class HistoryController {
     private static final PixVisionLogger log = PixVisionLogger.create(HistoryController.class);
 
