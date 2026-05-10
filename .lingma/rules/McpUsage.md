@@ -6,7 +6,7 @@ trigger: always_on
 
 ## ⚠️ 重要：首次使用 MCP 工具前必须阅读
 
-**在第一次调用任何 MCP 工具（MySQL 或 Redis）之前，必须先执行以下操作：**
+**在第一次调用任何 MCP 工具（MySQL、Redis 或 Sequential-Thinking）之前，必须先执行以下操作：**
 
 ```
 Skill: mcp-usage
@@ -84,6 +84,51 @@ mcp_redis_list({ pattern: "token:*" })
 
 ---
 
+## Sequential-Thinking MCP 工具核心规则
+
+### ✅ 必须做到
+1. **明确思考目标**：第一步清晰定义要解决的问题
+2. **逻辑递进**：后续步骤应建立在前序思考基础上
+3. **适度细化**：根据问题复杂度合理设置思考步骤数量（通常 3-7 步）
+4. **及时总结**：最后一步应给出明确的结论或解决方案
+5. **保持聚焦**：每步思考应围绕核心问题，避免偏离主题
+
+### ❌ 严格禁止
+1. **空洞内容**：每个 thought 必须是有意义的思考步骤
+2. **跳过步骤**：确保思考过程连贯，不要跳跃
+3. **过早结束**：未得出结论前不要设置 `nextThoughtNeeded: false`
+4. **偏离主题**：思考内容应与核心问题相关
+
+### 📋 标准使用模板
+
+```javascript
+// 步骤 1：明确问题
+mcp_sequential-thinking_sequentialthinking({
+  thought: "我需要解决的问题是什么？",
+  nextThoughtNeeded: true,
+  thoughtNumber: 1,
+  totalThoughts: 5
+})
+
+// 中间步骤：分析问题
+mcp_sequential-thinking_sequentialthinking({
+  thought: "问题的关键要素和可能方案",
+  nextThoughtNeeded: true,
+  thoughtNumber: 2,
+  totalThoughts: 5
+})
+
+// 最后一步：得出结论
+mcp_sequential-thinking_sequentialthinking({
+  thought: "最终结论和解决方案",
+  nextThoughtNeeded: false,
+  thoughtNumber: 5,
+  totalThoughts: 5
+})
+```
+
+---
+
 ## 🚨 常见错误示例
 
 ### MySQL 错误
@@ -113,5 +158,7 @@ LIMIT 5
 详细的 MCP 使用指南请查看：
 - Skill: `.lingma/skills/mcp-usage/SKILL.md`
 - 规则文档: `.lingma/rules/McpUsage.md`
+- Sequential-Thinking 规则: `.lingma/rules/SequentialThinking.md`
+- Sequential-Thinking 技能: `.lingma/skills/sequential-thinking/SKILL.md`
 
 **记住：首次使用前必须调用 `Skill: mcp-usage`！**
