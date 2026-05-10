@@ -8,9 +8,9 @@
       ],
       "env": {
         "MYSQL_HOST": "localhost",
+        "MYSQL_PASS": "123456",
         "MYSQL_PORT": "3306",
-        "MYSQL_USER": "root",
-        "MYSQL_PASS": "123456"
+        "MYSQL_USER": "root"
       }
     },
     "redis": {
@@ -21,13 +21,9 @@
         "redis://localhost:6379"
       ]
     },
-    "server-filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/Users/playereg"
-      ]
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
     },
     "sequential-thinking": {
       "command": "npx",
