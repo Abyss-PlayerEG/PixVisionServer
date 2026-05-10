@@ -134,7 +134,7 @@ public class HistoryController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param workIds 要删除的作品 ID 列表
-     * @return 响应数据，包含批量删除的统计信息
+     * @return 响应数据，表示历史记录是否删除成功
      * @author PlayerEG
      */
     @Operation(
@@ -155,10 +155,11 @@ public class HistoryController {
               * 批量删除：传入 [1, 2, 3]
 
             ## 返回说明：
-            - **成功**：返回 **{"data": {BatchDeleteHistoryResult}}** 包含统计信息
+            - **删除成功**：返回 **{"data": true}** 和“历史记录删除成功”提示
             - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
             - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
-            - **作品 ID 列表为空**：返回 **{"data": null}** 和“作品 ID 列表不能为空”提示
+            - **作品 ID 列表为空**：返回 **{"data": false}** 和“作品 ID 列表不能为空”提示
+            - **删除失败**：返回 **{"data": false}** 和“历史记录删除失败”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
@@ -177,7 +178,7 @@ public class HistoryController {
             """
     )
     @PostMapping("/delete")
-    public ResponsePojo<top.playereg.pix_vision.pojo.BatchDeleteHistoryResult> deleteHistory(
+    public ResponsePojo<Boolean> deleteHistory(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "要删除的作品 ID 列表（支持单条或多条）", required = true, example = "1,2,3") @RequestParam List<Integer> workIds
     ) {
@@ -211,15 +212,19 @@ public class HistoryController {
         // 校验作品 ID 列表参数
         if (workIds == null || workIds.isEmpty()) {
             log.warn("作品 ID 列表为空，用户 ID: {}", userId);
-            return ResponsePojo.error(null, "作品 ID 列表不能为空");
+            return ResponsePojo.error(false, "作品 ID 列表不能为空");
         }
 
         // 调用服务层批量删除历史记录
-        top.playereg.pix_vision.pojo.BatchDeleteHistoryResult result = workService.batchDeleteHistory(workIds, userId);
+        Boolean result = workService.batchDeleteHistory(workIds, userId);
 
-        log.info("批量删除历史记录完成，用户 ID: {}, 用户名: {}, 总数: {}, 成功: {}, 失败: {}",
-            userId, username, result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size());
-        
-        return ResponsePojo.success(result, "批量删除历史记录处理完成");
+        if (result) {
+            String successMsg = workCount == 1 ? "历史记录删除成功" : "批量删除历史记录成功";
+            log.info("{}，用户 ID: {}, 用户名: {}, 删除数量: {}", successMsg, userId, username, workCount);
+            return ResponsePojo.success(true, successMsg);
+        } else {
+            log.warn("历史记录删除失败，用户 ID: {}, 用户名: {}", userId, username);
+            return ResponsePojo.error(false, "历史记录删除失败");
+        }
     }
 }

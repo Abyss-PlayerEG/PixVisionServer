@@ -10,7 +10,7 @@
 
     <!-- 查询用户的访问历史记录（关联作品表） -->
     <select id="selectUserHistory" resultType="top.playereg.pix_vision.pojo.History">
-        SELECT 
+        SELECT
             w.work_id,
             w.user_id AS work_user_id,
             w.work_title,
@@ -47,18 +47,7 @@
         <foreach collection="workIds" item="workId" open="(" separator="," close=")">
             #{workId}
         </foreach>
-    </update>
-
-    <!-- 查询用户还存在的历史记录（未被删除的） -->
-    <select id="selectExistingWorkIds" resultType="java.lang.Integer">
-        SELECT work_id
-        FROM tb_history
-        WHERE user_id = #{userId}
-          AND work_id IN
-        <foreach collection="workIds" item="workId" open="(" separator="," close=")">
-            #{workId}
-        </foreach>
           AND is_delete = 0
-    </select>
+    </update>
 
 </mapper>
