@@ -32,6 +32,11 @@ description: 代码功能实现，代码规范化调整
     - 作者信息（`@author`）
     - 相关类引用（`@see`）
     - 版本信息（`@since`，可选）
+  - **Controller 层特殊规范**：
+    - Controller 已有 Swagger 文档（`@Operation`），Javadoc 应保持**简洁**
+    - 只需包含：简要描述、参数说明（`@param`）、返回值说明（`@return`）、作者信息（`@author`）
+    - **不需要**：使用场景、使用示例、注意事项、最佳实践等详细内容（这些在 Swagger 中已有）
+    - 详细文档由 `@Operation` 注解提供，避免重复
   - **参考示例**：
     - 注解注释示例：`.lingma/rules/example/JavadocCommentExample.java`
     - Service 层注释示例：`.lingma/rules/example/ServiceCommentExample.java`

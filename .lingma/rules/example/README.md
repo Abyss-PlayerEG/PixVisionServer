@@ -1,34 +1,6 @@
-# 代码注释示例文件
-
-本目录包含了 PixVisionServer 项目的标准 Javadoc 注释示例，供开发人员参考。
-
-## 文件说明
-
-### 1. JavadocCommentExample.java
-**注解类注释示例**
-
-展示了如何为自定义注解编写标准的 Javadoc 注释，包括：
-- 注解类的完整文档结构
-- 注解属性的详细说明
-- 使用场景和示例代码
-- 注意事项和最佳实践
-
-**适用场景**：自定义注解、枚举类等
-
 ---
-
-### 2. ServiceCommentExample.java
-**Service 层注释示例**
-
-展示了如何为 Service 接口和方法编写规范的 Javadoc 注释，包括：
-- Service 接口的整体说明
-- 业务方法的详细文档
-- 参数说明和返回值说明
-- 使用示例和注意事项
-- 事务控制和异常处理说明
-
-**适用场景**：Service 接口、Service 实现类、业务方法
-
+trigger: model_decision
+description: 快速了解.lingma/rules/example目录
 ---
 
 ### 3. ControllerCommentExample.java

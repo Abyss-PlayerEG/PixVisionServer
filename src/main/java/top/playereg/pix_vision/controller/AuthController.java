@@ -229,7 +229,7 @@ public class AuthController {
         if (!RegexUtils.isUsername(usernameOrEmail) && !RegexUtils.isEmail(usernameOrEmail)) {
             return ResponsePojo.error(null, "用户名或邮箱格式错误");
         }
-        if (!RegexUtils.isPassword(password)){
+        if (!RegexUtils.isPassword(password)) {
             return ResponsePojo.error(null, "密码格式错误");
         }
         if (!RegexUtils.isVCode(vCode, 6)) {
@@ -288,7 +288,7 @@ public class AuthController {
         // 检查用户状态（status=10 表示正常）
         if (user.getStatus() != null && user.getStatus() != 10) {
             log.warn("账户已被禁用，用户名：{}, 状态：{}", usernameOrEmail, user.getStatus());
-            switch (user.getStatus()){
+            switch (user.getStatus()) {
                 case 20:
                     return ResponsePojo.error(null, "账户被禁用");
                 case 30:
@@ -459,7 +459,7 @@ public class AuthController {
         @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
         // 数据校验
-        if (!RegexUtils.isVCode(vCode, 6)){
+        if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(false, "邮箱验证码错误");
         }
         // 提取 Token
