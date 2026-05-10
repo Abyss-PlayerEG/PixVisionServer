@@ -382,22 +382,37 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
-    public Boolean batchDeleteHistory(List<Integer> workIds, Integer userId) {
+    public top.playereg.pix_vision.pojo.BatchDeleteHistoryResult batchDeleteHistory(List<Integer> workIds, Integer userId) {
         if (workIds == null || workIds.isEmpty()) {
             log.warn("作品 ID 列表为空，用户 ID: {}", userId);
-            return false;
+            return new top.playereg.pix_vision.pojo.BatchDeleteHistoryResult(0, 0, new java.util.ArrayList<>());
         }
 
+        int totalCount = workIds.size();
+        
         // 执行数据库逻辑删除（SQL 层面验证 user_id，确保只能删除自己的历史记录）
         int affectedRows = historyMapper.batchDeleteHistory(userId, workIds);
 
-        if (affectedRows > 0) {
-            log.info("历史记录删除成功，用户 ID: {}, 删除数量: {}", userId, affectedRows);
-            return true;
-        } else {
-            log.warn("历史记录删除失败或无匹配记录，用户 ID: {}, 作品 ID 列表: {}", userId, workIds);
-            return false;
+        // 计算失败的作品 ID（总数 - 成功数）
+        // 注意：由于 SQL 是批量操作，我们无法知道具体哪些失败了，只能知道成功数量
+        // 这里假设所有传入的 workIds 都是成功的，失败的为 0
+        // 如果需要更精确的失败 ID，需要逐个查询并删除
+        java.util.List<Integer> failedWorkIds = new java.util.ArrayList<>();
+        int successCount = affectedRows;
+        
+        // 如果有失败的，我们需要找出哪些 ID 失败了
+        // 但由于是批量 SQL 操作，我们只能通过查询来确定哪些还存在
+        if (affectedRows < totalCount) {
+            // 查询哪些历史记录还存在（未被删除）
+            java.util.List<Integer> existingWorkIds = historyMapper.selectExistingWorkIds(userId, workIds);
+            failedWorkIds.addAll(existingWorkIds);
+            successCount = totalCount - failedWorkIds.size();
         }
+
+        log.info("历史记录批量删除完成，用户 ID: {}, 总数: {}, 成功: {}, 失败: {}", 
+            userId, totalCount, successCount, failedWorkIds.size());
+        
+        return new top.playereg.pix_vision.pojo.BatchDeleteHistoryResult(totalCount, successCount, failedWorkIds);
     }
 
     /**

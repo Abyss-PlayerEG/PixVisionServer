@@ -120,7 +120,15 @@ public interface WorkService {
      * @return 删除结果
      * @author PlayerEG
      */
-    Boolean batchDeleteHistory(List<Integer> workIds, Integer userId);
+    /**
+     * 批量删除访问历史记录
+     *
+     * @param workIds 要删除的作品 ID 列表
+     * @param userId  当前用户 ID（用于权限验证）
+     * @return 批量删除结果，包含总数、成功数和失败的 ID 列表
+     * @author PlayerEG
+     */
+    top.playereg.pix_vision.pojo.BatchDeleteHistoryResult batchDeleteHistory(List<Integer> workIds, Integer userId);
 
     /**
      * 修改作品信息（支持部分字段修改）

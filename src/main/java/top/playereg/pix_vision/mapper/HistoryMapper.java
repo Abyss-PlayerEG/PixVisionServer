@@ -43,11 +43,22 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
     /**
      * 批量删除用户的历史记录
      *
-     * @param userId 用户 ID
+     * @param userId  用户 ID
      * @param workIds 作品 ID 列表
      * @return 影响行数
      * @author PlayerEG
      */
     int batchDeleteHistory(@Param("userId") Integer userId,
                            @Param("workIds") java.util.List<Integer> workIds);
+
+    /**
+     * 查询用户还存在的历史记录（未被删除的）
+     *
+     * @param userId  用户 ID
+     * @param workIds 作品 ID 列表
+     * @return 还存在的作品 ID 列表
+     * @author PlayerEG
+     */
+    java.util.List<Integer> selectExistingWorkIds(@Param("userId") Integer userId,
+                                                   @Param("workIds") java.util.List<Integer> workIds);
 }

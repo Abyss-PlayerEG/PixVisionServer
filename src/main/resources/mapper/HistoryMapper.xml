@@ -28,6 +28,14 @@
         WHERE h.user_id = #{userId}
           AND h.is_delete = 0
           AND w.is_delete = 0
+          AND h.time = (
+              SELECT MAX(h2.time)
+              FROM tb_history h2
+              WHERE h2.user_id = #{userId}
+                AND h2.work_id = h.work_id
+                AND h2.is_delete = 0
+          )
+        ORDER BY h.time DESC
     </select>
 
     <!-- 批量删除用户的历史记录 -->
@@ -40,5 +48,17 @@
             #{workId}
         </foreach>
     </update>
+
+    <!-- 查询用户还存在的历史记录（未被删除的） -->
+    <select id="selectExistingWorkIds" resultType="java.lang.Integer">
+        SELECT work_id
+        FROM tb_history
+        WHERE user_id = #{userId}
+          AND work_id IN
+        <foreach collection="workIds" item="workId" open="(" separator="," close=")">
+            #{workId}
+        </foreach>
+          AND is_delete = 0
+    </select>
 
 </mapper>

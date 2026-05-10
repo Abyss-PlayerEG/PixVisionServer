@@ -48,8 +48,9 @@ public class HistoryController {
             ## 特性
             - 需要 Token 认证
             - MyBatis-Plus 分页支持
-            - 返回当前用户访问过的作品列表
+            - 返回当前用户访问过的作品列表（每个作品只返回一条最新记录）
             - 仅返回未删除的作品
+            - 按访问时间倒序排列（最新的在前）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -57,7 +58,7 @@ public class HistoryController {
             - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
 
             ## 返回说明：
-            - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
+            - **查询成功**：返回 **{"data": {IPage<History>对象}}** ，包含作品列表和分页信息
             - **Token 不存在或失效**：返回 **{"data": null}** 和错误提示
             - **无历史记录**：返回 **{"data": null}** 和空列表
 
@@ -67,12 +68,16 @@ public class HistoryController {
             3. 验证 Token 是否在白名单中
             4. 从 Token 中解析用户 ID
             5. 构建分页对象并调用 Service 层查询该用户的访问历史记录
-            6. 返回关联的作品详细信息分页列表
+            6. 对同一作品的多条记录进行去重，只保留访问时间最新的那条
+            7. 按访问时间倒序返回结果
+            8. 返回关联的作品详细信息分页列表
 
             ## 注意事项：
             - **必须携带有效的 Token**
             - 只有已登录用户才能查看自己的历史记录
             - 如果作品已被删除，则不会出现在历史记录列表中
+            - **每个作品只返回一条记录**（最近一次访问的记录）
+            - 如果多次访问同一作品，只显示最新的那次访问记录
             - 每页大小限制：**1-100**
             """
     )
@@ -129,7 +134,7 @@ public class HistoryController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param workIds 要删除的作品 ID 列表
-     * @return 响应数据，表示历史记录是否删除成功
+     * @return 响应数据，包含批量删除的统计信息
      * @author PlayerEG
      */
     @Operation(
@@ -150,11 +155,10 @@ public class HistoryController {
               * 批量删除：传入 [1, 2, 3]
 
             ## 返回说明：
-            - **删除成功**：返回 **{"data": true}** 和“历史记录删除成功”提示
+            - **成功**：返回 **{"data": {BatchDeleteHistoryResult}}** 包含统计信息
             - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
             - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
-            - **作品 ID 列表为空**：返回 **{"data": false}** 和“作品 ID 列表不能为空”提示
-            - **删除失败**：返回 **{"data": false}** 和“历史记录删除失败”提示
+            - **作品 ID 列表为空**：返回 **{"data": null}** 和“作品 ID 列表不能为空”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
@@ -173,7 +177,7 @@ public class HistoryController {
             """
     )
     @PostMapping("/delete")
-    public ResponsePojo<Boolean> deleteHistory(
+    public ResponsePojo<top.playereg.pix_vision.pojo.BatchDeleteHistoryResult> deleteHistory(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "要删除的作品 ID 列表（支持单条或多条）", required = true, example = "1,2,3") @RequestParam List<Integer> workIds
     ) {
@@ -207,19 +211,15 @@ public class HistoryController {
         // 校验作品 ID 列表参数
         if (workIds == null || workIds.isEmpty()) {
             log.warn("作品 ID 列表为空，用户 ID: {}", userId);
-            return ResponsePojo.error(false, "作品 ID 列表不能为空");
+            return ResponsePojo.error(null, "作品 ID 列表不能为空");
         }
 
         // 调用服务层批量删除历史记录
-        Boolean result = workService.batchDeleteHistory(workIds, userId);
+        top.playereg.pix_vision.pojo.BatchDeleteHistoryResult result = workService.batchDeleteHistory(workIds, userId);
 
-        if (result) {
-            String successMsg = workCount == 1 ? "历史记录删除成功" : "批量删除历史记录成功";
-            log.info("{}，用户 ID: {}, 用户名: {}, 删除数量: {}", successMsg, userId, username, workCount);
-            return ResponsePojo.success(true, successMsg);
-        } else {
-            log.warn("历史记录删除失败，用户 ID: {}, 用户名: {}", userId, username);
-            return ResponsePojo.error(false, "历史记录删除失败");
-        }
+        log.info("批量删除历史记录完成，用户 ID: {}, 用户名: {}, 总数: {}, 成功: {}, 失败: {}",
+            userId, username, result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size());
+        
+        return ResponsePojo.success(result, "批量删除历史记录处理完成");
     }
 }
