@@ -41,8 +41,8 @@ public class SeriesController {
      *
      * @param request     HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param seriesTitle 系列标题（最多 16 个中文字符）
-     * @param aboutText   系列描述文本（最多 24 个中文字符）
-     * @return 新增的系列信息
+     * @param aboutText   系列描述文本（最多 24 个中文字符，可选）
+     * @return 响应数据，表示系列是否新增成功
      * @author PlayerEG
      */
     @PostMapping("/add")
@@ -157,9 +157,9 @@ public class SeriesController {
      * 分页查询用户的所有作品系列
      *
      * @param userId  用户 ID
-     * @param current 当前页码（默认 1）
-     * @param size    每页数量（默认 10）
-     * @return 分页作品系列列表
+     * @param current 当前页码（从 1 开始）
+     * @param size    每页数量（范围 1-100）
+     * @return 响应数据，包含分页的作品系列列表
      * @author PlayerEG
      */
     @GetMapping("/page/{userId}/{current}/{size}")
@@ -236,7 +236,7 @@ public class SeriesController {
      * @param request     HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param seriesId    系列 ID
      * @param deleteWorks 是否删除系列内的作品（true=删除作品，false=保留作品但移除系列关联）
-     * @return 删除结果
+     * @return 响应数据，表示系列是否删除成功
      * @author PlayerEG
      */
     @PostMapping("/delete")
@@ -353,7 +353,7 @@ public class SeriesController {
      * @param seriesId    系列 ID
      * @param seriesTitle 系列标题（可选，最多 16 个中文字符）
      * @param aboutText   系列描述（可选，最多 24 个中文字符）
-     * @return 修改结果
+     * @return 响应数据，表示系列信息是否更新成功
      * @author PlayerEG
      */
     @PostMapping("/update")

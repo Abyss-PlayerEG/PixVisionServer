@@ -1,6 +1,5 @@
 ---
-trigger: model_decision
-description: 代码功能实现，代码规范化调整
+trigger: always_on
 ---
 
 # PixVisionServer 开发规范 (DevRule)

@@ -36,8 +36,8 @@ public class HistoryController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param current 当前页码（从 1 开始）
-     * @param size    每页大小
-     * @return 个人访问历史记录分页列表
+     * @param size    每页大小（范围 1-100）
+     * @return 响应数据，包含个人访问历史记录分页列表
      * @author PlayerEG
      */
     @Operation(
@@ -129,7 +129,7 @@ public class HistoryController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param workIds 要删除的作品 ID 列表
-     * @return 删除结果
+     * @return 响应数据，表示历史记录是否删除成功
      * @author PlayerEG
      */
     @Operation(

@@ -44,13 +44,13 @@ public class AuthController {
     /**
      * 用户注册
      *
-     * @param username        用户名
+     * @param username        用户名（6-16位字母/数字/下划线）
      * @param password        密码
      * @param confirmPassword 确认密码
-     * @param nickname        昵称
-     * @param email           邮箱
-     * @param vCode           验证码
-     * @return 响应数据<User>
+     * @param nickname        昵称（可选，为空时自动生成）
+     * @param email           邮箱地址
+     * @param vCode           邮箱验证码（6位大写字母或数字）
+     * @return 响应数据，包含注册成功的用户信息
      * @author PlayerEG
      */
     @PostMapping("/register")
@@ -164,10 +164,10 @@ public class AuthController {
     /**
      * 用户登录
      *
-     * @param usernameOrEmail 用户名或邮箱
+     * @param usernameOrEmail 用户名或邮箱地址
      * @param password        密码
-     * @param vCode           验证码
-     * @return 响应数据<UserLogin>，包含用户信息和 Token
+     * @param vCode           邮箱验证码（6位大写字母或数字）
+     * @return 响应数据，包含用户信息和 JWT Token
      * @author PlayerEG
      */
     @PostMapping("/login")
@@ -330,8 +330,8 @@ public class AuthController {
     /**
      * 用户登出（将 Token 从白名单移除）
      *
-     * @param token JWT Token（从 Header 中获取）
-     * @return 响应数据
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @return 响应数据，表示登出是否成功
      * @author PlayerEG
      */
     @PostMapping("/logout")
@@ -411,8 +411,8 @@ public class AuthController {
      * 用户注销账户（逻辑删除）
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param vCode   邮箱验证码
-     * @return 响应数据<Boolean>
+     * @param vCode   邮箱验证码（6位大写字母或数字）
+     * @return 响应数据，表示注销是否成功
      * @author PlayerEG
      */
     @PostMapping("/delete-account")

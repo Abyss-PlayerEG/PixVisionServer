@@ -174,7 +174,7 @@ public class ImageController {
     /**
      * 获取Logo图片
      *
-     * @param filePath 图像相对路径（如：dark.png、light.png）
+     * @param filePath 图像文件名（如：dark.png、light.png）
      * @return 图片资源（二进制数据）
      * @author PlayerEG
      */
@@ -229,9 +229,9 @@ public class ImageController {
     /**
      * 上传用户头像
      *
-     * @param file    头像文件
+     * @param file    头像文件（JPG/JPEG/PNG 格式，最大 5MB，必须是正方形）
      * @param request HTTP 请求对象（用于获取用户 ID）
-     * @return 响应结果
+     * @return 响应结果，包含上传后的头像路径
      * @author PlayerEG
      */
     @Operation(
@@ -390,13 +390,13 @@ public class ImageController {
     /**
      * 上传作品图片
      *
-     * @param file       作品图片文件
-     * @param workTitle  作品标题
-     * @param seriesId   系列 ID
-     * @param isOriginal 是否原创
+     * @param file       作品图片文件（JPG/JPEG/PNG 格式，最大 32MB）
+     * @param workTitle  作品标题（最多 16 个中文字符）
+     * @param seriesId   系列 ID（可选，0 表示不属于任何系列）
+     * @param isOriginal 是否原创（true-原创，false-转载）
      * @param outUrl     外部转载链接（转载时必填）
      * @param request    HTTP 请求对象（用于获取用户 ID）
-     * @return 响应结果（包含作品 ID）
+     * @return 响应结果，包含作品 ID
      * @author PlayerEG
      */
     @Operation(

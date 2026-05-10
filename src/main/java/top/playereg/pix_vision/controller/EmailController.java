@@ -43,9 +43,9 @@ public class EmailController {
     /**
      * 发送注册验证码邮件
      *
-     * @param email    邮箱地址
-     * @param username 用户名
-     * @return 响应结果
+     * @param email    邮箱地址（标准格式）
+     * @param username 用户昵称（6-16位字母/数字/下划线）
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-register-code")
@@ -132,8 +132,8 @@ public class EmailController {
     /**
      * 发送登录验证码邮件
      *
-     * @param usernameOrEmail 用户名或邮箱
-     * @return 响应结果
+     * @param usernameOrEmail 用户名或邮箱地址
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-login-code")
@@ -224,8 +224,8 @@ public class EmailController {
     /**
      * 发送重置密码验证码邮件
      *
-     * @param usernameOrEmail 用户名或邮箱
-     * @return 响应结果
+     * @param usernameOrEmail 用户名或邮箱地址
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-forget-password-code")
@@ -318,7 +318,7 @@ public class EmailController {
      * 发送修改密码验证码邮件（用于已登录用户）
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @return 响应结果
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-change-password-code")
@@ -420,7 +420,7 @@ public class EmailController {
      * 发送注销账户验证码邮件（用于已登录用户）
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @return 响应结果
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-delete-account-code")
@@ -523,8 +523,8 @@ public class EmailController {
      * 发送更改邮箱验证码邮件（用于已登录用户）
      *
      * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param newEmail 新邮箱地址
-     * @return 响应结果
+     * @param newEmail 新邮箱地址（标准格式）
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-change-email-code")

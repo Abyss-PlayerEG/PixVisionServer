@@ -37,9 +37,9 @@ public class UserDataController {
      * 新增用户拓展数据
      *
      * @param request     HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param dataName    数据名称（电话、邮箱、网站、微信等）
-     * @param dataContent 数据内容（具体的电话号码、邮箱地址、网站 url 等）
-     * @return 添加结果
+     * @param dataName    数据名称（如：电话、邮箱、网站等，长度不超过 26 个字符）
+     * @param dataContent 数据内容（如：具体的电话号码、邮箱地址等，长度不超过 96 个字符）
+     * @return 响应数据，表示添加是否成功
      * @author PlayerEG
      */
     @PostMapping("/add")
@@ -153,7 +153,7 @@ public class UserDataController {
      * 查询用户所有拓展数据（公开接口）
      *
      * @param userId 用户 ID
-     * @return 响应数据<List < UserData>>，包含用户的所有拓展数据列表
+     * @return 响应数据，包含用户的所有拓展数据列表
      * @author PlayerEG
      */
     @GetMapping("/list")
@@ -222,7 +222,7 @@ public class UserDataController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param dataIds 要删除的数据 ID 列表（支持单个或多个）
-     * @return 删除结果
+     * @return 响应数据，表示删除是否成功
      * @author PlayerEG
      */
     @PostMapping("/delete")

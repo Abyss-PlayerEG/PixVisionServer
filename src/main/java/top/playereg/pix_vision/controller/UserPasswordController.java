@@ -40,12 +40,11 @@ public class UserPasswordController {
     /**
      * 用户密码修改（登录后）
      *
-     * @param request         HTTP请求对象，用于从Token中获取用户信息
-     * @param newPassword     用户的新密码
-     * @param confirmPassword 再次输入的新密码
-     * @param vCode           邮箱验证码
-     * @return ResponsePojo<Boolean> 修改结果
-     * @throws Exception 修改失败
+     * @param request         HTTP 请求对象，用于从 Token 中获取用户信息
+     * @param newPassword     新密码
+     * @param confirmPassword 确认新密码
+     * @param vCode           邮箱验证码（6位大写字母或数字）
+     * @return 响应数据，表示密码修改是否成功
      * @author blue_sky_ks
      */
     @PostMapping("/change")
@@ -167,9 +166,9 @@ public class UserPasswordController {
      * @param usernameOrEmail 用户名或邮箱地址
      * @param newPassword     新密码
      * @param confirmPassword 确认新密码
-     * @param vCode           邮箱验证码
-     * @return 重置结果
-     * @author Playereg
+     * @param vCode           邮箱验证码（6位大写字母或数字）
+     * @return 响应数据，表示密码重置是否成功
+     * @author PlayerEG
      */
     @PostMapping("/forgot")
     @PublicAccess("忘记密码重置，无需认证")
