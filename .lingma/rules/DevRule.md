@@ -56,7 +56,193 @@ trigger: always_on
 - **空结果处理**：分页查询结果为空时，应返回包含空数组的 `IPage` 对象及成功状态，而非返回错误响应。
 - **日志颜色**：非 Spring Bean 类（如工具类）使用 `PixVisionLogger.create(ClassName.class)` 获取带颜色的日志实例。
 
-## 6. AI 助手常见误区（重要！）
+## 6. 使用 MCP 工具查询技术栈信息
+
+在开发过程中，经常需要查询数据库结构、Redis 缓存状态等技术栈相关信息。MCP 工具提供了安全便捷的查询方式。
+
+### 6.1 查询数据库表结构
+
+#### 查看所有表
+```sql
+SELECT table_name, table_comment 
+FROM information_schema.tables 
+WHERE table_schema = 'db_pix_vision'
+ORDER BY table_name
+```
+
+#### 查看特定表结构
+```sql
+SELECT column_name, data_type, is_nullable, column_key, column_comment
+FROM information_schema.columns 
+WHERE table_schema = 'db_pix_vision' AND table_name = 'tb_user'
+ORDER BY ordinal_position
+```
+
+#### 查看外键关系
+```sql
+SELECT 
+    tc.table_name,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+    ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema = 'db_pix_vision'
+LIMIT 10
+```
+
+### 6.2 查询数据示例（安全规范）
+
+#### 查询用户信息（排除敏感字段）
+```sql
+SELECT user_id, username, nickname, email, role, status, create_time
+FROM db_pix_vision.tb_user
+WHERE status = 10
+LIMIT 10
+```
+
+#### 查询作品统计
+```sql
+SELECT 
+    u.username,
+    COUNT(w.work_id) as work_count,
+    SUM(w.view_count) as total_views
+FROM db_pix_vision.tb_user u
+LEFT JOIN db_pix_vision.tb_works w ON u.user_id = w.user_id
+WHERE u.status = 10
+GROUP BY u.user_id, u.username
+ORDER BY total_views DESC
+LIMIT 10
+```
+
+#### 查询操作日志
+```sql
+SELECT 
+    log_id,
+    user_id,
+    operation_type,
+    module_name,
+    operate_time,
+    ip_address
+FROM db_pix_vision.tb_operate_log
+ORDER BY operate_time DESC
+LIMIT 20
+```
+
+### 6.3 Redis 缓存查询
+
+#### 查看 Token 缓存
+```javascript
+// 列出所有 Token 键
+mcp_redis_list({ pattern: "token:*" })
+
+// 获取特定用户的 Token
+mcp_redis_get({ key: "token:123:username" })
+```
+
+#### 查看验证码缓存
+```javascript
+// 列出所有验证码键
+mcp_redis_list({ pattern: "verify:*" })
+
+// 获取特定邮箱的验证码
+mcp_redis_get({ key: "verify:email:user@example.com" })
+```
+
+#### 清理过期缓存
+```javascript
+// 先列出要删除的键
+mcp_redis_list({ pattern: "temp:*" })
+
+// 确认后批量删除
+mcp_redis_delete({ key: ["temp:key1", "temp:key2"] })
+```
+
+### 6.4 查询注意事项
+
+#### MySQL 查询规范
+1. **必须指定数据库名**：所有表名使用 `db_pix_vision.table_name` 格式
+2. **必须添加 LIMIT**：限制返回结果数量，避免性能问题
+3. **禁止查询敏感字段**：不得包含 password、user_uuid、token 等字段
+4. **单条语句执行**：每次只能执行一条 SQL，不支持多语句
+5. **避免保留字别名**：不使用 current_user、current_time 等 MySQL 保留字
+
+#### Redis 操作规范
+1. **命名空间规范**：使用冒号分隔，如 `token:userId:username`
+2. **设置过期时间**：临时数据必须设置 expireSeconds
+3. **先查后删**：删除前先用 list 确认键是否存在
+4. **不存储敏感明文**：密码等敏感信息不应存入 Redis
+
+### 6.5 常用查询场景
+
+#### 调试用户相关问题
+```sql
+-- 查找特定用户
+SELECT user_id, username, nickname, email, role, status
+FROM db_pix_vision.tb_user
+WHERE username = 'test_user'
+LIMIT 1
+
+-- 查看用户的作品数量
+SELECT COUNT(*) as work_count
+FROM db_pix_vision.tb_works
+WHERE user_id = 123 AND is_delete = 0
+```
+
+#### 调试作品相关问题
+```sql
+-- 查看作品详情
+SELECT work_id, work_name, user_id, view_count, like_count, create_time
+FROM db_pix_vision.tb_works
+WHERE work_id = 456
+LIMIT 1
+
+-- 查看作品的系列信息
+SELECT s.series_id, s.series_name, s.description
+FROM db_pix_vision.tb_series s
+INNER JOIN db_pix_vision.tb_works w ON s.series_id = w.series_id
+WHERE w.work_id = 456
+LIMIT 1
+```
+
+#### 调试权限相关问题
+```sql
+-- 查看用户角色
+SELECT user_id, username, role
+FROM db_pix_vision.tb_user
+WHERE user_id = 123
+LIMIT 1
+
+-- 查看角色的权限配置（如果有权限表）
+SELECT * FROM db_pix_vision.tb_role_permission
+WHERE role_id = 11
+LIMIT 10
+```
+
+### 6.6 重要提醒
+
+⚠️ **首次使用 MCP 工具前必须阅读完整指南**：
+- 执行 `Skill: mcp-usage` 查看详细的使用规范
+- 参考 `.lingma/rules/McpUsage.md` 了解核心规则
+- 参考 `.lingma/skills/mcp-usage/SKILL.md` 了解最佳实践
+
+❌ **严格禁止的操作**：
+- 执行 INSERT、UPDATE、DELETE 等写操作
+- 查询或记录明文密码
+- 使用 USE 命令切换数据库
+- 在生产环境随意执行复杂查询
+
+✅ **推荐的最佳实践**：
+- 先用 LIMIT 小数据集测试查询
+- 复杂查询先在 MySQL 客户端验证
+- 定期清理过期的 Redis 缓存
+- 使用 information_schema 了解数据库结构
+
+## 7. AI 助手常见误区（重要！）
 ### ❌ 误区 1：将"推荐"误解为"强制"
 - **错误理解**：看到"推荐使用构造器注入"就认为必须修改所有 `@Autowired` 字段注入
 - **正确理解**：
