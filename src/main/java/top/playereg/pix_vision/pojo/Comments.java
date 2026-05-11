@@ -25,7 +25,7 @@ public class Comments {
     Integer answer_conmment_id;
 
     @Schema(description = "评论层级：1 - 作品评论、2 - 二级评论")
-    String conmment_floor;
+    Integer conmment_floor;
 
     @Schema(description = "评论内容，限制长度 125 字")
     String conmment_text;

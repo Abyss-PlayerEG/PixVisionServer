@@ -27,7 +27,7 @@ CREATE TABLE `tb_comments` (
   `user_id` int NOT NULL COMMENT '用于链接到对应的用户数据',
   `work_id` int NOT NULL COMMENT '所属作品id',
   `answer_conmment_id` int DEFAULT NULL COMMENT '所回复的评论id',
-  `conmment_floor` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论层级：1 - 作品评论、2 - 二级评论',
+  `conmment_floor` int NOT NULL COMMENT '评论层级：1 - 作品评论、2 - 二级评论',
   `conmment_text` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论内容，限制长度125字',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   PRIMARY KEY (`conmment_id`),
