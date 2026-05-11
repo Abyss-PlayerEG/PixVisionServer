@@ -44,19 +44,12 @@
                w.create_time,
                w.create_user
         FROM tb_works w
-        LEFT JOIN tb_user u ON w.user_id = u.user_id
         WHERE w.is_delete = 0
         <if test="workTitle != null and workTitle != ''">
             AND w.work_title LIKE CONCAT('%', #{workTitle}, '%')
         </if>
         <if test="userId != null">
             AND w.user_id = #{userId}
-        </if>
-        <if test="username != null and username != ''">
-            AND u.username LIKE CONCAT('%', #{username}, '%')
-        </if>
-        <if test="nickname != null and nickname != ''">
-            AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
         </if>
         <if test="seriesId != null">
             AND w.series_id = #{seriesId}

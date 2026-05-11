@@ -42,7 +42,7 @@
                 #{create_user})
     </insert>
 
-    <!-- 根据用户 ID 查询所有作品系列（排除逻辑删除） -->
+    <!-- 根据用户 ID 分页查询所有作品系列（排除逻辑删除） -->
     <select id="selectSeriesByUserId" resultType="top.playereg.pix_vision.pojo.Series">
         SELECT series_id,
                user_id,

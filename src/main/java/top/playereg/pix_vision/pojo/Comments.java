@@ -30,9 +30,6 @@ public class Comments {
     @Schema(description = "评论内容，限制长度 125 字")
     String conmment_text;
 
-    @Schema(description = "评论状态：10 - 正常、20 - 待审核、30 - 封禁")
-    String status;
-
     @TableLogic
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
     Boolean is_delete;

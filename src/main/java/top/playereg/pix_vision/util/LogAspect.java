@@ -12,9 +12,31 @@ import top.playereg.pix_vision.service.OperateLogService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 
 /**
- * 日志切面 - 用于记录用户操作到数据库
+ * 操作日志记录切面
+ * <p>
+ * 基于 AOP 实现的用户操作日志自动记录功能。
+ * 通过 @LogRecord 注解标记需要记录的方法，自动捕获用户 ID、IP 地址和操作事件。
+ * </p>
  *
- * @author blue_sky_ks
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>记录用户敏感操作（修改密码、删除数据）</li>
+ *   <li>审计管理员行为（封禁用户、审核内容）</li>
+ *   <li>追踪系统关键业务流程</li>
+ * </ol>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>仅记录方法执行成功的操作，异常不会记录</li>
+ *   <li>日志记录失败不会影响业务逻辑执行</li>
+ *   <li>优先从 request attribute 获取用户 ID，其次从 Token 解析</li>
+ *   <li>未获取到有效用户 ID 时会跳过日志记录</li>
+ * </ul>
+ *
+ * @author blue_sky_ks, PlayerEG
+ * @see top.playereg.pix_vision.util.Annotation.LogRecord 日志记录注解
+ * @see top.playereg.pix_vision.service.OperateLogService 操作日志服务
+ * @since DEV-2.0.0
  */
 @Component
 @Aspect

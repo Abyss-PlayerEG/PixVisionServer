@@ -7,12 +7,42 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
+/**
+ * IP 地址工具类
+ * <p>
+ * 提供本地 IP 地址获取、公网 IP 地址查询、IP 格式验证等功能。
+ * 支持多网卡环境下的 IP 地址筛选，优先返回局域网 IP。
+ * </p>
+ *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>应用启动时显示访问地址列表</li>
+ *   <li>记录用户操作日志中的 IP 信息</li>
+ *   <li>网络诊断和连接测试</li>
+ * </ol>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>仅返回 IPv4 地址，过滤回环地址和虚拟网卡</li>
+ *   <li>优先返回 172.x 和 192.168.x 开头的局域网 IP</li>
+ *   <li>公网 IP 通过外部 API 获取，可能受网络环境影响</li>
+ *   <li>多个 API 失败时会返回 null，调用方需处理空值</li>
+ * </ul>
+ *
+ * @author PlayerEG
+ * @since DEV-2.0.0
+ */
 public class IpUtil {
 
     /**
-     * 获取所有本地IP地址
+     * 获取所有本地 IP 地址
+     * <p>
+     * 遍历所有网络接口，过滤回环地址、虚拟网卡和 Docker 网卡，
+     * 优先返回 172.x 和 192.168.x 开头的局域网 IP。
+     * 如果未找到合适的 IP，会尝试连接外部地址获取本地 IP。
+     * </p>
      *
-     * @return 所有本地IP地址
+     * @return 本地 IP 地址列表，至少包含 127.0.0.1
      * @author PlayerEG
      */
     public static List<String> getAllLocalIpAddresses() {
@@ -81,9 +111,14 @@ public class IpUtil {
     }
 
     /**
-     * 获取公网IP地址
+     * 获取公网 IP 地址
+     * <p>
+     * 通过多个外部 API 服务查询公网 IP，按优先级依次尝试：
+     * AWS、ipify、icanhazip、ident.me、ipecho.net。
+     * 每个 API 超时时间为 3 秒，所有 API 失败时返回 null。
+     * </p>
      *
-     * @return 公网IP地址，如果没有找到，则返回null
+     * @return 公网 IP 地址字符串，如果所有 API 都失败则返回 null
      * @author PlayerEG
      */
     public static String getPublicIpAddress() {
@@ -125,10 +160,14 @@ public class IpUtil {
     }
 
     /**
-     * 验证IP地址格式
+     * 验证 IP 地址格式
+     * <p>
+     * 使用正则表达式验证 IPv4 地址格式的合法性。
+     * 支持的标准格式：xxx.xxx.xxx.xxx，其中 xxx 为 0-255 的数字。
+     * </p>
      *
-     * @param ipAddress IP地址
-     * @return true表示格式正确，false表示格式错误
+     * @param ipAddress IP 地址字符串
+     * @return true 表示格式正确，false 表示格式错误
      * @author PlayerEG
      */
     public static boolean isValidIpAddress(String ipAddress) {

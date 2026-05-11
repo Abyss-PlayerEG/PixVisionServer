@@ -26,8 +26,6 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @param page       分页对象
      * @param workTitle  作品标题（可选，模糊查询）
      * @param userId     用户 ID（可选，精确查询）
-     * @param username   用户名（可选，模糊查询）
-     * @param nickname   昵称（可选，模糊查询）
      * @param seriesId   系列 ID（可选，精确查询）
      * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
@@ -37,8 +35,6 @@ public interface WorksMapper extends BaseMapper<Works> {
         Page<Works> page,
         @Param("workTitle") String workTitle,
         @Param("userId") Integer userId,
-        @Param("username") String username,
-        @Param("nickname") String nickname,
         @Param("seriesId") Integer seriesId,
         @Param("isOriginal") Boolean isOriginal
     );

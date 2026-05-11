@@ -2,6 +2,8 @@ package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.web.multipart.MultipartFile;
+import top.playereg.pix_vision.pojo.History;
 import top.playereg.pix_vision.pojo.Works;
 
 import java.util.List;
@@ -19,8 +21,6 @@ public interface WorkService {
      * @param page       分页对象
      * @param workTitle  作品标题（可选，模糊查询）
      * @param userId     用户 ID（可选，精确查询）
-     * @param username   用户名（可选，模糊查询）
-     * @param nickname   昵称（可选，模糊查询）
      * @param seriesId   系列 ID（可选，精确查询）
      * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
@@ -30,8 +30,6 @@ public interface WorkService {
         Page<Works> page,
         String workTitle,
         Integer userId,
-        String username,
-        String nickname,
         Integer seriesId,
         Boolean isOriginal
     );
@@ -109,8 +107,8 @@ public interface WorkService {
      * @return 分页作品列表
      * @author PlayerEG
      */
-    com.baomidou.mybatisplus.core.metadata.IPage<Works> getUserHistory(
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page,
+    IPage<History> getUserHistory(
+        Page<History> page,
         Integer userId
     );
 
@@ -120,6 +118,14 @@ public interface WorkService {
      * @param workIds 作品 ID 列表
      * @param userId  当前用户 ID（用于权限验证）
      * @return 删除结果
+     * @author PlayerEG
+     */
+    /**
+     * 批量删除访问历史记录
+     *
+     * @param workIds 要删除的作品 ID 列表
+     * @param userId  当前用户 ID（用于权限验证）
+     * @return 删除结果，true 表示至少有一条记录被成功删除
      * @author PlayerEG
      */
     Boolean batchDeleteHistory(List<Integer> workIds, Integer userId);
@@ -141,7 +147,7 @@ public interface WorkService {
         Integer workId,
         Integer userId,
         String workTitle,
-        org.springframework.web.multipart.MultipartFile file,
+        MultipartFile file,
         Integer seriesId,
         Boolean isOriginal,
         String outUrl

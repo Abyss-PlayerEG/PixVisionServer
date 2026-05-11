@@ -15,7 +15,6 @@ import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
-import top.playereg.pix_vision.util.StrSwitchUtils;
 
 /**
  * 邮件服务接口
@@ -32,9 +31,9 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
 @RequestMapping("/api/mail")
 @RequiredArgsConstructor
 @Tag(name = "邮件服务接口")
-public class MailController {
+public class EmailController {
 
-    private static final PixVisionLogger log = PixVisionLogger.create(MailController.class);
+    private static final PixVisionLogger log = PixVisionLogger.create(EmailController.class);
     private final EmailService emailService;
     private final UserService userService;
     private final VerificationCodeServices verificationCodeServices;
@@ -44,9 +43,9 @@ public class MailController {
     /**
      * 发送注册验证码邮件
      *
-     * @param email    邮箱地址
-     * @param username 用户名
-     * @return 响应结果
+     * @param email    邮箱地址（标准格式）
+     * @param username 用户昵称（6-16位字母/数字/下划线）
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-register-code")
@@ -133,8 +132,8 @@ public class MailController {
     /**
      * 发送登录验证码邮件
      *
-     * @param usernameOrEmail 用户名或邮箱
-     * @return 响应结果
+     * @param usernameOrEmail 用户名或邮箱地址
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-login-code")
@@ -225,8 +224,8 @@ public class MailController {
     /**
      * 发送重置密码验证码邮件
      *
-     * @param usernameOrEmail 用户名或邮箱
-     * @return 响应结果
+     * @param usernameOrEmail 用户名或邮箱地址
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-forget-password-code")
@@ -319,7 +318,7 @@ public class MailController {
      * 发送修改密码验证码邮件（用于已登录用户）
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @return 响应结果
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-change-password-code")
@@ -421,7 +420,7 @@ public class MailController {
      * 发送注销账户验证码邮件（用于已登录用户）
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @return 响应结果
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-delete-account-code")
@@ -524,8 +523,8 @@ public class MailController {
      * 发送更改邮箱验证码邮件（用于已登录用户）
      *
      * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param newEmail 新邮箱地址
-     * @return 响应结果
+     * @param newEmail 新邮箱地址（标准格式）
+     * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
     @PostMapping("/send-change-email-code")
@@ -717,112 +716,5 @@ public class MailController {
         }
 
         return ResponsePojo.success(true, "验证成功");
-    }
-
-    /**
-     * 管理员重置用户密码
-     * */
-    @PostMapping("/send-reset-password")
-    @Operation(
-        summary = "管理员重置用户密码",
-        description = """
-            # 管理员重置用户密码（需要管理员权限）
-
-            ## 特性
-            - **管理员专属接口**：仅系统管理员可调用
-            - **自动生成随机密码**：使用安全随机算法生成 12 位临时密码
-            - **强制所有设备下线**：移除用户所有 Token，确保账户安全
-            - **邮件通知**：将新密码通过邮件发送给用户
-            - **密码加密存储**：使用 SHA-256 加密后存储
-
-            ## 参数说明：
-            - email: **用户邮箱**，String 类型，必填，需符合邮箱格式
-
-            ## 返回说明：
-            - **重置成功**：返回 **{"data": true}** 和"发送成功"提示
-            - **邮箱为空**：返回 **{"data": false}** 和"邮箱不能为空"提示
-            - **邮箱格式错误**：返回 **{"data": false}** 和"邮箱格式错误"提示
-            - **用户不存在**：返回 **{"data": false}** 和"用户不存在"提示
-            - **修改失败**：返回 **{"data": false}** 和"修改失败"提示
-            - **邮件发送失败**：返回 **{"data": false}** 和"邮件发送失败"提示
-
-            ## 业务逻辑：
-            1. 校验邮箱参数有效性（非空、格式正确）
-            2. 根据邮箱查询用户信息
-            3. 生成 12 位随机密码（包含大小写字母和数字）
-            4. 渲染密码重置邮件模板（HTML 格式）
-            5. 对密码进行 SHA-256 加密处理
-            6. 更新数据库中的用户密码
-            7. **强制移除用户所有 Token**（使所有设备下线）
-            8. 发送密码重置邮件到用户邮箱
-            9. 记录操作日志
-
-            ## 注意事项：
-            - 这是一个**管理员接口**，需要管理员身份认证
-            - 调用后用户的**所有登录会话将被强制终止**
-            - 新生成的密码为**临时密码**，建议用户登录后立即修改
-            - 密码以**明文形式**通过邮件发送，请确保邮件传输安全
-            - 原密码会被覆盖，**无法恢复**
-            - 操作会记录到系统日志中，包括移除的 Token 数量
-            """
-    )
-    public ResponsePojo<Boolean> sendResetPassword(
-        @Parameter(description = "用户邮箱", required = true, example = "test@example.com") @RequestParam String email
-    ){
-
-        // 校验邮箱参数
-        if (email == null || email.isEmpty()) {
-            log.warn("邮箱为空");
-            return ResponsePojo.error(false, "邮箱不能为空");
-        }
-
-        if (!RegexUtils.isEmail(email)) {
-            log.warn("目标用户邮箱格式错误， 邮箱: {}", email);
-            return ResponsePojo.error(false, "邮箱格式错误");
-        }
-
-        // 根据用户邮箱查询用户信息
-        User user = userService.selectAllUserByEmail(email);
-        if (user == null) {
-            log.warn("用户不存在，用户邮箱: {}", email);
-            return ResponsePojo.error(false, "用户不存在");
-        }
-
-        String newPassword = StrSwitchUtils.generateRandomPassword(); //生成密码
-
-        log.info("为用户生成默认密码: {}", newPassword);
-
-        // 使用模板服务渲染邮件 HTML
-        String html = emailTemplateService.renderResetPasswordEmail(
-            user.getUsername(),
-            newPassword
-        );
-
-        //密码加密和实质修改
-        newPassword = StrSwitchUtils.PasswdToHash256(newPassword);
-
-        // 修改密码
-        Integer res = userService.changeUserLoginPasswordByEmail(email, user.getPassword(), newPassword);
-
-        if (res != 1) {
-            return ResponsePojo.error(false, "修改失败");
-        }
-
-        //强制下线用户所有Token
-        // 移除该用户的所有 Token（强制所有设备下线）
-        int removedCount = tokenWhitelistService.removeAllUserTokens(user.getUser_id(), user.getUsername());
-        log.info("用户密码修改成功，已移除用户所有 Token，用户 ID: {}, 用户名：{}, 移除数量：{}",
-            user.getUser_id(), user.getUsername(), removedCount);
-
-        try {
-            emailService.sendEMail(email, "PixVision 重置用户密码", html);
-        } catch (Exception e) {
-            log.error("重置密码邮件发送失败：{}", e.getMessage());
-            return ResponsePojo.error(false, "邮件发送失败");
-        }
-
-        log.info("用户密码重置成功！");
-
-        return ResponsePojo.success(true, "发送成功");
     }
 }

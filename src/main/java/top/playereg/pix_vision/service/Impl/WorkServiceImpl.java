@@ -8,6 +8,7 @@ import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.mapper.HistoryMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
+import top.playereg.pix_vision.pojo.History;
 import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.WorkService;
@@ -50,16 +51,14 @@ public class WorkServiceImpl implements WorkService {
      * @param page       分页对象
      * @param workTitle  作品标题（可选，模糊查询）
      * @param userId     用户 ID（可选，精确查询）
-     * @param username   用户名（可选，模糊查询）
-     * @param nickname   昵称（可选，模糊查询）
      * @param seriesId   系列 ID（可选，精确查询）
      * @param isOriginal 是否原创（可选，精确查询）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, String username, String nickname, Integer seriesId, Boolean isOriginal) {
-        return worksMapper.selectHomepageWorks(page, workTitle, userId, username, nickname, seriesId, isOriginal);
+    public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, Integer seriesId, Boolean isOriginal) {
+        return worksMapper.selectHomepageWorks(page, workTitle, userId, seriesId, isOriginal);
     }
 
     /**
@@ -361,13 +360,13 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
-    public com.baomidou.mybatisplus.core.metadata.IPage<Works> getUserHistory(
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page,
+    public IPage<History> getUserHistory(
+        Page<History> page,
         Integer userId
     ) {
         if (userId == null || userId <= 0) {
             log.warn("无效的用户 ID，无法查询历史记录: {}", userId);
-            return new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>();
+            return new Page<>();
         }
 
         log.info("查询用户历史记录，用户 ID: {}, 页码: {}, 每页大小: {}", userId, page.getCurrent(), page.getSize());

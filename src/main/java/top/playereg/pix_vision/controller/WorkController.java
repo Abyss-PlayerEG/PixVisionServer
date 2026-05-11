@@ -29,7 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/work")
 @RequiredArgsConstructor
-@Tag(name = "作品管理接口")
+@Tag(name = "作品接口")
 public class WorkController {
     private static final PixVisionLogger log = PixVisionLogger.create(WorkController.class);
 
@@ -41,7 +41,7 @@ public class WorkController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param workIds 要删除的作品 ID 列表（支持单个或多个）
-     * @return 删除结果
+     * @return 响应数据，表示作品是否删除成功
      * @author PlayerEG
      */
     @Operation(
@@ -149,14 +149,12 @@ public class WorkController {
      * 分页查询作品列表（支持多条件查询）
      *
      * @param current    当前页码（从 1 开始）
-     * @param size       每页大小
+     * @param size       每页大小（范围 1-100）
      * @param workTitle  作品标题（可选，模糊查询）
      * @param userId     用户 ID（可选，精确查询）
-     * @param username   用户名（可选，模糊查询）
-     * @param nickname   昵称（可选，模糊查询）
      * @param seriesId   系列 ID（可选，精确查询）
      * @param isOriginal 是否原创（可选，精确查询）
-     * @return 分页作品列表
+     * @return 响应数据，包含分页的作品列表
      * @author PlayerEG
      */
     @Operation(
@@ -177,8 +175,6 @@ public class WorkController {
             - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
             - workTitle: **作品标题**（可选），String 类型，支持模糊查询
             - userId: **用户 ID**（可选），Integer 类型，支持精确查询
-            - username: **用户名**（可选），String 类型，支持模糊查询
-            - nickname: **昵称**（可选），String 类型，支持模糊查询
             - seriesId: **系列 ID**（可选），Integer 类型，支持精确查询
             - isOriginal: **是否原创**（可选），Boolean 类型，支持精确查询（true=原创，false=转载）
 
@@ -186,7 +182,7 @@ public class WorkController {
             - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
             - **参数错误**：返回 **{"data": null}** 和"页码或每页大小错误"提示
             - **无数据**：返回 **{"data": null}** 和"查询失败，返回结果为空"提示
-            
+
             ## 业务逻辑：
             1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
             2. 构建 MyBatis-Plus 分页对象
@@ -198,7 +194,7 @@ public class WorkController {
             ## 注意事项：
             - 所有查询条件均为**可选参数**，可不传
             - 支持多个条件组合查询
-            - 作品标题、用户名、昵称支持**模糊匹配**
+            - 作品标题支持**模糊匹配**
             - 用户 ID、系列 ID 和是否原创支持**精确匹配**
             - 默认返回完整 Works 实体字段
             - 已自动过滤逻辑删除的作品（is_delete=0）
@@ -208,14 +204,12 @@ public class WorkController {
             """
     )
     @PublicAccess("分页查询作品列表，无需认证")
-    @GetMapping("/homepage/{current}/{size}")
+    @GetMapping("/page/{current}/{size}")
     public ResponsePojo<IPage<Works>> getHomepageWorks(
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小，范围 1-100", required = true, example = "10") @PathVariable Long size,
         @Parameter(description = "作品标题（可选），支持模糊查询") @RequestParam(required = false) String workTitle,
         @Parameter(description = "用户 ID（可选），支持精确查询") @RequestParam(required = false) Integer userId,
-        @Parameter(description = "用户名（可选），支持模糊查询") @RequestParam(required = false) String username,
-        @Parameter(description = "昵称（可选），支持模糊查询") @RequestParam(required = false) String nickname,
         @Parameter(description = "系列 ID（可选），支持精确查询") @RequestParam(required = false) Integer seriesId,
         @Schema(description = "是否原创（可选）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isOriginal
     ) {
@@ -231,13 +225,7 @@ public class WorkController {
         Page<Works> page = new Page<>(current, size);
 
         // 调用服务层查询作品列表
-        IPage<Works> result = workService.selectHomepageWorks(page, workTitle, userId, username, nickname, seriesId, isOriginal);
-
-        // 返回结果为空，则返回错误信息
-        if (result == null || result.getRecords().isEmpty()) {
-            log.warn("分页查询返回结果为空 - 页码：{}, 每页：{}", current, size);
-            return ResponsePojo.error(null, "查询失败，返回结果为空");
-        }
+        IPage<Works> result = workService.selectHomepageWorks(page, workTitle, userId, seriesId, isOriginal);
 
         log.info("分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}",
             current, size, result.getTotal(), result.getRecords().size());
@@ -248,8 +236,9 @@ public class WorkController {
     /**
      * 根据 ID 查询单个作品
      *
-     * @param workId 作品 ID
-     * @return 作品信息
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token（可选，提供则记录访问历史）
+     * @param workId  作品 ID
+     * @return 响应数据，包含作品详细信息
      * @author PlayerEG
      */
     @Operation(
@@ -271,7 +260,7 @@ public class WorkController {
             - **查询成功**：返回 **{"data": {Works对象}}** ，包含作品详细信息
             - **作品不存在**：返回 **{"data": null}** 和"作品不存在或已删除"提示
             - **参数错误**：返回 **{"data": null}** 和"作品 ID 无效"提示
-            
+
             ## 业务逻辑：
             1. 校验作品 ID 参数有效性
             2. 查询作品信息
@@ -341,7 +330,7 @@ public class WorkController {
      * @param seriesId   系列 ID（可选，0 表示不属于任何系列）
      * @param isOriginal 是否原创（可选）
      * @param outUrl     外部转载链接（可选）
-     * @return 修改结果
+     * @return 响应数据，表示作品是否修改成功
      * @author PlayerEG
      */
     @Operation(

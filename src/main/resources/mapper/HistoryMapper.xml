@@ -4,15 +4,15 @@
 
     <!-- 添加用户访问历史记录 -->
     <insert id="insertHistory">
-        INSERT INTO tb_history (user_id, work_id, is_delete)
-        VALUES (#{userId}, #{workId}, 0)
+        INSERT INTO tb_history (user_id, work_id, is_delete, time)
+        VALUES (#{userId}, #{workId}, 0, NOW())
     </insert>
 
     <!-- 查询用户的访问历史记录（关联作品表） -->
-    <select id="selectUserHistory" resultType="top.playereg.pix_vision.pojo.Works">
-        SELECT 
+    <select id="selectUserHistory" resultType="top.playereg.pix_vision.pojo.History">
+        SELECT
             w.work_id,
-            w.user_id,
+            w.user_id AS work_user_id,
             w.work_title,
             w.img_url,
             w.series_id,
@@ -21,16 +21,21 @@
             w.view_count,
             w.is_original_work,
             w.out_url,
-            w.is_delete,
-            w.update_time,
-            w.update_user,
-            w.create_time,
-            w.create_user
+            h.user_id,
+            h.time
         FROM tb_history h
         JOIN tb_works w ON h.work_id = w.work_id
         WHERE h.user_id = #{userId}
           AND h.is_delete = 0
           AND w.is_delete = 0
+          AND h.time = (
+              SELECT MAX(h2.time)
+              FROM tb_history h2
+              WHERE h2.user_id = #{userId}
+                AND h2.work_id = h.work_id
+                AND h2.is_delete = 0
+          )
+        ORDER BY h.time DESC
     </select>
 
     <!-- 批量删除用户的历史记录 -->
@@ -42,6 +47,7 @@
         <foreach collection="workIds" item="workId" open="(" separator="," close=")">
             #{workId}
         </foreach>
+          AND is_delete = 0
     </update>
 
 </mapper>

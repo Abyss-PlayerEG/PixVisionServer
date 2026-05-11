@@ -1,345 +1,64 @@
 # PixVisionServer - AI Agent 开发指南
 
-## 核心原则
-
-本文档提供项目关键信息，帮助 AI Agent 快速上手并避免常见错误。每一行都是经过验证的重要指引。
+> **注意**：详细的开发规范（MVC 分层、代码风格、安全要求等）已迁移至 `.lingma/rules/DevRule.md`。本文档主要提供项目核心信息、工具类速查及环境配置指引。
 
 ---
 
-## 身份与认证
+## 1. 身份与认证
 
-### 需要认证的接口
+### 角色与状态
+| 类型 | 代码 | 说明 |
+|------|------|------|
+| **角色** | 11, 22, 55, 66, 77 | 普通用户, 创作者, 审核员, 工单管理员, 系统管理员 |
+| **状态** | 10, 20, 30 | 正常, 冻结 (保留数据), 封禁 (严重违规) |
 
-```java
-// ❌ 错误：不需要 @PublicAccess（需要认证的接口）
-@PostMapping("/change/nickname")
-public ResponsePojo<Boolean> updateNickname(...) { }
-
-// ✅ 正确：公开接口加 @PublicAccess
-@PublicAccess("用户注册接口，无需认证")
-@PostMapping("/register")
-public ResponsePojo<User> register(...) { }
-```
-
-### 修改密码后必须调用
-
-```java
-// 修改密码后必须移除所有 Token，使所有设备下线
-tokenWhitelistService.removeAllUserTokens(userId, username);
-```
-
-### 密码处理
-
-```java
-// ✅ 正确：SHA-256 加密
-String hashedPassword = StrSwitchUtils.PasswdToHash256(password);
-
-// ❌ 绝对禁止：记录或存储明文密码
-log.info("密码：{}", password);
-```
+### 关键操作
+- **获取用户 ID**：优先从 `request.getAttribute("userId")` 获取，或手动解析 Token。
+- **密码处理**：使用 `StrSwitchUtils.PasswdToHash256(password)`。**严禁记录明文密码**。
+- **Token 下线**：修改密码后必须调用 `tokenWhitelistService.removeAllUserTokens(userId, username)`。
 
 ---
 
-## 认证与权限
-
-### 获取用户 ID
+## 2. 常用工具类速查
 
 ```java
-// 方式1：从 request 属性（拦截器自动设置）
-Integer userId = (Integer) request.getAttribute("userId");
-
-// 方式2：手动解析
-String token = JWTUtils.extractTokenWithLog(request, "接口名称");
-Integer userId = JWTUtils.getUserIdFromToken(token);
-```
-
-### 角色代码
-
-| 代码 | 角色 |
-|------|------|
-| 11 | 普通用户 |
-| 22 | 创作者 |
-| 55 | 审核员 |
-| 66 | 工单管理员 |
-| 77 | 系统管理员 |
-
-### 用户状态
-
-| 代码 | 状态 |
-|------|------|
-| 10 | 正常 |
-| 20 | 冻结 |
-| 30 | 封禁 |
-
-**注意**：
-- 冻结状态（20）：用户无法登录，但数据保留
-- 封禁状态（30）：用户无法登录，严重违规使用
-- 只有系统管理员（角色 77）可以修改用户状态
-
----
-
-## Spring Boot 3 依赖注入
-
-```java
-// ✅ 推荐：构造器注入（配合 Lombok）
-@RestController
-@RequiredArgsConstructor
-public class UserController {
-    private final UserService userService;
-}
-
-// ❌ 错误：Spring Boot 3 不支持 @Resource
-@Resource
-private UserService userService;
-```
-
----
-
-## 常见陷阱
-
-### 1. 分页查询顺序（必须先创建 Page）
-
-```java
-Page<User> page = new Page<>(current, size);
-IPage<User> result = userService.selectPageUserInfo(page, query);
-```
-
-### 2. 验证码格式
-
-- 存储 Key：`verification:code:{email}`
-- 有效期：5 分钟
-- 一次性使用
-
-### 3. 邮件接口参数
-
-- `/send-register-code`：username 必填
-- `/send-login-code`：usernameOrEmail 可为用户名或邮箱
-
-### 4. Token 白名单机制
-
-```java
-// ✅ 检查 Token 是否在白名单
-if (!tokenWhitelistService.isInWhitelist(token)) {
-    return ResponsePojo.error(null, "Token 已失效");
-}
-```
-
----
-
-## 常用工具类速查
-
-```java
-// JWT
+// JWT 工具
 String token = JWTUtils.createToken(userId, username);
 Integer userId = JWTUtils.getUserIdFromToken(token);
-
-// 密码哈希
-String hash = StrSwitchUtils.PasswdToHash256(password);
 
 // UUID 转换
 byte[] bytes = StrSwitchUtils.uuid2Bytes(uuidString);
 String uuid = StrSwitchUtils.bytes2Uuid(bytes);
 
-// 自定义日志（推荐使用，自动带颜色）
-// 非 Spring Bean 类（如工具类）：
+// 自定义日志（带颜色）
 private static final PixVisionLogger log = PixVisionLogger.create(ClassName.class);
-log.info("消息内容");
-log.debug("调试信息：{}", variable);
-log.error("错误：", exception);
-```
-
-### 日志颜色
-
-```java
-// 使用 LogColor 为日志内容添加颜色
-LogColor.colorize("消息内容", LogColor.GREEN);  // 绿色
-LogColor.colorize("警告", LogColor.YELLOW);      // 黄色
-LogColor.colorize("错误", LogColor.RED);        // 红色
-LogColor.colorize("调试", LogColor.BLUE);       // 蓝色
-LogColor.colorize("跟踪", LogColor.GRAY);       // 灰色
+log.info("消息内容"); // 自动根据级别着色
 ```
 
 ---
 
-## 配置
+## 3. 环境与配置
 
-### 配置文件位置
+### 配置文件路径
+- **用户自定义**：`~/.pix_vision/application.yml` （修改这里）
+- **核心模板**：`src/main/resources/yml-config/*.yml` （不修改）
 
-```
-~/.pix_vision/application.yml  ← 用户自定义配置（修改这里）
-src/main/resources/yml-config/*.yml  ← 核心模板（不修改）
-src/main/resources/application.yml  ← 基础配置（不修改）
-```
-
-### 日志位置
-
-```
-~/.pix_vision/log/pix_vision.log
-```
-
----
-
-## 项目结构
-
-```
-top.playereg.pix_vision
-├── controller/      # REST API（C - Controller）
-├── service/         # 业务逻辑（M - Model/Service）
-│   └── Impl/
-├── mapper/          # 数据访问层接口（M - Model/Mapper）
-├── pojo/            # 实体类（M - Model/Entity）
-├── handler/         # 拦截器
-├── config/          # 配置类
-└── util/           # 工具类
-```
-
-**资源文件**：
-```
-src/main/resources/mapper/*.xml  # MyBatis 自定义 SQL（V - View/XML）
-```
-
----
-
-## MVC 架构规范
-
-### 严格遵循 MVC 分层
-
-**Controller 层**：
-- 仅负责接收请求、参数验证、调用 Service、返回响应
-- 不包含业务逻辑
-- 不直接操作数据库
-
-**Service 层**：
-- 实现核心业务逻辑
-- 事务控制
-- 调用 Mapper 进行数据操作
-- 不直接编写 SQL
-
-**Mapper 层**：
-- 定义数据访问接口
-- 所有 SQL 必须在 XML 文件中编写
-- **禁止使用 MyBatis-Plus 的自动生成的 SQL 方法**
-
-**XML 文件**：
-- 所有 SQL 语句必须写在 `src/main/resources/mapper/*.xml` 中
-- 使用自定义 SQL，不使用 MyBatis-Plus 的 Wrapper
-
-### SQL 编写规范
-
-```java
-// ❌ 错误：使用 MyBatis-Plus 的 LambdaQueryWrapper
-userMapper.selectCount(new LambdaQueryWrapper<User>()
-    .eq(User::getUsername, username));
-
-// ✅ 正确：使用自定义 XML SQL
-userMapper.countByUsername(username);
-```
-
-```xml
-<!-- UserMapper.xml -->
-<select id="countByUsername" resultType="int">
-    SELECT COUNT(1)
-    FROM tb_user
-    WHERE username = #{username}
-      AND is_delete = 0
-</select>
-```
-
-### Mapper 接口规范
-
-```java
-@Mapper
-@Repository
-public interface UserMapper extends BaseMapper<User> {
-    // ✅ 推荐：自定义方法 + XML 实现
-    int countByUsername(@Param("username") String username);
-    
-    // ❌ 避免：直接使用 BaseMapper 的方法（除非必要）
-    // selectCount, selectList 等应通过自定义 XML 实现
-}
-```
-
----
-
-## 运行命令
-
+### 运行与构建
 ```bash
-# 启动服务
-mvn spring-boot:run
-
-# 构建
-mvn clean package -DskipTests
-
-# 运行 JAR
+mvn spring-boot:run          # 启动服务
+mvn clean package -DskipTests # 构建 JAR
 java -jar target/PixVisionServer-0.0.1-SNAPSHOT.jar
 ```
 
----
-
-## API 文档
-
-访问地址：http://localhost:9090/doc.html（需 springdoc: enabled: on）
-
-### Swagger 文档编写规范
-
-在 Controller 的 `@Operation` 注解中编写 API 文档时，遵循以下规范：
-
-**必须包含的部分**：
-- **特性**：接口的核心功能和特点
-- **参数说明**：详细说明每个参数的类型、必填性、格式要求
-- **返回说明**：各种返回情况的描述（成功、失败、异常等）
-- **业务逻辑**：接口的主要处理流程步骤
-- **注意事项**：重要的使用提示、限制条件、安全要求
-
-**禁止包含的部分**：
-- ❌ **返回数据结构**：不要包含 JSON 示例代码块
-- ❌ **使用示例**：不要包含 curl 或 HTTP 请求示例
-
-**示例**：
-```java
-@Operation(
-    summary = "查询单个作品",
-    description = """
-        # 查询单个作品（无需登录认证）
-
-        ## 特性
-        - 公开接口（无需认证）
-        - 根据作品 ID 精确查询
-        - 仅返回未删除的作品
-
-        ## 参数说明：
-        - workId: **作品 ID**，Integer 类型，必填
-
-        ## 返回说明：
-        - **查询成功**：返回 **{"data": {Works对象}}** ，包含作品详细信息
-        - **作品不存在**：返回 **{"data": null}** 和"作品不存在或已删除"提示
-        - **参数错误**：返回 **{"data": null}** 和"作品 ID 无效"提示
-
-        ## 业务逻辑：
-        1. 校验作品 ID 参数有效性
-        2. 查询作品信息
-        3. 验证作品是否存在且未删除
-        4. 返回作品详细信息
-
-        ## 注意事项：
-        - 这是一个**公开接口**，无需 Token 认证
-        - 只能查询**未删除**的作品（is_delete=0）
-        - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
-        """
-)
-```
+### API 文档
+访问地址：http://localhost:9090/doc.html
 
 ---
 
-## Git 提交规范
-
+## 4. Git 提交规范
 ```
 <type>(<scope>): <subject>
-
 feat(user): 添加用户注册功能
 fix(auth): 修复 Token 验证问题
-docs: 更新 README
 refactor(service): 优化查询逻辑
 ```
-
----

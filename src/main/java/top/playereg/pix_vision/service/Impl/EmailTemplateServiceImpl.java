@@ -94,7 +94,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     private Map<String, String> buildVerificationPlaceholders(String code, String username, String emailText) {
         // 开发模式
         if (emailConfig.devMode) {
-            log.info("控制台模拟验证码发送：{}", code);
+            log.info("控制台模拟发送 Code：{}", code);
         }
         Map<String, String> placeholders = new HashMap<>();
 

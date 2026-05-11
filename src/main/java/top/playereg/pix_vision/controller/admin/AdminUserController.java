@@ -1,4 +1,4 @@
-package top.playereg.pix_vision.controller;
+package top.playereg.pix_vision.controller.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,13 +11,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchDeleteUserResult;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchUpdateUserResult;
+import top.playereg.pix_vision.pojo.adminPojo.AdminResetPasswordResult;
 import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.service.EmailService;
+import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
+
+import java.util.*;
 
 /**
  * 系统管理员控制器 - 提供系统管理相关的接口
@@ -30,23 +37,22 @@ import top.playereg.pix_vision.util.RegexUtils;
  * @since DEV-2.0.0
  */
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admin/user")
 @RequiredArgsConstructor
-@Tag(name = "系统管理员相关接口")
+@Tag(name = "系统管理员接口 - 用户管理")
 @RequireRole(value = {77})
-public class AdminController {
-    private static final PixVisionLogger log = PixVisionLogger.create(AdminController.class);
+public class AdminUserController {
+    private static final PixVisionLogger log = PixVisionLogger.create(AdminUserController.class);
 
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;
+    private final EmailService emailService;
+    private final EmailTemplateService emailTemplateService;
 
     /**
      * 刷新所有用户权限缓存
-     * <p>
-     * 清除 Redis 中所有 role: 前缀的用户角色缓存，确保所有用户的权限验证获取最新的角色信息
-     * </p>
      *
-     * @return 操作结果
+     * @return 响应数据，包含清除的缓存数量
      * @author PlayerEG
      */
     @Operation(
@@ -103,36 +109,29 @@ public class AdminController {
     }
 
     /**
-     * 更新用户信息（角色和/或状态）
-     * <p>
-     * 系统管理员可以修改指定用户的角色和/或状态，支持的操作：
-     * - 仅修改角色
-     * - 仅修改状态
-     * - 同时修改角色和状态
-     * </p>
+     * 批量更新用户信息（角色和/或状态）
      *
-     * @param request      HTTP 请求对象（用于获取当前管理员信息）
-     * @param targetUserId 目标用户 ID
-     * @param newRole      新角色代码（可选）
-     * @param newStatus    新状态代码（可选）
-     * @return 操作结果
+     * @param request   HTTP 请求对象（用于获取当前管理员信息）
+     * @param userIds   目标用户 ID 列表
+     * @param newRole   新角色代码（可选，11-77）
+     * @param newStatus 新状态代码（可选，10-30）
+     * @return 响应数据，包含批量更新的统计信息
      * @author PlayerEG
      */
     @Operation(
-        summary = "更新用户信息（角色或状态）",
+        summary = "批量更新用户信息",
         description = """
-            # 更新用户信息（需要登录认证 + 角色权限[77]）
+            # 批量更新用户信息（需要登录认证 + 角色权限[77]）
 
             ## 特性
             - 仅系统管理员可调用
-            - 可以修改任意用户的角色和/或状态（除自己外）
-            - 支持单独修改角色、单独修改状态或同时修改
-            - 自动清除目标用户的角色缓存
+            - 支持批量修改用户的角色和/或状态
+            - 自动清除被更新用户的角色缓存
             - 修改状态时自动移除该用户所有 Token，强制所有设备下线
-            - 记录操作日志（通过 update_user 字段）
+            - 记录操作日志（update_user 字段设置为执行操作的管理员 ID）
 
             ## 参数说明：
-            - **targetUserId**: 目标用户 ID（必填）
+            - **userIds**: 目标用户 ID 列表（必填）
             - **newRole**: 新角色代码（可选），可选值：
               - 11: 普通用户
               - 22: 创作者
@@ -145,39 +144,32 @@ public class AdminController {
               - 30: 封禁
 
             ## 返回说明：
-            - **成功**：返回 **{"data": true}** 和操作详情提示
-            - **失败**：返回 **{"data": false}** 和错误提示
+            - **成功**：返回 **{"data": {AdminBatchUpdateUserResult}}** 包含统计信息
+            - **失败**：返回 **{"data": null}** 和错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
             2. 从 Token 中获取当前管理员 ID
-            3. 验证目标用户是否存在
-            4. 如果提供了 newRole，验证并更新用户角色
-            5. 如果提供了 newStatus，验证并更新用户状态
-            6. 清除目标用户的角色缓存（如果修改了角色）
-            7. 将该用户所有 Token 从白名单移除（如果修改了状态）
-            8. 返回操作结果
+            3. 遍历用户 ID 列表，逐个执行更新逻辑
+            4. 清除每个被更新用户的角色缓存
+            5. 如果修改了状态，强制下线该用户的所有 Token
+            6. 返回包含总数、成功数和失败 ID 列表的结果
 
             ## 安全限制：
-            - 管理员不能修改自己的角色或状态
+            - 管理员不能修改自己的信息
             - 目标用户必须存在且未被删除
             - 至少需要提供 newRole 或 newStatus 中的一个
-            - 角色代码和状态代码必须在允许范围内
 
             ## 注意事项：
             - 修改角色后，目标用户下次请求时会自动获取新的角色信息
             - 修改状态后，会强制该用户所有设备下线
-            - 如果需要立即生效，可以调用 /refresh-permission-cache 接口
             - 建议谨慎分配高权限角色（如 77-系统管理员）
-            - 冻结状态（20）：用户无法登录，但数据保留
-            - 封禁状态（30）：用户无法登录，严重违规使用
             """
     )
-    @PostMapping("/update-user-info")
-    public ResponsePojo<Boolean> updateUserInfo(
+    @PostMapping("/update/user-role-status")
+    public ResponsePojo<AdminBatchUpdateUserResult> batchUpdateUserInfo(
         HttpServletRequest request,
-        @Parameter(description = "目标用户 ID", required = true, example = "123")
-        @RequestParam Integer targetUserId,
+        @Parameter(description = "目标用户 ID 列表", required = true, example = "123,456") @RequestParam List<Integer> userIds,
         @Schema(
             description = "新角色代码（可选，11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）",
             allowableValues = {"11", "22", "55", "66", "77"},
@@ -191,139 +183,125 @@ public class AdminController {
         )
         @RequestParam(required = false) Integer newStatus
     ) {
-        log.info("管理员开始更新用户信息 - 目标用户 ID: {}, 新角色: {}, 新状态: {}", targetUserId, newRole, newStatus);
+        log.info("管理员开始批量更新用户信息 - 用户数量: {}, 新角色: {}, 新状态: {}",
+                userIds != null ? userIds.size() : 0, newRole, newStatus);
 
-        // 参数校验：至少提供一个更新字段
+        // 参数校验
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("用户 ID 列表为空");
+            return ResponsePojo.error(null, "用户 ID 列表不能为空");
+        }
+
         if (newRole == null && newStatus == null) {
-            log.warn("未提供任何更新字段 - 目标用户 ID: {}", targetUserId);
-            return ResponsePojo.error(false, "请至少提供 newRole 或 newStatus 中的一个参数");
+            log.warn("未提供任何更新字段");
+            return ResponsePojo.error(null, "请至少提供 newRole 或 newStatus 中的一个参数");
         }
 
         try {
             // 从 Token 中获取当前管理员 ID
-            String token = JWTUtils.extractTokenWithLog(request, "更新用户信息");
+            String token = JWTUtils.extractTokenWithLog(request, "批量更新用户信息");
             if (token == null || token.isEmpty()) {
                 log.error("Token 不存在");
-                return ResponsePojo.error(false, "未授权访问");
+                return ResponsePojo.error(null, "未授权访问");
             }
 
             Integer adminId = JWTUtils.getUserIdFromToken(token);
             if (adminId == null) {
                 log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(false, "Token 无效");
+                return ResponsePojo.error(null, "Token 无效");
             }
 
-            log.info("当前管理员 ID: {}", adminId);
+            int totalCount = userIds.size();
+            java.util.Set<Integer> successIds = new java.util.HashSet<>();
 
-            // 检查目标用户是否存在
-            User targetUser = userService.selectAllUserById(targetUserId);
-            if (targetUser == null) {
-                log.warn("目标用户不存在 - 用户 ID: {}", targetUserId);
-                return ResponsePojo.error(false, "目标用户不存在");
-            }
-
-            // 防止修改自己的信息
-            if (targetUserId.equals(adminId)) {
-                log.warn("管理员不能修改自己的信息 - 用户 ID: {}", adminId);
-                return ResponsePojo.error(false, "不能修改自己的信息");
-            }
-
-            boolean roleUpdated = false;
-            boolean statusUpdated = false;
-            StringBuilder messageBuilder = new StringBuilder();
-
-            // 更新角色
-            if (newRole != null) {
-                log.info("开始更新用户角色 - 目标用户 ID: {}, 新角色: {}", targetUserId, newRole);
-                Boolean roleSuccess = userService.updateUserRole(targetUserId, newRole, adminId);
-                if (!roleSuccess) {
-                    log.warn("用户角色更新失败 - 目标用户 ID: {}", targetUserId);
-                    return ResponsePojo.error(false, "用户角色更新失败，请检查角色代码是否正确");
+            // 循环调用 Service 层更新方法
+            for (Integer targetUserId : userIds) {
+                // 防止修改自己的信息
+                if (targetUserId.equals(adminId)) {
+                    log.warn("管理员不能修改自己的信息，跳过 - 用户 ID: {}", adminId);
+                    continue;
                 }
-                roleUpdated = true;
-                String roleName = getRoleName(newRole);
-                messageBuilder.append("角色已更新为：").append(roleName);
-                log.info("用户角色更新成功 - 目标用户 ID: {}, 新角色: {}", targetUserId, newRole);
-            }
 
-            // 更新状态
-            if (newStatus != null) {
-                log.info("开始更新用户状态 - 目标用户 ID: {}, 新状态: {}", targetUserId, newStatus);
-                Boolean statusSuccess = userService.updateUserStatus(targetUserId, newStatus, adminId);
-                if (!statusSuccess) {
-                    log.warn("用户状态更新失败 - 目标用户 ID: {}", targetUserId);
-                    return ResponsePojo.error(false, "用户状态更新失败，请检查状态代码是否正确");
+                boolean success = true;
+
+                // 更新角色
+                if (newRole != null) {
+                    Boolean roleRes = userService.updateUserRole(targetUserId, newRole, adminId);
+                    if (!roleRes) success = false;
                 }
-                statusUpdated = true;
 
-                // 将该用户所有 Token 从白名单移除，强制下线
-                int removedCount = tokenWhitelistService.removeAllUserTokens(targetUserId, targetUser.getUsername());
-                log.info("已移除用户所有 Token，用户 ID: {}, 用户名: {}, 移除数量: {}",
-                    targetUserId, targetUser.getUsername(), removedCount);
+                // 更新状态
+                if (newStatus != null) {
+                    Boolean statusRes = userService.updateUserStatus(targetUserId, newStatus, adminId);
+                    if (!statusRes) success = false;
 
-                if (messageBuilder.length() > 0) {
-                    messageBuilder.append("，");
+                    // 如果状态更新成功，强制下线
+                    if (success) {
+                        User targetUser = userService.selectAllUserById(targetUserId);
+                        if (targetUser != null) {
+                            tokenWhitelistService.removeAllUserTokens(targetUserId, targetUser.getUsername());
+                        }
+                    }
                 }
-                String statusName = getStatusName(newStatus);
-                messageBuilder.append("状态已更新为：").append(statusName).append("，已强制该用户所有设备下线");
-                log.info("用户状态更新成功 - 目标用户 ID: {}, 新状态: {}", targetUserId, newStatus);
+
+                if (success) {
+                    successIds.add(targetUserId);
+                }
             }
 
-            // 构建返回消息
-            String message = messageBuilder.toString();
-            if (message.isEmpty()) {
-                message = "用户信息更新成功";
-            } else {
-                message = "用户信息更新成功，" + message;
+            // 计算失败的 ID
+            java.util.List<Integer> failedUserIds = new java.util.ArrayList<>();
+            for (Integer id : userIds) {
+                if (!successIds.contains(id)) {
+                    failedUserIds.add(id);
+                }
             }
 
-            log.info("用户信息更新完成 - 目标用户 ID: {}, 角色更新: {}, 状态更新: {}", targetUserId, roleUpdated, statusUpdated);
-            return ResponsePojo.success(true, message);
+            AdminBatchUpdateUserResult result = new AdminBatchUpdateUserResult(totalCount, successIds.size(), failedUserIds);
+            log.info("批量更新用户信息完成 - 总数: {}, 成功: {}, 失败: {}", totalCount, successIds.size(), failedUserIds.size());
+
+            return ResponsePojo.success(result, "批量更新用户信息处理完成");
 
         } catch (Exception e) {
-            log.error("更新用户信息异常 - 错误: {}", e.getMessage(), e);
-            return ResponsePojo.error(false, "系统错误: " + e.getMessage());
+            log.error("批量更新用户信息异常 - 错误: {}", e.getMessage(), e);
+            return ResponsePojo.error(null, "系统错误: " + e.getMessage());
         }
     }
 
     /**
-     * 删除用户账户
-     * <p>
-     * 系统管理员可以删除指定用户的账户（逻辑删除），并清除该用户的所有 Token
-     * </p>
+     * 批量删除用户账户
      *
-     * @param request      HTTP 请求对象（用于获取当前管理员信息）
-     * @param targetUserId 目标用户 ID
-     * @return 操作结果
+     * @param request HTTP 请求对象（用于获取当前管理员信息）
+     * @param userIds 目标用户 ID 列表
+     * @return 响应数据，包含批量删除的统计信息
      * @author PlayerEG
      */
     @Operation(
-        summary = "删除用户账户",
+        summary = "批量删除用户账户",
         description = """
-            # 删除用户账户（需要登录认证 + 角色权限[77]）
+            # 批量删除用户账户（需要登录认证 + 角色权限[77]）
 
             ## 特性
             - 仅系统管理员可调用
-            - 逻辑删除用户账户（is_delete = 1）
-            - 自动清除该用户的所有 Token，强制所有设备下线
-            - 清除用户角色缓存
-            - 记录操作日志（通过 update_user 字段）
+            - 支持批量逻辑删除用户账户（is_delete = 1）
+            - 自动清除被删用户的所有 Token，强制所有设备下线
+            - 清除被删用户的角色缓存
+            - 记录操作日志（update_user 字段设置为执行操作的管理员 ID）
 
             ## 参数说明：
-            - **targetUserId**: 目标用户 ID（必填）
+            - **userIds**: 目标用户 ID 列表（必填）
 
             ## 返回说明：
-            - **成功**：返回 **{"data": true}** 和“用户账户删除成功”提示
-            - **失败**：返回 **{"data": false}** 和错误提示
+            - **成功**：返回 **{"data": {AdminBatchDeleteUserResult}}** 包含统计信息
+            - **失败**：返回 **{"data": null}** 和错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
             2. 从 Token 中获取当前管理员 ID
-            3. 验证目标用户是否存在
-            4. 执行逻辑删除（is_delete = 1）
-            5. 清除该用户的所有 Token
-            6. 清除用户角色缓存
-            7. 返回操作结果
+            3. 遍历用户 ID 列表，逐个执行逻辑删除
+            4. 清除每个被删用户的所有 Token
+            5. 清除每个被删用户的角色缓存
+            6. 返回包含总数、成功数和失败 ID 列表的结果
 
             ## 安全限制：
             - 管理员不能删除自己的账户
@@ -334,64 +312,77 @@ public class AdminController {
             - 这是逻辑删除，不是物理删除
             - 删除后用户的所有 Token 立即失效
             - 建议谨慎使用，确保有充分的理由
-            - 删除操作不可逆（除非手动修改数据库）
             """
     )
-    @PostMapping("/delete-user")
-    public ResponsePojo<Boolean> deleteUser(
+    @PostMapping("/delete")
+    public ResponsePojo<AdminBatchDeleteUserResult> batchDeleteUsers(
         HttpServletRequest request,
-        @Parameter(description = "目标用户 ID", required = true, example = "123")
-        @RequestParam Integer targetUserId
+        @Parameter(description = "目标用户 ID 列表", required = true, example = "123,456") @RequestParam List<Integer> userIds
     ) {
-        log.info("管理员开始删除用户账户 - 目标用户 ID: {}", targetUserId);
+        log.info("管理员开始批量删除用户账户 - 用户 ID 数量: {}", userIds != null ? userIds.size() : 0);
+
+        // 参数校验
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("用户 ID 列表为空");
+            return ResponsePojo.error(null, "用户 ID 列表不能为空");
+        }
 
         try {
             // 从 Token 中获取当前管理员 ID
-            String token = JWTUtils.extractTokenWithLog(request, "删除用户账户");
+            String token = JWTUtils.extractTokenWithLog(request, "批量删除用户账户");
             if (token == null || token.isEmpty()) {
                 log.error("Token 不存在");
-                return ResponsePojo.error(false, "未授权访问");
+                return ResponsePojo.error(null, "未授权访问");
             }
 
             Integer adminId = JWTUtils.getUserIdFromToken(token);
             if (adminId == null) {
                 log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(false, "Token 无效");
+                return ResponsePojo.error(null, "Token 无效");
             }
 
-            log.info("当前管理员 ID: {}", adminId);
+            int totalCount = userIds.size();
+            java.util.Set<Integer> successIds = new java.util.HashSet<>();
 
-            // 调用 Service 层删除用户账户
-            Boolean success = userService.deleteUserAccountByAdmin(targetUserId, adminId);
-
-            if (success) {
-                log.info("用户账户删除成功 - 目标用户 ID: {}", targetUserId);
-                return ResponsePojo.success(true, "用户账户删除成功，已强制该用户所有设备下线");
-            } else {
-                log.warn("用户账户删除失败 - 目标用户 ID: {}", targetUserId);
-                return ResponsePojo.error(false, "用户账户删除失败，请检查用户是否存在或是否已被删除");
+            // 循环调用 Service 层删除方法
+            for (Integer userId : userIds) {
+                Boolean res = userService.deleteUserAccountByAdmin(userId, adminId);
+                if (res) {
+                    successIds.add(userId);
+                }
             }
+
+            // 计算失败的 ID
+            java.util.List<Integer> failedUserIds = new java.util.ArrayList<>();
+            for (Integer id : userIds) {
+                if (!successIds.contains(id)) {
+                    failedUserIds.add(id);
+                }
+            }
+
+            AdminBatchDeleteUserResult result = new AdminBatchDeleteUserResult(totalCount, successIds.size(), failedUserIds);
+            log.info("批量删除用户账户完成 - 总数: {}, 成功: {}, 失败: {}", totalCount, successIds.size(), failedUserIds.size());
+
+            return ResponsePojo.success(result, "批量删除用户账户处理完成");
+
         } catch (Exception e) {
-            log.error("删除用户账户异常 - 错误: {}", e.getMessage(), e);
-            return ResponsePojo.error(false, "系统错误: " + e.getMessage());
+            log.error("批量删除用户账户异常 - 错误: {}", e.getMessage(), e);
+            return ResponsePojo.error(null, "系统错误: " + e.getMessage());
         }
     }
 
     /**
      * 创建新用户
-     * <p>
-     * 系统管理员可以直接创建新用户，无需验证码验证
-     * </p>
      *
      * @param request         HTTP 请求对象（用于获取当前管理员信息）
-     * @param username        用户名
-     * @param password        密码（明文）
-     * @param confirmPassword 确认密码
-     * @param nickname        昵称
-     * @param email           邮箱
+     * @param username        用户名（必填，唯一）
+     * @param password        密码（明文，将自动加密）
+     * @param confirmPassword 确认密码（必须与 password 一致）
+     * @param nickname        昵称（必填）
+     * @param email           邮箱（必填，唯一）
      * @param role            角色代码（可选，默认为 11-普通用户）
      * @param status          状态代码（可选，默认为 10-正常）
-     * @return 操作结果
+     * @return 响应数据，表示用户是否创建成功
      * @author PlayerEG
      */
     @Operation(
@@ -456,7 +447,7 @@ public class AdminController {
             - 两次输入的密码必须完全一致
             """
     )
-    @PostMapping("/create-user")
+    @PostMapping("/create")
     public ResponsePojo<Boolean> createUser(
         HttpServletRequest request,
         @Parameter(description = "用户名（必填，唯一）", required = true, example = "new_user") @RequestParam String username,
@@ -523,6 +514,128 @@ public class AdminController {
         } catch (Exception e) {
             log.error("创建用户异常 - 错误: {}", e.getMessage(), e);
             return ResponsePojo.error(false, "系统错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员批量重置用户密码
+     *
+     * @param userIds 目标用户 ID 列表
+     * @return 响应数据，包含批量重置密码的统计信息
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "批量重置用户密码",
+        description = """
+            # 批量重置用户密码（需要登录认证 + 角色权限[77]）
+
+            ## 特性
+            - **管理员专属接口**：仅系统管理员可调用
+            - **批量处理**：支持一次性重置多个用户的密码
+            - **自动生成随机密码**：使用安全随机算法生成 12 位临时密码
+            - **强制所有设备下线**：移除用户所有 Token，确保账户安全
+            - **邮件通知**：所有用户密码重置完成后，批量发送新密码到对应邮箱
+            - **密码加密存储**：使用 SHA-256 加密后存储
+
+            ## 参数说明：
+            - userIds: **用户 ID 列表**，Integer 数组类型，必填
+              * 单个用户：传入 [1]
+              * 批量用户：传入 [1, 2, 3]
+
+            ## 返回说明：
+            - **重置成功**：返回 **{"data": true}** 和“批量重置密码成功，已发送邮件”提示
+            - **用户 ID 列表为空**：返回 **{"data": false}** 和“用户 ID 列表不能为空”提示
+            - **部分失败**：返回 **{"data": true}** 并提示实际成功的数量
+
+            ## 业务逻辑：
+            1. 校验用户 ID 列表参数有效性
+            2. 遍历用户 ID 列表，逐个处理：
+               a. 查询用户信息
+               b. 生成 12 位随机密码
+               c. 对密码进行 SHA-256 加密
+               d. 更新数据库中的用户密码
+               e. 强制移除用户所有 Token（使所有设备下线）
+            3. 所有用户密码重置完成后，批量渲染邮件模板并发送
+            4. 记录操作日志
+
+            ## 注意事项：
+            - 这是一个**管理员接口**，需要管理员身份认证
+            - 调用后用户的**所有登录会话将被强制终止**
+            - 新生成的密码为**临时密码**，建议用户登录后立即修改
+            - 密码以**明文形式**通过邮件发送，请确保邮件传输安全
+            - 原密码会被覆盖，**无法恢复**
+            - 如果某个用户不存在或处理失败，会跳过该用户并继续处理下一个
+            """
+    )
+    @PostMapping("/update/password")
+    public ResponsePojo<AdminResetPasswordResult> batchUpdateUserPassword(
+        @Parameter(description = "目标用户 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> userIds
+    ) {
+        log.info("管理员开始批量重置用户密码 - 用户 ID 数量: {}", userIds != null ? userIds.size() : 0);
+
+        // 参数校验
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("用户 ID 列表为空");
+            return ResponsePojo.error(null, "用户 ID 列表不能为空");
+        }
+
+        int totalCount = userIds.size();
+        List<Integer> failedUserIds = new ArrayList<>();
+        try {
+            // 1. 调用 Service 层批量重置密码（返回包含明文密码的结果列表）
+            List<Map<String, Object>> resetResults = userService.batchResetUserPasswords(userIds);
+
+            int successCount = resetResults.size();
+
+            // 计算失败的用户 ID (总数 - 成功数，但这里需要更精确的逻辑)
+            // 由于 Service 层目前只返回成功的，我们需要在 Controller 层对比或者修改 Service 层
+            // 为了简单且符合“一次性重置多个用户”的逻辑，我们假设 Service 层返回的都是成功的。
+            // 失败的通常是那些不存在的 ID。我们可以通过遍历原始 ID 和结果来找出失败的 ID。
+
+            Set<Integer> successIds = new HashSet<>();
+            for (java.util.Map<String, Object> result : resetResults) {
+                successIds.add((Integer) result.get("user_id"));
+            }
+
+            for (Integer id : userIds) {
+                if (!successIds.contains(id)) {
+                    failedUserIds.add(id);
+                }
+            }
+
+            if (successCount == 0 && totalCount > 0) {
+                log.warn("没有用户成功重置密码");
+                AdminResetPasswordResult result = new AdminResetPasswordResult(totalCount, 0, 0, failedUserIds);
+                return ResponsePojo.error(result, "没有用户成功重置密码，请检查用户 ID 是否正确");
+            }
+
+            // 2. 批量发送邮件
+            int emailSentCount = 0;
+            for (java.util.Map<String, Object> result : resetResults) {
+                String username = (String) result.get("username");
+                String email = (String) result.get("email");
+                String plainPassword = (String) result.get("plainPassword");
+
+                // 渲染邮件 HTML
+                String html = emailTemplateService.renderResetPasswordEmail(username, plainPassword);
+
+                try {
+                    emailService.sendEMail(email, "PixVision 重置用户密码", html);
+                    emailSentCount++;
+                    log.info("密码重置邮件发送成功 - 用户名: {}, 邮箱: {}", username, email);
+                } catch (Exception e) {
+                    log.error("密码重置邮件发送失败 - 用户名: {}, 邮箱: {}, 错误: {}", username, email, e.getMessage());
+                }
+            }
+
+            log.info("批量重置密码完成 - 总数: {}, 成功重置: {} 人, 成功发送邮件: {} 人, 失败: {} 人", totalCount, successCount, emailSentCount, failedUserIds.size());
+            AdminResetPasswordResult responseResult = new AdminResetPasswordResult(totalCount, successCount, emailSentCount, failedUserIds);
+            return ResponsePojo.success(responseResult, "批量重置密码处理完成");
+
+        } catch (Exception e) {
+            log.error("批量重置密码异常 - 错误: {}", e.getMessage(), e);
+            AdminResetPasswordResult result = new AdminResetPasswordResult(totalCount, 0, 0, userIds); // 异常时所有都视为失败
+            return ResponsePojo.error(result, "系统错误: " + e.getMessage());
         }
     }
 

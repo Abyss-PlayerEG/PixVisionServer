@@ -12,15 +12,45 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 
+/**
+ * 图像处理工具类
+ * <p>
+ * 提供图像格式验证、尺寸检测、格式转换、Base64 编解码、图像缩放等功能。
+ * 支持 JPG、JPEG、PNG 格式的图像处理，所有输出统一转换为 PNG 格式以保证质量。
+ * </p>
+ *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>用户上传头像时的格式验证和尺寸调整</li>
+ *   <li>邮件模板中 Logo 的 Base64 编码</li>
+ *   <li>作品图片的压缩和优化</li>
+ *   <li>图像格式统一转换（JPG/JPEG -> PNG）</li>
+ * </ol>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>仅支持 JPG、JPEG、PNG 三种格式，其他格式会抛出异常</li>
+ *   <li>图像缩放时保持宽高比，避免变形</li>
+ *   <li>Base64ToImage 方法已废弃，推荐使用二进制文件上传</li>
+ *   <li>所有输出图像统一为 PNG 格式，保证透明通道支持</li>
+ *   <li>图像缩放使用双三次插值算法，保证高质量</li>
+ * </ul>
+ *
+ * @author PlayerEG
+ * @since DEV-2.0.0
+ */
 public class ImageUtils {
     private static final PixVisionLogger log = PixVisionLogger.create(ImageUtils.class);
 
     /**
-     * 验证文件是否为有效的图片格式（通过魔数检查）
-     * 仅支持 JPG、JPEG、PNG 格式
+     * 验证文件是否为有效的图片格式
+     * <p>
+     * 通过检查文件头部的魔数（Magic Number）来判断是否为有效的图片格式。
+     * 仅支持 JPG、JPEG、PNG 三种格式。
+     * </p>
      *
      * @param imageBytes 文件字节数组
-     * @return true-是有效图片，false-不是有效图片
+     * @return true-是有效图片，false-不是有效图片或数据为空
      * @author PlayerEG
      */
     public static boolean isValidImage(byte[] imageBytes) {
@@ -191,13 +221,21 @@ public class ImageUtils {
 
     /**
      * 图像分辨率缩放
-     * 仅支持 JPG、JPEG、PNG 格式的图片
+     * <p>
+     * 支持 JPG、JPEG、PNG 格式的图片缩放，输出统一为 PNG 格式。
+     * 使用双三次插值算法保证高质量缩放效果。
+     * </p>
      *
      * @param imageBytes          原始图像字节数组
      * @param width               目标宽度（像素），为 0 时保持原始宽度
      * @param height              目标高度（像素），为 0 时保持原始高度
-     * @param maintainAspectRatio 是否保持宽高比，true 时根据 width 和 height 中非零值等比例缩放
-     * @return byte[] 压缩后的图像字节数组（PNG 格式）
+     * @param maintainAspectRatio 是否保持宽高比
+     *                            <ul>
+     *                              <li>true: 根据非零值等比例缩放</li>
+     *                              <li>false: 强制缩放到指定尺寸，可能变形</li>
+     *                            </ul>
+     * @return 压缩后的图像字节数组（PNG 格式）
+     * @throws IllegalArgumentException 如果参数不合法（空数据、负数尺寸、宽高都为0）
      * @author PlayerEG
      */
     public static byte[] resizeImage(byte[] imageBytes, int width, int height, boolean maintainAspectRatio) {

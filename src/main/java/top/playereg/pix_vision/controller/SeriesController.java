@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,14 +16,12 @@ import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
-import java.util.List;
-
 /**
  * 系列管理控制器
  *
  * @author PlayerEG
  */
-@Tag(name = "作品系列管理接口")
+@Tag(name = "作品合集接口")
 @RestController
 @RequestMapping("/api/work/series")
 public class SeriesController {
@@ -42,8 +41,8 @@ public class SeriesController {
      *
      * @param request     HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param seriesTitle 系列标题（最多 16 个中文字符）
-     * @param aboutText   系列描述文本（最多 24 个中文字符）
-     * @return 新增的系列信息
+     * @param aboutText   系列描述文本（最多 24 个中文字符，可选）
+     * @return 响应数据，表示系列是否新增成功
      * @author PlayerEG
      */
     @PostMapping("/add")
@@ -155,64 +154,78 @@ public class SeriesController {
     }
 
     /**
-     * 查询用户的所有作品系列
+     * 分页查询用户的所有作品系列
      *
-     * @param userId 用户 ID
-     * @return 作品系列列表
+     * @param userId  用户 ID
+     * @param current 当前页码（从 1 开始）
+     * @param size    每页数量（范围 1-100）
+     * @return 响应数据，包含分页的作品系列列表
      * @author PlayerEG
      */
-    @GetMapping("/list")
-    @PublicAccess("查询用户作品系列，无需认证")
+    @GetMapping("/page/{userId}/{current}/{size}")
+    @PublicAccess("分页查询用户作品系列，无需认证")
     @Operation(
-        summary = "查询用户作品系列接口",
+        summary = "分页查询用户作品系列接口",
         description = """
-            # 查询用户作品系列（无需登录认证）
+            # 分页查询用户作品系列（无需登录认证）
 
             ## 特性
             - 公开接口（无需 Token 认证）
+            - 支持分页查询
             - 自动过滤逻辑删除数据
             - 按创建时间倒序排列
 
             ## 参数说明：
-            - userId: 用户 ID，Integer 类型，必填
+            - **userId**: 用户 ID，Integer 类型，必填
+            - **current**: 当前页码，Integer 类型，必填，从 1 开始
+            - **size**: 每页数量，Integer 类型，必填，范围 1-100
 
             ## 返回说明：
-            - **查询成功**：返回 **{"data": [Series 列表]}** ，包含用户的所有作品系列
-            - **用户 ID 无效**：返回 **{"data": null}** 和"用户 ID 无效"提示
-            - **查询失败**：返回 **{"data": null}** 和"查询失败"提示
+            - **查询成功**：返回 **{"data": IPage<Series>}** ，包含分页信息和系列列表
+            - **用户 ID 无效**：返回 **{"data": null}** 和“用户 ID 无效”提示
 
             ## 业务逻辑：
-            1. 校验用户 ID 参数有效性
-            2. 查询用户的所有作品系列（自动排除逻辑删除的数据）
-            3. 按创建时间倒序返回结果
-            4. 返回系列列表
+            1. 校验用户 ID、页码和每页数量参数有效性
+            2. 调用 Service 层进行分页查询
+            3. 自动排除逻辑删除的数据（is_delete=0）
+            4. 按创建时间倒序返回结果
 
             ## 注意事项：
             - **此接口为公开接口，无需登录即可访问**
-            - 自动过滤已逻辑删除的数据（is_delete=0）
-            - 返回结果按创建时间倒序排列（最新的在前）
             - 如果用户没有作品系列，返回空列表 []
+            - 建议合理设置每页数量（size），避免一次性加载过多数据
             """
     )
-    public ResponsePojo<List<Series>> getSeriesList(
-        @Parameter(description = "用户 ID", required = true, example = "1") @RequestParam Integer userId
+    public ResponsePojo<IPage<Series>> getSeriesList(
+        @Parameter(description = "用户 ID", required = true, example = "1") @PathVariable Integer userId,
+        @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Integer current,
+        @Parameter(description = "每页数量，范围 1-100", required = true, example = "10") @PathVariable Integer size
     ) {
-        log.debug("查询用户作品系列 - 用户 ID: {}", userId);
+        log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}", userId, current, size);
 
         // 参数校验
         if (userId == null || userId <= 0) {
             log.warn("用户 ID 无效: {}", userId);
             return ResponsePojo.error(null, "用户 ID 无效");
         }
+        if (current == null || current < 1) {
+            log.warn("页码无效: {}", current);
+            return ResponsePojo.error(null, "页码必须大于 0");
+        }
+        if (size == null || size < 1 || size > 100) {
+            log.warn("每页数量无效: {}", size);
+            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        }
 
-        // 调用服务层查询
-        List<Series> seriesList = seriesService.getSeriesByUserId(userId);
+        // 调用服务层分页查询
+        IPage<Series> seriesPage = seriesService.getSeriesByUserId(userId, current, size);
 
-        if (seriesList != null) {
-            log.info("查询成功 - 用户 ID: {}, 系列数量: {}", userId, seriesList.size());
-            return ResponsePojo.success(seriesList, "查询成功");
+        if (seriesPage != null) {
+            log.info("分页查询成功 - 用户 ID: {}, 总记录数: {}, 当前页记录数: {}",
+                    userId, seriesPage.getTotal(), seriesPage.getRecords().size());
+            return ResponsePojo.success(seriesPage, "查询成功");
         } else {
-            log.error("查询失败 - 用户 ID: {}", userId);
+            log.error("分页查询失败 - 用户 ID: {}", userId);
             return ResponsePojo.error(null, "查询失败");
         }
     }
@@ -223,7 +236,7 @@ public class SeriesController {
      * @param request     HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param seriesId    系列 ID
      * @param deleteWorks 是否删除系列内的作品（true=删除作品，false=保留作品但移除系列关联）
-     * @return 删除结果
+     * @return 响应数据，表示系列是否删除成功
      * @author PlayerEG
      */
     @PostMapping("/delete")
@@ -340,7 +353,7 @@ public class SeriesController {
      * @param seriesId    系列 ID
      * @param seriesTitle 系列标题（可选，最多 16 个中文字符）
      * @param aboutText   系列描述（可选，最多 24 个中文字符）
-     * @return 修改结果
+     * @return 响应数据，表示系列信息是否更新成功
      * @author PlayerEG
      */
     @PostMapping("/update")

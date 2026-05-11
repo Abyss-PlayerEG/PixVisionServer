@@ -31,7 +31,7 @@ import java.util.List;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/profile")
 @RequiredArgsConstructor
-@Tag(name = "用户资料管理接口")
+@Tag(name = "用户基础资料接口")
 public class UserProfileController {
     private static final PixVisionLogger log = PixVisionLogger.create(UserProfileController.class);
 
@@ -43,9 +43,9 @@ public class UserProfileController {
      * 分页查询用户信息
      *
      * @param current 当前页码（从 1 开始）
-     * @param size    每页大小
-     * @param keyword 关键词（可选，同时模糊查询用户名/邮箱/昵称，精确查询 UUID）
-     * @return 响应数据<IPage < User>>
+     * @param size    每页大小（范围 1-100）
+     * @param keyword 关键词（可选，支持 UUID 精确查询或用户名/邮箱/昵称模糊查询）
+     * @return 响应数据，包含分页的用户信息列表
      * @author PlayerEG
      */
     @GetMapping("/page/{current}/{size}")
@@ -127,12 +127,6 @@ public class UserProfileController {
         // 调用服务层查询用户信息
         IPage<User> result = userService.selectPageUserInfo(page, searchKeyword, uuidBytes);
 
-        // 返回结果为空，则返回错误信息
-        if (result == null || result.getRecords().size() == 0) {
-            log.error("分页查询返回结果为空 - 页码：{}, 每页：{}", current, size);
-            return ResponsePojo.error(null, "查询失败，返回结果为空");
-        }
-
         // 将用户的 16 字节二进制UUID转换成字符串UUID
         for (User user : result.getRecords()) {
             user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
@@ -148,9 +142,9 @@ public class UserProfileController {
      * 按角色分页查询用户信息
      *
      * @param current   当前页码（从 1 开始）
-     * @param size      每页大小
+     * @param size      每页大小（范围 1-100）
      * @param userRoles 用户角色列表（可选，支持多个角色）
-     * @return 响应数据<IPage < User>>
+     * @return 响应数据，包含分页的用户信息列表
      * @author PlayerEG
      */
     @GetMapping("/page-by-role/{current}/{size}")
@@ -217,12 +211,6 @@ public class UserProfileController {
         // 调用服务层查询用户信息
         IPage<User> result = userService.selectPageUserInfoByRole(page, userRoles);
 
-        // 返回结果为空，则返回错误信息
-        if (result == null || result.getRecords().isEmpty()) {
-            log.warn("按角色分页查询返回结果为空 - 页码：{}, 每页：{}, 角色：{}", current, size, userRoles != null ? userRoles.toString() : "无");
-            return ResponsePojo.error(null, "查询失败，返回结果为空");
-        }
-
         // 将用户的 16 字节二进制UUID转换成字符串UUID
         for (User user : result.getRecords()) {
             user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
@@ -238,9 +226,9 @@ public class UserProfileController {
      * 修改用户昵称
      *
      * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param nickname 新昵称
-     * @return 修改结果
-     * @author Playereg
+     * @param nickname 新昵称（长度 1-20 个字符）
+     * @return 响应数据，表示昵称修改是否成功
+     * @author PlayerEG
      */
     @PostMapping("/nickname/change")
     @Operation(
@@ -336,9 +324,9 @@ public class UserProfileController {
      * 更改账号绑定邮箱
      *
      * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param newEmail 新邮箱
-     * @param vCode    邮箱验证码
-     * @return 修改结果
+     * @param newEmail 新邮箱地址
+     * @param vCode    邮箱验证码（6位大写字母或数字）
+     * @return 响应数据，表示邮箱修改是否成功
      * @author PlayerEG
      */
     @PostMapping("/email/change")
