@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.PendingReviewsMapper">
+
+    <select id="getWorkStatus" resultType="int">
+        SELECT status
+        FROM tb_pending_reviews
+        WHERE work_id = #{workId} AND data_type = 100
+    </select>
+
+    <update id="updateWorkStatusBatch">
+        UPDATE tb_pending_reviews
+        SET status = #{status}
+        WHERE work_id IN
+        <foreach collection="workIds" item="workId" open="(" separator="," close=")">
+            #{workId}
+        </foreach>
+          AND data_type = 100
+    </update>
+
+</mapper>
