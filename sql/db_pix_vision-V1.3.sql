@@ -41,7 +41,7 @@ CREATE TABLE `tb_comments` (
   CONSTRAINT `tb_comments_tb_comments_FK_1` FOREIGN KEY (`in_comment_id`) REFERENCES `tb_comments` (`conmment_id`),
   CONSTRAINT `tb_comments_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`),
   CONSTRAINT `tb_comments_tb_works_FK` FOREIGN KEY (`work_id`) REFERENCES `tb_works` (`work_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='评论表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='评论表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -248,7 +248,7 @@ CREATE TABLE `tb_works` (
   KEY `tb_works_tb_series_FK` (`series_id`),
   CONSTRAINT `tb_works_tb_series_FK` FOREIGN KEY (`series_id`) REFERENCES `tb_series` (`series_id`),
   CONSTRAINT `tb_works_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='作品表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='作品表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
