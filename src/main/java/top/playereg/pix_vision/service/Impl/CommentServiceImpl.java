@@ -159,7 +159,8 @@ public class CommentServiceImpl implements CommentService {
         }
 
         try {
-            List<Comments> comments = commentsMapper.selectCommentsByWorkId(workId);
+            // 默认按最新发布排序（orderBy 为 null 或其他非 'oldest' 值）
+            List<Comments> comments = commentsMapper.selectCommentsByWorkId(workId, null);
             log.info("查询作品评论成功 - 作品ID: {}, 评论数量: {}", workId, comments != null ? comments.size() : 0);
             return comments;
         } catch (Exception e) {
@@ -200,11 +201,12 @@ public class CommentServiceImpl implements CommentService {
      * 根据作品 ID 查询评论列表（包含用户信息和嵌套回复）
      *
      * @param workId 作品 ID
+     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布
      * @return 一级评论列表（每个一级评论包含二级评论列表）
      * @author PlayerEG
      */
     @Override
-    public List<PrimaryComment> getCommentsWithUserInfoByWorkId(Integer workId) {
+    public List<PrimaryComment> getCommentsWithUserInfoByWorkId(Integer workId, String orderBy) {
         if (workId == null) {
             log.warn("查询评论失败 - 作品ID为空");
             return null;
@@ -212,7 +214,7 @@ public class CommentServiceImpl implements CommentService {
 
         try {
             // 查询所有评论
-            List<Comments> allComments = commentsMapper.selectCommentsByWorkId(workId);
+            List<Comments> allComments = commentsMapper.selectCommentsByWorkId(workId, orderBy);
             if (allComments == null || allComments.isEmpty()) {
                 log.info("该作品暂无评论，作品 ID: {}", workId);
                 return new ArrayList<>();
@@ -260,6 +262,15 @@ public class CommentServiceImpl implements CommentService {
                     if (secondaryComment != null && primaryComment != null) {
                         primaryComment.getChildren().add(secondaryComment);
                     }
+                }
+            }
+
+            // 对每个一级评论的二级评论列表按最早发布排序（conmment_id ASC）
+            for (PrimaryComment primaryComment : rootComments) {
+                if (primaryComment.getChildren() != null && !primaryComment.getChildren().isEmpty()) {
+                    primaryComment.getChildren().sort((c1, c2) -> 
+                        Integer.compare(c1.getConmment_id(), c2.getConmment_id())
+                    );
                 }
             }
 

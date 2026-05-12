@@ -156,6 +156,7 @@ public class CommentController {
      * 根据作品 ID 查询评论列表（公开接口）
      *
      * @param workId 作品 ID
+     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）
      * @return 响应数据，包含一级评论列表（每个一级评论包含二级评论列表）
      * @author PlayerEG
      */
@@ -169,16 +170,20 @@ public class CommentController {
             - 根据作品 ID 查询所有评论
             - 包含用户昵称和头像信息
             - 自动构建嵌套回复结构（一级评论包含子评论列表）
-            - 按评论层级和创建时间排序
+            - 支持一级评论按时间排序（最新/最早）
+            - 二级评论始终按最早发布排列
 
             ## 参数说明：
             - workId: **作品 ID**，Integer 类型，必填
+            - orderBy: **排序方式**，String 类型，可选
+              - 'oldest': 一级评论按最早发布排列
+              - 其他值或 null: 一级评论按最新发布排列（默认）
 
             ## 返回说明：
-            - **查询成功**：返回 **{"data": [PrimaryComment列表]}** 和"查询成功"提示
-            - **作品 ID 无效**：返回 **{"data": null}** 和"作品 ID 无效"提示
-            - **无评论**：返回 **{"data": []}** 和"该作品暂无评论"提示
-            - **查询失败**：返回 **{"data": null}** 和"查询失败"提示
+            - **查询成功**：返回 **{"data": [PrimaryComment列表]}** 和“查询成功”提示
+            - **作品 ID 无效**：返回 **{"data": null}** 和“作品 ID 无效”提示
+            - **无评论**：返回 **{"data": []}** 和“该作品暂无评论”提示
+            - **查询失败**：返回 **{"data": null}** 和“查询失败”提示
 
             ## 业务逻辑：
             1. 校验作品 ID 参数有效性
@@ -186,14 +191,14 @@ public class CommentController {
             3. 批量查询所有评论用户的昵称和头像信息
             4. 将评论转换为响应对象，包含用户信息
             5. 构建两级结构：一级评论的 children 字段包含其所有二级评论（SecondaryComment）
-            6. 按评论层级升序、评论 ID 降序排列
+            6. 一级评论按指定顺序排列，二级评论始终按最早发布排列
             7. 返回评论列表
 
             ## 注意事项：
             - 这是一个**公开接口**，无需 Token 认证
             - 只返回**未删除**的评论（is_delete=0）
-            - 评论按层级排序：一级评论在前，二级评论在后
-            - 同一层级内按评论 ID 降序排列（最新的在前）
+            - 一级评论支持两种排序：最新发布（默认）或最早发布
+            - 二级评论始终按最早发布排列（conmment_id ASC）
             - 如果作品没有评论，返回空数组
             - 每个评论对象包含用户昵称（nickname）和头像路径（user_avatar）
             - 一级评论的 children 字段包含其所有二级评论（SecondaryComment类型）
@@ -203,7 +208,8 @@ public class CommentController {
     @PublicAccess("评论获取接口，无需认证")
     @GetMapping("/list/{workId}")
     public ResponsePojo<List<PrimaryComment>> getCommentsByWorkId(
-        @Parameter(description = "作品 ID", required = true, example = "1") @PathVariable Integer workId
+        @Parameter(description = "作品 ID", required = true, example = "1") @PathVariable Integer workId,
+        @Schema(description = "排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）", allowableValues = {"newest", "oldest"}, example = "newest") @RequestParam(required = false, defaultValue = "newest") String orderBy
     ) {
         // 参数校验
         if (workId == null || workId <= 0) {
@@ -212,7 +218,7 @@ public class CommentController {
         }
 
         // 调用服务层查询评论列表（包含用户信息和两级结构）
-        List<PrimaryComment> comments = commentService.getCommentsWithUserInfoByWorkId(workId);
+        List<PrimaryComment> comments = commentService.getCommentsWithUserInfoByWorkId(workId, orderBy);
 
         if (comments == null) {
             log.warn("查询评论失败，作品 ID: {}", workId);

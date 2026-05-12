@@ -32,7 +32,16 @@
         FROM tb_comments
         WHERE work_id = #{workId}
           AND is_delete = 0
-        ORDER BY conmment_floor ASC, conmment_id DESC
+        ORDER BY 
+            conmment_floor ASC,
+            <choose>
+                <when test="orderBy == 'oldest'">
+                    conmment_id ASC
+                </when>
+                <otherwise>
+                    conmment_id DESC
+                </otherwise>
+            </choose>
     </select>
 
     <!-- 根据评论 ID 查询评论信息 -->
