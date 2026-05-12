@@ -359,6 +359,103 @@
             border-radius: 4px;
             margin-bottom: 16px;
         }
+
+        /* 用户卡片 */
+        .user-card {
+            position: absolute;
+            background: white;
+            border: 1px solid #e4e7ed;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            min-width: 200px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .user-card.show {
+            display: block;
+        }
+
+        .user-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .user-card-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+
+        .user-card-info {
+            flex: 1;
+        }
+
+        .user-card-nickname {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .user-card-username {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .user-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user-card-item {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .user-card-label {
+            color: #999;
+            margin-right: 8px;
+            min-width: 40px;
+        }
+
+        .user-card-value {
+            color: #333;
+        }
+
+        .reply-to {
+            color: #409eff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .reply-to:hover {
+            text-decoration: underline;
+            color: #66b1ff;
+        }
+
+        /* 评论闪烁动画 */
+        @keyframes highlight-flash {
+            0%, 100% {
+                background-color: transparent;
+            }
+            50% {
+                background-color: #fff3cd;
+            }
+        }
+
+        .comment-highlight {
+            animation: highlight-flash 1.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -597,7 +694,7 @@
 
             // 如果有被回复者，显示 @昵称
             if (reply.replied_nickname) {
-                contentHtml = `<span class="reply-to">@${escapeHtml(reply.replied_nickname)}</span> ${contentHtml}`;
+                contentHtml = `<span class="reply-to" onclick="highlightComment(${reply.parent_comment_id})">@${escapeHtml(reply.replied_nickname)}</span> ${contentHtml}`;
             }
 
             return `
@@ -769,6 +866,33 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // 高亮显示对应的评论
+        function highlightComment(commentId) {
+            // 查找对应的评论元素
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            
+            if (commentElement) {
+                // 移除之前的高亮
+                commentElement.classList.remove('comment-highlight');
+                
+                // 强制重绘
+                void commentElement.offsetWidth;
+                
+                // 添加高亮动画
+                commentElement.classList.add('comment-highlight');
+                
+                // 滚动到该评论位置
+                commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // 动画结束后移除类名
+                setTimeout(() => {
+                    commentElement.classList.remove('comment-highlight');
+                }, 1500);
+            } else {
+                console.warn('未找到对应的评论:', commentId);
+            }
         }
 
         // 格式化时间（实时计算）
