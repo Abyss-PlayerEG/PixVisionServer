@@ -41,7 +41,7 @@ CREATE TABLE `tb_comments` (
   CONSTRAINT `tb_comments_tb_comments_FK_1` FOREIGN KEY (`in_comment_id`) REFERENCES `tb_comments` (`conmment_id`),
   CONSTRAINT `tb_comments_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`),
   CONSTRAINT `tb_comments_tb_works_FK` FOREIGN KEY (`work_id`) REFERENCES `tb_works` (`work_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='评论表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='评论表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -108,7 +108,7 @@ CREATE TABLE `tb_pending_reviews` (
   CONSTRAINT `tb_pending_reviews_tb_comments_FK` FOREIGN KEY (`conmment_id`) REFERENCES `tb_comments` (`conmment_id`),
   CONSTRAINT `tb_pending_reviews_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`),
   CONSTRAINT `tb_pending_reviews_tb_works_FK` FOREIGN KEY (`work_id`) REFERENCES `tb_works` (`work_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='待审核数据表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='待审核数据表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -131,7 +131,7 @@ CREATE TABLE `tb_series` (
   PRIMARY KEY (`series_id`),
   KEY `tb_series_tb_user_FK` (`user_id`),
   CONSTRAINT `tb_series_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='作品系列';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='作品系列';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -168,7 +168,7 @@ CREATE TABLE `tb_sys_logs` (
   PRIMARY KEY (`sys_log_id`),
   KEY `tb_sys_logs_tb_user_FK` (`user_id`),
   CONSTRAINT `tb_sys_logs_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='系统操作日志';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='系统操作日志';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -194,7 +194,7 @@ CREATE TABLE `tb_user` (
   `create_time` timestamp NOT NULL COMMENT '数据条目创建时间戳',
   `create_user` int NOT NULL DEFAULT '0' COMMENT '存储创建者id，系统创建为0',
   PRIMARY KEY (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=288 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='用户表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='用户表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -217,7 +217,7 @@ CREATE TABLE `tb_user_data` (
   PRIMARY KEY (`data_id`),
   KEY `tb_user_data_user_id_IDX` (`user_id`) USING BTREE,
   CONSTRAINT `tb_user_data_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='用户数据表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='用户数据表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -248,7 +248,7 @@ CREATE TABLE `tb_works` (
   KEY `tb_works_tb_series_FK` (`series_id`),
   CONSTRAINT `tb_works_tb_series_FK` FOREIGN KEY (`series_id`) REFERENCES `tb_series` (`series_id`),
   CONSTRAINT `tb_works_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='作品表';
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='作品表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
