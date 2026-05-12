@@ -245,51 +245,13 @@
             color: #999;
         }
 
-        /* Token 输入框 */
-        .token-input-area {
-            margin-bottom: 16px;
-            padding: 12px;
-            background: #fff3cd;
-            border-radius: 8px;
-            border: 1px solid #ffc107;
-        }
-
-        .token-input-area label {
-            display: block;
-            font-size: 13px;
-            color: #856404;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .token-input-area input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #ffc107;
-            border-radius: 4px;
-            font-size: 13px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .token-input-area input:focus {
-            outline: none;
-            border-color: #ff9800;
-            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
-        }
-
-        .token-hint {
-            font-size: 11px;
-            color: #856404;
-            margin-top: 6px;
-        }
-
         /* 作品 ID 输入框 */
         .work-id-area {
-            margin-bottom: 16px;
             padding: 12px;
             background: #d1ecf1;
             border-radius: 8px;
             border: 1px solid #bee5eb;
+            flex: 1;
         }
 
         .work-id-area label {
@@ -321,6 +283,51 @@
             margin-top: 6px;
         }
 
+        /* Token 输入框 */
+        .token-input-area {
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffc107;
+            flex: 5;
+        }
+
+        .token-input-area label {
+            display: block;
+            font-size: 13px;
+            color: #856404;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .token-input-area input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .token-input-area input:focus {
+            outline: none;
+            border-color: #ff9800;
+            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+        }
+
+        .token-hint {
+            font-size: 11px;
+            color: #856404;
+            margin-top: 6px;
+        }
+
+        /* 输入框容器（横向布局） */
+        .input-areas-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
         /* 作品信息卡片 */
         .work-info-card {
             margin-bottom: 16px;
@@ -332,13 +339,13 @@
 
         .work-cover-image {
             width: 100%;
-            max-height: 400px;
+            height: auto;
             object-fit: contain;
-            border-radius: 8px;
-            border: 1px solid #e4e7ed;
+            border-radius: 12px;
             margin-bottom: 16px;
             display: block;
             background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .work-info-details {
@@ -413,15 +420,51 @@
         /* 排序按钮 */
         .sort-controls {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
             gap: 8px;
         }
 
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-btn:hover {
+            border-color: #409eff;
+            color: #409eff;
+            background: #f0f9ff;
+        }
+
+        .action-btn.active {
+            background: #409eff;
+            border-color: #409eff;
+            color: white;
+        }
+
         .sort-label {
             font-size: 13px;
             color: #666;
+        }
+
+        .sort-buttons {
+            display: flex;
+            gap: 8px;
         }
 
         .sort-btn {
@@ -432,7 +475,7 @@
             color: #666;
             cursor: pointer;
             font-size: 13px;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
         .sort-btn:hover {
@@ -674,29 +717,30 @@
     <div class="container">
         <h1>📄 作品详情与评论系统 Demo</h1>
 
-        <!-- 作品 ID 输入框 -->
-        <div class="work-id-area">
-            <label for="work-id">📝 作品 ID：</label>
-            <input
-                id="work-id"
-                onchange="updateWorkId()"
-                placeholder="请输入作品 ID"
-                type="number"
-                value="1"
-            >
-            <div class="work-id-hint">💡 提示：修改作品 ID 后会重新加载该作品的评论</div>
-        </div>
+        <!-- 输入框容器（作品ID + Token） -->
+        <div class="input-areas-container">
+            <!-- 作品 ID 输入框 -->
+            <div class="work-id-area">
+                <label for="work-id">📝 作品 ID：</label>
+                <input
+                    id="work-id"
+                    onchange="updateWorkId()"
+                    placeholder="请输入作品 ID"
+                    type="number"
+                    value="1"
+                >
+            </div>
 
-        <!-- Token 输入框 -->
-        <div class="token-input-area">
-            <label for="auth-token">🔑 认证 Token（可选）：</label>
-            <input
-                id="auth-token"
-                onchange="updateAuthToken()"
-                placeholder="请输入 JWT Token，未登录可不填"
-                type="text"
-            >
-            <div class="token-hint">💡 提示：发表评论需要登录并提供有效的 Token</div>
+            <!-- Token 输入框 -->
+            <div class="token-input-area">
+                <label for="auth-token">🔑 认证 Token（可选）：</label>
+                <input
+                    id="auth-token"
+                    onchange="updateAuthToken()"
+                    placeholder="请输入 JWT Token，未登录可不填"
+                    type="text"
+                >
+            </div>
         </div>
 
         <!-- 作品信息卡片 -->
@@ -729,10 +773,29 @@
         <!-- 错误提示 -->
         <div class="error" id="error-message" style="display: none;"></div>
 
-        <!-- 排序控制 -->
+        <!-- 操作按钮和排序控制 -->
         <div class="sort-controls">
-            <button class="sort-btn active" id="sort-newest" onclick="changeSortOrder('newest')">最新发布</button>
-            <button class="sort-btn" id="sort-oldest" onclick="changeSortOrder('oldest')">最早发布</button>
+            <!-- 左侧：操作按钮 -->
+            <div class="action-buttons">
+                <button class="action-btn" onclick="handleLike()">
+                    <span>👍</span>
+                    <span>点赞</span>
+                </button>
+                <button class="action-btn" onclick="handleStar()">
+                    <span>⭐</span>
+                    <span>收藏</span>
+                </button>
+                <button class="action-btn" onclick="handleDownload()">
+                    <span>⬇️</span>
+                    <span>下载</span>
+                </button>
+            </div>
+
+            <!-- 右侧：排序按钮 -->
+            <div class="sort-buttons">
+                <button class="sort-btn active" id="sort-newest" onclick="changeSortOrder('newest')">最新发布</button>
+                <button class="sort-btn" id="sort-oldest" onclick="changeSortOrder('oldest')">最早发布</button>
+            </div>
         </div>
 
         <!-- 评论输入框 -->
@@ -786,8 +849,8 @@
 
     <script>
         // 配置
-        // const API_BASE_URL = 'http://localhost:9090'; // 修改为你的服务器地址
-        const API_BASE_URL = 'http://172.18.207.70:9090';
+        const API_BASE_URL = 'http://localhost:9090'; // 修改为你的服务器地址
+        // const API_BASE_URL = 'http://172.18.207.70:9090';
         let WORK_ID = 1; // 作品ID，从输入框获取
         let authToken = ''; // JWT Token，从输入框获取
         let commentOrderBy = 'newest'; // 评论排序方式：'newest' - 最新发布（默认），'oldest' - 最早发布
@@ -875,6 +938,70 @@
             const tokenInput = document.getElementById('auth-token');
             authToken = tokenInput.value.trim();
             console.log('Token 已更新:', authToken ? '已设置' : '未设置');
+        }
+
+        // 点赞处理
+        function handleLike() {
+            if (!authToken) {
+                showError('请先输入认证 Token');
+                return;
+            }
+            // TODO: 调用点赞接口
+            showError('点赞功能开发中...');
+        }
+
+        // 收藏处理
+        function handleStar() {
+            if (!authToken) {
+                showError('请先输入认证 Token');
+                return;
+            }
+            // TODO: 调用收藏接口
+            showError('收藏功能开发中...');
+        }
+
+        // 下载处理
+        async function handleDownload() {
+            const workCover = document.getElementById('work-cover-image');
+            if (!workCover || !workCover.src) {
+                showError('暂无可下载的图片');
+                return;
+            }
+
+            try {
+                // 使用 fetch 获取图片数据
+                const response = await fetch(workCover.src);
+                if (!response.ok) {
+                    throw new Error('下载失败');
+                }
+
+                // 将响应转换为 Blob
+                const blob = await response.blob();
+
+                // 生成文件名：pix_vision_YYYY-MM-DD.png
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const fileName = `pix_vision_${year}-${month}-${day}.png`;
+
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+
+                // 清理
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                showError('下载成功！');
+            } catch (error) {
+                console.error('下载错误:', error);
+                showError('下载失败，请重试');
+            }
         }
 
         // 切换排序方式
