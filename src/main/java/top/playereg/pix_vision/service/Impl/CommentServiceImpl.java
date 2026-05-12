@@ -346,15 +346,17 @@ public class CommentServiceImpl implements CommentService {
             vo.setUser_avatar("");
         }
 
-        // 设置被回复者的昵称（二级评论特有）
+        // 设置被回复者的昵称和 ID（二级评论特有）
         if (comment.getParent_comment_id() != null) {
             Comments parentComment = parentCommentMap.get(comment.getParent_comment_id());
             if (parentComment != null) {
                 User parentUser = userMap.get(parentComment.getUser_id());
                 if (parentUser != null) {
                     vo.setReplied_nickname(parentUser.getNickname());
+                    vo.setReplied_user_id(parentUser.getUser_id());
                 } else {
                     vo.setReplied_nickname("未知用户");
+                    vo.setReplied_user_id(null);
                 }
             }
         }

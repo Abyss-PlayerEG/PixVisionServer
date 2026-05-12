@@ -34,4 +34,10 @@ public class BaseCommentVO extends BaseComment {
      */
     @Schema(description = "被回复者的用户昵称")
     private String replied_nickname;
+
+    /**
+     * 被回复者的用户 ID（仅二级评论有值，一级评论为 null）
+     */
+    @Schema(description = "被回复者的用户 ID")
+    private Integer replied_user_id;
 }
