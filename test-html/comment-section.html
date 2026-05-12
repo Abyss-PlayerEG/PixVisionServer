@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>评论区示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 24px;
+            font-size: 24px;
+        }
+
+        /* 评论输入框 */
+        .comment-input-area {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .comment-input-area textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .comment-input-area textarea:focus {
+            outline: none;
+            border-color: #409eff;
+        }
+
+        .input-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .char-count {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #409eff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #66b1ff;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* 评论列表 */
+        .comment-list {
+            margin-top: 24px;
+        }
+
+        .comment-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .comment-item:last-child {
+            border-bottom: none;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .nickname {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .comment-time {
+            color: #999;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .comment-content {
+            margin-left: 52px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .comment-actions {
+            margin-left: 52px;
+            margin-top: 8px;
+        }
+
+        .reply-btn {
+            color: #409eff;
+            font-size: 13px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .reply-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* 二级评论 */
+        .reply-list {
+            margin-left: 52px;
+            margin-top: 12px;
+            padding-left: 16px;
+            border-left: 2px solid #eee;
+        }
+
+        .reply-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .reply-item:last-child {
+            border-bottom: none;
+        }
+
+        .reply-content {
+            margin-left: 52px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .reply-to {
+            color: #409eff;
+            margin-right: 4px;
+        }
+
+        /* 回复输入框 */
+        .reply-input-area {
+            margin-left: 52px;
+            margin-top: 12px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .reply-input-area textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            resize: vertical;
+            font-family: inherit;
+            margin-bottom: 8px;
+        }
+
+        .reply-input-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .btn-cancel {
+            background: #fff;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .btn-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Token 输入框 */
+        .token-input-area {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffc107;
+        }
+
+        .token-input-area label {
+            display: block;
+            font-size: 13px;
+            color: #856404;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .token-input-area input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .token-input-area input:focus {
+            outline: none;
+            border-color: #ff9800;
+            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+        }
+
+        .token-hint {
+            font-size: 11px;
+            color: #856404;
+            margin-top: 6px;
+        }
+
+        /* 作品 ID 输入框 */
+        .work-id-area {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #d1ecf1;
+            border-radius: 8px;
+            border: 1px solid #bee5eb;
+        }
+
+        .work-id-area label {
+            display: block;
+            font-size: 13px;
+            color: #0c5460;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .work-id-area input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .work-id-area input:focus {
+            outline: none;
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.2);
+        }
+
+        .work-id-hint {
+            font-size: 11px;
+            color: #0c5460;
+            margin-top: 6px;
+        }
+
+        /* 排序按钮 */
+        .sort-controls {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 8px;
+        }
+
+        .sort-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .sort-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .sort-btn:hover {
+            border-color: #409eff;
+            color: #409eff;
+        }
+
+        .sort-btn.active {
+            background: #409eff;
+            border-color: #409eff;
+            color: white;
+        }
+
+        /* 错误提示 */
+        .error {
+            padding: 12px;
+            background: #fef0f0;
+            color: #f56c6c;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 评论区</h1>
+
+        <!-- 作品 ID 输入框 -->
+        <div class="work-id-area">
+            <label for="work-id">📝 作品 ID：</label>
+            <input
+                id="work-id"
+                onchange="updateWorkId()"
+                placeholder="请输入作品 ID"
+                type="number"
+                value="1"
+            >
+            <div class="work-id-hint">💡 提示：修改作品 ID 后会重新加载该作品的评论</div>
+        </div>
+
+        <!-- Token 输入框 -->
+        <div class="token-input-area">
+            <label for="auth-token">🔑 认证 Token（可选）：</label>
+            <input
+                id="auth-token"
+                onchange="updateAuthToken()"
+                placeholder="请输入 JWT Token，未登录可不填"
+                type="text"
+            >
+            <div class="token-hint">💡 提示：发表评论需要登录并提供有效的 Token</div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="error" id="error-message" style="display: none;"></div>
+
+        <!-- 排序控制 -->
+        <div class="sort-controls">
+            <span class="sort-label">一级评论排序：</span>
+            <button class="sort-btn active" id="sort-newest" onclick="changeSortOrder('newest')">最新发布</button>
+            <button class="sort-btn" id="sort-oldest" onclick="changeSortOrder('oldest')">最早发布</button>
+        </div>
+
+        <!-- 评论输入框 -->
+        <div class="comment-input-area">
+            <textarea
+                id="main-comment-input"
+                maxlength="125"
+                placeholder="写下你的评论..."
+            ></textarea>
+            <div class="input-actions">
+                <span class="char-count"><span id="main-char-count">0</span>/125</span>
+                <button class="btn btn-primary" id="submit-main-comment" onclick="submitMainComment()">发表评论</button>
+            </div>
+        </div>
+
+        <!-- 评论列表 -->
+        <div class="comment-list" id="comment-list">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const API_BASE_URL = 'http://localhost:9090'; // 修改为你的服务器地址
+        let WORK_ID = 1; // 作品ID，从输入框获取
+        let authToken = ''; // JWT Token，从输入框获取
+        let commentOrderBy = 'newest'; // 评论排序方式：'newest' - 最新发布（默认），'oldest' - 最早发布
+
+        // 更新作品 ID
+        function updateWorkId() {
+            const workIdInput = document.getElementById('work-id');
+            const newWorkId = parseInt(workIdInput.value);
+
+            if (newWorkId && newWorkId > 0) {
+                WORK_ID = newWorkId;
+                console.log('作品 ID 已更新:', WORK_ID);
+                // 重新加载评论
+                loadComments();
+            } else {
+                showError('作品 ID 必须为正整数');
+                workIdInput.value = WORK_ID;
+            }
+        }
+
+        // 更新 Token
+        function updateAuthToken() {
+            const tokenInput = document.getElementById('auth-token');
+            authToken = tokenInput.value.trim();
+            console.log('Token 已更新:', authToken ? '已设置' : '未设置');
+        }
+
+        // 切换排序方式
+        function changeSortOrder(orderBy) {
+            commentOrderBy = orderBy;
+
+            // 更新按钮状态
+            document.getElementById('sort-newest').classList.toggle('active', orderBy === 'newest');
+            document.getElementById('sort-oldest').classList.toggle('active', orderBy === 'oldest');
+
+            // 重新加载评论
+            loadComments();
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComments();
+            setupCharCount();
+
+            // 尝试从 localStorage 读取保存的 token
+            const savedToken = localStorage.getItem('pixvision_token');
+            if (savedToken) {
+                document.getElementById('auth-token').value = savedToken;
+                authToken = savedToken;
+            }
+        });
+
+        // 设置字符计数
+        function setupCharCount() {
+            const input = document.getElementById('main-comment-input');
+            const count = document.getElementById('main-char-count');
+
+            input.addEventListener('input', () => {
+                count.textContent = input.value.length;
+            });
+        }
+
+        // 加载评论列表
+        async function loadComments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/comment/list/${WORK_ID}?orderBy=${commentOrderBy}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('加载评论失败');
+                }
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    renderComments(result.data);
+                } else {
+                    showError(result.message || '加载评论失败');
+                }
+            } catch (error) {
+                console.error('加载评论错误:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 渲染评论列表
+        function renderComments(comments) {
+            const container = document.getElementById('comment-list');
+
+            if (!comments || comments.length === 0) {
+                container.innerHTML = '<div class="empty">暂无评论，快来发表第一条评论吧！</div>';
+                return;
+            }
+
+            let html = '';
+            comments.forEach(comment => {
+                html += renderPrimaryComment(comment);
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 渲染一级评论
+        function renderPrimaryComment(comment) {
+            const avatarUrl = comment.user_avatar
+                ? `${API_BASE_URL}/api/image/avatar/get?filePath=${encodeURIComponent(comment.user_avatar)}`
+                : '/1.png';
+
+            let html = `
+                <div class="comment-item" data-comment-id="${comment.conmment_id}">
+                    <div class="comment-header">
+                        <img src="${avatarUrl}" alt="${comment.nickname}" class="avatar" onerror="this.src='/1.png'">
+                        <div class="user-info">
+                            <div class="nickname">${escapeHtml(comment.nickname)}</div>
+                            <div class="comment-time">${formatTime(comment.time)}</div>
+                        </div>
+                    </div>
+                    <div class="comment-content">${escapeHtml(comment.conmment_text)}</div>
+                    <div class="comment-actions">
+                        <button class="reply-btn" onclick="showReplyInput(${comment.conmment_id}, '${escapeHtml(comment.nickname)}')">回复</button>
+                    </div>
+            `;
+
+            // 渲染二级评论
+            if (comment.children && comment.children.length > 0) {
+                html += '<div class="reply-list">';
+                comment.children.forEach(reply => {
+                    html += renderSecondaryComment(reply);
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // 渲染二级评论
+        function renderSecondaryComment(reply) {
+            const avatarUrl = reply.user_avatar
+                ? `${API_BASE_URL}/api/image/avatar/get?filePath=${encodeURIComponent(reply.user_avatar)}`
+                : '/1.png';
+
+            let contentHtml = escapeHtml(reply.conmment_text);
+
+            // 如果有被回复者，显示 @昵称
+            if (reply.replied_nickname) {
+                contentHtml = `<span class="reply-to">@${escapeHtml(reply.replied_nickname)}</span> ${contentHtml}`;
+            }
+
+            return `
+                <div class="reply-item" data-comment-id="${reply.conmment_id}">
+                    <div class="comment-header">
+                        <img src="${avatarUrl}" alt="${reply.nickname}" class="avatar" onerror="this.src='/default-avatar.png'">
+                        <div class="user-info">
+                            <div class="nickname">${escapeHtml(reply.nickname)}</div>
+                            <div class="comment-time">${formatTime(reply.time)}</div>
+                        </div>
+                    </div>
+                    <div class="reply-content">${contentHtml}</div>
+                    <div class="comment-actions">
+                        <button class="reply-btn" onclick="showReplyInput(${reply.conmment_id}, '${escapeHtml(reply.replied_nickname || reply.nickname)}')">回复</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 显示回复输入框
+        function showReplyInput(parentCommentId, parentNickname) {
+            // 移除现有的回复输入框
+            const existingInput = document.querySelector('.reply-input-area');
+            if (existingInput) {
+                existingInput.remove();
+            }
+
+            // 找到对应的评论项
+            const commentItem = document.querySelector(`[data-comment-id="${parentCommentId}"]`);
+            if (!commentItem) return;
+
+            // 创建回复输入框
+            const replyArea = document.createElement('div');
+            replyArea.className = 'reply-input-area';
+            replyArea.innerHTML = `
+                <textarea placeholder="回复 @${escapeHtml(parentNickname)}..." maxlength="125"></textarea>
+                <div class="reply-input-actions">
+                    <button class="btn btn-cancel" onclick="cancelReply(this)">取消</button>
+                    <button class="btn btn-primary" onclick="submitReply(${parentCommentId}, this)">回复</button>
+                </div>
+            `;
+
+            // 插入到评论项中
+            const actionsDiv = commentItem.querySelector('.comment-actions');
+            actionsDiv.after(replyArea);
+
+            // 聚焦到输入框
+            replyArea.querySelector('textarea').focus();
+        }
+
+        // 取消回复
+        function cancelReply(btn) {
+            btn.closest('.reply-input-area').remove();
+        }
+
+        // 提交主评论
+        async function submitMainComment() {
+            if (!authToken) {
+                showError('请先输入认证 Token');
+                return;
+            }
+
+            const input = document.getElementById('main-comment-input');
+            const content = input.value.trim();
+
+            if (!content) {
+                showError('评论内容不能为空');
+                return;
+            }
+
+            if (content.length > 125) {
+                showError('评论内容不能超过125个字符');
+                return;
+            }
+
+            try {
+                // 构建 URL 查询参数
+                const params = new URLSearchParams({
+                    workId: WORK_ID,
+                    parentCommentId: '',
+                    commentFloor: 1,
+                    commentText: content
+                });
+
+                const response = await fetch(`${API_BASE_URL}/api/comment/add?${params.toString()}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    input.value = '';
+                    document.getElementById('main-char-count').textContent = '0';
+
+                    // 保存 token 到 localStorage
+                    localStorage.setItem('pixvision_token', authToken);
+
+                    loadComments(); // 重新加载评论列表
+                } else {
+                    showError(result.message || '发表评论失败');
+                }
+            } catch (error) {
+                console.error('发表评论错误:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 提交回复
+        async function submitReply(parentCommentId, btn) {
+            if (!authToken) {
+                showError('请先输入认证 Token');
+                return;
+            }
+
+            const replyArea = btn.closest('.reply-input-area');
+            const textarea = replyArea.querySelector('textarea');
+            const content = textarea.value.trim();
+
+            if (!content) {
+                showError('回复内容不能为空');
+                return;
+            }
+
+            if (content.length > 125) {
+                showError('回复内容不能超过125个字符');
+                return;
+            }
+
+            try {
+                // 构建 URL 查询参数
+                const params = new URLSearchParams({
+                    workId: WORK_ID,
+                    parentCommentId: parentCommentId,
+                    commentFloor: 2,
+                    commentText: content
+                });
+
+                const response = await fetch(`${API_BASE_URL}/api/comment/add?${params.toString()}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    replyArea.remove();
+
+                    // 保存 token 到 localStorage
+                    localStorage.setItem('pixvision_token', authToken);
+
+                    loadComments(); // 重新加载评论列表
+                } else {
+                    showError(result.message || '发表回复失败');
+                }
+            } catch (error) {
+                console.error('发表回复错误:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 格式化时间
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+
+            const date = new Date(timeStr);
+            const now = new Date();
+            const diff = now - date;
+
+            // 小于1分钟
+            if (diff < 60000) {
+                return '刚刚';
+            }
+
+            // 小于1小时
+            if (diff < 3600000) {
+                return Math.floor(diff / 60000) + '分钟前';
+            }
+
+            // 小于24小时
+            if (diff < 86400000) {
+                return Math.floor(diff / 3600000) + '小时前';
+            }
+
+            // 小于7天
+            if (diff < 604800000) {
+                return Math.floor(diff / 86400000) + '天前';
+            }
+
+            // 其他情况显示完整日期
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
