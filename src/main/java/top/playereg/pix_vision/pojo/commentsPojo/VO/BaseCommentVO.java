@@ -34,10 +34,4 @@ public class BaseCommentVO extends BaseComment {
      */
     @Schema(description = "被回复者的用户昵称")
     private String replied_nickname;
-
-    /**
-     * 格式化后的时间显示（如：刚刚、5分钟前、2小时前、3天前等）
-     */
-    @Schema(description = "格式化后的时间显示", example = "5分钟前")
-    private String formatted_time;
 }

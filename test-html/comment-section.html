@@ -425,6 +425,7 @@
         let WORK_ID = 1; // 作品ID，从输入框获取
         let authToken = ''; // JWT Token，从输入框获取
         let commentOrderBy = 'newest'; // 评论排序方式：'newest' - 最新发布（默认），'oldest' - 最早发布
+        let refreshTimer = null; // 时间刷新定时器
 
         // 更新作品 ID
         function updateWorkId() {
@@ -465,6 +466,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadComments();
             setupCharCount();
+            startTimeRefresh(); // 启动时间刷新
 
             // 尝试从 localStorage 读取保存的 token
             const savedToken = localStorage.getItem('pixvision_token');
@@ -473,6 +475,31 @@
                 authToken = savedToken;
             }
         });
+
+        // 启动时间刷新（每分钟更新一次）
+        function startTimeRefresh() {
+            // 清除旧的定时器
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+
+            // 每60秒刷新一次时间显示
+            refreshTimer = setInterval(() => {
+                refreshAllTimes();
+            }, 1000);
+        }
+
+        // 刷新所有评论的时间显示
+        function refreshAllTimes() {
+            const timeElements = document.querySelectorAll('.comment-time');
+            timeElements.forEach(element => {
+                // 从 data-time 属性获取原始时间
+                const originalTime = element.getAttribute('data-time');
+                if (originalTime) {
+                    element.textContent = formatTime(originalTime);
+                }
+            });
+        }
 
         // 设置字符计数
         function setupCharCount() {
@@ -540,7 +567,7 @@
                         <img src="${avatarUrl}" alt="${comment.nickname}" class="avatar" onerror="this.src='/1.png'">
                         <div class="user-info">
                             <div class="nickname">${escapeHtml(comment.nickname)}</div>
-                            <div class="comment-time">${escapeHtml(comment.formatted_time || '')}</div>
+                            <div class="comment-time" data-time="${comment.time}">${formatTime(comment.time)}</div>
                         </div>
                     </div>
                     <div class="comment-content">${escapeHtml(comment.conmment_text)}</div>
@@ -580,7 +607,7 @@
                         <img src="${avatarUrl}" alt="${reply.nickname}" class="avatar" onerror="this.src='/default-avatar.png'">
                         <div class="user-info">
                             <div class="nickname">${escapeHtml(reply.nickname)}</div>
-                            <div class="comment-time">${escapeHtml(reply.formatted_time || '')}</div>
+                            <div class="comment-time" data-time="${reply.time}">${formatTime(reply.time)}</div>
                         </div>
                     </div>
                     <div class="reply-content">${contentHtml}</div>
@@ -742,6 +769,38 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // 格式化时间（实时计算）
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+
+            const date = new Date(timeStr);
+            const now = new Date();
+            const diff = now - date;
+
+            // 小于1分钟
+            if (diff < 60000) {
+                return '刚刚';
+            }
+
+            // 小于1小时
+            if (diff < 3600000) {
+                return Math.floor(diff / 60000) + '分钟前';
+            }
+
+            // 小于24小时
+            if (diff < 86400000) {
+                return Math.floor(diff / 3600000) + '小时前';
+            }
+
+            // 小于7天
+            if (diff < 604800000) {
+                return Math.floor(diff / 86400000) + '天前';
+            }
+
+            // 其他情况显示完整日期
+            return date.toLocaleDateString('zh-CN');
         }
 
         // 显示错误信息
