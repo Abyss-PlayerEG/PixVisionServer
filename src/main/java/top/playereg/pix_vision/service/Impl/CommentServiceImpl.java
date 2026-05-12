@@ -11,6 +11,7 @@ import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -312,6 +313,9 @@ public class CommentServiceImpl implements CommentService {
             vo.setUser_avatar("");
         }
 
+        // 设置格式化时间
+        vo.setFormatted_time(formatTime(comment.getTime()));
+
         return vo;
     }
 
@@ -359,6 +363,47 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
+        // 设置格式化时间
+        vo.setFormatted_time(formatTime(comment.getTime()));
+
         return vo;
+    }
+
+    /**
+     * 格式化时间显示
+     *
+     * @param time 评论时间
+     * @return 格式化后的时间字符串（如：刚刚、5分钟前、2小时前、3天前等）
+     */
+    private String formatTime(LocalDateTime time) {
+        if (time == null) {
+            return "";
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        long diffMillis = java.time.Duration.between(time, now).toMillis();
+
+        // 小于1分钟
+        if (diffMillis < 60000) {
+            return "刚刚";
+        }
+
+        // 小于1小时
+        if (diffMillis < 3600000) {
+            return (diffMillis / 60000) + "分钟前";
+        }
+
+        // 小于24小时
+        if (diffMillis < 86400000) {
+            return (diffMillis / 3600000) + "小时前";
+        }
+
+        // 小于7天
+        if (diffMillis < 604800000) {
+            return (diffMillis / 86400000) + "天前";
+        }
+
+        // 其他情况显示完整日期
+        return time.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 }
