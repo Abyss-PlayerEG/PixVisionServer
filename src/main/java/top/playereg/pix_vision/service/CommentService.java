@@ -46,8 +46,9 @@ public interface CommentService {
      * 根据作品 ID 查询评论列表（包含用户信息和嵌套回复）
      *
      * @param workId 作品 ID
+     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布
      * @return 一级评论列表（每个一级评论包含二级评论列表）
      * @author PlayerEG
      */
-    java.util.List<PrimaryComment> getCommentsWithUserInfoByWorkId(Integer workId);
+    java.util.List<PrimaryComment> getCommentsWithUserInfoByWorkId(Integer workId, String orderBy);
 }

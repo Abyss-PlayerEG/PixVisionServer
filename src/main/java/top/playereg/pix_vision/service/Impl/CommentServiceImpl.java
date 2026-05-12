@@ -11,6 +11,7 @@ import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -159,7 +160,8 @@ public class CommentServiceImpl implements CommentService {
         }
 
         try {
-            List<Comments> comments = commentsMapper.selectCommentsByWorkId(workId);
+            // 默认按最新发布排序（orderBy 为 null 或其他非 'oldest' 值）
+            List<Comments> comments = commentsMapper.selectCommentsByWorkId(workId, null);
             log.info("查询作品评论成功 - 作品ID: {}, 评论数量: {}", workId, comments != null ? comments.size() : 0);
             return comments;
         } catch (Exception e) {
@@ -200,11 +202,12 @@ public class CommentServiceImpl implements CommentService {
      * 根据作品 ID 查询评论列表（包含用户信息和嵌套回复）
      *
      * @param workId 作品 ID
+     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布
      * @return 一级评论列表（每个一级评论包含二级评论列表）
      * @author PlayerEG
      */
     @Override
-    public List<PrimaryComment> getCommentsWithUserInfoByWorkId(Integer workId) {
+    public List<PrimaryComment> getCommentsWithUserInfoByWorkId(Integer workId, String orderBy) {
         if (workId == null) {
             log.warn("查询评论失败 - 作品ID为空");
             return null;
@@ -212,7 +215,7 @@ public class CommentServiceImpl implements CommentService {
 
         try {
             // 查询所有评论
-            List<Comments> allComments = commentsMapper.selectCommentsByWorkId(workId);
+            List<Comments> allComments = commentsMapper.selectCommentsByWorkId(workId, orderBy);
             if (allComments == null || allComments.isEmpty()) {
                 log.info("该作品暂无评论，作品 ID: {}", workId);
                 return new ArrayList<>();
@@ -263,6 +266,15 @@ public class CommentServiceImpl implements CommentService {
                 }
             }
 
+            // 对每个一级评论的二级评论列表按最早发布排序（conmment_id ASC）
+            for (PrimaryComment primaryComment : rootComments) {
+                if (primaryComment.getChildren() != null && !primaryComment.getChildren().isEmpty()) {
+                    primaryComment.getChildren().sort((c1, c2) -> 
+                        Integer.compare(c1.getConmment_id(), c2.getConmment_id())
+                    );
+                }
+            }
+
             log.info("查询作品评论成功 - 作品ID: {}, 一级评论数量: {}, 总评论数量: {}",
                     workId, rootComments.size(), allComments.size());
             return rootComments;
@@ -300,6 +312,9 @@ public class CommentServiceImpl implements CommentService {
             vo.setNickname("未知用户");
             vo.setUser_avatar("");
         }
+
+        // 设置格式化时间
+        vo.setFormatted_time(formatTime(comment.getTime()));
 
         return vo;
     }
@@ -348,6 +363,47 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
+        // 设置格式化时间
+        vo.setFormatted_time(formatTime(comment.getTime()));
+
         return vo;
+    }
+
+    /**
+     * 格式化时间显示
+     *
+     * @param time 评论时间
+     * @return 格式化后的时间字符串（如：刚刚、5分钟前、2小时前、3天前等）
+     */
+    private String formatTime(LocalDateTime time) {
+        if (time == null) {
+            return "";
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        long diffMillis = java.time.Duration.between(time, now).toMillis();
+
+        // 小于1分钟
+        if (diffMillis < 60000) {
+            return "刚刚";
+        }
+
+        // 小于1小时
+        if (diffMillis < 3600000) {
+            return (diffMillis / 60000) + "分钟前";
+        }
+
+        // 小于24小时
+        if (diffMillis < 86400000) {
+            return (diffMillis / 3600000) + "小时前";
+        }
+
+        // 小于7天
+        if (diffMillis < 604800000) {
+            return (diffMillis / 86400000) + "天前";
+        }
+
+        // 其他情况显示完整日期
+        return time.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 }

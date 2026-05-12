@@ -31,10 +31,11 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * 根据作品 ID 查询评论列表
      *
      * @param workId 作品 ID
+     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布
      * @return 评论列表
      * @author PlayerEG
      */
-    java.util.List<Comments> selectCommentsByWorkId(@Param("workId") Integer workId);
+    java.util.List<Comments> selectCommentsByWorkId(@Param("workId") Integer workId, @Param("orderBy") String orderBy);
 
     /**
      * 根据评论 ID 查询评论信息
