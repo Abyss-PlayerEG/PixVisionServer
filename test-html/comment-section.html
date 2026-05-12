@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>评论区示例</title>
+    <title>作品详情与评论系统</title>
     <style>
         * {
             margin: 0;
@@ -127,6 +127,12 @@
             font-weight: 600;
             color: #333;
             font-size: 14px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nickname:hover {
+            color: #409eff;
         }
 
         .comment-time {
@@ -315,6 +321,95 @@
             margin-top: 6px;
         }
 
+        /* 作品信息卡片 */
+        .work-info-card {
+            margin-bottom: 16px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e4e7ed;
+        }
+
+        .work-cover-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #e4e7ed;
+            margin-bottom: 16px;
+            display: block;
+            background: #fff;
+        }
+
+        .work-info-details {
+            width: 100%;
+        }
+
+        .work-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .work-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .work-stat-item {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .work-stat-label {
+            color: #999;
+            margin-right: 4px;
+        }
+
+        .work-stat-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .work-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .work-out-link {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #e4e7ed;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .work-out-link-label {
+            color: #999;
+            margin-right: 8px;
+        }
+
+        .work-out-link-url {
+            color: #409eff;
+            word-break: break-all;
+        }
+
+        .work-out-link-url a {
+            color: #409eff;
+            text-decoration: none;
+        }
+
+        .work-out-link-url a:hover {
+            text-decoration: underline;
+        }
+
         /* 排序按钮 */
         .sort-controls {
             display: flex;
@@ -358,6 +453,123 @@
             color: #f56c6c;
             border-radius: 4px;
             margin-bottom: 16px;
+        }
+
+        /* 用户信息弹窗 */
+        .user-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .user-modal-overlay.show {
+            display: flex;
+        }
+
+        .user-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            min-width: 430px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .user-modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f5f5f5;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .user-modal-close:hover {
+            background: #e4e7ed;
+            color: #333;
+        }
+
+        .user-modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .user-modal-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 16px;
+        }
+
+        .user-modal-info {
+            flex: 1;
+        }
+
+        .user-modal-nickname {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .user-modal-username {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .user-modal-email {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .user-modal-uuid {
+            font-size: 12px;
+            color: #999;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .user-modal-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .user-modal-stat {
+            text-align: center;
+        }
+
+        .user-modal-stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .user-modal-stat-label {
+            font-size: 12px;
+            color: #999;
         }
 
         /* 用户卡片 */
@@ -435,7 +647,7 @@
         .reply-to {
             color: #409eff;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.1s;
         }
 
         .reply-to:hover {
@@ -454,13 +666,13 @@
         }
 
         .comment-highlight {
-            animation: highlight-flash 1.5s ease-in-out;
+            animation: highlight-flash 0.9s ease-in-out;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>💬 评论区</h1>
+        <h1>📄 作品详情与评论系统</h1>
 
         <!-- 作品 ID 输入框 -->
         <div class="work-id-area">
@@ -485,6 +697,33 @@
                 type="text"
             >
             <div class="token-hint">💡 提示：发表评论需要登录并提供有效的 Token</div>
+        </div>
+
+        <!-- 作品信息卡片 -->
+        <div class="work-info-card" id="work-info-card" style="display: none;">
+            <img alt="作品封面" class="work-cover-image" id="work-cover-image" src="/1.png">
+            <div class="work-info-details">
+                <div class="work-title" id="work-title">-</div>
+                <div class="work-stats">
+                    <div class="work-stat-item">
+                        <span class="work-stat-label">浏览:</span>
+                        <span class="work-stat-value" id="work-views">0</span>
+                    </div>
+                    <div class="work-stat-item">
+                        <span class="work-stat-label">点赞:</span>
+                        <span class="work-stat-value" id="work-likes">0</span>
+                    </div>
+                    <div class="work-stat-item">
+                        <span class="work-stat-label">收藏:</span>
+                        <span class="work-stat-value" id="work-stars">0</span>
+                    </div>
+                </div>
+                <div class="work-meta" id="work-meta">-</div>
+                <div class="work-out-link" id="work-out-link" style="display: none;">
+                    <span class="work-out-link-label">来源:</span>
+                    <span class="work-out-link-url" id="work-out-url">-</span>
+                </div>
+            </div>
         </div>
 
         <!-- 错误提示 -->
@@ -513,6 +752,36 @@
         <div class="comment-list" id="comment-list">
             <div class="loading">加载中...</div>
         </div>
+
+        <!-- 用户信息弹窗 -->
+        <div class="user-modal-overlay" id="user-modal-overlay" onclick="closeUserModal(event)">
+            <div class="user-modal" onclick="event.stopPropagation()">
+                <button class="user-modal-close" onclick="closeUserModal()">×</button>
+                <div class="user-modal-header">
+                    <img alt="头像" class="user-modal-avatar" id="modal-avatar" src="/1.png">
+                    <div class="user-modal-info">
+                        <div class="user-modal-nickname" id="modal-nickname">-</div>
+                        <div class="user-modal-username" id="modal-username">-</div>
+                        <div class="user-modal-email" id="modal-email">-</div>
+                        <div class="user-modal-uuid" id="modal-uuid">-</div>
+                    </div>
+                </div>
+                <div class="user-modal-stats">
+                    <div class="user-modal-stat">
+                        <div class="user-modal-stat-value" id="modal-works">0</div>
+                        <div class="user-modal-stat-label">作品数</div>
+                    </div>
+                    <div class="user-modal-stat">
+                        <div class="user-modal-stat-value" id="modal-views">0</div>
+                        <div class="user-modal-stat-label">总浏览</div>
+                    </div>
+                    <div class="user-modal-stat">
+                        <div class="user-modal-stat-value" id="modal-likes">0</div>
+                        <div class="user-modal-stat-label">获赞数</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -531,12 +800,73 @@
             if (newWorkId && newWorkId > 0) {
                 WORK_ID = newWorkId;
                 console.log('作品 ID 已更新:', WORK_ID);
+                // 加载作品信息
+                loadWorkInfo();
                 // 重新加载评论
                 loadComments();
             } else {
                 showError('作品 ID 必须为正整数');
                 workIdInput.value = WORK_ID;
             }
+        }
+
+        // 加载作品信息
+        async function loadWorkInfo() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/work/detail/${WORK_ID}`, {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    console.error('获取作品信息失败');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    renderWorkInfo(result.data);
+                }
+            } catch (error) {
+                console.error('加载作品信息错误:', error);
+            }
+        }
+
+        // 渲染作品信息
+        function renderWorkInfo(work) {
+            const card = document.getElementById('work-info-card');
+
+            // 更新封面图片
+            const imageUrl = work.img_url
+                ? `${API_BASE_URL}/api/image/work/get?filePath=${encodeURIComponent(work.img_url)}`
+                : '/1.png';
+            document.getElementById('work-cover-image').src = imageUrl;
+
+            // 更新标题
+            document.getElementById('work-title').textContent = work.work_title || '未知作品';
+
+            // 更新统计数据
+            document.getElementById('work-views').textContent = work.view_count || 0;
+            document.getElementById('work-likes').textContent = work.like_count || 0;
+            document.getElementById('work-stars').textContent = work.star_count || 0;
+
+            // 更新元信息
+            const createTime = new Date(work.create_time).toLocaleDateString('zh-CN');
+            const originalText = work.is_original_work ? '原创' : '转载';
+            document.getElementById('work-meta').textContent = `发布于 ${createTime} · ${originalText}`;
+
+            // 如果是转载，显示外链
+            const outLinkDiv = document.getElementById('work-out-link');
+            if (!work.is_original_work && work.out_url) {
+                const outUrlElement = document.getElementById('work-out-url');
+                outUrlElement.innerHTML = `<a href="${escapeHtml(work.out_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(work.out_url)}</a>`;
+                outLinkDiv.style.display = 'block';
+            } else {
+                outLinkDiv.style.display = 'none';
+            }
+
+            // 显示卡片
+            card.style.display = 'block';
         }
 
         // 更新 Token
@@ -560,6 +890,7 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
+            loadWorkInfo(); // 加载作品信息
             loadComments();
             setupCharCount();
             startTimeRefresh(); // 启动时间刷新
@@ -662,7 +993,7 @@
                     <div class="comment-header">
                         <img src="${avatarUrl}" alt="${comment.nickname}" class="avatar" onerror="this.src='/1.png'">
                         <div class="user-info">
-                            <div class="nickname">${escapeHtml(comment.nickname)}</div>
+                            <div class="nickname" onclick="goToUserProfile(${comment.user_id})">${escapeHtml(comment.nickname)}</div>
                             <div class="comment-time" data-time="${comment.time}">${formatTime(comment.time)}</div>
                         </div>
                     </div>
@@ -692,8 +1023,8 @@
 
             let contentHtml = escapeHtml(reply.conmment_text);
 
-            // 如果有被回复者，显示 @昵称
-            if (reply.replied_nickname) {
+            // 只有回复二级评论时才显示 @昵称（parent_comment_id != in_comment_id 表示回复的是其他二级评论）
+            if (reply.replied_nickname && reply.parent_comment_id !== reply.in_comment_id) {
                 contentHtml = `<span class="reply-to" onclick="highlightComment(${reply.parent_comment_id})">@${escapeHtml(reply.replied_nickname)}</span> ${contentHtml}`;
             }
 
@@ -702,7 +1033,7 @@
                     <div class="comment-header">
                         <img src="${avatarUrl}" alt="${reply.nickname}" class="avatar" onerror="this.src='/default-avatar.png'">
                         <div class="user-info">
-                            <div class="nickname">${escapeHtml(reply.nickname)}</div>
+                            <div class="nickname" onclick="goToUserProfile(${reply.user_id})">${escapeHtml(reply.nickname)}</div>
                             <div class="comment-time" data-time="${reply.time}">${formatTime(reply.time)}</div>
                         </div>
                     </div>
@@ -872,20 +1203,20 @@
         function highlightComment(commentId) {
             // 查找对应的评论元素
             const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
-            
+
             if (commentElement) {
                 // 移除之前的高亮
                 commentElement.classList.remove('comment-highlight');
-                
+
                 // 强制重绘
                 void commentElement.offsetWidth;
-                
+
                 // 添加高亮动画
                 commentElement.classList.add('comment-highlight');
-                
+
                 // 滚动到该评论位置
                 commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
+
                 // 动画结束后移除类名
                 setTimeout(() => {
                     commentElement.classList.remove('comment-highlight');
@@ -925,6 +1256,62 @@
 
             // 其他情况显示完整日期
             return date.toLocaleDateString('zh-CN');
+        }
+
+        // 跳转到个人主页（显示弹窗）
+        async function goToUserProfile(userId) {
+            if (!userId) return;
+
+            const overlay = document.getElementById('user-modal-overlay');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user/profile/info/${userId}`, {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    console.error('获取用户信息失败');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    const user = result.data;
+
+                    // 更新弹窗内容
+                    const avatarUrl = user.avatar_url
+                        ? `${API_BASE_URL}/api/image/avatar/get?filePath=${encodeURIComponent(user.avatar_url)}`
+                        : '/1.png';
+
+                    document.getElementById('modal-avatar').src = avatarUrl;
+                    document.getElementById('modal-nickname').textContent = user.nickname || '未知用户';
+                    document.getElementById('modal-username').textContent = '@' + (user.username || '-');
+                    document.getElementById('modal-email').textContent = user.email || '-';
+                    document.getElementById('modal-uuid').textContent = 'UUID: ' + (user.string_user_uuid || '-');
+
+                    // 模拟统计数据（实际应从后端获取）
+                    document.getElementById('modal-works').textContent = Math.floor(Math.random() * 50) + 1;
+                    document.getElementById('modal-views').textContent = Math.floor(Math.random() * 10000) + 100;
+                    document.getElementById('modal-likes').textContent = Math.floor(Math.random() * 5000) + 50;
+
+                    // 显示弹窗
+                    overlay.classList.add('show');
+                }
+            } catch (error) {
+                console.error('获取用户信息错误:', error);
+            }
+        }
+
+        // 关闭用户信息弹窗
+        function closeUserModal(event) {
+            // 如果传入了 event，检查是否点击的是遮罩层
+            if (event && event.target !== event.currentTarget) {
+                return;
+            }
+
+            const overlay = document.getElementById('user-modal-overlay');
+            overlay.classList.remove('show');
         }
 
         // 显示错误信息
