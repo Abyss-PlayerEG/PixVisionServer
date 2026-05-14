@@ -16,4 +16,7 @@ public interface VerificationCodeServices {
 
     // 检查验证码是否存在
     public boolean hasRedisVCode( String email );
+
+    // 获取验证码剩余过期时间（秒）
+    public Long getRedisVCodeRemainingTime( String email );
 }

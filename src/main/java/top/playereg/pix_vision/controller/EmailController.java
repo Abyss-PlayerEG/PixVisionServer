@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.controller;
 
+import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -71,7 +72,7 @@ public class EmailController {
             - **发送失败**：返回 **{"data": false}** 和“邮件发送失败”提示
             - **邮箱格式错误**：返回 **{"data": false}** 和“邮箱格式错误”提示
             - **用户名格式错误**：返回 **{"data": false}** 和“用户名格式错误”提示
-            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
+            - **验证码已存在**：返回 **{"data": {"remainingSeconds": 剩余秒数, "message": "提示信息"}}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 验证邮箱地址格式是否正确
@@ -111,8 +112,14 @@ public class EmailController {
 
         // 检查是否已有验证码存在
         if (verificationCodeServices.hasRedisVCode(email)) {
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}", email);
-            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(email);
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", email, remainingTime);
+
+            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+            errorData.put("remainingSeconds", remainingTime);
+            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
+
+            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
         }
 
         // 生成验证码
@@ -211,8 +218,14 @@ public class EmailController {
 
         // 检查是否已有验证码存在
         if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}", targetEmail);
-            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
+
+            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+            errorData.put("remainingSeconds", remainingTime);
+            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
+
+            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
         }
 
         // 生成验证码
@@ -270,7 +283,7 @@ public class EmailController {
             - **发送失败**：返回 **{"data": false}** 和“邮件发送失败”提示
             - **用户不存在**：返回 **{"data": false}** 和“用户不存在，请先注册”提示
             - **格式错误**：返回 **{"data": false}** 和“用户名或邮箱格式错误”提示
-            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
+            - **验证码已存在**：返回 **{"data": {"remainingSeconds": 剩余秒数, "message": "提示信息"}}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 判断usernameOrEmail参数是用户名还是邮箱
@@ -313,8 +326,14 @@ public class EmailController {
 
         // 检查是否已有验证码存在
         if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}", targetEmail);
-            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
+
+            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+            errorData.put("remainingSeconds", remainingTime);
+            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
+
+            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
         }
 
         // 生成验证码
@@ -370,7 +389,7 @@ public class EmailController {
             - **Token 不存在**：返回 **{"data": false}** 和“Token 不存在”提示
             - **Token 无效**：返回 **{"data": false}** 和“Token 无效”提示
             - **用户不存在**：返回 **{"data": false}** 和“用户不存在”提示
-            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
+            - **验证码已存在**：返回 **{"data": {"remainingSeconds": 剩余秒数, "message": "提示信息"}}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
@@ -424,8 +443,14 @@ public class EmailController {
 
         // 检查是否已有验证码存在
         if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}", targetEmail);
-            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
+
+            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+            errorData.put("remainingSeconds", remainingTime);
+            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
+
+            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
         }
 
         // 生成验证码
@@ -481,7 +506,7 @@ public class EmailController {
             - **Token 不存在**：返回 **{"data": false}** 和“Token 不存在”提示
             - **Token 无效**：返回 **{"data": false}** 和“Token 无效”提示
             - **用户不存在**：返回 **{"data": false}** 和“用户不存在”提示
-            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
+            - **验证码已存在**：返回 **{"data": {"remainingSeconds": 剩余秒数, "message": "提示信息"}}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
@@ -536,8 +561,14 @@ public class EmailController {
 
         // 检查是否已有验证码存在
         if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}", targetEmail);
-            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
+
+            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+            errorData.put("remainingSeconds", remainingTime);
+            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
+
+            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
         }
 
         // 生成验证码
@@ -600,7 +631,7 @@ public class EmailController {
             - **新邮箱为空**：返回 **{"data": false}** 和“新邮箱不能为空”提示
             - **邮箱格式错误**：返回 **{"data": false}** 和“邮箱格式错误”提示
             - **邮箱已被使用**：返回 **{"data": false}** 和“该邮箱已被其他账号使用”提示
-            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
+            - **验证码已存在**：返回 **{"data": {"remainingSeconds": 剩余秒数, "message": "提示信息"}}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
@@ -684,8 +715,14 @@ public class EmailController {
 
         // 检查是否已有验证码存在
         if (verificationCodeServices.hasRedisVCode(newEmail)) {
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}", newEmail);
-            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(newEmail);
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", newEmail, remainingTime);
+
+            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+            errorData.put("remainingSeconds", remainingTime);
+            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
+
+            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
         }
 
         // 生成验证码

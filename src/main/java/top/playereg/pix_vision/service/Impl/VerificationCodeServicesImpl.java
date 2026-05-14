@@ -154,4 +154,30 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
             return false;
         }
     }
+
+    /**
+     * 获取验证码剩余过期时间
+     *
+     * @param email 邮箱
+     * @return 剩余时间（秒），如果验证码不存在则返回 null
+     * @implNote 获取邮箱对应验证码的剩余过期时间
+     * @author PlayerEG
+     */
+    @Override
+    public Long getRedisVCodeRemainingTime(String email) {
+        String hashEmail = SecureUtil.sha256(email);
+        String key = StrUtil.format("userEmailCode:{}", hashEmail);
+        
+        try {
+            Long remainingTime = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+            // Redis 返回 -1 表示永不过期，-2 表示键不存在
+            if (remainingTime != null && remainingTime > 0) {
+                return remainingTime;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("获取验证码剩余时间失败: {}", e.getMessage());
+            return null;
+        }
+    }
 }
