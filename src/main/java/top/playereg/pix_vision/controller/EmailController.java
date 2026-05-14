@@ -71,13 +71,15 @@ public class EmailController {
             - **发送失败**：返回 **{"data": false}** 和“邮件发送失败”提示
             - **邮箱格式错误**：返回 **{"data": false}** 和“邮箱格式错误”提示
             - **用户名格式错误**：返回 **{"data": false}** 和“用户名格式错误”提示
+            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 验证邮箱地址格式是否正确
             2. 验证用户名格式是否正确（6-16位字母/数字/下划线）
-            3. 生成6位随机验证码并存入Redis
-            4. 使用HTML邮件模板渲染邮件内容
-            5. 发送邮件并将验证码与邮箱绑定存储
+            3. 检查Redis中是否已有该邮箱的未过期验证码
+            4. 生成6位随机验证码并存入Redis
+            5. 使用HTML邮件模板渲染邮件内容
+            6. 发送邮件并将验证码与邮箱绑定存储
 
             ## 注意事项：
             - 验证码默认有效期由Redis配置决定（默认5分钟）
@@ -85,6 +87,7 @@ public class EmailController {
             - 邮箱格式：标准邮箱格式
             - 建议设置合理的邮件发送频率限制
             - 邮件主题已内置为“PixVision 注册验证码”
+            - **如果邮箱已有未过期的验证码，将拒绝发送新的验证码**
             """
     )
     public ResponsePojo<Boolean> sendRegisterCode(
@@ -105,6 +108,12 @@ public class EmailController {
         }
 
         log.info("发送注册验证码，用户名：{}，邮箱：{}", username, email);
+
+        // 检查是否已有验证码存在
+        if (verificationCodeServices.hasRedisVCode(email)) {
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}", email);
+            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+        }
 
         // 生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
@@ -166,9 +175,10 @@ public class EmailController {
             1. 判断usernameOrEmail参数是用户名还是邮箱
             2. 从数据库查询用户信息，获取用户名和邮箱
             3. 验证用户是否存在
-            4. 生成6位随机验证码并存入Redis
-            5. 使用HTML邮件模板渲染邮件内容
-            6. 发送邮件并将验证码与邮箱绑定存储
+            4. 检查Redis中是否已有该邮箱的未过期验证码
+            5. 生成6位随机验证码并存入Redis
+            6. 使用HTML邮件模板渲染邮件内容
+            7. 发送邮件并将验证码与邮箱绑定存储
 
             ## 注意事项：
             - 验证码默认有效期由Redis配置决定（默认5分钟）
@@ -176,6 +186,7 @@ public class EmailController {
             - 如果usernameOrEmail是邮箱，直接使用
             - 用户必须已注册才能发送登录验证码
             - 邮件主题已内置为"PixVision 登录验证码"
+            - **如果邮箱已有未过期的验证码，将拒绝发送新的验证码**
             """
     )
     public ResponsePojo<Boolean> sendLoginCode(
@@ -197,6 +208,12 @@ public class EmailController {
         String username = user.getUsername();
         String targetEmail = user.getEmail();
         log.info("发送登录验证码，用户名：{}，邮箱：{}", username, targetEmail);
+
+        // 检查是否已有验证码存在
+        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}", targetEmail);
+            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+        }
 
         // 生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
@@ -253,14 +270,16 @@ public class EmailController {
             - **发送失败**：返回 **{"data": false}** 和“邮件发送失败”提示
             - **用户不存在**：返回 **{"data": false}** 和“用户不存在，请先注册”提示
             - **格式错误**：返回 **{"data": false}** 和“用户名或邮箱格式错误”提示
+            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 判断usernameOrEmail参数是用户名还是邮箱
             2. 从数据库查询用户信息，获取用户名和邮箱
             3. 验证用户是否存在
-            4. 生成6位随机验证码并存入Redis
-            5. 使用HTML邮件模板渲染邮件内容
-            6. 发送邮件并将验证码与邮箱绑定存储
+            4. 检查Redis中是否已有该邮箱的未过期验证码
+            5. 生成6位随机验证码并存入Redis
+            6. 使用HTML邮件模板渲染邮件内容
+            7. 发送邮件并将验证码与邮箱绑定存储
 
             ## 注意事项：
             - 验证码默认有效期由Redis配置决定（默认5分钟）
@@ -269,6 +288,7 @@ public class EmailController {
             - 用户必须已注册才能发送改密验证码
             - 此接口用于忘记重置密码场景
             - 邮件主题已内置为"PixVision 重置密码验证码"
+            - **如果邮箱已有未过期的验证码，将拒绝发送新的验证码**
             """
     )
     public ResponsePojo<Boolean> sendForgetPasswordCode(
@@ -290,6 +310,12 @@ public class EmailController {
         String username = user.getUsername();
         String targetEmail = user.getEmail();
         log.info("发送改密验证码，用户名：{}，邮箱：{}", username, targetEmail);
+
+        // 检查是否已有验证码存在
+        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}", targetEmail);
+            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+        }
 
         // 生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
@@ -344,15 +370,17 @@ public class EmailController {
             - **Token 不存在**：返回 **{"data": false}** 和“Token 不存在”提示
             - **Token 无效**：返回 **{"data": false}** 和“Token 无效”提示
             - **用户不存在**：返回 **{"data": false}** 和“用户不存在”提示
+            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
             2. 从 Token 中解析用户 ID
             3. 根据用户 ID 查询用户信息，获取用户名和邮箱
             4. 验证用户是否存在
-            5. 生成6位随机验证码并存入Redis
-            6. 使用HTML邮件模板渲染邮件内容
-            7. 发送邮件并将验证码与邮箱绑定存储
+            5. 检查Redis中是否已有该邮箱的未过期验证码
+            6. 生成6位随机验证码并存入Redis
+            7. 使用HTML邮件模板渲染邮件内容
+            8. 发送邮件并将验证码与邮箱绑定存储
 
             ## 注意事项：
             - 验证码默认有效期由Redis配置决定（默认5分钟）
@@ -360,6 +388,7 @@ public class EmailController {
             - 此接口用于**已登录用户修改密码**场景
             - 邮件主题已内置为"PixVision 修改密码验证码"
             - 需要携带有效的 Token 才能调用
+            - **如果邮箱已有未过期的验证码，将拒绝发送新的验证码**
             """
     )
     public ResponsePojo<Boolean> sendChangePasswordCode(
@@ -392,6 +421,12 @@ public class EmailController {
         String username = user.getUsername();
         String targetEmail = user.getEmail();
         log.info("发送修改密码验证码，用户名：{}，邮箱：{}", username, targetEmail);
+
+        // 检查是否已有验证码存在
+        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}", targetEmail);
+            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+        }
 
         // 生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
@@ -446,15 +481,17 @@ public class EmailController {
             - **Token 不存在**：返回 **{"data": false}** 和“Token 不存在”提示
             - **Token 无效**：返回 **{"data": false}** 和“Token 无效”提示
             - **用户不存在**：返回 **{"data": false}** 和“用户不存在”提示
+            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
             2. 从 Token 中解析用户 ID
             3. 根据用户 ID 查询用户信息，获取用户名和邮箱
             4. 验证用户是否存在
-            5. 生成6位随机验证码并存入Redis
-            6. 使用HTML邮件模板渲染邮件内容
-            7. 发送邮件并将验证码与邮箱绑定存储
+            5. 检查Redis中是否已有该邮箱的未过期验证码
+            6. 生成6位随机验证码并存入Redis
+            7. 使用HTML邮件模板渲染邮件内容
+            8. 发送邮件并将验证码与邮箱绑定存储
 
             ## 注意事项：
             - 验证码默认有效期由Redis配置决定（默认5分钟）
@@ -463,6 +500,7 @@ public class EmailController {
             - 邮件主题已内置为"PixVision 注销账户验证码"
             - 需要携带有效的 Token 才能调用
             - 注销操作不可逆，请谨慎操作
+            - **如果邮箱已有未过期的验证码，将拒绝发送新的验证码**
             """
     )
     public ResponsePojo<Boolean> sendDeleteAccountCode(
@@ -495,6 +533,12 @@ public class EmailController {
         String username = user.getUsername();
         String targetEmail = user.getEmail();
         log.info("发送注销账户验证码，用户名：{}，邮箱：{}", username, targetEmail);
+
+        // 检查是否已有验证码存在
+        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}", targetEmail);
+            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
+        }
 
         // 生成验证码
         String verificationCode = verificationCodeServices.verificationCode();
@@ -556,6 +600,7 @@ public class EmailController {
             - **新邮箱为空**：返回 **{"data": false}** 和“新邮箱不能为空”提示
             - **邮箱格式错误**：返回 **{"data": false}** 和“邮箱格式错误”提示
             - **邮箱已被使用**：返回 **{"data": false}** 和“该邮箱已被其他账号使用”提示
+            - **验证码已存在**：返回 **{"data": false}** 和“验证码已存在，请检查邮箱或稍后重试”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
@@ -564,9 +609,10 @@ public class EmailController {
             4. 验证用户是否存在
             5. 校验新邮箱格式是否正确
             6. 检查新邮箱是否已被其他用户使用
-            7. 生成6位随机验证码并存入Redis（使用新邮箱作为 key）
-            8. 使用HTML邮件模板渲染邮件内容
-            9. 发送邮件并将验证码与新邮箱绑定存储
+            7. 检查Redis中是否已有该新邮箱的未过期验证码
+            8. 生成6位随机验证码并存入Redis（使用新邮箱作为 key）
+            9. 使用HTML邮件模板渲染邮件内容
+            10. 发送邮件并将验证码与新邮箱绑定存储
 
             ## 注意事项：
             - 验证码默认有效期由Redis配置决定（默认5分钟）
@@ -577,6 +623,7 @@ public class EmailController {
             - 新邮箱不能被其他账号使用
             - 验证码会发送到**新邮箱**，而不是当前绑定的邮箱
             - 收到验证码后，调用 `/api/user/profile/change/email` 接口完成邮箱修改
+            - **如果新邮箱已有未过期的验证码，将拒绝发送新的验证码**
             """
     )
     public ResponsePojo<Boolean> sendChangeEmailCode(
@@ -633,6 +680,12 @@ public class EmailController {
         if (newEmail.equals(currentEmail)) {
             log.warn("新邮箱与当前邮箱相同，用户 ID: {}", userId);
             return ResponsePojo.error(false, "新邮箱与当前邮箱相同，无需修改");
+        }
+
+        // 检查是否已有验证码存在
+        if (verificationCodeServices.hasRedisVCode(newEmail)) {
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}", newEmail);
+            return ResponsePojo.error(false, "验证码已存在，请检查邮箱或稍后重试");
         }
 
         // 生成验证码

@@ -132,4 +132,26 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
 
         return verificationStatus;
     }
+
+    /**
+     * 检查验证码是否存在
+     *
+     * @param email 邮箱
+     * @return true:存在 false:不存在
+     * @implNote 检查邮箱对应的验证码是否已存在于Redis中
+     * @author PlayerEG
+     */
+    @Override
+    public boolean hasRedisVCode(String email) {
+        String hashEmail = SecureUtil.sha256(email);
+        String key = StrUtil.format("userEmailCode:{}", hashEmail);
+        
+        try {
+            Object vCode = redisTemplate.opsForValue().get(key);
+            return vCode != null;
+        } catch (Exception e) {
+            log.error("检查验证码缓存失败: {}", e.getMessage());
+            return false;
+        }
+    }
 }

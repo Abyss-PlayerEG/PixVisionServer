@@ -13,4 +13,7 @@ public interface VerificationCodeServices {
 
     // 验证码验证
     public boolean verificationCodeVerify( String email, String userInputVCode );
+
+    // 检查验证码是否存在
+    public boolean hasRedisVCode( String email );
 }
