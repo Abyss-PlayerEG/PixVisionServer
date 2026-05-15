@@ -162,4 +162,17 @@
         </foreach>
     </update>
 
+    <!-- 管理员批量更新作品审核状态（不验证用户权限） -->
+    <update id="adminBatchUpdateApprovalStatus">
+        UPDATE tb_works
+        SET approval_status = #{approvalStatus},
+            update_time     = NOW(),
+            update_user     = 0
+        WHERE is_delete = 0
+          AND work_id IN
+        <foreach collection="workIds" item="workId" open="(" separator="," close=")">
+            #{workId}
+        </foreach>
+    </update>
+
 </mapper>

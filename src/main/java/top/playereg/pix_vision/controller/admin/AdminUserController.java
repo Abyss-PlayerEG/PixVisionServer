@@ -70,8 +70,8 @@ public class AdminUserController {
             - 无需参数
 
             ## 返回说明：
-            - **成功**：返回 **{"data": 清除数量}** 和"权限缓存刷新成功"提示
-            - **失败**：返回 **{"data": null}** 和错误提示
+            - **成功**：返回清除的缓存数量
+            - **失败**：返回错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员
@@ -144,8 +144,8 @@ public class AdminUserController {
               - 30: 封禁
 
             ## 返回说明：
-            - **成功**：返回 **{"data": {AdminBatchUpdateUserResult}}** 包含统计信息
-            - **失败**：返回 **{"data": null}** 和错误提示
+            - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息
+            - **失败**：返回错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
@@ -292,8 +292,8 @@ public class AdminUserController {
             - **userIds**: 目标用户 ID 列表（必填）
 
             ## 返回说明：
-            - **成功**：返回 **{"data": {AdminBatchDeleteUserResult}}** 包含统计信息
-            - **失败**：返回 **{"data": null}** 和错误提示
+            - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息
+            - **失败**：返回错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
@@ -417,9 +417,9 @@ public class AdminUserController {
               - 30: 封禁
 
             ## 返回说明：
-            - **成功**：返回 **{"data": {User 对象}}** 和"用户创建成功"提示
-            - **两次密码不一致**：返回 **{"data": null}** 和"两次输入的密码不一致"提示
-            - **失败**：返回 **{"data": null}** 和错误提示
+            - **成功**：返回 true 表示创建成功
+            - **两次密码不一致**：返回 false 和错误提示
+            - **失败**：返回 false 和错误提示
 
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
@@ -543,9 +543,9 @@ public class AdminUserController {
               * 批量用户：传入 [1, 2, 3]
 
             ## 返回说明：
-            - **重置成功**：返回 **{"data": true}** 和“批量重置密码成功，已发送邮件”提示
-            - **用户 ID 列表为空**：返回 **{"data": false}** 和“用户 ID 列表不能为空”提示
-            - **部分失败**：返回 **{"data": true}** 并提示实际成功的数量
+            - **重置成功**：返回包含总数、成功重置数、成功发送邮件数、失败 ID 列表的统计信息
+            - **用户 ID 列表为空**：返回错误提示
+            - **部分失败**：返回统计信息并提示实际成功的数量
 
             ## 业务逻辑：
             1. 校验用户 ID 列表参数有效性
@@ -637,45 +637,5 @@ public class AdminUserController {
             AdminResetPasswordResult result = new AdminResetPasswordResult(totalCount, 0, 0, userIds); // 异常时所有都视为失败
             return ResponsePojo.error(result, "系统错误: " + e.getMessage());
         }
-    }
-
-    // ================================================================================
-
-    /**
-     * 根据角色代码获取角色名称
-     *
-     * @param roleCode 角色代码
-     * @return 角色名称
-     */
-    private String getRoleName(Integer roleCode) {
-        if (roleCode == null) {
-            return "未知";
-        }
-        return switch (roleCode) {
-            case 11 -> "普通用户";
-            case 22 -> "创作者";
-            case 55 -> "审核员";
-            case 66 -> "工单管理员";
-            case 77 -> "系统管理员";
-            default -> "未知角色(" + roleCode + ")";
-        };
-    }
-
-    /**
-     * 根据状态代码获取状态名称
-     *
-     * @param statusCode 状态代码
-     * @return 状态名称
-     */
-    private String getStatusName(Integer statusCode) {
-        if (statusCode == null) {
-            return "未知";
-        }
-        return switch (statusCode) {
-            case 10 -> "正常";
-            case 20 -> "冻结";
-            case 30 -> "封禁";
-            default -> "未知状态(" + statusCode + ")";
-        };
     }
 }

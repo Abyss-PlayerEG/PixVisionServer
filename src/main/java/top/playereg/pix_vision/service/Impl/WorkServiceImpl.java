@@ -689,36 +689,20 @@ public class WorkServiceImpl implements WorkService {
         }
 
         int totalCount = workIds.size();
-        int successCount = 0;
-        java.util.List<Integer> failedWorkIds = new java.util.ArrayList<>();
 
-        for (Integer workId : workIds) {
-            try {
-                // 直接更新 tb_works 表的 approval_status 字段
-                Works work = worksMapper.selectWorkById(workId);
-                if (work != null && !work.getIs_delete()) {
-                    work.setApproval_status(approvalStatus);
-                    work.setUpdate_time(new Timestamp(System.currentTimeMillis()));
-                    int rows = worksMapper.updateById(work);
-                    if (rows > 0) {
-                        successCount++;
-                        log.info("作品审核状态更新成功 - 作品ID: {}, 新状态: {}", workId, approvalStatus);
-                    } else {
-                        failedWorkIds.add(workId);
-                        log.warn("作品审核状态更新失败 - 作品ID: {}", workId);
-                    }
-                } else {
-                    failedWorkIds.add(workId);
-                    log.warn("作品不存在或已删除 - 作品ID: {}", workId);
-                }
-            } catch (Exception e) {
-                failedWorkIds.add(workId);
-                log.error("作品审核状态更新异常 - 作品ID: {}, 错误: {}", workId, e.getMessage(), e);
-            }
+        // 使用自定义 SQL 批量更新审核状态
+        int affectedRows = worksMapper.adminBatchUpdateApprovalStatus(workIds, approvalStatus);
+
+        int successCount = affectedRows > 0 ? affectedRows : 0;
+        List<Integer> failedWorkIds = new java.util.ArrayList<>();
+
+        // 计算失败的 ID（简化处理：如果影响行数小于总数，则认为全部失败）
+        if (affectedRows < totalCount) {
+            failedWorkIds.addAll(workIds);
         }
 
-        log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}",
-            totalCount, successCount, failedWorkIds.size());
+        log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {}",
+            totalCount, successCount, failedWorkIds.size(), approvalStatus);
 
         return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(
             totalCount, successCount, failedWorkIds

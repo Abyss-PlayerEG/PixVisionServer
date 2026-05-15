@@ -10,7 +10,7 @@ import top.playereg.pix_vision.service.WorkService;
 
 /**
  * API 文档规范示例 Controller
- * 
+ *
  * 本文件展示了如何按照项目规范编写 Swagger 文档。
  */
 @RestController
@@ -58,7 +58,7 @@ public class ExampleDocController {
     )
     @GetMapping("/work/{workId}")
     public ResponsePojo<Works> getWorkDetail(
-        @Parameter(description = "作品唯一标识 ID", required = true, example = "1001") 
+        @Parameter(description = "作品唯一标识 ID", required = true, example = "1001")
         @PathVariable Integer workId
     ) {
         // 业务逻辑实现...
