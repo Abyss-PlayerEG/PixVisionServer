@@ -39,8 +39,8 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/admin/user")
 @RequiredArgsConstructor
-@Tag(name = "系统管理员接口 - 用户管理")
-@RequireRole(value = {77})
+@Tag(name = "系统管理员接口 - 用户管理", description = "提供用户管理的后台接口，包括批量更新、删除、创建用户等操作")
+@RequireRole(value = {55, 77})
 public class AdminUserController {
     private static final PixVisionLogger log = PixVisionLogger.create(AdminUserController.class);
 
@@ -92,6 +92,7 @@ public class AdminUserController {
             - 需要强制所有用户重新验证权限时
             """
     )
+    @RequireRole(value = {77})
     @PostMapping("/refresh-permission-cache")
     public ResponsePojo<Integer> refreshPermissionCache() {
         log.info("管理员开始刷新所有用户权限缓存");
@@ -166,6 +167,7 @@ public class AdminUserController {
             - 建议谨慎分配高权限角色（如 77-系统管理员）
             """
     )
+    @RequireRole(value = {77})
     @PostMapping("/update/user-role-status")
     public ResponsePojo<AdminBatchUpdateUserResult> batchUpdateUserInfo(
         HttpServletRequest request,
@@ -314,6 +316,7 @@ public class AdminUserController {
             - 建议谨慎使用，确保有充分的理由
             """
     )
+    @RequireRole(value = {77})
     @PostMapping("/delete")
     public ResponsePojo<AdminBatchDeleteUserResult> batchDeleteUsers(
         HttpServletRequest request,
@@ -447,6 +450,7 @@ public class AdminUserController {
             - 两次输入的密码必须完全一致
             """
     )
+    @RequireRole(value = {77})
     @PostMapping("/create")
     public ResponsePojo<Boolean> createUser(
         HttpServletRequest request,
@@ -538,7 +542,7 @@ public class AdminUserController {
             - **密码加密存储**：使用 SHA-256 加密后存储
 
             ## 参数说明：
-            - userIds: **用户 ID 列表**，Integer 数组类型，必填
+            - **userIds**: **用户 ID 列表**，Integer 数组类型，必填
               * 单个用户：传入 [1]
               * 批量用户：传入 [1, 2, 3]
 
@@ -567,6 +571,7 @@ public class AdminUserController {
             - 如果某个用户不存在或处理失败，会跳过该用户并继续处理下一个
             """
     )
+    @RequireRole(value = {77})
     @PostMapping("/update/password")
     public ResponsePojo<AdminResetPasswordResult> batchUpdateUserPassword(
         @Parameter(description = "目标用户 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> userIds

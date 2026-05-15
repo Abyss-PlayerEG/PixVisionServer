@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/works")
 @RequiredArgsConstructor
-@Tag(name = "系统管理员接口 - 作品管理")
+@Tag(name = "系统管理员接口 - 作品管理", description = "提供作品管理的后台接口，包括批量更新审核状态、删除作品等操作")
 @RequireRole(value = {55, 77})
 public class AdminWorksController {
     private static final PixVisionLogger log = PixVisionLogger.create(AdminWorksController.class);
@@ -119,10 +119,10 @@ public class AdminWorksController {
      *
      * @param workIds ID 列表
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
-     * @author blue_sky_ks
+     * @author blue_sky_ks, PlayerEG
      */
     @Operation(
-        summary = "删除作品接口 - 管理员",
+        summary = "批量删除作品",
         description = """
             # 批量删除作品（需要登录认证 + 角色权限[77]）
 
@@ -134,7 +134,7 @@ public class AdminWorksController {
             - 返回详细的操作结果统计信息
 
             ## 参数说明：
-            - workIds: **作品 ID 列表**，List<Integer> 类型，请求参数，必填，不能为空
+            - **workIds**: **作品 ID 列表**，List<Integer> 类型，请求参数，必填，不能为空
 
             ## 返回说明：
             - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息

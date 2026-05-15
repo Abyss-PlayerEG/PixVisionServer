@@ -429,6 +429,7 @@ public class CommentServiceImpl implements CommentService {
      * @param workId 作品ID（可选）
      * @param userId 用户ID（可选）
      * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
      * @param keyword 评论关键字（可选）
      * @return 分页结果
      * @author PlayerEG
@@ -436,7 +437,8 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public IPage<Comments> getCommentsPage(Long current, Long size,
                                             Integer workId, Integer userId,
-                                            Integer commentFloor, String keyword) {
+                                            Integer commentFloor, Integer approvalStatus,
+                                            String keyword) {
         // 参数校验
         if (current == null || current < 1) {
             current = 1L;
@@ -445,14 +447,14 @@ public class CommentServiceImpl implements CommentService {
             size = 10L;
         }
 
-        log.info("开始分页查询评论，页码: {}, 每页大小: {}, 作品ID: {}, 用户ID: {}, 评论层级: {}, 关键字: {}",
-                current, size, workId, userId, commentFloor, keyword);
+        log.info("开始分页查询评论，页码: {}, 每页大小: {}, 作品ID: {}, 用户ID: {}, 评论层级: {}, 审核状态: {}, 关键字: {}",
+                current, size, workId, userId, commentFloor, approvalStatus, keyword);
 
         // 创建分页对象
         Page<Comments> page = new Page<>(current, size);
 
         // 调用 Mapper 层查询
-        IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, keyword);
+        IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword);
 
         log.info("分页查询评论完成，总数: {}, 当前页: {}, 每页大小: {}",
                 result.getTotal(), result.getCurrent(), result.getSize());

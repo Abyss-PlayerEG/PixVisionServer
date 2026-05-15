@@ -73,6 +73,7 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * @param workId 作品ID（可选）
      * @param userId 用户ID（可选）
      * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
      * @param keyword 评论关键字（可选，模糊搜索）
      * @return 分页结果
      * @author PlayerEG
@@ -81,5 +82,6 @@ public interface CommentsMapper extends BaseMapper<Comments> {
                                         @Param("workId") Integer workId,
                                         @Param("userId") Integer userId,
                                         @Param("commentFloor") Integer commentFloor,
+                                        @Param("approvalStatus") Integer approvalStatus,
                                         @Param("keyword") String keyword);
 }

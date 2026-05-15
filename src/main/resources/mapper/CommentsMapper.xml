@@ -93,6 +93,9 @@
         <if test="commentFloor != null">
             AND comment_floor = #{commentFloor}
         </if>
+        <if test="approvalStatus != null">
+            AND approval_status = #{approvalStatus}
+        </if>
         <if test="keyword != null and keyword != ''">
             AND comment_text LIKE CONCAT('%', #{keyword}, '%')
         </if>
