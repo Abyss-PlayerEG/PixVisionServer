@@ -8,6 +8,7 @@
         <result column="user_id" property="user_id"/>
         <result column="series_title" property="series_title"/>
         <result column="about_text" property="about_text"/>
+        <result column="approval_status" property="approval_status"/>
         <result column="is_delete" property="is_delete"/>
         <result column="update_time" property="update_time"/>
         <result column="update_user" property="update_user"/>
@@ -18,7 +19,7 @@
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
         series_id
-        , user_id, series_title, about_text, is_delete, update_time, update_user, create_time, create_user
+        , user_id, series_title, about_text, approval_status, is_delete, update_time, update_user, create_time, create_user
     </sql>
 
     <!-- 新增作品系列 -->

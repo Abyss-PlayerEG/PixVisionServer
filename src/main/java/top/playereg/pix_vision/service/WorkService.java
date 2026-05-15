@@ -152,4 +152,28 @@ public interface WorkService {
         Boolean isOriginal,
         String outUrl
     );
+
+    /**
+     * 批量更新作品审核状态（管理员接口）
+     *
+     * @param workIds 作品 ID 列表
+     * @param approvalStatus 审核状态：10 - 正常、20 - 待审核、30 - 未过审
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author PlayerEG
+     */
+    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
+        List<Integer> workIds,
+        Integer approvalStatus
+    );
+
+    /**
+     * 管理员批量删除作品（逻辑删除）
+     *
+     * @param workIds 作品 ID 列表
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author PlayerEG
+     */
+    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult adminBatchDeleteWorks(
+        List<Integer> workIds
+    );
 }

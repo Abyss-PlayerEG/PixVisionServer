@@ -96,7 +96,7 @@ CREATE TABLE `tb_pending_reviews` (
   `work_id` int DEFAULT NULL COMMENT '待审核作品id，用于作品审核记录',
   `comment_id` int DEFAULT NULL COMMENT '待审核评论id，用于评论审核记录',
   `user_id` int DEFAULT NULL COMMENT '待审核用户id，用于用户信息审核记录',
-  `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
+#   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
   `update_user` int DEFAULT NULL COMMENT '修改者id，系统修改为0',
   `create_time` timestamp NOT NULL COMMENT '数据条目创建时间戳',

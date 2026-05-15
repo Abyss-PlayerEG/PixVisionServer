@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
-import top.playereg.pix_vision.service.PendingReviewsService;
+import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -24,7 +24,7 @@ import java.util.List;
 public class AdminWorksController {
     private static final PixVisionLogger log = PixVisionLogger.create(AdminWorksController.class);
 
-    private final PendingReviewsService pendingReviewsService;
+    private final WorkService workService;
 
 
     /**
@@ -51,9 +51,8 @@ public class AdminWorksController {
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
             2. 校验作品 ID 列表不为空
-            3. 逐个更新 tb_pending_reviews 表中对应作品的状态为 30（封禁）
-            4. 只更新 data_type = 100（作品类型）的记录
-            5. 记录每个作品的操作结果，返回详细的统计信息
+            3. 逐个更新 tb_works 表中对应作品的 approval_status 为 30（未过审）
+            4. 记录每个作品的操作结果，返回详细的统计信息
 
             ## 注意事项：
             - 封禁后作品将在前端不可见
@@ -73,8 +72,8 @@ public class AdminWorksController {
         }
 
         try {
-            // 调用服务层批量更新作品状态为 30（封禁）
-            AdminBatchOperateWorkResult result = pendingReviewsService.updateWorkStatusBatch(workIds, 30);
+            // 调用服务层批量更新作品审核状态为 30（未过审）
+            AdminBatchOperateWorkResult result = workService.batchUpdateApprovalStatus(workIds, 30);
 
             if (result.getSuccessCount() > 0) {
                 log.info("批量封禁作品完成 - 总数: {}, 成功: {}, 失败: {}",
@@ -114,9 +113,8 @@ public class AdminWorksController {
             ## 业务逻辑：
             1. 验证当前用户是否为系统管理员（由拦截器自动验证）
             2. 校验作品 ID 列表不为空
-            3. 逐个更新 tb_pending_reviews 表中对应作品的状态为 10（正常）
-            4. 只更新 data_type = 100（作品类型）的记录
-            5. 记录每个作品的操作结果，返回详细的统计信息
+            3. 逐个更新 tb_works 表中对应作品的 approval_status 为 10（正常）
+            4. 记录每个作品的操作结果，返回详细的统计信息
 
             ## 注意事项：
             - 解封后作品将在前端重新可见
@@ -136,8 +134,8 @@ public class AdminWorksController {
         }
 
         try {
-            // 调用服务层批量更新作品状态为 10（正常）
-            AdminBatchOperateWorkResult result = pendingReviewsService.updateWorkStatusBatch(workIds, 10);
+            // 调用服务层批量更新作品审核状态为 10（正常）
+            AdminBatchOperateWorkResult result = workService.batchUpdateApprovalStatus(workIds, 10);
 
             if (result.getSuccessCount() > 0) {
                 log.info("批量解封作品完成 - 总数: {}, 成功: {}, 失败: {}",
@@ -207,8 +205,8 @@ public class AdminWorksController {
         }
 
         try {
-            // 调用服务层批量删除
-            AdminBatchOperateWorkResult result = pendingReviewsService.batchDeleteWorks(workIds, 1);
+            // 调用服务层批量删除作品
+            AdminBatchOperateWorkResult result = workService.adminBatchDeleteWorks(workIds);
 
             if (result.getSuccessCount() > 0) {
                 log.info("批量删除作品完成 - 总数: {}, 成功: {}, 失败: {}",

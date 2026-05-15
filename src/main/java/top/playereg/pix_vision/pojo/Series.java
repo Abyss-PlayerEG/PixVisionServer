@@ -26,6 +26,9 @@ public class Series {
     @Schema(description = "系列描述文本，24 个中文长度")
     String about_text;
 
+    @Schema(description = "审核状态：10 - 正常、20 - 待审核、30 - 未过审")
+    Integer approval_status;
+
     @TableLogic
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
     Boolean is_delete;

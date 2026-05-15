@@ -14,6 +14,7 @@
         <result column="view_count" property="view_count"/>
         <result column="is_original_work" property="is_original_work"/>
         <result column="out_url" property="out_url"/>
+        <result column="approval_status" property="approval_status"/>
         <result column="is_delete" property="is_delete"/>
         <result column="update_time" property="update_time"/>
         <result column="update_user" property="update_user"/>
@@ -24,7 +25,7 @@
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
         work_id
-        , user_id, work_title, img_url, series_id, like_count, star_count, view_count, is_original_work, out_url, is_delete, update_time, update_user, create_time, create_user
+        , user_id, work_title, img_url, series_id, like_count, star_count, view_count, is_original_work, out_url, approval_status, is_delete, update_time, update_user, create_time, create_user
     </sql>
 
     <!-- 分页查询首页作品列表（支持多条件查询，未删除，按创建时间倒序） -->
@@ -146,6 +147,19 @@
             update_time = NOW()
         WHERE work_id = #{workId}
           AND is_delete = 0
+    </update>
+
+    <!-- 管理员批量逻辑删除作品（不验证用户权限） -->
+    <update id="adminBatchDeleteWorks">
+        UPDATE tb_works
+        SET is_delete   = 1,
+            update_time = NOW(),
+            update_user = 0
+        WHERE is_delete = 0
+          AND work_id IN
+        <foreach collection="workIds" item="workId" open="(" separator="," close=")">
+            #{workId}
+        </foreach>
     </update>
 
 </mapper>

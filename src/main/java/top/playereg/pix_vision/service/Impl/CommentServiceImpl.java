@@ -118,6 +118,7 @@ public class CommentServiceImpl implements CommentService {
 
             comment.setComment_floor(commentFloor);
             comment.setComment_text(commentText);
+            comment.setApproval_status(20); // 新增评论默认为待审核状态
             comment.setIs_delete(false);
             // time字段由数据库自动设置为当前时间，无需手动设置
 

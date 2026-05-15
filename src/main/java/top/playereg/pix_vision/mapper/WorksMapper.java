@@ -107,4 +107,13 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @author PlayerEG
      */
     int incrementViewCount(@Param("workId") Integer workId);
+
+    /**
+     * 管理员批量逻辑删除作品（不验证用户权限）
+     *
+     * @param workIds 作品 ID 列表
+     * @return 影响的行数
+     * @author PlayerEG
+     */
+    int adminBatchDeleteWorks(java.util.List<Integer> workIds);
 }

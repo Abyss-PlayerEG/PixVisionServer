@@ -61,6 +61,12 @@ public class BaseComment {
     private String comment_text;
 
     /**
+     * 审核状态：10 - 正常、20 - 待审核、30 - 未过审
+     */
+    @Schema(description = "审核状态：10 - 正常、20 - 待审核、30 - 未过审")
+    private Integer approval_status;
+
+    /**
      * 删除标签：0 - 未删除、1 - 已删除
      */
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")

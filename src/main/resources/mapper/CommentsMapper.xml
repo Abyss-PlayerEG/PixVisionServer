@@ -11,19 +11,20 @@
         <result column="in_comment_id" property="in_comment_id"/>
         <result column="comment_floor" property="comment_floor"/>
         <result column="comment_text" property="comment_text"/>
+        <result column="approval_status" property="approval_status"/>
         <result column="is_delete" property="is_delete"/>
         <result column="time" property="time"/>
     </resultMap>
 
     <!-- 定义基础字段列表 -->
     <sql id="Base_Column_List">
-        comment_id, user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text, is_delete, time
+        comment_id, user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text, approval_status, is_delete, time
     </sql>
 
     <!-- 新增评论 -->
     <insert id="insertComment" parameterType="top.playereg.pix_vision.pojo.commentsPojo.Comments" useGeneratedKeys="true" keyProperty="comment_id">
-        INSERT INTO tb_comments (user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text, is_delete, time)
-        VALUES (#{user_id}, #{work_id}, #{parent_comment_id}, #{in_comment_id}, #{comment_floor}, #{comment_text}, 0, NOW())
+        INSERT INTO tb_comments (user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text, approval_status, is_delete, time)
+        VALUES (#{user_id}, #{work_id}, #{parent_comment_id}, #{in_comment_id}, #{comment_floor}, #{comment_text}, #{approval_status}, 0, NOW())
     </insert>
 
     <!-- 根据作品 ID 查询评论列表 -->

@@ -6,11 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.mapper.HistoryMapper;
-import top.playereg.pix_vision.mapper.PendingReviewsMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.History;
-import top.playereg.pix_vision.pojo.PendingReviews;
 import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.WorkService;
@@ -39,9 +37,6 @@ public class WorkServiceImpl implements WorkService {
 
     @Autowired
     private HistoryMapper historyMapper;
-
-    @Autowired
-    private PendingReviewsMapper pendingReviewsMapper;
 
     // 允许上传的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
@@ -262,6 +257,7 @@ public class WorkServiceImpl implements WorkService {
         works.setView_count(0);
         works.setIs_original_work(isOriginal);
         works.setOut_url(isOriginal ? "" : outUrl.trim()); // 原创时为空字符串
+        works.setApproval_status(20); // 新发布作品默认为待审核状态
         works.setIs_delete(false);
         works.setCreate_user(userId);
         works.setCreate_time(new Timestamp(System.currentTimeMillis()));
@@ -274,31 +270,6 @@ public class WorkServiceImpl implements WorkService {
                 saveFile.delete();
             }
             throw new RuntimeException("作品发布失败");
-        }
-
-        // 11. 创建待审核记录
-        try {
-            PendingReviews pendingReview = new PendingReviews();
-            pendingReview.setData_type(100); // 作品类型
-            pendingReview.setStatus(20); // 待审核状态
-            pendingReview.setWork_id(works.getWork_id());
-            pendingReview.setComment_id(null); // 评论ID为空
-            pendingReview.setUser_id(userId);
-            pendingReview.setIs_delete(false);
-            pendingReview.setUpdate_time(null);
-            pendingReview.setUpdate_user(null);
-            pendingReview.setCreate_time(new Timestamp(System.currentTimeMillis()));
-            pendingReview.setCreate_user(userId);
-
-            int reviewRows = pendingReviewsMapper.insert(pendingReview);
-            if (reviewRows > 0) {
-                log.info("待审核记录创建成功，作品 ID: {}, 用户 ID: {}", works.getWork_id(), userId);
-            } else {
-                log.warn("待审核记录创建失败，作品 ID: {}, 用户 ID: {}", works.getWork_id(), userId);
-            }
-        } catch (Exception e) {
-            log.error("创建待审核记录异常，作品 ID: {}, 用户 ID: {}, 错误: {}", works.getWork_id(), userId, e.getMessage(), e);
-            // 不抛出异常，避免影响作品发布的整体流程
         }
 
         log.info("作品发布成功，用户 ID: {}, 作品 ID: {}, 文件路径: {}", userId, works.getWork_id(), uniqueFileName);
@@ -698,5 +669,142 @@ public class WorkServiceImpl implements WorkService {
         } else {
             log.warn("旧图片文件已标记为删除，跳过重命名: {}", imgFileName);
         }
+    }
+
+    /**
+     * 批量更新作品审核状态（管理员接口）
+     *
+     * @param workIds 作品 ID 列表
+     * @param approvalStatus 审核状态：10 - 正常、20 - 待审核、30 - 未过审
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author PlayerEG
+     */
+    @Override
+    public top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
+        List<Integer> workIds,
+        Integer approvalStatus
+    ) {
+        if (workIds == null || workIds.isEmpty()) {
+            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
+        }
+
+        int totalCount = workIds.size();
+        int successCount = 0;
+        java.util.List<Integer> failedWorkIds = new java.util.ArrayList<>();
+
+        for (Integer workId : workIds) {
+            try {
+                // 直接更新 tb_works 表的 approval_status 字段
+                Works work = worksMapper.selectWorkById(workId);
+                if (work != null && !work.getIs_delete()) {
+                    work.setApproval_status(approvalStatus);
+                    work.setUpdate_time(new Timestamp(System.currentTimeMillis()));
+                    int rows = worksMapper.updateById(work);
+                    if (rows > 0) {
+                        successCount++;
+                        log.info("作品审核状态更新成功 - 作品ID: {}, 新状态: {}", workId, approvalStatus);
+                    } else {
+                        failedWorkIds.add(workId);
+                        log.warn("作品审核状态更新失败 - 作品ID: {}", workId);
+                    }
+                } else {
+                    failedWorkIds.add(workId);
+                    log.warn("作品不存在或已删除 - 作品ID: {}", workId);
+                }
+            } catch (Exception e) {
+                failedWorkIds.add(workId);
+                log.error("作品审核状态更新异常 - 作品ID: {}, 错误: {}", workId, e.getMessage(), e);
+            }
+        }
+
+        log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}",
+            totalCount, successCount, failedWorkIds.size());
+
+        return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(
+            totalCount, successCount, failedWorkIds
+        );
+    }
+
+    /**
+     * 管理员批量删除作品（逻辑删除）
+     *
+     * @param workIds 作品 ID 列表
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author PlayerEG
+     */
+    @Override
+    public top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult adminBatchDeleteWorks(
+        List<Integer> workIds
+    ) {
+        if (workIds == null || workIds.isEmpty()) {
+            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
+        }
+
+        // 1. 先查询所有作品信息，获取文件名
+        List<Works> worksList = worksMapper.selectBatchIds(workIds);
+        if (worksList == null || worksList.isEmpty()) {
+            log.warn("未找到对应的作品，作品 ID 列表: {}", workIds);
+            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
+        }
+
+        // 2. 过滤出未删除的作品
+        List<Works> validWorks = worksList.stream()
+            .filter(work -> !work.getIs_delete())
+            .toList();
+
+        if (validWorks.isEmpty()) {
+            log.warn("没有可删除的作品（可能已全部删除），作品 ID 列表: {}", workIds);
+            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
+        }
+
+        // 3. 将文件后缀名改为 .del
+        int renamedCount = 0;
+        for (Works work : validWorks) {
+            String imgFileName = work.getImg_url();
+            if (imgFileName != null && !imgFileName.isEmpty()) {
+                File originalFile = new File(FilePathConfig.WorksPath, imgFileName);
+                File deletedFile = new File(FilePathConfig.WorksPath, imgFileName + ".del");
+
+                if (originalFile.exists() && !deletedFile.exists()) {
+                    boolean renamed = originalFile.renameTo(deletedFile);
+                    if (renamed) {
+                        renamedCount++;
+                        log.info("作品文件重命名为 .del 成功: {} -> {}", imgFileName, imgFileName + ".del");
+                    } else {
+                        log.error("作品文件重命名失败: {}", imgFileName);
+                    }
+                } else if (!originalFile.exists()) {
+                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
+                } else {
+                    log.warn("作品文件已标记为删除，跳过重命名: {}", imgFileName);
+                }
+            }
+        }
+
+        log.info("文件重命名完成，成功: {}/{}", renamedCount, validWorks.size());
+
+        // 4. 提取需要删除的作品 ID 列表
+        List<Integer> validWorkIds = validWorks.stream()
+            .map(Works::getWork_id)
+            .toList();
+
+        // 5. 执行数据库逻辑删除（管理员权限，不验证 user_id）
+        int affectedRows = worksMapper.adminBatchDeleteWorks(validWorkIds);
+
+        int successCount = affectedRows > 0 ? affectedRows : 0;
+        List<Integer> failedWorkIds = new java.util.ArrayList<>();
+        
+        // 计算失败的 ID
+        if (affectedRows < validWorkIds.size()) {
+            // 找出哪些 ID 没有被更新（简化处理：假设全部成功或全部失败）
+            failedWorkIds.addAll(validWorkIds);
+        }
+
+        log.info("批量删除作品完成 - 总数: {}, 成功: {}, 失败: {}, 文件重命名: {}",
+            workIds.size(), successCount, failedWorkIds.size(), renamedCount);
+
+        return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(
+            workIds.size(), successCount, failedWorkIds
+        );
     }
 }
