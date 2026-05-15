@@ -116,8 +116,8 @@ public class CommentServiceImpl implements CommentService {
                 }
             }
 
-            comment.setConmment_floor(commentFloor);
-            comment.setConmment_text(commentText);
+            comment.setComment_floor(commentFloor);
+            comment.setComment_text(commentText);
             comment.setIs_delete(false);
             // time字段由数据库自动设置为当前时间，无需手动设置
 
@@ -127,12 +127,12 @@ public class CommentServiceImpl implements CommentService {
             if (result > 0) {
                 // 如果是一级评论，插入后需要更新 in_comment_id 为自己的 ID
                 if (commentFloor == 1) {
-                    comment.setIn_comment_id(comment.getConmment_id());
+                    comment.setIn_comment_id(comment.getComment_id());
                     commentsMapper.updateById(comment);
-                    log.info("一级评论新增成功并更新 in_comment_id - 用户ID: {}, 作品ID: {}, 评论ID: {}", userId, workId, comment.getConmment_id());
+                    log.info("一级评论新增成功并更新 in_comment_id - 用户ID: {}, 作品ID: {}, 评论ID: {}", userId, workId, comment.getComment_id());
                 } else {
                     log.info("二级评论新增成功 - 用户ID: {}, 作品ID: {}, 评论ID: {}, 所属一级评论ID: {}",
-                            userId, workId, comment.getConmment_id(), comment.getIn_comment_id());
+                            userId, workId, comment.getComment_id(), comment.getIn_comment_id());
                 }
                 return true;
             } else {
@@ -243,21 +243,21 @@ public class CommentServiceImpl implements CommentService {
 
             // 先处理一级评论
             for (Comments comment : allComments) {
-                if (comment.getConmment_floor() == 1) {
+                if (comment.getComment_floor() == 1) {
                     PrimaryComment primaryComment = convertToPrimaryComment(comment, userMap);
                     primaryComment.setChildren(new ArrayList<>());
-                    primaryCommentMap.put(comment.getConmment_id(), primaryComment);
-                    parentCommentMap.put(comment.getConmment_id(), comment);
+                    primaryCommentMap.put(comment.getComment_id(), primaryComment);
+                    parentCommentMap.put(comment.getComment_id(), comment);
                     rootComments.add(primaryComment);
                 } else {
                     // 将所有评论加入父评论映射表，方便二级评论查找被回复者
-                    parentCommentMap.put(comment.getConmment_id(), comment);
+                    parentCommentMap.put(comment.getComment_id(), comment);
                 }
             }
 
             // 再处理二级评论，添加到对应一级评论的 children 列表中
             for (Comments comment : allComments) {
-                if (comment.getConmment_floor() >= 2 && comment.getIn_comment_id() != null) {
+                if (comment.getComment_floor() >= 2 && comment.getIn_comment_id() != null) {
                     SecondaryComment secondaryComment = convertToSecondaryComment(comment, userMap, parentCommentMap);
                     PrimaryComment primaryComment = primaryCommentMap.get(comment.getIn_comment_id());
                     if (secondaryComment != null && primaryComment != null) {
@@ -266,11 +266,11 @@ public class CommentServiceImpl implements CommentService {
                 }
             }
 
-            // 对每个一级评论的二级评论列表按最早发布排序（conmment_id ASC）
+            // 对每个一级评论的二级评论列表按最早发布排序（comment_id ASC）
             for (PrimaryComment primaryComment : rootComments) {
                 if (primaryComment.getChildren() != null && !primaryComment.getChildren().isEmpty()) {
                     primaryComment.getChildren().sort((c1, c2) ->
-                        Integer.compare(c1.getConmment_id(), c2.getConmment_id())
+                        Integer.compare(c1.getComment_id(), c2.getComment_id())
                     );
                 }
             }
@@ -293,13 +293,13 @@ public class CommentServiceImpl implements CommentService {
      */
     private PrimaryComment convertToPrimaryComment(Comments comment, Map<Integer, User> userMap) {
         PrimaryComment vo = new PrimaryComment();
-        vo.setConmment_id(comment.getConmment_id());
+        vo.setComment_id(comment.getComment_id());
         vo.setUser_id(comment.getUser_id());
         vo.setWork_id(comment.getWork_id());
         vo.setParent_comment_id(comment.getParent_comment_id());
         vo.setIn_comment_id(comment.getIn_comment_id());
-        vo.setConmment_floor(comment.getConmment_floor());
-        vo.setConmment_text(comment.getConmment_text());
+        vo.setComment_floor(comment.getComment_floor());
+        vo.setComment_text(comment.getComment_text());
         vo.setIs_delete(comment.getIs_delete());
         vo.setTime(comment.getTime());
 
@@ -327,13 +327,13 @@ public class CommentServiceImpl implements CommentService {
     private SecondaryComment convertToSecondaryComment(Comments comment, Map<Integer, User> userMap,
                                                        Map<Integer, Comments> parentCommentMap) {
         SecondaryComment vo = new SecondaryComment();
-        vo.setConmment_id(comment.getConmment_id());
+        vo.setComment_id(comment.getComment_id());
         vo.setUser_id(comment.getUser_id());
         vo.setWork_id(comment.getWork_id());
         vo.setParent_comment_id(comment.getParent_comment_id());
         vo.setIn_comment_id(comment.getIn_comment_id());
-        vo.setConmment_floor(comment.getConmment_floor());
-        vo.setConmment_text(comment.getConmment_text());
+        vo.setComment_floor(comment.getComment_floor());
+        vo.setComment_text(comment.getComment_text());
         vo.setIs_delete(comment.getIs_delete());
         vo.setTime(comment.getTime());
 

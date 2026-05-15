@@ -23,19 +23,19 @@ DROP TABLE IF EXISTS `tb_comments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `tb_comments` (
-  `conmment_id` int NOT NULL AUTO_INCREMENT COMMENT '唯一值',
+  `comment_id` int NOT NULL AUTO_INCREMENT COMMENT '唯一值',
   `user_id` int NOT NULL COMMENT '用于链接到对应的用户数据',
   `work_id` int NOT NULL COMMENT '所属作品id',
-  `answer_conmment_id` int DEFAULT NULL COMMENT '所回复的评论id',
-  `conmment_floor` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论层级：1 - 作品评论、2 - 二级评论',
-  `conmment_text` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论内容，限制长度125字',
+  `answer_comment_id` int DEFAULT NULL COMMENT '所回复的评论id',
+  `comment_floor` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论层级：1 - 作品评论、2 - 二级评论',
+  `comment_text` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论内容，限制长度125字',
   `status` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL DEFAULT '20' COMMENT '评论状态，10 - 正常、20 - 待审核、30 - 封禁',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
-  PRIMARY KEY (`conmment_id`),
+  PRIMARY KEY (`comment_id`),
   KEY `tb_comments_tb_user_FK` (`user_id`),
   KEY `tb_comments_tb_works_FK` (`work_id`),
-  KEY `tb_comments_tb_comments_FK` (`answer_conmment_id`),
-  CONSTRAINT `tb_comments_tb_comments_FK` FOREIGN KEY (`answer_conmment_id`) REFERENCES `tb_comments` (`conmment_id`),
+  KEY `tb_comments_tb_comments_FK` (`answer_comment_id`),
+  CONSTRAINT `tb_comments_tb_comments_FK` FOREIGN KEY (`answer_comment_id`) REFERENCES `tb_comments` (`comment_id`),
   CONSTRAINT `tb_comments_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`),
   CONSTRAINT `tb_comments_tb_works_FK` FOREIGN KEY (`work_id`) REFERENCES `tb_works` (`work_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='评论表';

@@ -29,7 +29,7 @@ public class PendingReviews {
     Integer work_id;
 
     @Schema(description = "待审核评论 ID，用于评论审核记录")
-    Integer conmment_id;
+    Integer comment_id;
 
     @Schema(description = "待审核用户 ID，用于用户信息审核记录")
     Integer user_id;

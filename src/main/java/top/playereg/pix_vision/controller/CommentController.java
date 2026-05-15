@@ -198,7 +198,7 @@ public class CommentController {
             - 这是一个**公开接口**，无需 Token 认证
             - 只返回**未删除**的评论（is_delete=0）
             - 一级评论支持两种排序：最新发布（默认）或最早发布
-            - 二级评论始终按最早发布排列（conmment_id ASC）
+            - 二级评论始终按最早发布排列（comment_id ASC）
             - 如果作品没有评论，返回空数组
             - 每个评论对象包含用户昵称（nickname）和头像路径（user_avatar）
             - 一级评论的 children 字段包含其所有二级评论（SecondaryComment类型）

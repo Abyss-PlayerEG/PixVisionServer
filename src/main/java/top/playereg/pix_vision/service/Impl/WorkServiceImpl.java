@@ -282,7 +282,7 @@ public class WorkServiceImpl implements WorkService {
             pendingReview.setData_type(100); // 作品类型
             pendingReview.setStatus(20); // 待审核状态
             pendingReview.setWork_id(works.getWork_id());
-            pendingReview.setConmment_id(null); // 评论ID为空
+            pendingReview.setComment_id(null); // 评论ID为空
             pendingReview.setUser_id(userId);
             pendingReview.setIs_delete(false);
             pendingReview.setUpdate_time(null);

@@ -1117,7 +1117,7 @@
                 : '/1.png';
 
             let html = `
-                <div class="comment-item" data-comment-id="${comment.conmment_id}">
+                <div class="comment-item" data-comment-id="${comment.comment_id}">
                     <div class="comment-header">
                         <img src="${avatarUrl}" alt="${comment.nickname}" class="avatar" onerror="this.src='/1.png'">
                         <div class="user-info">
@@ -1125,9 +1125,9 @@
                             <div class="comment-time" data-time="${comment.time}">${formatTime(comment.time)}</div>
                         </div>
                     </div>
-                    <div class="comment-content">${escapeHtml(comment.conmment_text)}</div>
+                    <div class="comment-content">${escapeHtml(comment.comment_text)}</div>
                     <div class="comment-actions">
-                        <button class="reply-btn" onclick="showReplyInput(${comment.conmment_id}, '${escapeHtml(comment.nickname)}')">回复</button>
+                        <button class="reply-btn" onclick="showReplyInput(${comment.comment_id}, '${escapeHtml(comment.nickname)}')">回复</button>
                     </div>
             `;
 
@@ -1149,7 +1149,7 @@
                 ? `${API_BASE_URL}/api/image/avatar/get?filePath=${encodeURIComponent(reply.user_avatar)}`
                 : '/1.png';
 
-            let contentHtml = escapeHtml(reply.conmment_text);
+            let contentHtml = escapeHtml(reply.comment_text);
 
             // 只有回复二级评论时才显示 @昵称（parent_comment_id != in_comment_id 表示回复的是其他二级评论）
             if (reply.replied_nickname && reply.parent_comment_id !== reply.in_comment_id) {
@@ -1157,7 +1157,7 @@
             }
 
             return `
-                <div class="reply-item" data-comment-id="${reply.conmment_id}">
+                <div class="reply-item" data-comment-id="${reply.comment_id}">
                     <div class="comment-header">
                         <img src="${avatarUrl}" alt="${reply.nickname}" class="avatar" onerror="this.src='/default-avatar.png'">
                         <div class="user-info">
@@ -1167,7 +1167,7 @@
                     </div>
                     <div class="reply-content">${contentHtml}</div>
                     <div class="comment-actions">
-                        <button class="reply-btn" onclick="showReplyInput(${reply.conmment_id}, '${escapeHtml(reply.replied_nickname || reply.nickname)}', ${reply.replied_user_id || reply.user_id})">回复</button>
+                        <button class="reply-btn" onclick="showReplyInput(${reply.comment_id}, '${escapeHtml(reply.replied_nickname || reply.nickname)}', ${reply.replied_user_id || reply.user_id})">回复</button>
                     </div>
                 </div>
             `;

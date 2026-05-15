@@ -4,26 +4,26 @@
 
     <!-- 定义结果映射 -->
     <resultMap id="BaseResultMap" type="top.playereg.pix_vision.pojo.commentsPojo.Comments">
-        <id column="conmment_id" property="conmment_id"/>
+        <id column="comment_id" property="comment_id"/>
         <result column="user_id" property="user_id"/>
         <result column="work_id" property="work_id"/>
         <result column="parent_comment_id" property="parent_comment_id"/>
         <result column="in_comment_id" property="in_comment_id"/>
-        <result column="conmment_floor" property="conmment_floor"/>
-        <result column="conmment_text" property="conmment_text"/>
+        <result column="comment_floor" property="comment_floor"/>
+        <result column="comment_text" property="comment_text"/>
         <result column="is_delete" property="is_delete"/>
         <result column="time" property="time"/>
     </resultMap>
 
     <!-- 定义基础字段列表 -->
     <sql id="Base_Column_List">
-        conmment_id, user_id, work_id, parent_comment_id, in_comment_id, conmment_floor, conmment_text, is_delete, time
+        comment_id, user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text, is_delete, time
     </sql>
 
     <!-- 新增评论 -->
-    <insert id="insertComment" parameterType="top.playereg.pix_vision.pojo.commentsPojo.Comments" useGeneratedKeys="true" keyProperty="conmment_id">
-        INSERT INTO tb_comments (user_id, work_id, parent_comment_id, in_comment_id, conmment_floor, conmment_text, is_delete, time)
-        VALUES (#{user_id}, #{work_id}, #{parent_comment_id}, #{in_comment_id}, #{conmment_floor}, #{conmment_text}, 0, NOW())
+    <insert id="insertComment" parameterType="top.playereg.pix_vision.pojo.commentsPojo.Comments" useGeneratedKeys="true" keyProperty="comment_id">
+        INSERT INTO tb_comments (user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text, is_delete, time)
+        VALUES (#{user_id}, #{work_id}, #{parent_comment_id}, #{in_comment_id}, #{comment_floor}, #{comment_text}, 0, NOW())
     </insert>
 
     <!-- 根据作品 ID 查询评论列表 -->
@@ -33,13 +33,13 @@
         WHERE work_id = #{workId}
           AND is_delete = 0
         ORDER BY
-            conmment_floor ASC,
+            comment_floor ASC,
             <choose>
                 <when test="orderBy == 'oldest'">
-                    conmment_id ASC
+                    comment_id ASC
                 </when>
                 <otherwise>
-                    conmment_id DESC
+                    comment_id DESC
                 </otherwise>
             </choose>
     </select>
@@ -48,7 +48,7 @@
     <select id="selectCommentById" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM tb_comments
-        WHERE conmment_id = #{commentId}
+        WHERE comment_id = #{commentId}
           AND is_delete = 0
     </select>
 
@@ -56,14 +56,14 @@
     <update id="updateById">
         UPDATE tb_comments
         SET in_comment_id = #{et.in_comment_id}
-        WHERE conmment_id = #{et.conmment_id}
+        WHERE comment_id = #{et.comment_id}
     </update>
 
     <!-- 批量删除评论 -->
     <update id="deleteComments">
         UPDATE tb_comments
         SET is_delete = #{isDelete}
-        WHERE conmment_id IN
+        WHERE comment_id IN
         <foreach collection="commentIds" item="comment_id" open="(" separator="," close=")">
             #{comment_id}
         </foreach>

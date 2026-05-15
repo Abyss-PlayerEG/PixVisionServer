@@ -23,22 +23,22 @@ DROP TABLE IF EXISTS `tb_comments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `tb_comments` (
-  `conmment_id` int NOT NULL AUTO_INCREMENT COMMENT '唯一值',
+  `comment_id` int NOT NULL AUTO_INCREMENT COMMENT '唯一值',
   `user_id` int NOT NULL COMMENT '用于链接到对应的用户数据',
   `work_id` int NOT NULL COMMENT '所属作品id',
   `in_comment_id` int DEFAULT NULL COMMENT '所属一级评论，用于二级评论定位一级评论',
   `parent_comment_id` int DEFAULT NULL COMMENT '所回复的评论id，用于定位被回复方评论',
-  `conmment_floor` int NOT NULL COMMENT '评论层级：1 - 作品评论、2 - 二级评论',
-  `conmment_text` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论内容，限制长度125字',
+  `comment_floor` int NOT NULL COMMENT '评论层级：1 - 作品评论、2 - 二级评论',
+  `comment_text` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci NOT NULL COMMENT '评论内容，限制长度125字',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   `time` timestamp NOT NULL COMMENT '数据条目创建时间戳',
-  PRIMARY KEY (`conmment_id`),
+  PRIMARY KEY (`comment_id`),
   KEY `tb_comments_tb_user_FK` (`user_id`),
   KEY `tb_comments_tb_works_FK` (`work_id`),
   KEY `tb_comments_tb_comments_FK` (`parent_comment_id`),
   KEY `tb_comments_tb_comments_FK_1` (`in_comment_id`),
-  CONSTRAINT `tb_comments_tb_comments_FK` FOREIGN KEY (`parent_comment_id`) REFERENCES `tb_comments` (`conmment_id`),
-  CONSTRAINT `tb_comments_tb_comments_FK_1` FOREIGN KEY (`in_comment_id`) REFERENCES `tb_comments` (`conmment_id`),
+  CONSTRAINT `tb_comments_tb_comments_FK` FOREIGN KEY (`parent_comment_id`) REFERENCES `tb_comments` (`comment_id`),
+  CONSTRAINT `tb_comments_tb_comments_FK_1` FOREIGN KEY (`in_comment_id`) REFERENCES `tb_comments` (`comment_id`),
   CONSTRAINT `tb_comments_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`),
   CONSTRAINT `tb_comments_tb_works_FK` FOREIGN KEY (`work_id`) REFERENCES `tb_works` (`work_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='评论表';
@@ -94,7 +94,7 @@ CREATE TABLE `tb_pending_reviews` (
   `data_type` int NOT NULL COMMENT '数据类型，作品-100、评论-200、头像-300',
   `status` int NOT NULL DEFAULT '20' COMMENT '审核状态，10 - 正常、20 - 待审核、30 - 封禁',
   `work_id` int DEFAULT NULL COMMENT '待审核作品id，用于作品审核记录',
-  `conmment_id` int DEFAULT NULL COMMENT '待审核评论id，用于评论审核记录',
+  `comment_id` int DEFAULT NULL COMMENT '待审核评论id，用于评论审核记录',
   `user_id` int DEFAULT NULL COMMENT '待审核用户id，用于用户信息审核记录',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
   `update_time` timestamp NULL DEFAULT NULL COMMENT '数据条目更新时间戳',
@@ -104,8 +104,8 @@ CREATE TABLE `tb_pending_reviews` (
   PRIMARY KEY (`pending_reviews_id`),
   KEY `tb_pending_reviews_tb_user_FK` (`user_id`),
   KEY `tb_pending_reviews_tb_works_FK` (`work_id`),
-  KEY `tb_pending_reviews_tb_comments_FK` (`conmment_id`),
-  CONSTRAINT `tb_pending_reviews_tb_comments_FK` FOREIGN KEY (`conmment_id`) REFERENCES `tb_comments` (`conmment_id`),
+  KEY `tb_pending_reviews_tb_comments_FK` (`comment_id`),
+  CONSTRAINT `tb_pending_reviews_tb_comments_FK` FOREIGN KEY (`comment_id`) REFERENCES `tb_comments` (`comment_id`),
   CONSTRAINT `tb_pending_reviews_tb_user_FK` FOREIGN KEY (`user_id`) REFERENCES `tb_user` (`user_id`),
   CONSTRAINT `tb_pending_reviews_tb_works_FK` FOREIGN KEY (`work_id`) REFERENCES `tb_works` (`work_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='待审核数据表';

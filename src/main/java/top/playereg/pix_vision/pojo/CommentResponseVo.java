@@ -25,7 +25,7 @@ public class CommentResponseVo {
      * 评论 ID
      */
     @Schema(description = "评论 ID")
-    private Integer conmment_id;
+    private Integer comment_id;
 
     /**
      * 用户 ID
@@ -67,13 +67,13 @@ public class CommentResponseVo {
      * 评论层级：1 - 作品评论、2 - 二级评论
      */
     @Schema(description = "评论层级：1 - 作品评论、2 - 二级评论")
-    private Integer conmment_floor;
+    private Integer comment_floor;
 
     /**
      * 评论内容，限制长度 125 字
      */
     @Schema(description = "评论内容，限制长度 125 字")
-    private String conmment_text;
+    private String comment_text;
 
     /**
      * 删除标签：0 - 未删除、1 - 已删除
