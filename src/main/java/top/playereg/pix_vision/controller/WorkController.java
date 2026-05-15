@@ -167,7 +167,7 @@ public class WorkController {
             - MyBatis-Plus 分页支持
             - 多条件组合查询（作品标题/用户 ID/系列 ID/是否原创）
             - 模糊匹配与精确匹配
-            - 仅返回未删除的作品
+            - 仅返回未删除且审核通过的作品
             - 按创建时间倒序排列（最新作品优先）
 
             ## 参数说明：
@@ -187,7 +187,7 @@ public class WorkController {
             1. 校验页码和每页大小参数（current>=1, 1<=size<=100）
             2. 构建 MyBatis-Plus 分页对象
             3. 根据条件查询作品信息（支持多条件组合）
-            4. 仅返回未删除的作品（is_delete = false）
+            4. 仅返回未删除且审核通过的作品（is_delete = 0 AND approval_status = 10）
             5. 按创建时间倒序排列（create_time DESC）
             6. 返回分页结果集（IPage<Works>）
 
@@ -198,6 +198,7 @@ public class WorkController {
             - 用户 ID、系列 ID 和是否原创支持**精确匹配**
             - 默认返回完整 Works 实体字段
             - 已自动过滤逻辑删除的作品（is_delete=0）
+            - **仅返回审核通过的作品**（approval_status=10），待审核和未过审的作品不会显示
             - 每页大小限制：**1-100**
             - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
             - 使用 **RESTful 风格**路径参数，格式：`/homepage/{current}/{size}`
@@ -249,7 +250,7 @@ public class WorkController {
             ## 特性
             - 公开接口（无需认证）
             - 根据作品 ID 精确查询
-            - 仅返回未删除的作品
+            - 仅返回未删除且审核通过的作品
             - 返回完整的 Works 实体字段
 
             ## 参数说明：
@@ -264,14 +265,15 @@ public class WorkController {
             ## 业务逻辑：
             1. 校验作品 ID 参数有效性
             2. 查询作品信息
-            3. 验证作品是否存在且未删除
+            3. 验证作品是否存在、未删除且审核通过
             4. 返回作品详细信息
 
             ## 注意事项：
             - 这是一个**公开接口**，无需 Token 认证
-            - 只能查询**未删除**的作品（is_delete=0）
+            - 只能查询**未删除且审核通过**的作品（is_delete=0 AND approval_status=10）
+            - 待审核（approval_status=20）和未过审（approval_status=30）的作品无法查询
             - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
-            - 如果作品不存在或已删除，返回 null
+            - 如果作品不存在、已删除或未审核通过，返回 null
             """
     )
     @PublicAccess("查询单个作品，无需认证")

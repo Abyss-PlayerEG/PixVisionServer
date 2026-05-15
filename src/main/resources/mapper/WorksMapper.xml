@@ -28,7 +28,7 @@
         , user_id, work_title, img_url, series_id, like_count, star_count, view_count, is_original_work, out_url, approval_status, is_delete, update_time, update_user, create_time, create_user
     </sql>
 
-    <!-- 分页查询首页作品列表（支持多条件查询，未删除，按创建时间倒序） -->
+    <!-- 分页查询首页作品列表（支持多条件查询，未删除且审核通过，按创建时间倒序） -->
     <select id="selectHomepageWorks" resultMap="BaseResultMap">
         SELECT w.work_id,
                w.user_id,
@@ -46,6 +46,7 @@
                w.create_user
         FROM tb_works w
         WHERE w.is_delete = 0
+          AND w.approval_status = 10
         <if test="workTitle != null and workTitle != ''">
             AND w.work_title LIKE CONCAT('%', #{workTitle}, '%')
         </if>
@@ -106,11 +107,13 @@
           AND is_delete = 0
     </select>
 
-    <!-- 根据作品 ID 查询作品信息 -->
+    <!-- 根据作品 ID 查询作品信息（仅返回未删除且审核通过的作品） -->
     <select id="selectWorkById" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM tb_works
         WHERE work_id = #{workId}
+          AND is_delete = 0
+          AND approval_status = 10
     </select>
 
     <!-- 更新作品信息（SQL 层面验证用户权限，动态更新非空字段） -->
