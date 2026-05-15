@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,7 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OperateLog {
+    @TableId
     Integer sys_log_id;
     Integer user_id;
     Timestamp log_datetime;

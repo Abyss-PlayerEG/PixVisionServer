@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.pojo.commentsPojo;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,7 @@ public class BaseComment {
     /**
      * 评论 ID
      */
+    @TableId
     @Schema(description = "评论 ID")
     private Integer comment_id;
 

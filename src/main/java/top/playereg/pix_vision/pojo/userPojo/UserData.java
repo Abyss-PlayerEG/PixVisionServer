@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.pojo.userPojo;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,7 @@ import java.sql.Timestamp;
 @Schema(description = "用户数据实体")
 public class UserData {
 
+    @TableId
     @Schema(description = "数据 ID")
     Integer data_id;
 

@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,7 @@ import java.sql.Timestamp;
 @Schema(description = "作品系列实体")
 public class Series {
 
+    @TableId
     @Schema(description = "系列 ID")
     Integer series_id;
 
