@@ -116,7 +116,7 @@
           AND approval_status = 10
     </select>
 
-    <!-- 更新作品信息（SQL 层面验证用户权限，动态更新非空字段） -->
+    <!-- 更新作品信息（SQL 层面验证用户权限，动态更新非空字段，修改后重置为待审核状态） -->
     <update id="updateWorkInfo">
         UPDATE tb_works
         <set>
@@ -135,6 +135,7 @@
             <if test="outUrl != null">
                 out_url = #{outUrl},
             </if>
+            approval_status = 20,
             update_time = NOW(),
             update_user = #{userId}
         </set>

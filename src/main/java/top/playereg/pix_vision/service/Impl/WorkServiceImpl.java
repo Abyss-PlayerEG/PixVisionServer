@@ -620,7 +620,7 @@ public class WorkServiceImpl implements WorkService {
         int affectedRows = worksMapper.updateWorkInfo(workId, userId, workTitle, newImgUrl, finalSeriesId, shouldUpdateSeriesId, finalIsOriginal, finalOutUrl);
 
         if (affectedRows > 0) {
-            log.info("作品修改成功，作品 ID: {}, 用户 ID: {}", workId, userId);
+            log.info("作品修改成功，作品 ID: {}, 用户 ID: {}, 审核状态已重置为待审核", workId, userId);
             return true;
         } else {
             log.error("作品修改失败，作品 ID: {}, 用户 ID: {}", workId, userId);
