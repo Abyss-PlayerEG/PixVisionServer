@@ -22,37 +22,42 @@
     </sql>
 
     <!-- 新增评论 -->
-    <insert id="insertComment" parameterType="top.playereg.pix_vision.pojo.commentsPojo.Comments" useGeneratedKeys="true" keyProperty="comment_id">
-        INSERT INTO tb_comments (user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text, approval_status, is_delete, time)
-        VALUES (#{user_id}, #{work_id}, #{parent_comment_id}, #{in_comment_id}, #{comment_floor}, #{comment_text}, #{approval_status}, 0, NOW())
+    <insert id="insertComment" parameterType="top.playereg.pix_vision.pojo.commentsPojo.Comments"
+            useGeneratedKeys="true" keyProperty="comment_id">
+        INSERT INTO tb_comments (user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text,
+                                 approval_status, is_delete, time)
+        VALUES (#{user_id}, #{work_id}, #{parent_comment_id}, #{in_comment_id}, #{comment_floor}, #{comment_text},
+                #{approval_status}, 0, NOW())
     </insert>
 
     <!-- 根据作品 ID 查询评论列表（只返回审核通过的评论） -->
     <select id="selectCommentsByWorkId" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
+        SELECT
+        <include refid="Base_Column_List"/>
         FROM tb_comments
         WHERE work_id = #{workId}
-          AND is_delete = 0
-          AND approval_status = 10
+        AND is_delete = 0
+        AND approval_status = 10
         ORDER BY
-            comment_floor ASC,
-            <choose>
-                <when test="orderBy == 'oldest'">
-                    comment_id ASC
-                </when>
-                <otherwise>
-                    comment_id DESC
-                </otherwise>
-            </choose>
+        comment_floor ASC,
+        <choose>
+            <when test="orderBy == 'oldest'">
+                comment_id ASC
+            </when>
+            <otherwise>
+                comment_id DESC
+            </otherwise>
+        </choose>
     </select>
 
     <!-- 根据评论 ID 查询评论信息（只返回审核通过的评论） -->
     <select id="selectCommentById" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
+        SELECT
+        <include refid="Base_Column_List"/>
         FROM tb_comments
         WHERE comment_id = #{commentId}
-          AND is_delete = 0
-          AND approval_status = 10
+        AND is_delete = 0
+        AND approval_status = 10
     </select>
 
     <!-- 更新评论（用于更新 in_comment_id） -->
@@ -83,7 +88,8 @@
 
     <!-- 分页查询评论列表（支持多条件过滤） -->
     <select id="selectCommentsPage" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
+        SELECT
+        <include refid="Base_Column_List"/>
         FROM tb_comments
         WHERE is_delete = 0
         <if test="workId != null">

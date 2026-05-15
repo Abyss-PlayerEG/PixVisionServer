@@ -6,17 +6,17 @@ public interface VerificationCodeServices {
     public String verificationCode();
 
     // 设置验证码缓存
-    public void setRedisVCode( String email, String vCode );
+    public void setRedisVCode(String email, String vCode);
 
     // 释放验证码缓存
-    public void deleteRedisVCode( String email );
+    public void deleteRedisVCode(String email);
 
     // 验证码验证
-    public boolean verificationCodeVerify( String email, String userInputVCode );
+    public boolean verificationCodeVerify(String email, String userInputVCode);
 
     // 检查验证码是否存在
-    public boolean hasRedisVCode( String email );
+    public boolean hasRedisVCode(String email);
 
     // 获取验证码剩余过期时间（秒）
-    public Long getRedisVCodeRemainingTime( String email );
+    public Long getRedisVCodeRemainingTime(String email);
 }

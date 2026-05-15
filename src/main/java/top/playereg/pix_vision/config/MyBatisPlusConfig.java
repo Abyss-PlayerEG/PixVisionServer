@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * MyBatis Plus 配置
+ *
  * @author PlayerEG
  */
 @Configuration
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 public class MyBatisPlusConfig {
     /**
      * MyBatis Plus 拦截器
+     *
      * @author PlayerEG
      */
     @Bean

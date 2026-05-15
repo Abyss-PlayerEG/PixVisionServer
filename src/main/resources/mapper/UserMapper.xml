@@ -135,13 +135,13 @@
     <select id="selectUsersByRoles"
             resultType="top.playereg.pix_vision.pojo.userPojo.User">
         SELECT nickname,
-               user_id,
-               avatar_url,
-               username,
-               email,
-               user_role,
-               user_uuid,
-               status
+        user_id,
+        avatar_url,
+        username,
+        email,
+        user_role,
+        user_uuid,
+        status
         FROM tb_user
         WHERE is_delete = 0
         <if test="userRoles != null and userRoles.size() > 0">

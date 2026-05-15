@@ -186,7 +186,7 @@ public class AdminUserController {
         @RequestParam(required = false) Integer newStatus
     ) {
         log.info("管理员开始批量更新用户信息 - 用户数量: {}, 新角色: {}, 新状态: {}",
-                userIds != null ? userIds.size() : 0, newRole, newStatus);
+            userIds != null ? userIds.size() : 0, newRole, newStatus);
 
         // 参数校验
         if (userIds == null || userIds.isEmpty()) {

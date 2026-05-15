@@ -47,10 +47,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public User registerUser(
-            String username,
-            String password,
-            String nickname,
-            String email
+        String username,
+        String password,
+        String nickname,
+        String email
     ) {
         log.info("开始注册用户 - 用户名: {}, 邮箱: {}", username, email);
 
@@ -96,6 +96,7 @@ public class UserServiceImpl implements UserService {
 
         return success ? user : null;
     }
+
     /**
      * 检查用户名是否存在
      */
@@ -109,6 +110,7 @@ public class UserServiceImpl implements UserService {
     private boolean isEmailExists(String email) {
         return userMapper.countByEmail(email) > 0;
     }
+
     @Override
     public User selectAllUserByUsername(String username) {
         return userMapper.selectAllUserInfoByUsername(username);
@@ -198,21 +200,23 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 用户密码修改（通过邮箱）
-     * @param email 用户的邮箱
+     *
+     * @param email       用户的邮箱
      * @param oldPassword 用户的旧密码
      * @param newPassword 用户的新密码
      * @return 影响行数
-     * */
-    public Integer changeUserLoginPasswordByEmail(String email, String oldPassword, String newPassword ){
+     */
+    public Integer changeUserLoginPasswordByEmail(String email, String oldPassword, String newPassword) {
         return userMapper.changeUserPassword(email, oldPassword, newPassword);
     }
 
     /**
      * 忘记密码 - 重置密码（无需登录）
+     *
      * @param usernameOrEmail 用户名或邮箱
-     * @param newPassword 新密码
+     * @param newPassword     新密码
      * @param confirmPassword 确认新密码
-     * @param vCode 邮箱验证码
+     * @param vCode           邮箱验证码
      * @return 是否成功
      */
     @Override
@@ -254,7 +258,8 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 更新用户头像
-     * @param userId 用户 ID
+     *
+     * @param userId    用户 ID
      * @param avatarUrl 头像路径
      * @return 是否成功
      */
@@ -737,7 +742,7 @@ public class UserServiceImpl implements UserService {
 
         if (result > 0) {
             log.info("用户角色更新成功 - 用户 ID: {}, 旧角色: {}, 新角色: {}, 管理员: {}",
-                    targetUserId, oldRole, newRole, adminId);
+                targetUserId, oldRole, newRole, adminId);
 
             // 清除该用户的角色缓存，确保下次请求时获取最新的角色信息
             clearUserRoleCache(targetUserId);
@@ -807,7 +812,7 @@ public class UserServiceImpl implements UserService {
 
         if (result > 0) {
             log.info("用户状态更新成功 - 用户 ID: {}, 旧状态: {}, 新状态: {}, 管理员: {}",
-                    targetUserId, oldStatus, newStatus, adminId);
+                targetUserId, oldStatus, newStatus, adminId);
             return true;
         } else {
             log.error("用户状态更新失败 - 用户 ID: {}", targetUserId);
@@ -864,11 +869,11 @@ public class UserServiceImpl implements UserService {
 
         if (result > 0) {
             log.info("用户账户删除成功 - 用户 ID: {}, 用户名: {}, 管理员: {}",
-                    targetUserId, targetUser.getUsername(), adminId);
+                targetUserId, targetUser.getUsername(), adminId);
 
             // 清除该用户的所有 Token，强制所有设备下线
             int removedTokens = tokenWhitelistService.removeAllUserTokens(
-                    targetUserId, targetUser.getUsername());
+                targetUserId, targetUser.getUsername());
             log.info("已清除用户 Token - 用户 ID: {}, 清除数量: {}", targetUserId, removedTokens);
 
             // 清除用户角色缓存
@@ -996,7 +1001,7 @@ public class UserServiceImpl implements UserService {
         boolean success = userMapper.insertUser(user) > 0;
         if (success) {
             log.info("管理员创建用户成功 - 用户名: {}, 用户 ID: {}, 角色: {}, 状态: {}, 管理员: {}",
-                    username, user.getUser_id(), role, status, adminId);
+                username, user.getUser_id(), role, status, adminId);
         } else {
             log.error("管理员创建用户失败 - 用户名: {}", username);
         }

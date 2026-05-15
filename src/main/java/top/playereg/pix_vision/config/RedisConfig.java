@@ -26,7 +26,7 @@ public class RedisConfig {
      */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(
-            RedisConnectionFactory connectionFactory
+        RedisConnectionFactory connectionFactory
     ) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();     // 创建RedisTemplate对象
         template.setConnectionFactory(connectionFactory);   // 设置RedisConnectionFactory
@@ -52,18 +52,18 @@ public class RedisConfig {
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         RedisCacheConfiguration config = RedisCacheConfiguration
-                .defaultCacheConfig()           // 创建RedisCacheConfiguration对象，缓存配置对象
-                .entryTtl(Duration.ofMinutes(30))  // 设置缓存有效期一小时
-                .serializeKeysWith(             // 设置键（key）的序列化方式
-                        RedisSerializationContext.SerializationPair.fromSerializer(
-                                new StringRedisSerializer()
-                        )
+            .defaultCacheConfig()           // 创建RedisCacheConfiguration对象，缓存配置对象
+            .entryTtl(Duration.ofMinutes(30))  // 设置缓存有效期一小时
+            .serializeKeysWith(             // 设置键（key）的序列化方式
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                    new StringRedisSerializer()
                 )
-                .serializeValuesWith(           // 设置值（value）的序列化方式
-                        RedisSerializationContext.SerializationPair.fromSerializer(
-                                new Jackson2JsonRedisSerializer<>(Object.class)
-                        )
-                );
+            )
+            .serializeValuesWith(           // 设置值（value）的序列化方式
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                    new Jackson2JsonRedisSerializer<>(Object.class)
+                )
+            );
 
         log.info("CacheManager创建成功");
         return RedisCacheManager.builder(connectionFactory).cacheDefaults(config).build();

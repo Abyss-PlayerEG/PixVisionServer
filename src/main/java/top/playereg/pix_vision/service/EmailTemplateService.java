@@ -22,11 +22,12 @@ public interface EmailTemplateService {
 
     /**
      * 渲染重置密码邮件模板
+     *
      * @param username 用户名
      * @param password 密码
      * @return 渲染后的 HTML字符串
      * @author blue_sky_ks
-     * */
+     */
     String renderResetPasswordEmail(String username, String password);
 
     /**

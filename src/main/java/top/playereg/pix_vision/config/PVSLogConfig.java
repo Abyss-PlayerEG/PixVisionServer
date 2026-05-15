@@ -12,7 +12,7 @@ public class PVSLogConfig {
     private boolean highlightColor;
 
     private static PVSLogConfig instance;
-    
+
     public PVSLogConfig() {
         instance = this;
     }

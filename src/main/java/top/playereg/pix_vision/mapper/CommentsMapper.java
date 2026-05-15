@@ -32,7 +32,7 @@ public interface CommentsMapper extends BaseMapper<Comments> {
     /**
      * 根据作品 ID 查询评论列表
      *
-     * @param workId 作品 ID
+     * @param workId  作品 ID
      * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布
      * @return 评论列表
      * @author PlayerEG
@@ -51,10 +51,11 @@ public interface CommentsMapper extends BaseMapper<Comments> {
 
     /**
      * 批量删除评论
+     *
      * @param commentIds 评论ID列表
-     * @param isDelete 是否删除
+     * @param isDelete   是否删除
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
-     * */
+     */
     boolean deleteComments(java.util.List<Integer> commentIds, Integer isDelete);
 
     /**
@@ -69,19 +70,19 @@ public interface CommentsMapper extends BaseMapper<Comments> {
     /**
      * 分页查询评论列表（支持多条件过滤）
      *
-     * @param page 分页对象
-     * @param workId 作品ID（可选）
-     * @param userId 用户ID（可选）
-     * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
+     * @param page           分页对象
+     * @param workId         作品ID（可选）
+     * @param userId         用户ID（可选）
+     * @param commentFloor   评论层级（可选，1-一级评论、2-二级评论）
      * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
-     * @param keyword 评论关键字（可选，模糊搜索）
+     * @param keyword        评论关键字（可选，模糊搜索）
      * @return 分页结果
      * @author PlayerEG
      */
     IPage<Comments> selectCommentsPage(Page<Comments> page,
-                                        @Param("workId") Integer workId,
-                                        @Param("userId") Integer userId,
-                                        @Param("commentFloor") Integer commentFloor,
-                                        @Param("approvalStatus") Integer approvalStatus,
-                                        @Param("keyword") String keyword);
+                                       @Param("workId") Integer workId,
+                                       @Param("userId") Integer userId,
+                                       @Param("commentFloor") Integer commentFloor,
+                                       @Param("approvalStatus") Integer approvalStatus,
+                                       @Param("keyword") String keyword);
 }

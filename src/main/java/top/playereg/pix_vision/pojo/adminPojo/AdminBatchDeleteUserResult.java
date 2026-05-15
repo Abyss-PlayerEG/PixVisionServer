@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "管理员批量删除用户结果")
-public class AdminBatchDeleteUserResult{
+public class AdminBatchDeleteUserResult {
     @Schema(description = "需要删除的用户总数", example = "10")
     private Integer totalCount;
 

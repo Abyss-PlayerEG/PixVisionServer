@@ -70,7 +70,7 @@ public class AdminCommentsController {
     @PostMapping("/delete")
     public ResponsePojo<AdminBatchOperateCommentResult> adminDeleteComments(
         @Parameter(description = "目标评论 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> commentIds
-    ){
+    ) {
         // 参数校验
         if (commentIds == null || commentIds.isEmpty()) {
             log.warn("评论 ID 列表为空");
@@ -98,12 +98,12 @@ public class AdminCommentsController {
     /**
      * 分页查询评论列表 - 管理员
      *
-     * @param current 当前页码
-     * @param size 每页大小
-     * @param workId 作品ID（可选）
-     * @param userId 用户ID（可选）
+     * @param current      当前页码
+     * @param size         每页大小
+     * @param workId       作品ID（可选）
+     * @param userId       用户ID（可选）
      * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
-     * @param keyword 评论关键字（可选）
+     * @param keyword      评论关键字（可选）
      * @return 分页结果
      * @author PlayerEG
      */

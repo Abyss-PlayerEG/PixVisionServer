@@ -5,7 +5,8 @@
     <select id="getWorkStatus" resultType="int">
         SELECT status
         FROM tb_pending_reviews
-        WHERE work_id = #{workId} AND data_type = 100
+        WHERE work_id = #{workId}
+          AND data_type = 100
     </select>
 
     <!-- 批量更新作品状态 -->
@@ -16,7 +17,7 @@
         <foreach collection="workIds" item="workId" open="(" separator="," close=")">
             #{workId}
         </foreach>
-          AND data_type = 100
+        AND data_type = 100
     </update>
 
     <!-- 批量删除作品状态 -->
@@ -27,6 +28,6 @@
         <foreach collection="workIds" item="workId" open="(" separator="," close=")">
             #{workId}
         </foreach>
-          AND data_type = 100
+        AND data_type = 100
     </update>
 </mapper>

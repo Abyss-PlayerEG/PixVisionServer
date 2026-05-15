@@ -222,7 +222,7 @@ public class SeriesController {
 
         if (seriesPage != null) {
             log.info("分页查询成功 - 用户 ID: {}, 总记录数: {}, 当前页记录数: {}",
-                    userId, seriesPage.getTotal(), seriesPage.getRecords().size());
+                userId, seriesPage.getTotal(), seriesPage.getRecords().size());
             return ResponsePojo.success(seriesPage, "查询成功");
         } else {
             log.error("分页查询失败 - 用户 ID: {}", userId);

@@ -77,7 +77,7 @@ public class AdminWorksController {
     public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateApprovalStatus(
         @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds,
         @Schema(description = "审核状态：10-正常、20-待审核、30-未过审", allowableValues = {"10", "20", "30"}, example = "30") @RequestParam Integer approvalStatus
-    ){
+    ) {
         // 参数校验
         if (workIds == null || workIds.isEmpty()) {
             log.warn("作品 ID 列表为空");
@@ -160,7 +160,7 @@ public class AdminWorksController {
     @RequireRole(value = {77})
     public ResponsePojo<AdminBatchOperateWorkResult> adminDeleteWorks(
         @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds
-    ){
+    ) {
         // 参数校验
         if (workIds == null || workIds.isEmpty()) {
             log.warn("作品 ID 列表为空");

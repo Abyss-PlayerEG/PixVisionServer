@@ -90,8 +90,8 @@ public class EmailConfig {
      */
     private static String loadTemplate() {
         String templatePath = StrUtil.format(
-                "{}/email-verification.html",
-                FilePathConfig.EmailHtmlPath
+            "{}/email-verification.html",
+            FilePathConfig.EmailHtmlPath
         );
 
         try {

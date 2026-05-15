@@ -61,7 +61,8 @@
 
     <!-- 根据系列 ID 查询系列信息 -->
     <select id="selectSeriesById" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
+        SELECT
+        <include refid="Base_Column_List"/>
         FROM tb_series
         WHERE series_id = #{seriesId}
     </select>
@@ -100,8 +101,8 @@
             update_user = #{userId}
         </set>
         WHERE series_id = #{seriesId}
-          AND user_id = #{userId}
-          AND is_delete = 0
+        AND user_id = #{userId}
+        AND is_delete = 0
     </update>
 
 </mapper>

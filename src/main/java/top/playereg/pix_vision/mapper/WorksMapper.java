@@ -120,7 +120,7 @@ public interface WorksMapper extends BaseMapper<Works> {
     /**
      * 管理员批量更新作品审核状态（不验证用户权限）
      *
-     * @param workIds 作品 ID 列表
+     * @param workIds        作品 ID 列表
      * @param approvalStatus 审核状态：10 - 正常、20 - 待审核、30 - 未过审
      * @return 影响的行数
      * @author PlayerEG

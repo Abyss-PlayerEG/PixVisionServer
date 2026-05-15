@@ -23,22 +23,24 @@ public class PendingReviewsServiceImpl implements PendingReviewsService {
 
     /**
      * 获取作品状态
+     *
      * @param workId 作品ID
      * @return 作品状态
      * @author blue_sky_ks
-     * */
-    public int getWorkStatus(Integer workId){
+     */
+    public int getWorkStatus(Integer workId) {
         return pendingReviewsMapper.getWorkStatus(workId);
     }
 
     /**
      * 批量修改作品状态
+     *
      * @param workIds 作品ID列表
-     * @param status 新状态
+     * @param status  新状态
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * @author blue_sky_ks
-     * */
-    public AdminBatchOperateWorkResult updateWorkStatusBatch(List<Integer> workIds, Integer status){
+     */
+    public AdminBatchOperateWorkResult updateWorkStatusBatch(List<Integer> workIds, Integer status) {
         if (workIds == null || workIds.isEmpty()) {
             return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
         }
@@ -71,11 +73,12 @@ public class PendingReviewsServiceImpl implements PendingReviewsService {
 
     /**
      * 批量删除作品
-     * @param workIds 作品ID列表
+     *
+     * @param workIds  作品ID列表
      * @param isDelete 是否删除
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
-     * */
-    public AdminBatchOperateWorkResult batchDeleteWorks(List<Integer> workIds, Integer isDelete){
+     */
+    public AdminBatchOperateWorkResult batchDeleteWorks(List<Integer> workIds, Integer isDelete) {
         if (workIds == null || workIds.isEmpty()) {
             return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
         }

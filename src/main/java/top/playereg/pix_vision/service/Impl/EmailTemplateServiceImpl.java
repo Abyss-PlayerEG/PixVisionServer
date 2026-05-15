@@ -62,7 +62,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
-    public String renderResetPasswordEmail(String username, String password){
+    public String renderResetPasswordEmail(String username, String password) {
         log.debug("开始渲染重置密码邮件模板 - 用户: {}", username);
 
         // 构建占位符

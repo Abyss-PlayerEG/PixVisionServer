@@ -50,7 +50,7 @@ public class IpUtil {
         try {
             // 尝试获取所有网络接口
             Enumeration<NetworkInterface> interfaces =
-                    NetworkInterface.getNetworkInterfaces();
+                NetworkInterface.getNetworkInterfaces();
 
             while (interfaces.hasMoreElements()) {
                 NetworkInterface networkInterface = interfaces.nextElement();
@@ -60,7 +60,7 @@ public class IpUtil {
                 }
 
                 Enumeration<InetAddress> addresses =
-                        networkInterface.getInetAddresses();
+                    networkInterface.getInetAddresses();
 
                 while (addresses.hasMoreElements()) {
                     InetAddress address = addresses.nextElement();
@@ -124,11 +124,11 @@ public class IpUtil {
     public static String getPublicIpAddress() {
         // 常用的获取公网IP的API列表
         String[] ipApiUrls = {
-                "https://checkip.amazonaws.com",  // AWS提供的服务，通常更可靠
-                "https://api.ipify.org",          // 可靠性较高
-                "https://icanhazip.com",          // 可靠性中等
-                "https://ident.me",               // 可靠性中等
-                "https://ipecho.net/plain"        // 可能不稳定
+            "https://checkip.amazonaws.com",  // AWS提供的服务，通常更可靠
+            "https://api.ipify.org",          // 可靠性较高
+            "https://icanhazip.com",          // 可靠性中等
+            "https://ident.me",               // 可靠性中等
+            "https://ipecho.net/plain"        // 可能不稳定
         };
 
         for (String apiUrl : ipApiUrls) {
@@ -140,7 +140,7 @@ public class IpUtil {
                 connection.setReadTimeout(3000); // 3秒超时
 
                 BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(connection.getInputStream()));
+                    new InputStreamReader(connection.getInputStream()));
                 String ip = reader.readLine();
                 reader.close();
 

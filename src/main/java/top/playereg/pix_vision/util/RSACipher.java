@@ -324,8 +324,8 @@ public class RSACipher {
         try {
             // 移除前缀
             String actualEncrypted = encryptedBase64.startsWith("HYBRID:")
-                    ? encryptedBase64.substring(7)
-                    : encryptedBase64;
+                ? encryptedBase64.substring(7)
+                : encryptedBase64;
 
             // 1. 分离两部分
             String[] parts = actualEncrypted.split(HYBRID_SEPARATOR, 2);

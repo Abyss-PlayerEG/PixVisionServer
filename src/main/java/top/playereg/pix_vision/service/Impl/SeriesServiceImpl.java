@@ -105,7 +105,7 @@ public class SeriesServiceImpl implements SeriesService {
 
         if (result != null) {
             log.info("分页查询成功 - 用户 ID: {}, 总记录数: {}, 当前页记录数: {}",
-                    userId, result.getTotal(), result.getRecords().size());
+                userId, result.getTotal(), result.getRecords().size());
         } else {
             log.warn("分页查询失败 - 用户 ID: {}", userId);
         }
@@ -215,9 +215,9 @@ public class SeriesServiceImpl implements SeriesService {
         }
 
         // 检查是否所有参数都为空
-        boolean allParamsEmpty = (seriesTitle == null || seriesTitle.trim().isEmpty()) 
-                              && (aboutText == null || aboutText.trim().isEmpty());
-        
+        boolean allParamsEmpty = (seriesTitle == null || seriesTitle.trim().isEmpty())
+            && (aboutText == null || aboutText.trim().isEmpty());
+
         if (allParamsEmpty) {
             log.warn("无修改内容，系列 ID: {}, 用户 ID: {}", seriesId, userId);
             throw new IllegalArgumentException("无修改内容");
@@ -239,7 +239,7 @@ public class SeriesServiceImpl implements SeriesService {
         String finalSeriesTitle = null;
         if (seriesTitle != null && !seriesTitle.trim().isEmpty()) {
             String trimmedTitle = seriesTitle.trim();
-            
+
             // 验证标题长度
             if (trimmedTitle.length() > 16) {
                 log.warn("系列标题长度不符合要求，系列 ID: {}, 标题长度: {}", seriesId, Integer.valueOf(trimmedTitle.length()));
@@ -262,7 +262,7 @@ public class SeriesServiceImpl implements SeriesService {
         String finalAboutText = null;
         if (aboutText != null && !aboutText.trim().isEmpty()) {
             String trimmedText = aboutText.trim();
-            
+
             // 验证描述长度
             if (trimmedText.length() > 24) {
                 log.warn("系列描述长度不符合要求，系列 ID: {}, 描述长度: {}", seriesId, Integer.valueOf(trimmedText.length()));

@@ -155,7 +155,7 @@ public class CommentController {
     /**
      * 根据作品 ID 查询评论列表（公开接口）
      *
-     * @param workId 作品 ID
+     * @param workId  作品 ID
      * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）
      * @return 响应数据，包含一级评论列表（每个一级评论包含二级评论列表）
      * @author PlayerEG

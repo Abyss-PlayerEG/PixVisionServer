@@ -30,9 +30,9 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
         final int generateVerificationCodeLength = 6;
         // 验证码元数据
         final String[] metaCode = {
-                "1", "2", "3", "4", "5", "6", "7", "8", "9",
-                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
-                "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+            "1", "2", "3", "4", "5", "6", "7", "8", "9",
+            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+            "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
         };
 
         Random random = new Random();
@@ -59,10 +59,10 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
         // String 存储
         String key = StrUtil.format("userEmailCode:{}", hashEmail); // 用户邮箱
         redisTemplate.opsForValue().set(
-                key, // key
-                hashVCode, // value
-                5, // 过期时间
-                TimeUnit.MINUTES // 时间单位
+            key, // key
+            hashVCode, // value
+            5, // 过期时间
+            TimeUnit.MINUTES // 时间单位
         );
     }
 
@@ -98,7 +98,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
         // 获取缓存中的验证码
         try {
             redisVCode = (String) redisTemplate.opsForValue().get(
-                    StrUtil.format("userEmailCode:{}",hashEmail)
+                StrUtil.format("userEmailCode:{}", hashEmail)
             );
         } catch (Exception e) {
             // 获取缓存中的验证码失败
@@ -119,7 +119,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
             // 删除缓存中的验证码
             try {
                 redisTemplate.delete(
-                        StrUtil.format("userEmailCode:{}", hashEmail)
+                    StrUtil.format("userEmailCode:{}", hashEmail)
                 );
             } catch (Exception e) {
                 log.error("删除验证码缓存失败: {}", e.getMessage());
@@ -145,7 +145,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     public boolean hasRedisVCode(String email) {
         String hashEmail = SecureUtil.sha256(email);
         String key = StrUtil.format("userEmailCode:{}", hashEmail);
-        
+
         try {
             Object vCode = redisTemplate.opsForValue().get(key);
             return vCode != null;
@@ -167,7 +167,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
     public Long getRedisVCodeRemainingTime(String email) {
         String hashEmail = SecureUtil.sha256(email);
         String key = StrUtil.format("userEmailCode:{}", hashEmail);
-        
+
         try {
             Long remainingTime = redisTemplate.getExpire(key, TimeUnit.SECONDS);
             // Redis 返回 -1 表示永不过期，-2 表示键不存在

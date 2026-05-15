@@ -23,9 +23,9 @@ public interface SeriesService {
     /**
      * 根据用户 ID 分页查询所有作品系列
      *
-     * @param userId 用户 ID
+     * @param userId  用户 ID
      * @param current 当前页码
-     * @param size 每页数量
+     * @param size    每页数量
      * @return 分页作品系列列表
      */
     IPage<Series> getSeriesByUserId(Integer userId, Integer current, Integer size);
@@ -33,8 +33,8 @@ public interface SeriesService {
     /**
      * 删除作品系列（支持保留或删除系列内作品）
      *
-     * @param seriesId   系列 ID
-     * @param userId     当前用户 ID（用于权限验证）
+     * @param seriesId    系列 ID
+     * @param userId      当前用户 ID（用于权限验证）
      * @param deleteWorks 是否删除系列内的作品（true=删除作品，false=将作品的 series_id 置空）
      * @return 删除结果
      */

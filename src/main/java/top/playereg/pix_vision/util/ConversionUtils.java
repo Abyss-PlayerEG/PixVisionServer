@@ -64,12 +64,12 @@ public class ConversionUtils {
         // 定义单位数组和对应的阈值
         String[] units = {"B", "KB", "MB", "GB", "TB", "PB", "EB"};
         long[] thresholds = {
-                1L,
-                1024L,
-                1024L * 1024L,
-                1024L * 1024L * 1024L,
-                1024L * 1024L * 1024L * 1024L,
-                1024L * 1024L * 1024L * 1024L * 1024L
+            1L,
+            1024L,
+            1024L * 1024L,
+            1024L * 1024L * 1024L,
+            1024L * 1024L * 1024L * 1024L,
+            1024L * 1024L * 1024L * 1024L * 1024L
         };
 
         int unitIndex = 0;

@@ -62,17 +62,19 @@ public interface UserMapper extends BaseMapper<User> {
 
     /**
      * 分页查询用户信息 - 支持用户名、UUID、邮箱查询
+     *
      * @param page 分页参数
      * @param user 查询条件对象（可选属性：username, user_uuid, email）
      * @return 分页用户列表
      */
     IPage<User> selectPageUserInfo(
-            IPage<?> page,
-            User user
+        IPage<?> page,
+        User user
     );
 
     /**
      * 分页查询所有用户（无筛选条件）
+     *
      * @param page 分页参数
      * @return 分页用户列表
      */
@@ -80,7 +82,8 @@ public interface UserMapper extends BaseMapper<User> {
 
     /**
      * 按角色列表分页查询用户（支持多个角色，OR 关系）
-     * @param page 分页参数
+     *
+     * @param page      分页参数
      * @param userRoles 用户角色列表
      * @return 分页用户列表
      */
@@ -88,16 +91,18 @@ public interface UserMapper extends BaseMapper<User> {
 
     /**
      * 用户密码修改 / 重置密码（通用）
-     * @param email 用户的邮箱
+     *
+     * @param email       用户的邮箱
      * @param oldPassword 用户的旧密码（可选，为空时不验证旧密码）
      * @param newPassword 用户的新密码
      * @return 影响行数
-     * */
-    Integer changeUserPassword( String email, String oldPassword, String newPassword );
+     */
+    Integer changeUserPassword(String email, String oldPassword, String newPassword);
 
     /**
      * 更新用户头像
-     * @param userId 用户 ID
+     *
+     * @param userId    用户 ID
      * @param avatarUrl 头像路径
      * @return 影响行数
      */
@@ -133,9 +138,9 @@ public interface UserMapper extends BaseMapper<User> {
     /**
      * 更新用户角色（仅系统管理员可调用）
      *
-     * @param userId   用户 ID
-     * @param newRole  新角色代码
-     * @param adminId  执行操作的管理员 ID
+     * @param userId  用户 ID
+     * @param newRole 新角色代码
+     * @param adminId 执行操作的管理员 ID
      * @return 影响行数
      */
     int updateUserRole(@Param("userId") Integer userId, @Param("newRole") Integer newRole, @Param("adminId") Integer adminId);
@@ -143,9 +148,9 @@ public interface UserMapper extends BaseMapper<User> {
     /**
      * 更新用户状态（仅系统管理员可调用）
      *
-     * @param userId   用户 ID
+     * @param userId    用户 ID
      * @param newStatus 新状态代码（10-正常, 20-冻结, 30-封禁）
-     * @param adminId  执行操作的管理员 ID
+     * @param adminId   执行操作的管理员 ID
      * @return 影响行数
      */
     int updateUserStatus(@Param("userId") Integer userId, @Param("newStatus") Integer newStatus, @Param("adminId") Integer adminId);

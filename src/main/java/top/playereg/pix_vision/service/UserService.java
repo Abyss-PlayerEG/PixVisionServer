@@ -61,9 +61,9 @@ public interface UserService {
     /**
      * 分页查询用户信息（支持关键词统一查询）
      *
-     * @param page         分页对象
-     * @param keyword      关键词（可选，模糊查询用户名/邮箱/昵称）
-     * @param uuidBytes    UUID 字节数组（可选，精确查询）
+     * @param page      分页对象
+     * @param keyword   关键词（可选，模糊查询用户名/邮箱/昵称）
+     * @param uuidBytes UUID 字节数组（可选，精确查询）
      * @return 分页用户列表
      */
     IPage<User> selectPageUserInfo(IPage<User> page, String keyword, byte[] uuidBytes);
@@ -245,7 +245,7 @@ public interface UserService {
      * @return 创建的用户对象，失败返回 null
      */
     User createUserByAdmin(String username, String password, String nickname, String email,
-                          Integer role, Integer status, Integer adminId);
+                           Integer role, Integer status, Integer adminId);
 
     /**
      * 管理员批量重置用户密码（仅系统管理员可调用）

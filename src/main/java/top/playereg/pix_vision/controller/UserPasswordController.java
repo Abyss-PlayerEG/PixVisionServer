@@ -98,10 +98,10 @@ public class UserPasswordController {
         @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABCDEF") @RequestParam String vCode
     ) {
         // 参数校验
-        if (!RegexUtils.isPassword(newPassword) || !RegexUtils.isPassword(confirmPassword)){
+        if (!RegexUtils.isPassword(newPassword) || !RegexUtils.isPassword(confirmPassword)) {
             return ResponsePojo.error(false, "密码格式不正确");
         }
-        if (!RegexUtils.isVCode(vCode, 6)){
+        if (!RegexUtils.isVCode(vCode, 6)) {
             return ResponsePojo.error(false, "验证码格式错误");
         }
         // 从 Token 中获取用户 ID

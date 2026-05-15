@@ -89,7 +89,7 @@ public interface PixVisionLogger {
      * @param message 日志消息
      */
     default void debug(String message) {
-        message = LogColor.colorize(message,LogColor.BLUE);
+        message = LogColor.colorize(message, LogColor.BLUE);
         getLogger().debug(message);
     }
 
@@ -100,18 +100,18 @@ public interface PixVisionLogger {
      * @param args   参数
      */
     default void debug(String format, Object... args) {
-        format = LogColor.colorize(format,LogColor.BLUE);
+        format = LogColor.colorize(format, LogColor.BLUE);
         getLogger().debug(format, args);
     }
 
     /**
      * DEBUG 级别日志（带异常）
      *
-     * @param message 日志消息
+     * @param message   日志消息
      * @param throwable 异常对象
      */
     default void debug(String message, Throwable throwable) {
-        message = LogColor.colorize(message,LogColor.BLUE);
+        message = LogColor.colorize(message, LogColor.BLUE);
         getLogger().debug(message, throwable);
     }
 
@@ -121,7 +121,7 @@ public interface PixVisionLogger {
      * @param message 日志消息
      */
     default void info(String message) {
-        message = LogColor.colorize(message,LogColor.GREEN);
+        message = LogColor.colorize(message, LogColor.GREEN);
         getLogger().info(message);
     }
 
@@ -132,18 +132,18 @@ public interface PixVisionLogger {
      * @param args   参数
      */
     default void info(String format, Object... args) {
-        format = LogColor.colorize(format,LogColor.GREEN);
+        format = LogColor.colorize(format, LogColor.GREEN);
         getLogger().info(format, args);
     }
 
     /**
      * INFO 级别日志（带异常）
      *
-     * @param message 日志消息
+     * @param message   日志消息
      * @param throwable 异常对象
      */
     default void info(String message, Throwable throwable) {
-        message = LogColor.colorize(message,LogColor.GREEN);
+        message = LogColor.colorize(message, LogColor.GREEN);
         getLogger().info(message, throwable);
     }
 
@@ -153,7 +153,7 @@ public interface PixVisionLogger {
      * @param message 日志消息
      */
     default void warn(String message) {
-        message = LogColor.colorize(message,LogColor.YELLOW);
+        message = LogColor.colorize(message, LogColor.YELLOW);
         getLogger().warn(message);
     }
 
@@ -164,18 +164,18 @@ public interface PixVisionLogger {
      * @param args   参数
      */
     default void warn(String format, Object... args) {
-        format = LogColor.colorize(format,LogColor.YELLOW);
+        format = LogColor.colorize(format, LogColor.YELLOW);
         getLogger().warn(format, args);
     }
 
     /**
      * WARN 级别日志（带异常）
      *
-     * @param message 日志消息
+     * @param message   日志消息
      * @param throwable 异常对象
      */
     default void warn(String message, Throwable throwable) {
-        message = LogColor.colorize(message,LogColor.YELLOW);
+        message = LogColor.colorize(message, LogColor.YELLOW);
         getLogger().warn(message, throwable);
     }
 
@@ -185,7 +185,7 @@ public interface PixVisionLogger {
      * @param message 日志消息
      */
     default void error(String message) {
-        message = LogColor.colorize(message,LogColor.RED);
+        message = LogColor.colorize(message, LogColor.RED);
         getLogger().error(message);
     }
 
@@ -196,18 +196,18 @@ public interface PixVisionLogger {
      * @param args   参数
      */
     default void error(String format, Object... args) {
-        format = LogColor.colorize(format,LogColor.RED);
+        format = LogColor.colorize(format, LogColor.RED);
         getLogger().error(format, args);
     }
 
     /**
      * ERROR 级别日志（带异常）
      *
-     * @param message 日志消息
+     * @param message   日志消息
      * @param throwable 异常对象
      */
     default void error(String message, Throwable throwable) {
-        message = LogColor.colorize(message,LogColor.RED);
+        message = LogColor.colorize(message, LogColor.RED);
         getLogger().error(message, throwable);
     }
 
@@ -217,7 +217,7 @@ public interface PixVisionLogger {
      * @param message 日志消息
      */
     default void trace(String message) {
-        message = LogColor.colorize(message,LogColor.GRAY);
+        message = LogColor.colorize(message, LogColor.GRAY);
         getLogger().trace(message);
     }
 
@@ -228,18 +228,18 @@ public interface PixVisionLogger {
      * @param args   参数
      */
     default void trace(String format, Object... args) {
-        format = LogColor.colorize(format,LogColor.GRAY);
+        format = LogColor.colorize(format, LogColor.GRAY);
         getLogger().trace(format, args);
     }
 
     /**
      * TRACE 级别日志（带异常）
      *
-     * @param message 日志消息
+     * @param message   日志消息
      * @param throwable 异常对象
      */
     default void trace(String message, Throwable throwable) {
-        message = LogColor.colorize(message,LogColor.GRAY);
+        message = LogColor.colorize(message, LogColor.GRAY);
         getLogger().trace(message, throwable);
     }
 }

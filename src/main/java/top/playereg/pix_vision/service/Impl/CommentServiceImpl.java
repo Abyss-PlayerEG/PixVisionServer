@@ -49,7 +49,7 @@ public class CommentServiceImpl implements CommentService {
      */
     @Override
     public Boolean addComment(Integer userId, Integer workId, Integer parentCommentId,
-                             Integer commentFloor, String commentText) {
+                              Integer commentFloor, String commentText) {
         // 参数校验
         if (userId == null || workId == null || commentFloor == null || commentText == null) {
             log.warn("新增评论失败 - 必要参数为空");
@@ -135,7 +135,7 @@ public class CommentServiceImpl implements CommentService {
                     log.info("一级评论新增成功并更新 in_comment_id - 用户ID: {}, 作品ID: {}, 评论ID: {}", userId, workId, comment.getComment_id());
                 } else {
                     log.info("二级评论新增成功 - 用户ID: {}, 作品ID: {}, 评论ID: {}, 所属一级评论ID: {}",
-                            userId, workId, comment.getComment_id(), comment.getIn_comment_id());
+                        userId, workId, comment.getComment_id(), comment.getIn_comment_id());
                 }
                 return true;
             } else {
@@ -204,7 +204,7 @@ public class CommentServiceImpl implements CommentService {
     /**
      * 根据作品 ID 查询评论列表（包含用户信息和嵌套回复）
      *
-     * @param workId 作品 ID
+     * @param workId  作品 ID
      * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布
      * @return 一级评论列表（每个一级评论包含二级评论列表）
      * @author PlayerEG
@@ -226,9 +226,9 @@ public class CommentServiceImpl implements CommentService {
 
             // 获取所有用户 ID
             List<Integer> userIds = allComments.stream()
-                    .map(Comments::getUser_id)
-                    .distinct()
-                    .collect(Collectors.toList());
+                .map(Comments::getUser_id)
+                .distinct()
+                .collect(Collectors.toList());
 
             // 批量查询用户信息
             Map<Integer, User> userMap = new HashMap<>();
@@ -279,7 +279,7 @@ public class CommentServiceImpl implements CommentService {
             }
 
             log.info("查询作品评论成功 - 作品ID: {}, 一级评论数量: {}, 总评论数量: {}",
-                    workId, rootComments.size(), allComments.size());
+                workId, rootComments.size(), allComments.size());
             return rootComments;
         } catch (Exception e) {
             log.error("查询作品评论异常 - 作品ID: {}, 错误: {}", workId, e.getMessage(), e);
@@ -322,8 +322,8 @@ public class CommentServiceImpl implements CommentService {
     /**
      * 将 Comments 实体转换为 SecondaryComment（二级评论）
      *
-     * @param comment 评论实体
-     * @param userMap 用户信息映射表
+     * @param comment          评论实体
+     * @param userMap          用户信息映射表
      * @param parentCommentMap 父评论映射表（用于获取被回复者信息）
      * @return 二级评论响应对象
      */
@@ -370,10 +370,11 @@ public class CommentServiceImpl implements CommentService {
 
     /**
      * 批量删除评论
+     *
      * @param commentIds 评论ID列表
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
-     * */
-    public AdminBatchOperateCommentResult batchDeleteComments(List<Integer> commentIds){
+     */
+    public AdminBatchOperateCommentResult batchDeleteComments(List<Integer> commentIds) {
 
         if (commentIds == null || commentIds.isEmpty()) {
             return new AdminBatchOperateCommentResult(0, 0, new ArrayList<>());
@@ -424,21 +425,21 @@ public class CommentServiceImpl implements CommentService {
     /**
      * 分页查询评论列表（支持多条件过滤）
      *
-     * @param current 当前页码
-     * @param size 每页大小
-     * @param workId 作品ID（可选）
-     * @param userId 用户ID（可选）
-     * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
+     * @param current        当前页码
+     * @param size           每页大小
+     * @param workId         作品ID（可选）
+     * @param userId         用户ID（可选）
+     * @param commentFloor   评论层级（可选，1-一级评论、2-二级评论）
      * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
-     * @param keyword 评论关键字（可选）
+     * @param keyword        评论关键字（可选）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
     public IPage<Comments> getCommentsPage(Long current, Long size,
-                                            Integer workId, Integer userId,
-                                            Integer commentFloor, Integer approvalStatus,
-                                            String keyword) {
+                                           Integer workId, Integer userId,
+                                           Integer commentFloor, Integer approvalStatus,
+                                           String keyword) {
         // 参数校验
         if (current == null || current < 1) {
             current = 1L;
@@ -448,7 +449,7 @@ public class CommentServiceImpl implements CommentService {
         }
 
         log.info("开始分页查询评论，页码: {}, 每页大小: {}, 作品ID: {}, 用户ID: {}, 评论层级: {}, 审核状态: {}, 关键字: {}",
-                current, size, workId, userId, commentFloor, approvalStatus, keyword);
+            current, size, workId, userId, commentFloor, approvalStatus, keyword);
 
         // 创建分页对象
         Page<Comments> page = new Page<>(current, size);
@@ -457,7 +458,7 @@ public class CommentServiceImpl implements CommentService {
         IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword);
 
         log.info("分页查询评论完成，总数: {}, 当前页: {}, 每页大小: {}",
-                result.getTotal(), result.getCurrent(), result.getSize());
+            result.getTotal(), result.getCurrent(), result.getSize());
 
         return result;
     }

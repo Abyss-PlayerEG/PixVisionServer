@@ -674,7 +674,7 @@ public class WorkServiceImpl implements WorkService {
     /**
      * 批量更新作品审核状态（管理员接口）
      *
-     * @param workIds 作品 ID 列表
+     * @param workIds        作品 ID 列表
      * @param approvalStatus 审核状态：10 - 正常、20 - 待审核、30 - 未过审
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * @author PlayerEG
@@ -777,7 +777,7 @@ public class WorkServiceImpl implements WorkService {
 
         int successCount = affectedRows > 0 ? affectedRows : 0;
         List<Integer> failedWorkIds = new java.util.ArrayList<>();
-        
+
         // 计算失败的 ID
         if (affectedRows < validWorkIds.size()) {
             // 找出哪些 ID 没有被更新（简化处理：假设全部成功或全部失败）
