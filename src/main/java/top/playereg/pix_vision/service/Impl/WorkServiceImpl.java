@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.mapper.HistoryMapper;
+import top.playereg.pix_vision.mapper.PendingReviewsMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.History;
+import top.playereg.pix_vision.pojo.PendingReviews;
 import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.WorkService;
@@ -37,6 +39,9 @@ public class WorkServiceImpl implements WorkService {
 
     @Autowired
     private HistoryMapper historyMapper;
+
+    @Autowired
+    private PendingReviewsMapper pendingReviewsMapper;
 
     // 允许上传的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
@@ -269,6 +274,31 @@ public class WorkServiceImpl implements WorkService {
                 saveFile.delete();
             }
             throw new RuntimeException("作品发布失败");
+        }
+
+        // 11. 创建待审核记录
+        try {
+            PendingReviews pendingReview = new PendingReviews();
+            pendingReview.setData_type(100); // 作品类型
+            pendingReview.setStatus(20); // 待审核状态
+            pendingReview.setWork_id(works.getWork_id());
+            pendingReview.setConmment_id(null); // 评论ID为空
+            pendingReview.setUser_id(userId);
+            pendingReview.setIs_delete(false);
+            pendingReview.setUpdate_time(null);
+            pendingReview.setUpdate_user(null);
+            pendingReview.setCreate_time(new Timestamp(System.currentTimeMillis()));
+            pendingReview.setCreate_user(userId);
+
+            int reviewRows = pendingReviewsMapper.insert(pendingReview);
+            if (reviewRows > 0) {
+                log.info("待审核记录创建成功，作品 ID: {}, 用户 ID: {}", works.getWork_id(), userId);
+            } else {
+                log.warn("待审核记录创建失败，作品 ID: {}, 用户 ID: {}", works.getWork_id(), userId);
+            }
+        } catch (Exception e) {
+            log.error("创建待审核记录异常，作品 ID: {}, 用户 ID: {}, 错误: {}", works.getWork_id(), userId, e.getMessage(), e);
+            // 不抛出异常，避免影响作品发布的整体流程
         }
 
         log.info("作品发布成功，用户 ID: {}, 作品 ID: {}, 文件路径: {}", userId, works.getWork_id(), uniqueFileName);
