@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/comments")
 @RequiredArgsConstructor
-@Tag(name = "系统管理员接口 - 评论管理")
+@Tag(name = "管理员接口 - 评论管理", description = "提供评论管理的后台接口，包括批量删除等操作")
 @RequireRole(value = {77})
 public class AdminCommentsController {
     private static final PixVisionLogger log = PixVisionLogger.create(AdminCommentsController.class);
@@ -34,9 +34,9 @@ public class AdminCommentsController {
      * @author blue_sky_ks
      */
     @Operation(
-        summary = "删除评论接口 - 管理员",
+        summary = "批量删除评论",
         description = """
-            # 批量删除评论（需要系统管理员权限）
+            # 批量删除评论（需要登录认证 + 角色权限[77]）
 
             ## 特性
             - 需要系统管理员角色（role=77）才能访问
@@ -45,13 +45,12 @@ public class AdminCommentsController {
             - 包含成功和失败的评论 ID 列表
 
             ## 参数说明：
-            - commentIds: **评论 ID 列表**，List<Integer> 类型，请求参数，必填，不能为空
+            - **commentIds**: **评论 ID 列表**，List<Integer> 类型，请求参数，必填，不能为空
 
             ## 返回说明：
-            - **删除成功**：返回 `AdminBatchOperateCommentResult` 对象，包含总数、成功数、失败ID列表等信息
-            - **全部失败**：返回错误提示 "删除失败，请检查评论 ID 是否正确"
-            - **参数错误**：返回错误提示 "评论 ID 列表不能为空"
-            - **异常处理**：捕获并返回具体的异常信息
+            - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息
+            - **全部失败**：返回错误提示
+            - **参数错误**：返回错误提示
 
             ## 业务逻辑：
             1. 校验评论 ID 列表参数的有效性（非空）
@@ -62,7 +61,7 @@ public class AdminCommentsController {
 
             ## 注意事项：
             - 这是一个**受保护接口**，只有系统管理员（role=77）可以访问
-            - 删除操作是高级操作，一般被删除的评论，不允许恢复
+            - 删除操作是高级操作，一般被删除的评论不允许恢复
             - 建议在执行前确认评论 ID 的正确性
             - 返回的结果中包含详细的成功/失败统计信息
             """
