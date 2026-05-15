@@ -877,8 +877,17 @@
         // 加载作品信息
         async function loadWorkInfo() {
             try {
+              const headers = {};
+              if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+                console.log('加载作品信息时携带 Token');
+              } else {
+                console.log('加载作品信息时未携带 Token（未登录状态）');
+              }
+
                 const response = await fetch(`${API_BASE_URL}/api/work/detail/${WORK_ID}`, {
-                    method: 'GET'
+                  method: 'GET',
+                  headers: headers
                 });
 
                 if (!response.ok) {
@@ -1018,17 +1027,19 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
-            loadWorkInfo(); // 加载作品信息
-            loadComments();
-            setupCharCount();
-            startTimeRefresh(); // 启动时间刷新
-
-            // 尝试从 localStorage 读取保存的 token
+          // 先从 localStorage 读取保存的 token（确保后续请求能携带）
             const savedToken = localStorage.getItem('pixvision_token');
             if (savedToken) {
                 document.getElementById('auth-token').value = savedToken;
                 authToken = savedToken;
+              console.log('已从本地存储加载 Token');
             }
+
+          // 再加载作品信息和评论（此时 authToken 已设置）
+          loadWorkInfo();
+          loadComments();
+          setupCharCount();
+          startTimeRefresh(); // 启动时间刷新
         });
 
         // 启动时间刷新（每分钟更新一次）
