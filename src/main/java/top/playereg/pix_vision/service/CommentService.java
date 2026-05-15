@@ -1,7 +1,10 @@
 package top.playereg.pix_vision.service;
 
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.pojo.commentsPojo.Comments;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
+
+import java.util.List;
 
 /**
  * 评论服务接口
@@ -51,4 +54,11 @@ public interface CommentService {
      * @author PlayerEG
      */
     java.util.List<PrimaryComment> getCommentsWithUserInfoByWorkId(Integer workId, String orderBy);
+
+    /**
+     * 批量删除评论
+     * @param commentIds 评论ID列表
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * */
+    AdminBatchOperateCommentResult batchDeleteComments(List<Integer> commentIds);
 }

@@ -20,7 +20,7 @@ import java.util.List;
 @RequestMapping("/api/admin/works")
 @RequiredArgsConstructor
 @Tag(name = "系统管理员接口 - 作品管理")
-@RequireRole(value = {77})
+@RequireRole(value = {55, 77})
 public class AdminWorksController {
     private static final PixVisionLogger log = PixVisionLogger.create(AdminWorksController.class);
 
@@ -62,7 +62,6 @@ public class AdminWorksController {
             - 即使部分作品封禁失败，其他作品仍会成功封禁
             """
     )
-    @RequireRole(value = {77})
     @PostMapping("/banned")
     public ResponsePojo<AdminBatchOperateWorkResult> adminBannedWorks(
         @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds
@@ -78,7 +77,7 @@ public class AdminWorksController {
             AdminBatchOperateWorkResult result = pendingReviewsService.updateWorkStatusBatch(workIds, 30);
 
             if (result.getSuccessCount() > 0) {
-                log.info("批量封禁作品完成 - 总数: {}, 成功: {}, 失败: {}", 
+                log.info("批量封禁作品完成 - 总数: {}, 成功: {}, 失败: {}",
                     result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size());
                 return ResponsePojo.success(result, "批量封禁作品处理完成");
             } else {
@@ -126,7 +125,6 @@ public class AdminWorksController {
             - 即使部分作品解封失败，其他作品仍会成功解封
             """
     )
-    @RequireRole(value = {77})
     @PostMapping("/unban")
     public ResponsePojo<AdminBatchOperateWorkResult> adminUnbanWorks(
         @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds
@@ -142,7 +140,7 @@ public class AdminWorksController {
             AdminBatchOperateWorkResult result = pendingReviewsService.updateWorkStatusBatch(workIds, 10);
 
             if (result.getSuccessCount() > 0) {
-                log.info("批量解封作品完成 - 总数: {}, 成功: {}, 失败: {}", 
+                log.info("批量解封作品完成 - 总数: {}, 成功: {}, 失败: {}",
                     result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size());
                 return ResponsePojo.success(result, "批量解封作品处理完成");
             } else {
@@ -155,4 +153,74 @@ public class AdminWorksController {
         }
     }
 
+
+    /**
+     * 删除作品 - 管理员
+     *
+     * @param workIds ID 列表
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author blue_sky_ks
+     */
+    @Operation(
+        summary = "删除作品接口 - 管理员",
+        description = """
+            # 批量删除作品（需要系统管理员权限）
+
+            ## 特性
+            - 需要系统管理员角色（role=77）才能访问
+            - 支持批量删除多个作品
+            - 返回详细的操作结果统计信息
+            - 包含成功和失败的作品 ID 列表
+
+            ## 参数说明：
+            - workIds: **作品 ID 列表**，List<Integer> 类型，请求参数，必填，不能为空
+
+            ## 返回说明：
+            - **删除成功**：返回 `AdminBatchOperateWorkResult` 对象，包含总数、成功数、失败ID列表等信息
+            - **全部失败**：返回错误提示 "删除失败，请检查作品 ID 是否正确"
+            - **参数错误**：返回错误提示 "作品 ID 列表不能为空"
+            - **异常处理**：捕获并返回具体的异常信息
+
+            ## 业务逻辑：
+            1. 校验作品 ID 列表参数的有效性（非空）
+            2. 调用服务层执行批量删除操作
+            3. 记录删除操作的日志信息
+            4. 根据删除结果返回相应的响应信息
+            5. 对异常情况做统一处理
+
+            ## 注意事项：
+            - 这是一个**受保护接口**，只有系统管理员（role=77）可以访问
+            - 删除操作是高级操作，一般被删除的作品，不允许恢复
+            - 建议在执行前确认作品 ID 的正确性
+            - 返回的结果中包含详细的成功/失败统计信息
+            """
+    )
+    @PostMapping("/delete")
+    @RequireRole(value = {77})
+    public ResponsePojo<AdminBatchOperateWorkResult> adminDeleteWorks(
+        @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds
+    ){
+        // 参数校验
+        if (workIds == null || workIds.isEmpty()) {
+            log.warn("作品 ID 列表为空");
+            return ResponsePojo.error(null, "作品 ID 列表不能为空");
+        }
+
+        try {
+            // 调用服务层批量删除
+            AdminBatchOperateWorkResult result = pendingReviewsService.batchDeleteWorks(workIds, 1);
+
+            if (result.getSuccessCount() > 0) {
+                log.info("批量删除作品完成 - 总数: {}, 成功: {}, 失败: {}",
+                    result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size());
+                return ResponsePojo.success(result, "批量删除作品处理完成");
+            } else {
+                log.warn("批量删除作品全部失败，作品 ID 列表: {}", workIds);
+                return ResponsePojo.error(result, "删除失败，请检查作品 ID 是否正确");
+            }
+        } catch (Exception e) {
+            log.error("批量删除作品异常，作品 ID 列表: {}, 错误: {}", workIds, e.getMessage(), e);
+            return ResponsePojo.error(null, "删除失败：" + e.getMessage());
+        }
+    }
 }
