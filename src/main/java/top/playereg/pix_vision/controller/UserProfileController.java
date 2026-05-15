@@ -31,7 +31,7 @@ import java.util.List;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/profile")
 @RequiredArgsConstructor
-@Tag(name = "用户基础资料接口")
+@Tag(name = "用户基础资料接口", description = "提供用户基本资料的查询和修改功能")
 public class UserProfileController {
     private static final PixVisionLogger log = PixVisionLogger.create(UserProfileController.class);
 

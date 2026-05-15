@@ -17,7 +17,7 @@ import top.playereg.pix_vision.util.PixVisionLogger;
  */
 @RestController
 @RequestMapping("/7e212056")
-@Tag(name = "JWT 鉴权测试接口")
+@Tag(name = "JWT 鉴权测试接口", description = "提供 JWT Token 生成和验证的测试功能")
 public class TestAuthController {
 
     private static final PixVisionLogger log = PixVisionLogger.create(TestAuthController.class);

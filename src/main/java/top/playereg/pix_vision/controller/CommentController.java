@@ -25,7 +25,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/comment")
 @RequiredArgsConstructor
-@Tag(name = "评论接口")
+@Tag(name = "评论接口", description = "提供评论新增、查询等评论相关功能")
 public class CommentController {
 
     private static final PixVisionLogger log = PixVisionLogger.create(CommentController.class);
@@ -47,7 +47,7 @@ public class CommentController {
     @Operation(
         summary = "新增评论接口",
         description = """
-            # 新增评论（需要登录认证 + 角色权限[11,22,55,66,77]）
+            # 新增评论（需要登录认证）
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）

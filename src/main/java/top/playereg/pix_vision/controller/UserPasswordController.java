@@ -29,7 +29,7 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/password")
 @RequiredArgsConstructor
-@Tag(name = "账号密码接口")
+@Tag(name = "账号密码接口", description = "提供用户密码修改、重置等密码管理功能")
 public class UserPasswordController {
     private static final PixVisionLogger log = PixVisionLogger.create(UserPasswordController.class);
 

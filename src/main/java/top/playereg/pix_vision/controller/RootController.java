@@ -23,7 +23,7 @@ import top.playereg.pix_vision.util.PixVisionLogger;
  */
 @Controller
 @RequestMapping("/")
-@Tag(name = "ServerRoot")
+@Tag(name = "ServerRoot", description = "提供服务端根路径、健康检查、系统信息等基础功能")
 public class RootController {
     private static final PixVisionLogger log = PixVisionLogger.create(RootController.class);
     @Autowired
@@ -32,8 +32,7 @@ public class RootController {
     /**
      * 后端首页
      *
-     * @return String 跳转首页
-     * @apiNote 为服务端添加首页
+     * @return String 重定向到首页
      * @author PlayerEG
      */
     @Operation(
@@ -63,8 +62,7 @@ public class RootController {
     /**
      * 服务健康检查
      *
-     * @return String 跳转检测页面
-     * @apiNote 通过该接口查看应用是否正常
+     * @return String 重定向到状态页面
      * @author PlayerEG
      */
     @Operation(
@@ -97,8 +95,6 @@ public class RootController {
      * 获取系统信息
      *
      * @return ResponsePojo 系统信息
-     * @throws Exception 获取系统信息失败
-     * @apiNote 获取系统信息获取接口
      * @author PlayerEG
      */
     @Operation(

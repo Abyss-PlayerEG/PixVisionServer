@@ -33,7 +33,7 @@ import top.playereg.pix_vision.util.StrSwitchUtils;
 @SuppressWarnings("all")
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "认证接口")
+@Tag(name = "认证接口", description = "提供用户注册、登录、登出、注销等认证相关功能")
 public class AuthController {
     private static final PixVisionLogger log = PixVisionLogger.create(AuthController.class);
 
