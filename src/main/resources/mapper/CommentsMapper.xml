@@ -27,12 +27,13 @@
         VALUES (#{user_id}, #{work_id}, #{parent_comment_id}, #{in_comment_id}, #{comment_floor}, #{comment_text}, #{approval_status}, 0, NOW())
     </insert>
 
-    <!-- 根据作品 ID 查询评论列表 -->
+    <!-- 根据作品 ID 查询评论列表（只返回审核通过的评论） -->
     <select id="selectCommentsByWorkId" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM tb_comments
         WHERE work_id = #{workId}
           AND is_delete = 0
+          AND approval_status = 10
         ORDER BY
             comment_floor ASC,
             <choose>
@@ -45,12 +46,13 @@
             </choose>
     </select>
 
-    <!-- 根据评论 ID 查询评论信息 -->
+    <!-- 根据评论 ID 查询评论信息（只返回审核通过的评论） -->
     <select id="selectCommentById" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM tb_comments
         WHERE comment_id = #{commentId}
           AND is_delete = 0
+          AND approval_status = 10
     </select>
 
     <!-- 更新评论（用于更新 in_comment_id） -->
