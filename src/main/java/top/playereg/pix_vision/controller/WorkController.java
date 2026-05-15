@@ -29,7 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/work")
 @RequiredArgsConstructor
-@Tag(name = "作品管理接口")
+@Tag(name = "作品接口")
 public class WorkController {
     private static final PixVisionLogger log = PixVisionLogger.create(WorkController.class);
 
@@ -41,7 +41,7 @@ public class WorkController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param workIds 要删除的作品 ID 列表（支持单个或多个）
-     * @return 删除结果
+     * @return 响应数据，表示作品是否删除成功
      * @author PlayerEG
      */
     @Operation(
@@ -149,14 +149,12 @@ public class WorkController {
      * 分页查询作品列表（支持多条件查询）
      *
      * @param current    当前页码（从 1 开始）
-     * @param size       每页大小
+     * @param size       每页大小（范围 1-100）
      * @param workTitle  作品标题（可选，模糊查询）
      * @param userId     用户 ID（可选，精确查询）
-     * @param username   用户名（可选，模糊查询）
-     * @param nickname   昵称（可选，模糊查询）
      * @param seriesId   系列 ID（可选，精确查询）
      * @param isOriginal 是否原创（可选，精确查询）
-     * @return 分页作品列表
+     * @return 响应数据，包含分页的作品列表
      * @author PlayerEG
      */
     @Operation(
@@ -238,8 +236,9 @@ public class WorkController {
     /**
      * 根据 ID 查询单个作品
      *
-     * @param workId 作品 ID
-     * @return 作品信息
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token（可选，提供则记录访问历史）
+     * @param workId  作品 ID
+     * @return 响应数据，包含作品详细信息
      * @author PlayerEG
      */
     @Operation(
@@ -331,7 +330,7 @@ public class WorkController {
      * @param seriesId   系列 ID（可选，0 表示不属于任何系列）
      * @param isOriginal 是否原创（可选）
      * @param outUrl     外部转载链接（可选）
-     * @return 修改结果
+     * @return 响应数据，表示作品是否修改成功
      * @author PlayerEG
      */
     @Operation(

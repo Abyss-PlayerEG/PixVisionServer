@@ -9,13 +9,53 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * 文件创建类
+ * 文件创建工具类
+ * <p>
+ * 用于初始化项目所需的目录结构和默认文件，包括配置文件、模板文件、静态资源等。
+ * 该工具在应用启动时自动执行，确保用户目录下存在必要的文件和目录。
+ * </p>
+ *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>首次启动应用时初始化用户目录结构</li>
+ *   <li>创建默认配置文件和模板</li>
+ *   <li>复制静态资源到用户目录（Logo、头像、邮件模板）</li>
+ *   <li>生成目录说明文档</li>
+ * </ol>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>该类仅在应用首次启动或用户目录不存在时执行</li>
+ *   <li>已存在的文件不会被覆盖，保证用户自定义内容安全</li>
+ *   <li>所有文件路径基于 FilePathConfig 配置</li>
+ *   <li>头像文件会自动进行尺寸调整（600px 宽度）</li>
+ * </ul>
  *
  * @author PlayerEG
+ * @see top.playereg.pix_vision.config.FilePathConfig 文件路径配置
+ * @since DEV-2.0.0
  */
 public class CreateFile {
     private static final PixVisionLogger log = PixVisionLogger.create(CreateFile.class);
 
+    /**
+     * 创建项目所需的默认文件和目录结构
+     * <p>
+     * 该方法在应用启动时自动调用，创建以下资源：
+     * <ul>
+     *   <li>根目录说明文件（readme.txt）</li>
+     *   <li>应用配置文件模板（application.yml）</li>
+     *   <li>Logo 图片（深色和浅色主题）</li>
+     *   <li>邮件 HTML 模板（验证码和密码重置）</li>
+     *   <li>默认头像集合（21个，自动调整为600px宽度）</li>
+     *   <li>日志目录说明</li>
+     *   <li>RSA 密钥目录说明</li>
+     * </ul>
+     * </p>
+     *
+     * @author PlayerEG
+     * @see top.playereg.pix_vision.config.FilePathConfig 文件路径配置
+     */
     public static void create() {
         // 根目录说明文件
         FilePathConfig.createTextFile(

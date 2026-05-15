@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>作品详情与评论系统 Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 24px;
+            font-size: 24px;
+        }
+
+        /* 评论输入框 */
+        .comment-input-area {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .comment-input-area textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .comment-input-area textarea:focus {
+            outline: none;
+            border-color: #409eff;
+        }
+
+        .input-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .char-count {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #409eff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #66b1ff;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* 评论列表 */
+        .comment-list {
+            margin-top: 24px;
+        }
+
+        .comment-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .comment-item:last-child {
+            border-bottom: none;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .nickname {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nickname:hover {
+            color: #409eff;
+        }
+
+        .comment-time {
+            color: #999;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .comment-content {
+            margin-left: 52px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .comment-actions {
+            margin-left: 52px;
+            margin-top: 8px;
+        }
+
+        .reply-btn {
+            color: #409eff;
+            font-size: 13px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .reply-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* 二级评论 */
+        .reply-list {
+            margin-left: 52px;
+            margin-top: 12px;
+            padding-left: 16px;
+            border-left: 2px solid #eee;
+        }
+
+        .reply-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .reply-item:last-child {
+            border-bottom: none;
+        }
+
+        .reply-content {
+            margin-left: 52px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .reply-to {
+            color: #409eff;
+            margin-right: 4px;
+        }
+
+        /* 回复输入框 */
+        .reply-input-area {
+            margin-left: 52px;
+            margin-top: 12px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .reply-input-area textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            resize: vertical;
+            font-family: inherit;
+            margin-bottom: 8px;
+        }
+
+        .reply-input-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .btn-cancel {
+            background: #fff;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .btn-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* 作品 ID 输入框 */
+        .work-id-area {
+            padding: 12px;
+            background: #d1ecf1;
+            border-radius: 8px;
+            border: 1px solid #bee5eb;
+            flex: 1;
+        }
+
+        .work-id-area label {
+            display: block;
+            font-size: 13px;
+            color: #0c5460;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .work-id-area input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .work-id-area input:focus {
+            outline: none;
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.2);
+        }
+
+        .work-id-hint {
+            font-size: 11px;
+            color: #0c5460;
+            margin-top: 6px;
+        }
+
+        /* Token 输入框 */
+        .token-input-area {
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffc107;
+            flex: 5;
+        }
+
+        .token-input-area label {
+            display: block;
+            font-size: 13px;
+            color: #856404;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .token-input-area input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .token-input-area input:focus {
+            outline: none;
+            border-color: #ff9800;
+            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+        }
+
+        .token-hint {
+            font-size: 11px;
+            color: #856404;
+            margin-top: 6px;
+        }
+
+        /* 输入框容器（横向布局） */
+        .input-areas-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        /* 作品信息卡片 */
+        .work-info-card {
+            margin-bottom: 16px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e4e7ed;
+        }
+
+        .work-cover-image {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: block;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .work-info-details {
+            width: 100%;
+        }
+
+        .work-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .work-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .work-stat-item {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .work-stat-label {
+            color: #999;
+            margin-right: 4px;
+        }
+
+        .work-stat-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .work-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .work-out-link {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #e4e7ed;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .work-out-link-label {
+            color: #999;
+            margin-right: 8px;
+        }
+
+        .work-out-link-url {
+            color: #409eff;
+            word-break: break-all;
+        }
+
+        .work-out-link-url a {
+            color: #409eff;
+            text-decoration: none;
+        }
+
+        .work-out-link-url a:hover {
+            text-decoration: underline;
+        }
+
+        /* 排序按钮 */
+        .sort-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 8px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-btn:hover {
+            border-color: #409eff;
+            color: #409eff;
+            background: #f0f9ff;
+        }
+
+        .action-btn.active {
+            background: #409eff;
+            border-color: #409eff;
+            color: white;
+        }
+
+        .sort-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .sort-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sort-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .sort-btn:hover {
+            border-color: #409eff;
+            color: #409eff;
+        }
+
+        .sort-btn.active {
+            background: #409eff;
+            border-color: #409eff;
+            color: white;
+        }
+
+        /* 错误提示 */
+        .error {
+            padding: 12px;
+            background: #fef0f0;
+            color: #f56c6c;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+
+        /* 用户信息弹窗 */
+        .user-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .user-modal-overlay.show {
+            display: flex;
+        }
+
+        .user-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            min-width: 430px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .user-modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f5f5f5;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .user-modal-close:hover {
+            background: #e4e7ed;
+            color: #333;
+        }
+
+        .user-modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .user-modal-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 16px;
+        }
+
+        .user-modal-info {
+            flex: 1;
+        }
+
+        .user-modal-nickname {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .user-modal-username {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .user-modal-email {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .user-modal-uuid {
+            font-size: 12px;
+            color: #999;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .user-modal-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .user-modal-stat {
+            text-align: center;
+        }
+
+        .user-modal-stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .user-modal-stat-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* 用户卡片 */
+        .user-card {
+            position: absolute;
+            background: white;
+            border: 1px solid #e4e7ed;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            min-width: 200px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .user-card.show {
+            display: block;
+        }
+
+        .user-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .user-card-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+
+        .user-card-info {
+            flex: 1;
+        }
+
+        .user-card-nickname {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .user-card-username {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .user-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user-card-item {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .user-card-label {
+            color: #999;
+            margin-right: 8px;
+            min-width: 40px;
+        }
+
+        .user-card-value {
+            color: #333;
+        }
+
+        .reply-to {
+            color: #409eff;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .reply-to:hover {
+            text-decoration: underline;
+            color: #66b1ff;
+        }
+
+        /* 评论闪烁动画 */
+        @keyframes highlight-flash {
+            0%, 100% {
+                background-color: transparent;
+            }
+            50% {
+                background-color: #fff3cd;
+            }
+        }
+
+        .comment-highlight {
+            animation: highlight-flash 0.9s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 作品详情与评论系统 Demo</h1>
+
+        <!-- 输入框容器（作品ID + Token） -->
+        <div class="input-areas-container">
+            <!-- 作品 ID 输入框 -->
+            <div class="work-id-area">
+                <label for="work-id">📝 作品 ID：</label>
+                <input
+                    id="work-id"
+                    onchange="updateWorkId()"
+                    placeholder="请输入作品 ID"
+                    type="number"
+                    value="1"
+                >
+            </div>
+
+            <!-- Token 输入框 -->
+            <div class="token-input-area">
+                <label for="auth-token">🔑 认证 Token（可选）：</label>
+                <input
+                    id="auth-token"
+                    onchange="updateAuthToken()"
+                    placeholder="请输入 JWT Token，未登录可不填"
+                    type="text"
+                >
+            </div>
+        </div>
+
+        <!-- 作品信息卡片 -->
+        <div class="work-info-card" id="work-info-card" style="display: none;">
+            <img alt="作品封面" class="work-cover-image" id="work-cover-image" src="/1.png">
+            <div class="work-info-details">
+                <div class="work-title" id="work-title">-</div>
+                <div class="work-stats">
+                    <div class="work-stat-item">
+                        <span class="work-stat-label">浏览:</span>
+                        <span class="work-stat-value" id="work-views">0</span>
+                    </div>
+                    <div class="work-stat-item">
+                        <span class="work-stat-label">点赞:</span>
+                        <span class="work-stat-value" id="work-likes">0</span>
+                    </div>
+                    <div class="work-stat-item">
+                        <span class="work-stat-label">收藏:</span>
+                        <span class="work-stat-value" id="work-stars">0</span>
+                    </div>
+                </div>
+                <div class="work-meta" id="work-meta">-</div>
+                <div class="work-out-link" id="work-out-link" style="display: none;">
+                    <span class="work-out-link-label">来源:</span>
+                    <span class="work-out-link-url" id="work-out-url">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="error" id="error-message" style="display: none;"></div>
+
+        <!-- 操作按钮和排序控制 -->
+        <div class="sort-controls">
+            <!-- 左侧：操作按钮 -->
+            <div class="action-buttons">
+                <button class="action-btn" onclick="handleLike()">
+                    <span>👍</span>
+                    <span>点赞</span>
+                </button>
+                <button class="action-btn" onclick="handleStar()">
+                    <span>⭐</span>
+                    <span>收藏</span>
+                </button>
+                <button class="action-btn" onclick="handleDownload()">
+                    <span>⬇️</span>
+                    <span>下载</span>
+                </button>
+            </div>
+
+            <!-- 右侧：排序按钮 -->
+            <div class="sort-buttons">
+                <button class="sort-btn active" id="sort-newest" onclick="changeSortOrder('newest')">最新发布</button>
+                <button class="sort-btn" id="sort-oldest" onclick="changeSortOrder('oldest')">最早发布</button>
+            </div>
+        </div>
+
+        <!-- 评论输入框 -->
+        <div class="comment-input-area">
+            <textarea
+                id="main-comment-input"
+                maxlength="125"
+                placeholder="写下你的评论..."
+            ></textarea>
+            <div class="input-actions">
+                <span class="char-count"><span id="main-char-count">0</span>/125</span>
+                <button class="btn btn-primary" id="submit-main-comment" onclick="submitMainComment()">发表评论</button>
+            </div>
+        </div>
+
+        <!-- 评论列表 -->
+        <div class="comment-list" id="comment-list">
+            <div class="loading">加载中...</div>
+        </div>
+
+        <!-- 用户信息弹窗 -->
+        <div class="user-modal-overlay" id="user-modal-overlay" onclick="closeUserModal(event)">
+            <div class="user-modal" onclick="event.stopPropagation()">
+                <button class="user-modal-close" onclick="closeUserModal()">×</button>
+                <div class="user-modal-header">
+                    <img alt="头像" class="user-modal-avatar" id="modal-avatar" src="/1.png">
+                    <div class="user-modal-info">
+                        <div class="user-modal-nickname" id="modal-nickname">-</div>
+                        <div class="user-modal-username" id="modal-username">-</div>
+                        <div class="user-modal-email" id="modal-email">-</div>
+                        <div class="user-modal-uuid" id="modal-uuid">-</div>
+                    </div>
+                </div>
+                <div class="user-modal-stats">
+                    <div class="user-modal-stat">
+                        <div class="user-modal-stat-value" id="modal-works">0</div>
+                        <div class="user-modal-stat-label">作品数</div>
+                    </div>
+                    <div class="user-modal-stat">
+                        <div class="user-modal-stat-value" id="modal-views">0</div>
+                        <div class="user-modal-stat-label">总浏览</div>
+                    </div>
+                    <div class="user-modal-stat">
+                        <div class="user-modal-stat-value" id="modal-likes">0</div>
+                        <div class="user-modal-stat-label">获赞数</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const API_BASE_URL = 'http://localhost:9090'; // 修改为你的服务器地址
+        // const API_BASE_URL = 'http://172.18.207.70:9090';
+        let WORK_ID = 1; // 作品ID，从输入框获取
+        let authToken = ''; // JWT Token，从输入框获取
+        let commentOrderBy = 'newest'; // 评论排序方式：'newest' - 最新发布（默认），'oldest' - 最早发布
+        let refreshTimer = null; // 时间刷新定时器
+
+        // 更新作品 ID
+        function updateWorkId() {
+            const workIdInput = document.getElementById('work-id');
+            const newWorkId = parseInt(workIdInput.value);
+
+            if (newWorkId && newWorkId > 0) {
+                WORK_ID = newWorkId;
+                console.log('作品 ID 已更新:', WORK_ID);
+                // 加载作品信息
+                loadWorkInfo();
+                // 重新加载评论
+                loadComments();
+            } else {
+                showError('作品 ID 必须为正整数');
+                workIdInput.value = WORK_ID;
+            }
+        }
+
+        // 加载作品信息
+        async function loadWorkInfo() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/work/detail/${WORK_ID}`, {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    console.error('获取作品信息失败');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    renderWorkInfo(result.data);
+                }
+            } catch (error) {
+                console.error('加载作品信息错误:', error);
+            }
+        }
+
+        // 渲染作品信息
+        function renderWorkInfo(work) {
+            const card = document.getElementById('work-info-card');
+
+            // 更新封面图片
+            const imageUrl = work.img_url
+                ? `${API_BASE_URL}/api/image/work/get?filePath=${encodeURIComponent(work.img_url)}`
+                : '/1.png';
+            document.getElementById('work-cover-image').src = imageUrl;
+
+            // 更新标题
+            document.getElementById('work-title').textContent = work.work_title || '未知作品';
+
+            // 更新统计数据
+            document.getElementById('work-views').textContent = work.view_count || 0;
+            document.getElementById('work-likes').textContent = work.like_count || 0;
+            document.getElementById('work-stars').textContent = work.star_count || 0;
+
+            // 更新元信息
+            const createTime = new Date(work.create_time).toLocaleDateString('zh-CN');
+            const originalText = work.is_original_work ? '原创' : '转载';
+            document.getElementById('work-meta').textContent = `发布于 ${createTime} · ${originalText}`;
+
+            // 如果是转载，显示外链
+            const outLinkDiv = document.getElementById('work-out-link');
+            if (!work.is_original_work && work.out_url) {
+                const outUrlElement = document.getElementById('work-out-url');
+                outUrlElement.innerHTML = `<a href="${escapeHtml(work.out_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(work.out_url)}</a>`;
+                outLinkDiv.style.display = 'block';
+            } else {
+                outLinkDiv.style.display = 'none';
+            }
+
+            // 显示卡片
+            card.style.display = 'block';
+        }
+
+        // 更新 Token
+        function updateAuthToken() {
+            const tokenInput = document.getElementById('auth-token');
+            authToken = tokenInput.value.trim();
+            console.log('Token 已更新:', authToken ? '已设置' : '未设置');
+        }
+
+        // 点赞处理
+        function handleLike() {
+            if (!authToken) {
+                showError('请先输入认证 Token');
+                return;
+            }
+            // TODO: 调用点赞接口
+            showError('点赞功能开发中...');
+        }
+
+        // 收藏处理
+        function handleStar() {
+            if (!authToken) {
+                showError('请先输入认证 Token');
+                return;
+            }
+            // TODO: 调用收藏接口
+            showError('收藏功能开发中...');
+        }
+
+        // 下载处理
+        async function handleDownload() {
+            const workCover = document.getElementById('work-cover-image');
+            if (!workCover || !workCover.src) {
+                showError('暂无可下载的图片');
+                return;
+            }
+
+            try {
+                // 使用 fetch 获取图片数据
+                const response = await fetch(workCover.src);
+                if (!response.ok) {
+                    throw new Error('下载失败');
+                }
+
+                // 将响应转换为 Blob
+                const blob = await response.blob();
+
+                // 生成文件名：pix_vision_YYYY-MM-DD.png
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const fileName = `pix_vision_${year}-${month}-${day}.png`;
+
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+
+                // 清理
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                showError('下载成功！');
+            } catch (error) {
+                console.error('下载错误:', error);
+                showError('下载失败，请重试');
+            }
+        }
+
+        // 切换排序方式
+        function changeSortOrder(orderBy) {
+            commentOrderBy = orderBy;
+
+            // 更新按钮状态
+            document.getElementById('sort-newest').classList.toggle('active', orderBy === 'newest');
+            document.getElementById('sort-oldest').classList.toggle('active', orderBy === 'oldest');
+
+            // 重新加载评论
+            loadComments();
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadWorkInfo(); // 加载作品信息
+            loadComments();
+            setupCharCount();
+            startTimeRefresh(); // 启动时间刷新
+
+            // 尝试从 localStorage 读取保存的 token
+            const savedToken = localStorage.getItem('pixvision_token');
+            if (savedToken) {
+                document.getElementById('auth-token').value = savedToken;
+                authToken = savedToken;
+            }
+        });
+
+        // 启动时间刷新（每分钟更新一次）
+        function startTimeRefresh() {
+            // 清除旧的定时器
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+
+            // 每60秒刷新一次时间显示
+            refreshTimer = setInterval(() => {
+                refreshAllTimes();
+            }, 1000);
+        }
+
+        // 刷新所有评论的时间显示
+        function refreshAllTimes() {
+            const timeElements = document.querySelectorAll('.comment-time');
+            timeElements.forEach(element => {
+                // 从 data-time 属性获取原始时间
+                const originalTime = element.getAttribute('data-time');
+                if (originalTime) {
+                    element.textContent = formatTime(originalTime);
+                }
+            });
+        }
+
+        // 设置字符计数
+        function setupCharCount() {
+            const input = document.getElementById('main-comment-input');
+            const count = document.getElementById('main-char-count');
+
+            input.addEventListener('input', () => {
+                count.textContent = input.value.length;
+            });
+        }
+
+        // 加载评论列表
+        async function loadComments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/comment/list/${WORK_ID}?orderBy=${commentOrderBy}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('加载评论失败');
+                }
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    renderComments(result.data);
+                } else {
+                    showError(result.message || '加载评论失败');
+                }
+            } catch (error) {
+                console.error('加载评论错误:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 渲染评论列表
+        function renderComments(comments) {
+            const container = document.getElementById('comment-list');
+
+            if (!comments || comments.length === 0) {
+                container.innerHTML = '<div class="empty">暂无评论，快来发表第一条评论吧！</div>';
+                return;
+            }
+
+            let html = '';
+            comments.forEach(comment => {
+                html += renderPrimaryComment(comment);
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 渲染一级评论
+        function renderPrimaryComment(comment) {
+            const avatarUrl = comment.user_avatar
+                ? `${API_BASE_URL}/api/image/avatar/get?filePath=${encodeURIComponent(comment.user_avatar)}`
+                : '/1.png';
+
+            let html = `
+                <div class="comment-item" data-comment-id="${comment.conmment_id}">
+                    <div class="comment-header">
+                        <img src="${avatarUrl}" alt="${comment.nickname}" class="avatar" onerror="this.src='/1.png'">
+                        <div class="user-info">
+                            <div class="nickname" onclick="goToUserProfile(${comment.user_id})">${escapeHtml(comment.nickname)}</div>
+                            <div class="comment-time" data-time="${comment.time}">${formatTime(comment.time)}</div>
+                        </div>
+                    </div>
+                    <div class="comment-content">${escapeHtml(comment.conmment_text)}</div>
+                    <div class="comment-actions">
+                        <button class="reply-btn" onclick="showReplyInput(${comment.conmment_id}, '${escapeHtml(comment.nickname)}')">回复</button>
+                    </div>
+            `;
+
+            // 渲染二级评论
+            if (comment.children && comment.children.length > 0) {
+                html += '<div class="reply-list">';
+                comment.children.forEach(reply => {
+                    html += renderSecondaryComment(reply);
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // 渲染二级评论
+        function renderSecondaryComment(reply) {
+            const avatarUrl = reply.user_avatar
+                ? `${API_BASE_URL}/api/image/avatar/get?filePath=${encodeURIComponent(reply.user_avatar)}`
+                : '/1.png';
+
+            let contentHtml = escapeHtml(reply.conmment_text);
+
+            // 只有回复二级评论时才显示 @昵称（parent_comment_id != in_comment_id 表示回复的是其他二级评论）
+            if (reply.replied_nickname && reply.parent_comment_id !== reply.in_comment_id) {
+                contentHtml = `<span class="reply-to" onclick="highlightComment(${reply.parent_comment_id})">@${escapeHtml(reply.replied_nickname)}</span> ${contentHtml}`;
+            }
+
+            return `
+                <div class="reply-item" data-comment-id="${reply.conmment_id}">
+                    <div class="comment-header">
+                        <img src="${avatarUrl}" alt="${reply.nickname}" class="avatar" onerror="this.src='/default-avatar.png'">
+                        <div class="user-info">
+                            <div class="nickname" onclick="goToUserProfile(${reply.user_id})">${escapeHtml(reply.nickname)}</div>
+                            <div class="comment-time" data-time="${reply.time}">${formatTime(reply.time)}</div>
+                        </div>
+                    </div>
+                    <div class="reply-content">${contentHtml}</div>
+                    <div class="comment-actions">
+                        <button class="reply-btn" onclick="showReplyInput(${reply.conmment_id}, '${escapeHtml(reply.replied_nickname || reply.nickname)}', ${reply.replied_user_id || reply.user_id})">回复</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 显示回复输入框
+        function showReplyInput(parentCommentId, parentNickname, repliedUserId) {
+            // 移除现有的回复输入框
+            const existingInput = document.querySelector('.reply-input-area');
+            if (existingInput) {
+                existingInput.remove();
+            }
+
+            // 找到对应的评论项
+            const commentItem = document.querySelector(`[data-comment-id="${parentCommentId}"]`);
+            if (!commentItem) return;
+
+            // 创建回复输入框
+            const replyArea = document.createElement('div');
+            replyArea.className = 'reply-input-area';
+            replyArea.innerHTML = `
+                <textarea placeholder="回复 @${escapeHtml(parentNickname)}..." maxlength="125"></textarea>
+                <div class="reply-input-actions">
+                    <button class="btn btn-cancel" onclick="cancelReply(this)">取消</button>
+                    <button class="btn btn-primary" onclick="submitReply(${parentCommentId}, ${repliedUserId}, this)">回复</button>
+                </div>
+            `;
+
+            // 插入到评论项中
+            const actionsDiv = commentItem.querySelector('.comment-actions');
+            actionsDiv.after(replyArea);
+
+            // 聚焦到输入框
+            replyArea.querySelector('textarea').focus();
+        }
+
+        // 取消回复
+        function cancelReply(btn) {
+            btn.closest('.reply-input-area').remove();
+        }
+
+        // 提交主评论
+        async function submitMainComment() {
+            if (!authToken) {
+                showError('请先输入认证 Token');
+                return;
+            }
+
+            const input = document.getElementById('main-comment-input');
+            const content = input.value.trim();
+
+            if (!content) {
+                showError('评论内容不能为空');
+                return;
+            }
+
+            if (content.length > 125) {
+                showError('评论内容不能超过125个字符');
+                return;
+            }
+
+            try {
+                // 构建 URL 查询参数
+                const params = new URLSearchParams({
+                    workId: WORK_ID,
+                    parentCommentId: '',
+                    commentFloor: 1,
+                    commentText: content
+                });
+
+                const response = await fetch(`${API_BASE_URL}/api/comment/add?${params.toString()}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    input.value = '';
+                    document.getElementById('main-char-count').textContent = '0';
+
+                    // 保存 token 到 localStorage
+                    localStorage.setItem('pixvision_token', authToken);
+
+                    loadComments(); // 重新加载评论列表
+                } else {
+                    showError(result.message || '发表评论失败');
+                }
+            } catch (error) {
+                console.error('发表评论错误:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 提交回复
+        async function submitReply(parentCommentId, repliedUserId, btn) {
+            if (!authToken) {
+                showError('请先输入认证 Token');
+                return;
+            }
+
+            const replyArea = btn.closest('.reply-input-area');
+            const textarea = replyArea.querySelector('textarea');
+            const content = textarea.value.trim();
+
+            if (!content) {
+                showError('回复内容不能为空');
+                return;
+            }
+
+            if (content.length > 125) {
+                showError('回复内容不能超过125个字符');
+                return;
+            }
+
+            try {
+                // 构建 URL 查询参数
+                const params = new URLSearchParams({
+                    workId: WORK_ID,
+                    parentCommentId: parentCommentId,
+                    commentFloor: 2,
+                    commentText: content,
+                    repliedUserId: repliedUserId || ''
+                });
+
+                const response = await fetch(`${API_BASE_URL}/api/comment/add?${params.toString()}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    replyArea.remove();
+
+                    // 保存 token 到 localStorage
+                    localStorage.setItem('pixvision_token', authToken);
+
+                    loadComments(); // 重新加载评论列表
+                } else {
+                    showError(result.message || '发表回复失败');
+                }
+            } catch (error) {
+                console.error('发表回复错误:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 高亮显示对应的评论
+        function highlightComment(commentId) {
+            // 查找对应的评论元素
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+
+            if (commentElement) {
+                // 移除之前的高亮
+                commentElement.classList.remove('comment-highlight');
+
+                // 强制重绘
+                void commentElement.offsetWidth;
+
+                // 添加高亮动画
+                commentElement.classList.add('comment-highlight');
+
+                // 滚动到该评论位置
+                commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // 动画结束后移除类名
+                setTimeout(() => {
+                    commentElement.classList.remove('comment-highlight');
+                }, 1500);
+            } else {
+                console.warn('未找到对应的评论:', commentId);
+            }
+        }
+
+        // 格式化时间（实时计算）
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+
+            const date = new Date(timeStr);
+            const now = new Date();
+            const diff = now - date;
+
+            // 小于1分钟
+            if (diff < 60000) {
+                return '刚刚';
+            }
+
+            // 小于1小时
+            if (diff < 3600000) {
+                return Math.floor(diff / 60000) + '分钟前';
+            }
+
+            // 小于24小时
+            if (diff < 86400000) {
+                return Math.floor(diff / 3600000) + '小时前';
+            }
+
+            // 小于7天
+            if (diff < 604800000) {
+                return Math.floor(diff / 86400000) + '天前';
+            }
+
+            // 其他情况显示完整日期
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        // 跳转到个人主页（显示弹窗）
+        async function goToUserProfile(userId) {
+            if (!userId) return;
+
+            const overlay = document.getElementById('user-modal-overlay');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user/profile/info/${userId}`, {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    console.error('获取用户信息失败');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.recode === 200 && result.data) {
+                    const user = result.data;
+
+                    // 更新弹窗内容
+                    const avatarUrl = user.avatar_url
+                        ? `${API_BASE_URL}/api/image/avatar/get?filePath=${encodeURIComponent(user.avatar_url)}`
+                        : '/1.png';
+
+                    document.getElementById('modal-avatar').src = avatarUrl;
+                    document.getElementById('modal-nickname').textContent = user.nickname || '未知用户';
+                    document.getElementById('modal-username').textContent = '@' + (user.username || '-');
+                    document.getElementById('modal-email').textContent = user.email || '-';
+                    document.getElementById('modal-uuid').textContent = 'UUID: ' + (user.string_user_uuid || '-');
+
+                    // 模拟统计数据（实际应从后端获取）
+                    document.getElementById('modal-works').textContent = Math.floor(Math.random() * 50) + 1;
+                    document.getElementById('modal-views').textContent = Math.floor(Math.random() * 10000) + 100;
+                    document.getElementById('modal-likes').textContent = Math.floor(Math.random() * 5000) + 50;
+
+                    // 显示弹窗
+                    overlay.classList.add('show');
+                }
+            } catch (error) {
+                console.error('获取用户信息错误:', error);
+            }
+        }
+
+        // 关闭用户信息弹窗
+        function closeUserModal(event) {
+            // 如果传入了 event，检查是否点击的是遮罩层
+            if (event && event.target !== event.currentTarget) {
+                return;
+            }
+
+            const overlay = document.getElementById('user-modal-overlay');
+            overlay.classList.remove('show');
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -31,7 +31,7 @@ import java.util.List;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/profile")
 @RequiredArgsConstructor
-@Tag(name = "用户资料管理接口")
+@Tag(name = "用户基础资料接口")
 public class UserProfileController {
     private static final PixVisionLogger log = PixVisionLogger.create(UserProfileController.class);
 
@@ -43,9 +43,9 @@ public class UserProfileController {
      * 分页查询用户信息
      *
      * @param current 当前页码（从 1 开始）
-     * @param size    每页大小
-     * @param keyword 关键词（可选，同时模糊查询用户名/邮箱/昵称，精确查询 UUID）
-     * @return 响应数据<IPage < User>>
+     * @param size    每页大小（范围 1-100）
+     * @param keyword 关键词（可选，支持 UUID 精确查询或用户名/邮箱/昵称模糊查询）
+     * @return 响应数据，包含分页的用户信息列表
      * @author PlayerEG
      */
     @GetMapping("/page/{current}/{size}")
@@ -142,9 +142,9 @@ public class UserProfileController {
      * 按角色分页查询用户信息
      *
      * @param current   当前页码（从 1 开始）
-     * @param size      每页大小
+     * @param size      每页大小（范围 1-100）
      * @param userRoles 用户角色列表（可选，支持多个角色）
-     * @return 响应数据<IPage < User>>
+     * @return 响应数据，包含分页的用户信息列表
      * @author PlayerEG
      */
     @GetMapping("/page-by-role/{current}/{size}")
@@ -223,12 +223,86 @@ public class UserProfileController {
     }
 
     /**
+     * 根据用户 ID 查询用户信息
+     *
+     * @param userId 用户 ID
+     * @return 响应数据，包含用户详细信息
+     * @author PlayerEG
+     */
+    @GetMapping("/info/{userId}")
+    @PublicAccess
+    @Operation(
+        summary = "根据用户 ID 查询用户信息",
+        description = """
+            # 根据用户 ID 查询用户信息（无需登录认证）
+
+            ## 特性
+            - 公开接口（无需 Token 认证）
+            - 精确查询单个用户
+            - 自动转换二进制 UUID 为字符串格式
+
+            ## 参数说明：
+            - userId: **用户 ID**，Integer 类型，路径变量，必填
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": {User对象}}** ，包含用户详细信息
+            - **用户 ID 无效**：返回 **{"data": null}** 和"用户 ID 不能为空"提示
+            - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
+
+            ## 业务逻辑：
+            1. 校验用户 ID 参数有效性
+            2. 根据用户 ID 查询用户信息
+            3. 将二进制 UUID 转换为字符串格式
+            4. 返回用户详细信息
+
+            ## 注意事项：
+            - 这是一个**公开接口**，无需 Token 认证
+            - 只返回**未删除**的用户（is_delete=0）
+            - 返回完整的用户信息（包括密码字段，前端应自行决定是否展示）
+            - 用户 ID 必须是有效的正整数
+            """
+    )
+    public ResponsePojo<User> getUserInfoById(
+        @Parameter(description = "用户 ID", required = true, example = "1") @PathVariable Integer userId
+    ) {
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.warn("查询用户信息失败 - 用户 ID 无效: {}", userId);
+            return ResponsePojo.error(null, "用户 ID 不能为空");
+        }
+
+        log.info("查询用户信息 - 用户 ID: {}", userId);
+
+        // 调用服务层查询用户信息
+        User user = userService.selectAllUserById(userId);
+
+        // 检查用户是否存在（SQL 已过滤 is_delete=0，只需判断 null）
+        if (user == null) {
+            log.warn("用户不存在或已被删除 - 用户 ID: {}", userId);
+            return ResponsePojo.error(null, "用户不存在");
+        }
+
+        // 将二进制 UUID 转换为字符串格式
+        user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
+
+        // 隐藏敏感字段
+        user.setUser_uuid(null);
+        user.setPassword(null);
+        user.setUser_role(null);
+        user.setStatus(null);
+
+        log.info("查询用户信息成功 - 用户 ID: {}, 用户名: {}", userId, user.getUsername());
+
+        return ResponsePojo.success(user, "查询成功");
+    }
+
+    /**
      * 修改用户昵称
      *
      * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param nickname 新昵称
-     * @return 修改结果
-     * @author Playereg
+     * @param nickname 新昵称（长度 1-20 个字符）
+     * @return 响应数据，表示昵称修改是否成功
+     * @author PlayerEG
      */
     @PostMapping("/nickname/change")
     @Operation(
@@ -324,9 +398,9 @@ public class UserProfileController {
      * 更改账号绑定邮箱
      *
      * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param newEmail 新邮箱
-     * @param vCode    邮箱验证码
-     * @return 修改结果
+     * @param newEmail 新邮箱地址
+     * @param vCode    邮箱验证码（6位大写字母或数字）
+     * @return 响应数据，表示邮箱修改是否成功
      * @author PlayerEG
      */
     @PostMapping("/email/change")

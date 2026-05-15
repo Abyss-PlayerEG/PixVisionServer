@@ -132,4 +132,52 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
 
         return verificationStatus;
     }
+
+    /**
+     * 检查验证码是否存在
+     *
+     * @param email 邮箱
+     * @return true:存在 false:不存在
+     * @implNote 检查邮箱对应的验证码是否已存在于Redis中
+     * @author PlayerEG
+     */
+    @Override
+    public boolean hasRedisVCode(String email) {
+        String hashEmail = SecureUtil.sha256(email);
+        String key = StrUtil.format("userEmailCode:{}", hashEmail);
+        
+        try {
+            Object vCode = redisTemplate.opsForValue().get(key);
+            return vCode != null;
+        } catch (Exception e) {
+            log.error("检查验证码缓存失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 获取验证码剩余过期时间
+     *
+     * @param email 邮箱
+     * @return 剩余时间（秒），如果验证码不存在则返回 null
+     * @implNote 获取邮箱对应验证码的剩余过期时间
+     * @author PlayerEG
+     */
+    @Override
+    public Long getRedisVCodeRemainingTime(String email) {
+        String hashEmail = SecureUtil.sha256(email);
+        String key = StrUtil.format("userEmailCode:{}", hashEmail);
+        
+        try {
+            Long remainingTime = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+            // Redis 返回 -1 表示永不过期，-2 表示键不存在
+            if (remainingTime != null && remainingTime > 0) {
+                return remainingTime;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("获取验证码剩余时间失败: {}", e.getMessage());
+            return null;
+        }
+    }
 }

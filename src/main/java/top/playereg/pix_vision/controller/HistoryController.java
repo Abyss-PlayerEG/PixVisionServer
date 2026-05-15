@@ -7,8 +7,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.playereg.pix_vision.pojo.History;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.JWTUtils;
@@ -24,7 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/history")
 @RequiredArgsConstructor
-@Tag(name = "用户访问历史管理接口")
+@Tag(name = "历史记录接口")
 public class HistoryController {
     private static final PixVisionLogger log = PixVisionLogger.create(HistoryController.class);
 
@@ -36,8 +36,8 @@ public class HistoryController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param current 当前页码（从 1 开始）
-     * @param size    每页大小
-     * @return 个人访问历史记录分页列表
+     * @param size    每页大小（范围 1-100）
+     * @return 响应数据，包含个人访问历史记录分页列表
      * @author PlayerEG
      */
     @Operation(
@@ -48,8 +48,9 @@ public class HistoryController {
             ## 特性
             - 需要 Token 认证
             - MyBatis-Plus 分页支持
-            - 返回当前用户访问过的作品列表
+            - 返回当前用户访问过的作品列表（每个作品只返回一条最新记录）
             - 仅返回未删除的作品
+            - 按访问时间倒序排列（最新的在前）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -57,7 +58,7 @@ public class HistoryController {
             - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
 
             ## 返回说明：
-            - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
+            - **查询成功**：返回 **{"data": {IPage<History>对象}}** ，包含作品列表和分页信息
             - **Token 不存在或失效**：返回 **{"data": null}** 和错误提示
             - **无历史记录**：返回 **{"data": null}** 和空列表
 
@@ -67,17 +68,21 @@ public class HistoryController {
             3. 验证 Token 是否在白名单中
             4. 从 Token 中解析用户 ID
             5. 构建分页对象并调用 Service 层查询该用户的访问历史记录
-            6. 返回关联的作品详细信息分页列表
+            6. 对同一作品的多条记录进行去重，只保留访问时间最新的那条
+            7. 按访问时间倒序返回结果
+            8. 返回关联的作品详细信息分页列表
 
             ## 注意事项：
             - **必须携带有效的 Token**
             - 只有已登录用户才能查看自己的历史记录
             - 如果作品已被删除，则不会出现在历史记录列表中
+            - **每个作品只返回一条记录**（最近一次访问的记录）
+            - 如果多次访问同一作品，只显示最新的那次访问记录
             - 每页大小限制：**1-100**
             """
     )
     @GetMapping("/{current}/{size}")
-    public ResponsePojo<IPage<Works>> getUserHistory(
+    public ResponsePojo<IPage<History>> getUserHistory(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小，范围 1-100", required = true, example = "10") @PathVariable Long size
@@ -115,10 +120,10 @@ public class HistoryController {
         log.info("开始查询个人历史记录，用户 ID: {}, 用户名: {}, 页码: {}, 每页: {}", userId, username, current, size);
 
         // 构建分页对象
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Works> page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(current, size);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<top.playereg.pix_vision.pojo.History> page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(current, size);
 
         // 调用服务层查询历史记录
-        IPage<Works> historyPage = workService.getUserHistory(page, userId);
+        IPage<History> historyPage = workService.getUserHistory(page, userId);
 
         log.info("查询个人历史记录成功，用户 ID: {}, 记录数: {}", userId, historyPage.getTotal());
         return ResponsePojo.success(historyPage, "查询成功");
@@ -129,7 +134,7 @@ public class HistoryController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param workIds 要删除的作品 ID 列表
-     * @return 删除结果
+     * @return 响应数据，表示历史记录是否删除成功
      * @author PlayerEG
      */
     @Operation(

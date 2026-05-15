@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "历史记录实体")
-public class History {
+public class History extends Works {
 
     @Schema(description = "用户 ID")
     Integer user_id;
@@ -21,4 +21,7 @@ public class History {
     @TableLogic
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
     Boolean is_delete;
+
+    @Schema(description = "操作时间戳（ISO 8601格式）")
+    String time;
 }

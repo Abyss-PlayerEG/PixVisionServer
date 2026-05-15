@@ -13,7 +13,8 @@ DB_CONFIG = {
     'port': 3306,
     'user': 'root',
     'password': '123456',
-    'database': 'db_pix_vision'
+#     'database': 'db_pix_vision'
+    'database': 'test_db'
 }
 
 ADJECTIVES = ['happy', 'sunny', 'gentle', 'brave', 'clever', 'kind', 'quick', 'bright', 'warm', 'cool', 'lovely', 'peaceful', 'friendly', 'cute', 'sweet']

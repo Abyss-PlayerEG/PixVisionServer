@@ -13,4 +13,10 @@ public interface VerificationCodeServices {
 
     // 验证码验证
     public boolean verificationCodeVerify( String email, String userInputVCode );
+
+    // 检查验证码是否存在
+    public boolean hasRedisVCode( String email );
+
+    // 获取验证码剩余过期时间（秒）
+    public Long getRedisVCodeRemainingTime( String email );
 }

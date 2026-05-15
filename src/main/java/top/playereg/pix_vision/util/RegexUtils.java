@@ -3,9 +3,48 @@ package top.playereg.pix_vision.util;
 import cn.hutool.core.util.StrUtil;
 
 /**
- * 正则匹配工具类
+ * 正则表达式验证工具类
+ * <p>
+ * 提供常用数据格式的验证功能，包括邮箱、验证码、UUID、用户名、URL、哈希值等。
+ * 所有验证方法均返回 boolean 类型，失败时会自动记录调试日志。
+ * </p>
+ *
+ * <h3>使用场景</h3>
+ * <ol>
+ *   <li>用户注册时的表单数据验证</li>
+ *   <li>API 接口参数格式校验</li>
+ *   <li>密码强度检查（支持明文和哈希格式）</li>
+ *   <li>文件上传前的 URL 格式验证</li>
+ * </ol>
+ *
+ * <h3>使用示例</h3>
+ * <pre>{@code
+ * // 示例1：验证邮箱
+ * if (RegexUtils.isEmail(user.getEmail())) {
+ *     // 邮箱格式正确
+ * }
+ *
+ * // 示例2：验证6位验证码
+ * if (RegexUtils.isVCode(code, 6)) {
+ *     // 验证码格式正确
+ * }
+ *
+ * // 示例3：验证密码（支持明文和哈希）
+ * if (RegexUtils.isPassword(password)) {
+ *     // 密码格式符合要求
+ * }
+ * }</pre>
+ *
+ * <h3>注意事项</h3>
+ * <ul>
+ *   <li>所有验证方法在失败时会记录 DEBUG 级别日志</li>
+ *   <li>密码验证支持明文（6-16位）和哈希格式（MD5/SHA1/SHA256/SHA512）</li>
+ *   <li>URL 验证要求必须包含 http:// 或 https:// 协议头</li>
+ *   <li>用户名允许字母、数字和下划线，长度5-16位</li>
+ * </ul>
  *
  * @author PlayerEG
+ * @since DEV-2.0.0
  */
 @SuppressWarnings("all")
 public class RegexUtils {
@@ -33,11 +72,14 @@ public class RegexUtils {
     }
 
     /**
-     * 邮箱正则匹配
-     * 邮箱格式: xxx@xxx.xxx
+     * 邮箱格式验证
+     * <p>
+     * 验证邮箱地址是否符合标准格式：xxx@xxx.xxx
+     * 支持字母、数字、下划线、连字符作为用户名部分。
+     * </p>
      *
-     * @param email 待匹配的邮箱
-     * @return boolean
+     * @param email 待验证的邮箱地址
+     * @return true-格式正确，false-格式错误
      * @author PlayerEG
      */
     public static boolean isEmail(String email) {
@@ -45,11 +87,15 @@ public class RegexUtils {
     }
 
     /**
-     * 验证码正则匹配
-     * 6位, 只允许大写字母、数字
+     * 验证码格式验证
+     * <p>
+     * 验证指定长度的验证码，仅允许大写字母和数字。
+     * 常用于邮箱或手机验证码的格式校验。
+     * </p>
      *
-     * @param vCode 待匹配的验证码
-     * @return boolean
+     * @param vCode  待验证的验证码字符串
+     * @param length 验证码长度（通常为 4 或 6）
+     * @return true-格式正确，false-格式错误
      * @author PlayerEG
      */
     public static boolean isVCode(String vCode, int length) {
@@ -142,12 +188,18 @@ public class RegexUtils {
     }
 
     /**
-     * 密码正则匹配
+     * 密码格式验证
      * <p>
-     * 支持明文密码和哈希密码格式验证
+     * 支持两种密码格式验证：
+     * <ul>
+     *   <li><b>明文密码</b>：6-16位，允许字母、数字、下划线、英文句号</li>
+     *   <li><b>哈希密码</b>：32位(MD5)、40位(SHA1)、64位(SHA256)、128位(SHA512)</li>
+     * </ul>
+     * 根据密码长度自动判断类型并进行相应验证。
+     * </p>
      *
-     * @param password 待匹配的密码
-     * @return boolean
+     * @param password 待验证的密码（明文或哈希值）
+     * @return true-格式正确，false-格式错误或为空
      * @author PlayerEG
      */
     public static boolean isPassword(String password) {

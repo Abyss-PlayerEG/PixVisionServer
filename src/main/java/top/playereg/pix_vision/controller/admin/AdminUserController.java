@@ -39,7 +39,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/admin/user")
 @RequiredArgsConstructor
-@Tag(name = "系统管理员相关接口 - 用户管理")
+@Tag(name = "系统管理员接口 - 用户管理")
 @RequireRole(value = {77})
 public class AdminUserController {
     private static final PixVisionLogger log = PixVisionLogger.create(AdminUserController.class);
@@ -51,11 +51,8 @@ public class AdminUserController {
 
     /**
      * 刷新所有用户权限缓存
-     * <p>
-     * 清除 Redis 中所有 role: 前缀的用户角色缓存，确保所有用户的权限验证获取最新的角色信息
-     * </p>
      *
-     * @return 操作结果
+     * @return 响应数据，包含清除的缓存数量
      * @author PlayerEG
      */
     @Operation(
@@ -113,15 +110,12 @@ public class AdminUserController {
 
     /**
      * 批量更新用户信息（角色和/或状态）
-     * <p>
-     * 系统管理员可以批量修改指定用户的角色和/或状态
-     * </p>
      *
      * @param request   HTTP 请求对象（用于获取当前管理员信息）
      * @param userIds   目标用户 ID 列表
-     * @param newRole   新角色代码（可选）
-     * @param newStatus 新状态代码（可选）
-     * @return 操作结果
+     * @param newRole   新角色代码（可选，11-77）
+     * @param newStatus 新状态代码（可选，10-30）
+     * @return 响应数据，包含批量更新的统计信息
      * @author PlayerEG
      */
     @Operation(
@@ -276,13 +270,10 @@ public class AdminUserController {
 
     /**
      * 批量删除用户账户
-     * <p>
-     * 系统管理员可以批量删除指定用户的账户（逻辑删除），并清除这些用户的所有 Token
-     * </p>
      *
      * @param request HTTP 请求对象（用于获取当前管理员信息）
      * @param userIds 目标用户 ID 列表
-     * @return 操作结果
+     * @return 响应数据，包含批量删除的统计信息
      * @author PlayerEG
      */
     @Operation(
@@ -382,19 +373,16 @@ public class AdminUserController {
 
     /**
      * 创建新用户
-     * <p>
-     * 系统管理员可以直接创建新用户，无需验证码验证
-     * </p>
      *
      * @param request         HTTP 请求对象（用于获取当前管理员信息）
-     * @param username        用户名
-     * @param password        密码（明文）
-     * @param confirmPassword 确认密码
-     * @param nickname        昵称
-     * @param email           邮箱
+     * @param username        用户名（必填，唯一）
+     * @param password        密码（明文，将自动加密）
+     * @param confirmPassword 确认密码（必须与 password 一致）
+     * @param nickname        昵称（必填）
+     * @param email           邮箱（必填，唯一）
      * @param role            角色代码（可选，默认为 11-普通用户）
      * @param status          状态代码（可选，默认为 10-正常）
-     * @return 操作结果
+     * @return 响应数据，表示用户是否创建成功
      * @author PlayerEG
      */
     @Operation(
@@ -533,7 +521,7 @@ public class AdminUserController {
      * 管理员批量重置用户密码
      *
      * @param userIds 目标用户 ID 列表
-     * @return 操作结果
+     * @return 响应数据，包含批量重置密码的统计信息
      * @author PlayerEG
      */
     @Operation(

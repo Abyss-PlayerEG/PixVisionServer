@@ -1,6 +1,9 @@
 package top.playereg.pix_vision.mapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.History;
 
@@ -21,8 +24,8 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
      * @return 影响行数
      * @author PlayerEG
      */
-    int insertHistory(@org.apache.ibatis.annotations.Param("userId") Integer userId, 
-                      @org.apache.ibatis.annotations.Param("workId") Integer workId);
+    int insertHistory(@Param("userId") Integer userId,
+                      @Param("workId") Integer workId);
 
     /**
      * 查询用户的访问历史记录（关联作品表）
@@ -32,19 +35,19 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
      * @return 历史记录列表（包含作品信息）
      * @author PlayerEG
      */
-    com.baomidou.mybatisplus.core.metadata.IPage<top.playereg.pix_vision.pojo.Works> selectUserHistory(
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<top.playereg.pix_vision.pojo.Works> page,
-        @org.apache.ibatis.annotations.Param("userId") Integer userId
+    IPage<History> selectUserHistory(
+        Page<History> page,
+        @Param("userId") Integer userId
     );
 
     /**
      * 批量删除用户的历史记录
      *
-     * @param userId 用户 ID
+     * @param userId  用户 ID
      * @param workIds 作品 ID 列表
      * @return 影响行数
      * @author PlayerEG
      */
-    int batchDeleteHistory(@org.apache.ibatis.annotations.Param("userId") Integer userId, 
-                           @org.apache.ibatis.annotations.Param("workIds") java.util.List<Integer> workIds);
+    int batchDeleteHistory(@Param("userId") Integer userId,
+                           @Param("workIds") java.util.List<Integer> workIds);
 }

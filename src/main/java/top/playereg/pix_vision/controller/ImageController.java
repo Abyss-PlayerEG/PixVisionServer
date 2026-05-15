@@ -33,9 +33,13 @@ import java.util.UUID;
  * 图片访问控制器 - 提供细粒度的图片访问控制
  * <p>
  * 支持头像、作品、Logo 等图片资源的访问，具备以下特性：
+ * <p>
  * - 文件类型白名单校验（仅允许图片格式）
+ * <p>
  * - 路径安全检查（防止目录遍历攻击）
+ * <p>
  * - 自动设置缓存头（1小时）
+ * <p>
  * - 支持子目录结构
  *
  * @author PlayerEG
@@ -43,7 +47,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/image")
-@Tag(name = "图片管理接口", description = "提供头像、作品、Logo 等图片资源的访问接口")
+@Tag(name = "图像接口", description = "提供头像、作品、Logo 等图片资源的访问接口")
 public class ImageController {
     private static final PixVisionLogger log = PixVisionLogger.create(ImageController.class);
 
@@ -170,7 +174,7 @@ public class ImageController {
     /**
      * 获取Logo图片
      *
-     * @param filePath 图像相对路径（如：dark.png、light.png）
+     * @param filePath 图像文件名（如：dark.png、light.png）
      * @return 图片资源（二进制数据）
      * @author PlayerEG
      */
@@ -225,9 +229,9 @@ public class ImageController {
     /**
      * 上传用户头像
      *
-     * @param file    头像文件
+     * @param file    头像文件（JPG/JPEG/PNG 格式，最大 5MB，必须是正方形）
      * @param request HTTP 请求对象（用于获取用户 ID）
-     * @return 响应结果
+     * @return 响应结果，包含上传后的头像路径
      * @author PlayerEG
      */
     @Operation(
@@ -386,13 +390,13 @@ public class ImageController {
     /**
      * 上传作品图片
      *
-     * @param file       作品图片文件
-     * @param workTitle  作品标题
-     * @param seriesId   系列 ID
-     * @param isOriginal 是否原创
+     * @param file       作品图片文件（JPG/JPEG/PNG 格式，最大 32MB）
+     * @param workTitle  作品标题（最多 16 个中文字符）
+     * @param seriesId   系列 ID（可选，0 表示不属于任何系列）
+     * @param isOriginal 是否原创（true-原创，false-转载）
      * @param outUrl     外部转载链接（转载时必填）
      * @param request    HTTP 请求对象（用于获取用户 ID）
-     * @return 响应结果（包含作品 ID）
+     * @return 响应结果，包含作品 ID
      * @author PlayerEG
      */
     @Operation(
