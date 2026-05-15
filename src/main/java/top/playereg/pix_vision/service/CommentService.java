@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.pojo.commentsPojo.Comments;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
@@ -61,4 +62,20 @@ public interface CommentService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * */
     AdminBatchOperateCommentResult batchDeleteComments(List<Integer> commentIds);
+
+    /**
+     * 分页查询评论列表（支持多条件过滤）
+     *
+     * @param current 当前页码
+     * @param size 每页大小
+     * @param workId 作品ID（可选）
+     * @param userId 用户ID（可选）
+     * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
+     * @param keyword 评论关键字（可选）
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    IPage<Comments> getCommentsPage(Long current, Long size,
+                                     Integer workId, Integer userId,
+                                     Integer commentFloor, String keyword);
 }

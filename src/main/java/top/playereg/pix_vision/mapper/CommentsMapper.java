@@ -1,6 +1,8 @@
 package top.playereg.pix_vision.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -63,4 +65,21 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * @author PlayerEG
      */
     java.util.List<Integer> selectChildCommentIds(@Param("parentCommentId") Integer parentCommentId);
+
+    /**
+     * 分页查询评论列表（支持多条件过滤）
+     *
+     * @param page 分页对象
+     * @param workId 作品ID（可选）
+     * @param userId 用户ID（可选）
+     * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
+     * @param keyword 评论关键字（可选，模糊搜索）
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    IPage<Comments> selectCommentsPage(Page<Comments> page,
+                                        @Param("workId") Integer workId,
+                                        @Param("userId") Integer userId,
+                                        @Param("commentFloor") Integer commentFloor,
+                                        @Param("keyword") String keyword);
 }

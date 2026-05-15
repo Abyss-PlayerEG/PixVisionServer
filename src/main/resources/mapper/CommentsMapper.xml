@@ -79,5 +79,25 @@
           AND is_delete = 0
     </select>
 
+    <!-- 分页查询评论列表（支持多条件过滤） -->
+    <select id="selectCommentsPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tb_comments
+        WHERE is_delete = 0
+        <if test="workId != null">
+            AND work_id = #{workId}
+        </if>
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="commentFloor != null">
+            AND comment_floor = #{commentFloor}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND comment_text LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY time DESC
+    </select>
+
 
 </mapper>

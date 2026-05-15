@@ -4,6 +4,8 @@ trigger: always_on
 
 # PixVisionServer 开发规范 (DevRule)
 
+> 必须使用超级思考模式进行思考，并使用 [McpUsage.md](McpUsage.md) 进行查询。
+
 ## 1. 核心架构与分层
 - **MVC 严格分层**：
   - **Controller**: 仅负责参数校验、调用 Service、返回 `ResponsePojo`。禁止包含业务逻辑或直接操作数据库。

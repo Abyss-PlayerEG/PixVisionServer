@@ -1,5 +1,7 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.CommentsMapper;
@@ -417,5 +419,44 @@ public class CommentServiceImpl implements CommentService {
 
         log.info("批量删除评论完成 - 总数: {}, 成功: {}, 失败: {}", totalCount, successCount, failedWorkIds.size());
         return new AdminBatchOperateCommentResult(totalCount, successCount, failedWorkIds);
+    }
+
+    /**
+     * 分页查询评论列表（支持多条件过滤）
+     *
+     * @param current 当前页码
+     * @param size 每页大小
+     * @param workId 作品ID（可选）
+     * @param userId 用户ID（可选）
+     * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
+     * @param keyword 评论关键字（可选）
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    @Override
+    public IPage<Comments> getCommentsPage(Long current, Long size,
+                                            Integer workId, Integer userId,
+                                            Integer commentFloor, String keyword) {
+        // 参数校验
+        if (current == null || current < 1) {
+            current = 1L;
+        }
+        if (size == null || size < 1 || size > 100) {
+            size = 10L;
+        }
+
+        log.info("开始分页查询评论，页码: {}, 每页大小: {}, 作品ID: {}, 用户ID: {}, 评论层级: {}, 关键字: {}",
+                current, size, workId, userId, commentFloor, keyword);
+
+        // 创建分页对象
+        Page<Comments> page = new Page<>(current, size);
+
+        // 调用 Mapper 层查询
+        IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, keyword);
+
+        log.info("分页查询评论完成，总数: {}, 当前页: {}, 每页大小: {}",
+                result.getTotal(), result.getCurrent(), result.getSize());
+
+        return result;
     }
 }
