@@ -2,6 +2,7 @@ package top.playereg.pix_vision.controller.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -75,7 +76,7 @@ public class AdminWorksController {
     @PostMapping("/update/approval-status")
     public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateApprovalStatus(
         @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds,
-        @Parameter(description = "审核状态：10-正常、20-待审核、30-未过审", required = true, example = "30") @RequestParam Integer approvalStatus
+        @Schema(description = "审核状态：10-正常、20-待审核、30-未过审", allowableValues = {"10", "20", "30"}, example = "30") @RequestParam Integer approvalStatus
     ){
         // 参数校验
         if (workIds == null || workIds.isEmpty()) {
@@ -112,22 +113,6 @@ public class AdminWorksController {
             return ResponsePojo.error(null, "更新失败：" + e.getMessage());
         }
     }
-
-    /**
-     * 获取审核状态名称
-     *
-     * @param approvalStatus 审核状态代码
-     * @return 状态名称
-     */
-    private String getStatusName(Integer approvalStatus) {
-        return switch (approvalStatus) {
-            case 10 -> "正常";
-            case 20 -> "待审核";
-            case 30 -> "未过审";
-            default -> "未知";
-        };
-    }
-
 
     /**
      * 删除作品 - 管理员
@@ -198,5 +183,20 @@ public class AdminWorksController {
             log.error("批量删除作品异常，作品 ID 列表: {}, 错误: {}", workIds, e.getMessage(), e);
             return ResponsePojo.error(null, "删除失败：" + e.getMessage());
         }
+    }
+
+    /**
+     * 获取审核状态名称
+     *
+     * @param approvalStatus 审核状态代码
+     * @return 状态名称
+     */
+    private String getStatusName(Integer approvalStatus) {
+        return switch (approvalStatus) {
+            case 10 -> "正常";
+            case 20 -> "待审核";
+            case 30 -> "未过审";
+            default -> "未知";
+        };
     }
 }

@@ -576,7 +576,11 @@ public class WorkController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小（范围 1-100）", required = true, example = "10") @PathVariable Long size,
-        @Parameter(description = "审核状态（可选，10-正常、20-待审核、30-未过审）", required = false, example = "20") @RequestParam(required = false) Integer approvalStatus
+        @Schema(
+            description = "审核状态（可选，10-正常、20-待审核、30-未过审）",
+            allowableValues = {"10", "20", "30"},
+            example = "20"
+        ) @RequestParam(required = false) Integer approvalStatus
     ) {
         log.debug("查询用户自己的作品 - 页码: {}, 每页大小: {}", current, size);
 
