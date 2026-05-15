@@ -3,7 +3,6 @@ package top.playereg.pix_vision.service.Impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.PendingReviewsMapper;
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.PendingReviewsService;
 

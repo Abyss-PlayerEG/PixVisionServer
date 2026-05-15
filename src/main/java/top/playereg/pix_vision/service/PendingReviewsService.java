@@ -1,6 +1,5 @@
 package top.playereg.pix_vision.service;
 
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 
 import java.util.List;
