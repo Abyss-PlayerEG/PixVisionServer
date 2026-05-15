@@ -572,6 +572,7 @@ public class ImageController {
             // 6. 返回图片资源
             Resource resource = new FileSystemResource(file);
             String contentType = getContentType(extension);
+            log.info("返回{}图片: {}, 文件路径: {}", imageType, filePath, fullPath);
 
             return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
