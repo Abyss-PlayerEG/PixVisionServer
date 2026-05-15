@@ -791,4 +791,31 @@ public class WorkServiceImpl implements WorkService {
             workIds.size(), successCount, failedWorkIds
         );
     }
+
+    /**
+     * 分页查询用户自己的作品列表（只过滤已删除，不过滤审核状态）
+     *
+     * @param page           分页对象
+     * @param userId         用户 ID
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    @Override
+    public IPage<Works> getMyWorks(Page<Works> page, Integer userId, Integer approvalStatus) {
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return new Page<>();
+        }
+
+        log.info("开始查询用户作品，用户 ID: {}, 审核状态: {}", userId, approvalStatus);
+
+        // 调用 Mapper 层查询
+        IPage<Works> result = worksMapper.selectMyWorks(page, userId, approvalStatus);
+
+        log.info("查询用户作品完成，用户 ID: {}, 总数: {}, 当前页: {}",
+            userId, result.getTotal(), result.getCurrent());
+
+        return result;
+    }
 }

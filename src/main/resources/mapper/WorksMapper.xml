@@ -179,4 +179,30 @@
         </foreach>
     </update>
 
+    <!-- 分页查询用户自己的作品列表（只过滤已删除，不过滤审核状态） -->
+    <select id="selectMyWorks" resultMap="BaseResultMap">
+        SELECT w.work_id,
+               w.user_id,
+               w.work_title,
+               w.img_url,
+               w.series_id,
+               w.like_count,
+               w.star_count,
+               w.view_count,
+               w.is_original_work,
+               w.out_url,
+               w.approval_status,
+               w.update_time,
+               w.update_user,
+               w.create_time,
+               w.create_user
+        FROM tb_works w
+        WHERE w.user_id = #{userId}
+          AND w.is_delete = 0
+        <if test="approvalStatus != null">
+            AND w.approval_status = #{approvalStatus}
+        </if>
+        ORDER BY w.create_time DESC
+    </select>
+
 </mapper>

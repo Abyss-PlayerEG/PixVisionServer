@@ -505,4 +505,129 @@ public class WorkController {
             return ResponsePojo.error(false, "作品修改失败：" + e.getMessage());
         }
     }
+
+    /**
+     * 分页查询用户自己的作品列表（需要登录）
+     *
+     * @param request        HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param current        当前页码（从 1 开始）
+     * @param size           每页大小（范围 1-100）
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @return 响应数据，包含分页的作品列表
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "分页查询用户自己的作品",
+        description = """
+            # 分页查询用户自己的作品（需要登录认证）
+
+            ## 特性
+            - 需要 Token 认证（支持 Header 和 URL 参数两种方式）
+            - MyBatis-Plus 分页支持
+            - 只过滤已删除作品（is_delete = 0）
+            - **不过滤审核状态**，返回所有状态的作品（10-正常、20-待审核、30-未过审）
+            - 支持按审核状态筛选（可选参数）
+            - 按创建时间倒序排列（最新作品优先）
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - current: **当前页码**，Long 类型，必填，**从 1 开始**，默认为 1
+            - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
+            - approvalStatus: **审核状态**（可选），Integer 类型，可选值：
+              * 10: 正常（审核通过）
+              * 20: 待审核
+              * 30: 未过审
+              * null: 不限制，返回所有状态
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
+            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
+            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
+            - **参数错误**：返回 **{"data": null}** 和“页码或每页大小错误”提示
+            - **无数据**：返回空的分页结果（total=0, records=[]）
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验页码和每页大小参数（current>=1, 1<=size<=100）
+            5. 构建 MyBatis-Plus 分页对象
+            6. 查询当前用户的作品列表（WHERE user_id = ? AND is_delete = 0）
+            7. 如果提供了 approvalStatus 参数，添加审核状态过滤条件
+            8. 按创建时间倒序排列（create_time DESC）
+            9. 返回分页结果集（IPage<Works>）
+
+            ## 注意事项：
+            - **必须携带有效的 Token 才能查询**
+            - Token 必须在白名单中（未过期、未登出）
+            - **只能查看自己的作品**，无法查看他人的作品
+            - **返回所有审核状态的作品**，包括待审核和未过审的作品
+            - 这是与普通查询接口的主要区别：普通接口只返回 approval_status = 10
+            - 可以通过 approvalStatus 参数筛选特定状态的作品
+            - 已自动过滤逻辑删除的作品（is_delete=0）
+            - 默认返回完整 Works 实体字段，包含 approval_status
+            - 每页大小限制：**1-100**
+            - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
+            - 使用 **RESTful 风格**路径参数，格式：`/my-works/{current}/{size}`
+            """
+    )
+    @GetMapping("/my-works/{current}/{size}")
+    public ResponsePojo<IPage<Works>> getMyWorks(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
+        @Parameter(description = "每页大小（范围 1-100）", required = true, example = "10") @PathVariable Long size,
+        @Parameter(description = "审核状态（可选，10-正常、20-待审核、30-未过审）", required = false, example = "20") @RequestParam(required = false) Integer approvalStatus
+    ) {
+        log.debug("查询用户自己的作品 - 页码: {}, 每页大小: {}", current, size);
+
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "查询用户作品接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("查询用户作品失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始查询用户作品，用户 ID: {}, 用户名: {}, 页码: {}, 每页大小: {}", userId, username, current, size);
+
+        // 校验分页参数
+        if (current == null || current < 1 || size == null || size < 1 || size > 100) {
+            log.warn("页码或每页大小参数错误，用户 ID: {}, current: {}, size: {}", userId, current, size);
+            return ResponsePojo.error(null, "页码或每页大小错误，current >= 1, 1 <= size <= 100");
+        }
+
+        try {
+            // 构建分页对象
+            Page<Works> page = new Page<>(current, size);
+
+            // 调用服务层查询
+            IPage<Works> result = workService.getMyWorks(page, userId, approvalStatus);
+
+            if (result != null && result.getRecords() != null) {
+                log.info("查询用户作品成功，用户 ID: {}, 用户名: {}, 总数: {}, 当前页: {}",
+                    userId, username, result.getTotal(), result.getCurrent());
+                return ResponsePojo.success(result, "查询成功");
+            } else {
+                log.warn("查询用户作品返回结果为空，用户 ID: {}, 用户名: {}", userId, username);
+                return ResponsePojo.error(null, "查询失败，返回结果为空");
+            }
+        } catch (Exception e) {
+            log.error("查询用户作品异常，用户 ID: {}, 用户名: {}, 错误: {}", userId, username, e.getMessage(), e);
+            return ResponsePojo.error(null, "查询失败：" + e.getMessage());
+        }
+    }
 }

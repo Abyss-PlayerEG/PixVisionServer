@@ -176,4 +176,19 @@ public interface WorkService {
     top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult adminBatchDeleteWorks(
         List<Integer> workIds
     );
+
+    /**
+     * 分页查询用户自己的作品列表（只过滤已删除，不过滤审核状态）
+     *
+     * @param page           分页对象
+     * @param userId         用户 ID
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    IPage<Works> getMyWorks(
+        Page<Works> page,
+        Integer userId,
+        Integer approvalStatus
+    );
 }
