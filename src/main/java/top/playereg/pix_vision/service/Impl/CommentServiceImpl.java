@@ -376,11 +376,28 @@ public class CommentServiceImpl implements CommentService {
         if (commentIds == null || commentIds.isEmpty()) {
             return new AdminBatchOperateCommentResult(0, 0, new ArrayList<>());
         }
-        int totalCount = commentIds.size();
+
+        // 收集所有一级评论的二级评论 ID
+        List<Integer> allCommentIds = new ArrayList<>(commentIds);
+        for (Integer commentId : commentIds) {
+            try {
+                // 查询该一级评论的所有二级评论
+                List<Integer> childCommentIds = commentsMapper.selectChildCommentIds(commentId);
+                if (childCommentIds != null && !childCommentIds.isEmpty()) {
+                    allCommentIds.addAll(childCommentIds);
+                    log.info("一级评论 {} 有 {} 个二级评论，将一起删除", commentId, childCommentIds.size());
+                }
+            } catch (Exception e) {
+                log.warn("查询一级评论 {} 的二级评论失败: {}", commentId, e.getMessage());
+            }
+        }
+
+        int totalCount = allCommentIds.size();
         List<Integer> failedWorkIds = new ArrayList<>();
         int successCount = 0;
-        for (Integer commentId : commentIds) {
 
+        // 批量删除所有一级和二级评论
+        for (Integer commentId : allCommentIds) {
             try {
                 boolean result = commentsMapper.deleteComments(
                     java.util.Collections.singletonList(commentId),
@@ -396,8 +413,9 @@ public class CommentServiceImpl implements CommentService {
                 // 如果更新异常，也视为失败
                 failedWorkIds.add(commentId);
             }
-
         }
+
+        log.info("批量删除评论完成 - 总数: {}, 成功: {}, 失败: {}", totalCount, successCount, failedWorkIds.size());
         return new AdminBatchOperateCommentResult(totalCount, successCount, failedWorkIds);
     }
 }

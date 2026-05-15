@@ -70,5 +70,14 @@
         </foreach>
     </update>
 
+    <!-- 查询一级评论的所有二级评论 ID -->
+    <select id="selectChildCommentIds" resultType="java.lang.Integer">
+        SELECT comment_id
+        FROM tb_comments
+        WHERE in_comment_id = #{parentCommentId}
+          AND comment_floor = 2
+          AND is_delete = 0
+    </select>
+
 
 </mapper>

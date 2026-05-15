@@ -54,4 +54,13 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * */
     boolean deleteComments(java.util.List<Integer> commentIds, Integer isDelete);
+
+    /**
+     * 查询一级评论的所有二级评论 ID
+     *
+     * @param parentCommentId 一级评论 ID
+     * @return 二级评论 ID 列表
+     * @author PlayerEG
+     */
+    java.util.List<Integer> selectChildCommentIds(@Param("parentCommentId") Integer parentCommentId);
 }
