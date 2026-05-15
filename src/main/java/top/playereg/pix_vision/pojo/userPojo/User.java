@@ -47,8 +47,9 @@ public class User {
     @Schema(description = "账户状态",example = "10")
     Integer status;
 
-    @Schema(description = "审核状态：10 - 正常、20 - 待审核、30 - 未过审")
-    Integer approval_status;
+    // V1.4 数据库 tb_user 表没有 approval_status 字段，已移除
+    // @Schema(description = "审核状态：10 - 正常、20 - 待审核、30 - 未过审")
+    // Integer approval_status;
 
     @Schema(description = "更新时间",example = "2026-03-29T12:00:00.003+00:00")
     Timestamp update_time;

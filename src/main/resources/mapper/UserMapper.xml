@@ -36,8 +36,7 @@
                user_role,
                avatar_url,
                email,
-               status,
-               approval_status
+               status
         FROM tb_user
         WHERE username = #{username}
           AND is_delete = 0
@@ -55,8 +54,7 @@
                user_role,
                avatar_url,
                email,
-               status,
-               approval_status
+               status
         FROM tb_user
         WHERE email = #{email}
           AND is_delete = 0
@@ -74,8 +72,7 @@
                user_role,
                avatar_url,
                email,
-               status,
-               approval_status
+               status
         FROM tb_user
         WHERE user_id = #{userId}
           AND is_delete = 0
