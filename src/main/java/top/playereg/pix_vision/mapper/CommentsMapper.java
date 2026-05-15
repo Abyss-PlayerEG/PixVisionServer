@@ -45,4 +45,13 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * @author PlayerEG
      */
     Comments selectCommentById(@Param("commentId") Integer commentId);
+
+
+    /**
+     * 批量删除评论
+     * @param commentIds 评论ID列表
+     * @param isDelete 是否删除
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * */
+    boolean deleteComments(java.util.List<Integer> commentIds, Integer isDelete);
 }

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.CommentsMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.pojo.commentsPojo.Comments;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.SecondaryComment;
@@ -268,7 +269,7 @@ public class CommentServiceImpl implements CommentService {
             // 对每个一级评论的二级评论列表按最早发布排序（conmment_id ASC）
             for (PrimaryComment primaryComment : rootComments) {
                 if (primaryComment.getChildren() != null && !primaryComment.getChildren().isEmpty()) {
-                    primaryComment.getChildren().sort((c1, c2) -> 
+                    primaryComment.getChildren().sort((c1, c2) ->
                         Integer.compare(c1.getConmment_id(), c2.getConmment_id())
                     );
                 }
@@ -323,7 +324,7 @@ public class CommentServiceImpl implements CommentService {
      * @param parentCommentMap 父评论映射表（用于获取被回复者信息）
      * @return 二级评论响应对象
      */
-    private SecondaryComment convertToSecondaryComment(Comments comment, Map<Integer, User> userMap, 
+    private SecondaryComment convertToSecondaryComment(Comments comment, Map<Integer, User> userMap,
                                                        Map<Integer, Comments> parentCommentMap) {
         SecondaryComment vo = new SecondaryComment();
         vo.setConmment_id(comment.getConmment_id());
@@ -362,5 +363,40 @@ public class CommentServiceImpl implements CommentService {
         }
 
         return vo;
+    }
+
+    /**
+     * 批量删除评论
+     * @param commentIds 评论ID列表
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * */
+    public AdminBatchOperateCommentResult batchDeleteComments(List<Integer> commentIds){
+
+        if (commentIds == null || commentIds.isEmpty()) {
+            return new AdminBatchOperateCommentResult(0, 0, new ArrayList<>());
+        }
+        int totalCount = commentIds.size();
+        List<Integer> failedWorkIds = new ArrayList<>();
+        int successCount = 0;
+        for (Integer commentId : commentIds) {
+
+            try {
+                boolean result = commentsMapper.deleteComments(
+                    java.util.Collections.singletonList(commentId),
+                    1
+                );
+
+                if (result) {
+                    successCount++;
+                } else {
+                    failedWorkIds.add(commentId);
+                }
+            } catch (Exception e) {
+                // 如果更新异常，也视为失败
+                failedWorkIds.add(commentId);
+            }
+
+        }
+        return new AdminBatchOperateCommentResult(totalCount, successCount, failedWorkIds);
     }
 }

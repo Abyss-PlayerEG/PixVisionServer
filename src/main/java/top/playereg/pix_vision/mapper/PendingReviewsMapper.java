@@ -1,5 +1,9 @@
 package top.playereg.pix_vision.mapper;
 
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
+
+import java.util.List;
+
 public interface PendingReviewsMapper {
 
     /**
@@ -17,4 +21,11 @@ public interface PendingReviewsMapper {
      * */
     boolean updateWorkStatusBatch(java.util.List<Integer> workIds, Integer status);
 
+    /**
+     * 批量删除作品
+     * @param workIds 作品ID列表
+     * @param isDelete 是否删除
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * */
+    boolean deleteWorksBatch(java.util.List<Integer> workIds, Integer isDelete);
 }

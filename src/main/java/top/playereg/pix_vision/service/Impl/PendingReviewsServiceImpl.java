@@ -3,6 +3,7 @@ package top.playereg.pix_vision.service.Impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.PendingReviewsMapper;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.PendingReviewsService;
 
@@ -50,10 +51,10 @@ public class PendingReviewsServiceImpl implements PendingReviewsService {
         for (Integer workId : workIds) {
             try {
                 boolean result = pendingReviewsMapper.updateWorkStatusBatch(
-                    java.util.Collections.singletonList(workId), 
+                    java.util.Collections.singletonList(workId),
                     status
                 );
-                
+
                 if (result) {
                     successCount++;
                 } else {
@@ -68,4 +69,38 @@ public class PendingReviewsServiceImpl implements PendingReviewsService {
         return new AdminBatchOperateWorkResult(totalCount, successCount, failedWorkIds);
     }
 
+    /**
+     * 批量删除作品
+     * @param workIds 作品ID列表
+     * @param isDelete 是否删除
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * */
+    public AdminBatchOperateWorkResult batchDeleteWorks(List<Integer> workIds, Integer isDelete){
+        if (workIds == null || workIds.isEmpty()) {
+            return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
+        }
+        int totalCount = workIds.size();
+        List<Integer> failedWorkIds = new ArrayList<>();
+        int successCount = 0;
+        for (Integer workId : workIds) {
+
+            try {
+                boolean result = pendingReviewsMapper.deleteWorksBatch(
+                    java.util.Collections.singletonList(workId),
+                    isDelete
+                );
+
+                if (result) {
+                    successCount++;
+                } else {
+                    failedWorkIds.add(workId);
+                }
+            } catch (Exception e) {
+                // 如果更新异常，也视为失败
+                failedWorkIds.add(workId);
+            }
+
+        }
+        return new AdminBatchOperateWorkResult(totalCount, successCount, failedWorkIds);
+    }
 }
