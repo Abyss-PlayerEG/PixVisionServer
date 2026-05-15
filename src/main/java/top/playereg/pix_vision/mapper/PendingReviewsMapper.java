@@ -1,10 +1,21 @@
 package top.playereg.pix_vision.mapper;
 
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Repository;
+import top.playereg.pix_vision.pojo.PendingReviews;
 
-import java.util.List;
-
-public interface PendingReviewsMapper {
+/**
+ * 待审核数据访问层
+ * <p>
+ * 继承 MyBatis-Plus 的 BaseMapper，自动提供 CRUD 方法
+ *
+ * @author blue_sky_ks
+ * @see PendingReviews
+ */
+@Mapper
+@Repository
+public interface PendingReviewsMapper extends BaseMapper<PendingReviews> {
 
     /**
      * 获取作品状态
