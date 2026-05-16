@@ -159,7 +159,7 @@ public class SeriesController {
      *
      * @param userId  用户 ID
      * @param current 当前页码（从 1 开始）
-     * @param size    每页数量（范围 1-100）
+     * @param size    每页数量（范围 1-500）
      * @return 响应数据，包含分页的作品系列列表
      * @author PlayerEG
      */
@@ -179,7 +179,7 @@ public class SeriesController {
             ## 参数说明：
             - **userId**: 用户 ID，Integer 类型，必填
             - **current**: 当前页码，Integer 类型，必填，从 1 开始
-            - **size**: 每页数量，Integer 类型，必填，范围 1-100
+            - **size**: 每页数量，Integer 类型，必填，范围 1-500
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": IPage<Series>}** ，包含分页信息和系列列表
@@ -200,7 +200,7 @@ public class SeriesController {
     public ResponsePojo<IPage<Series>> getSeriesList(
         @Parameter(description = "用户 ID", required = true, example = "1") @PathVariable Integer userId,
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Integer current,
-        @Parameter(description = "每页数量，范围 1-100", required = true, example = "10") @PathVariable Integer size
+        @Parameter(description = "每页数量，范围 1-500", required = true, example = "10") @PathVariable Integer size
     ) {
         log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}", userId, current, size);
 

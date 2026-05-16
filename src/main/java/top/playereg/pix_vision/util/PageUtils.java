@@ -12,7 +12,7 @@ public class PageUtils {
     /**
      * 默认最大每页大小
      */
-    private static final long DEFAULT_MAX_SIZE = 100L;
+    private static final long DEFAULT_MAX_SIZE = 500L;
 
     /**
      * 校验分页参数

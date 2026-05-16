@@ -121,7 +121,7 @@ public class AdminCommentsController {
 
             ## 参数说明：
             - **current**: **当前页码**，Long 类型，必填，从 1 开始
-            - **size**: **每页大小**，Long 类型，必填，范围 1-100
+            - **size**: **每页大小**，Long 类型，必填，范围 1-500
             - **workId**: **作品ID**，Integer 类型，可选，用于过滤特定作品的评论
             - **userId**: **用户ID**，Integer 类型，可选，用于过滤特定用户的评论
             - **commentFloor**: **评论层级**，Integer 类型，可选，1-一级评论、2-二级评论
@@ -149,7 +149,7 @@ public class AdminCommentsController {
     @GetMapping("/page/{current}/{size}")
     public ResponsePojo<IPage<Comments>> getCommentsPage(
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
-        @Parameter(description = "每页大小（范围 1-100）", required = true, example = "10") @PathVariable Long size,
+        @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
         @Parameter(description = "作品ID（可选）", required = false) @RequestParam(required = false) Integer workId,
         @Parameter(description = "用户ID（可选）", required = false) @RequestParam(required = false) Integer userId,
         @Parameter(description = "评论层级（可选，1-一级评论、2-二级评论）", required = false) @RequestParam(required = false) Integer commentFloor,

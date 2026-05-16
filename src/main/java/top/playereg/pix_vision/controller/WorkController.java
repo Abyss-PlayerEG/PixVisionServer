@@ -150,7 +150,7 @@ public class WorkController {
      * 分页查询作品列表（支持多条件查询）
      *
      * @param current    当前页码（从 1 开始）
-     * @param size       每页大小（范围 1-100）
+     * @param size       每页大小（范围 1-500）
      * @param workTitle  作品标题（可选，模糊查询）
      * @param userId     用户 ID（可选，精确查询）
      * @param seriesId   系列 ID（可选，精确查询）
@@ -173,7 +173,7 @@ public class WorkController {
 
             ## 参数说明：
             - current: **当前页码**，Long 类型，必填，**从 1 开始**，默认为 1
-            - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
+            - size: **每页大小**，Long 类型，必填，范围 1-500，默认为 10
             - workTitle: **作品标题**（可选），String 类型，支持模糊查询
             - userId: **用户 ID**（可选），Integer 类型，支持精确查询
             - seriesId: **系列 ID**（可选），Integer 类型，支持精确查询
@@ -200,7 +200,7 @@ public class WorkController {
             - 默认返回完整 Works 实体字段
             - 已自动过滤逻辑删除的作品（is_delete=0）
             - **仅返回审核通过的作品**（approval_status=10），待审核和未过审的作品不会显示
-            - 每页大小限制：**1-100**
+            - 每页大小限制：**1-500**
             - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
             - 使用 **RESTful 风格**路径参数，格式：`/homepage/{current}/{size}`
             """
@@ -209,7 +209,7 @@ public class WorkController {
     @GetMapping("/page/{current}/{size}")
     public ResponsePojo<IPage<Works>> getHomepageWorks(
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
-        @Parameter(description = "每页大小，范围 1-100", required = true, example = "10") @PathVariable Long size,
+        @Parameter(description = "每页大小，范围 1-500", required = true, example = "10") @PathVariable Long size,
         @Parameter(description = "作品标题（可选），支持模糊查询") @RequestParam(required = false) String workTitle,
         @Parameter(description = "用户 ID（可选），支持精确查询") @RequestParam(required = false) Integer userId,
         @Parameter(description = "系列 ID（可选），支持精确查询") @RequestParam(required = false) Integer seriesId,
@@ -510,7 +510,7 @@ public class WorkController {
      *
      * @param request        HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param current        当前页码（从 1 开始）
-     * @param size           每页大小（范围 1-100）
+     * @param size           每页大小（范围 1-500）
      * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
      * @return 响应数据，包含分页的作品列表
      * @author PlayerEG
@@ -531,7 +531,7 @@ public class WorkController {
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
             - current: **当前页码**，Long 类型，必填，**从 1 开始**，默认为 1
-            - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
+            - size: **每页大小**，Long 类型，必填，范围 1-500，默认为 10
             - approvalStatus: **审核状态**（可选），Integer 类型，可选值：
               * 10: 正常（审核通过）
               * 20: 待审核
@@ -565,7 +565,7 @@ public class WorkController {
             - 可以通过 approvalStatus 参数筛选特定状态的作品
             - 已自动过滤逻辑删除的作品（is_delete=0）
             - 默认返回完整 Works 实体字段，包含 approval_status
-            - 每页大小限制：**1-100**
+            - 每页大小限制：**1-500**
             - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
             - 使用 **RESTful 风格**路径参数，格式：`/my-works/{current}/{size}`
             """
@@ -574,7 +574,7 @@ public class WorkController {
     public ResponsePojo<IPage<Works>> getMyWorks(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
-        @Parameter(description = "每页大小（范围 1-100）", required = true, example = "10") @PathVariable Long size,
+        @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
         @Schema(
             description = "审核状态（可选，10-正常、20-待审核、30-未过审）",
             allowableValues = {"10", "20", "30"},

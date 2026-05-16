@@ -40,7 +40,7 @@ public class UserProfileController {
      * 分页查询用户信息
      *
      * @param current 当前页码（从 1 开始）
-     * @param size    每页大小（范围 1-100）
+     * @param size    每页大小（范围 1-500）
      * @param keyword 关键词（可选，支持 UUID 精确查询或用户名/邮箱/昵称模糊查询）
      * @return 响应数据，包含分页的用户信息列表
      * @author PlayerEG
@@ -61,7 +61,7 @@ public class UserProfileController {
 
             ## 参数说明：
             - current: 当前页码，**从 1 开始**，Long 类型，必填，默认为 1
-            - size: 每页大小，Long 类型，必填，默认为 10，范围 1-100
+            - size: 每页大小，Long 类型，必填，默认为 10，范围 1-500
             - keyword: **关键词**（可选），字符串类型
               * 如果输入的是标准 UUID 格式，则进行**精确匹配**
               * 否则同时对用户名、邮箱、昵称进行**模糊匹配**
@@ -86,12 +86,12 @@ public class UserProfileController {
             - 如果关键词不是 UUID 格式，则同时对用户名、邮箱、昵称进行**模糊匹配**
             - 默认返回 8 个核心字段（user_id, user_uuid, username, password, nickname, avatar_url, email, status）
             - 已自动过滤逻辑删除的用户（is_delete=0）
-            - 每页大小限制：**1-100**
+            - 每页大小限制：**1-500**
             """
     )
     public ResponsePojo<IPage<User>> getPageUserInfo(
         @Parameter(description = "当前页码，从 1 开始", example = "1") @PathVariable Long current,
-        @Parameter(description = "每页大小，范围 1-100", example = "10") @PathVariable Long size,
+        @Parameter(description = "每页大小，范围 1-500", example = "10") @PathVariable Long size,
         @Parameter(description = "关键词（可选），支持 UUID 精确查询或用户名/邮箱/昵称模糊查询") @RequestParam(required = false) String keyword
     ) {
         // 参数校验
@@ -157,7 +157,7 @@ public class UserProfileController {
 
             ## 参数说明：
             - current: 当前页码，**从 1 开始**，Long 类型，必填，默认为 1
-            - size: 每页大小，Long 类型，必填，默认为 10，范围 1-100
+            - size: 每页大小，Long 类型，必填，默认为 10，范围 1-500
             - userRoles: **用户角色列表**（可选），Integer 数组类型，支持传递多个角色
               * 11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员
               * 可以传递单个角色或多个角色，如：?userRoles=11 或 ?userRoles=11&userRoles=22
@@ -181,13 +181,13 @@ public class UserProfileController {
             - 支持传递多个角色，多个角色之间是 OR 关系（满足任一角色即可）
             - 默认返回 8 个核心字段（user_id, user_uuid, username, password, nickname, avatar_url, email, status, user_role）
             - 已自动过滤逻辑删除的用户（is_delete=0）
-            - 每页大小限制：**1-100**
+            - 每页大小限制：**1-500**
             - 合法的角色代码：11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员
             """
     )
     public ResponsePojo<IPage<User>> getPageUserInfoByRole(
         @Parameter(description = "当前页码，从 1 开始", example = "1") @PathVariable Long current,
-        @Parameter(description = "每页大小，范围 1-100", example = "10") @PathVariable Long size,
+        @Parameter(description = "每页大小，范围 1-500", example = "10") @PathVariable Long size,
         @Parameter(description = "用户角色列表（可选），支持多个角色", example = "11") @RequestParam(required = false) List<Integer> userRoles
     ) {
         // 参数校验

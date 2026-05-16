@@ -37,7 +37,7 @@ public class HistoryController {
      *
      * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
      * @param current 当前页码（从 1 开始）
-     * @param size    每页大小（范围 1-100）
+     * @param size    每页大小（范围 1-500）
      * @return 响应数据，包含个人访问历史记录分页列表
      * @author PlayerEG
      */
@@ -56,7 +56,7 @@ public class HistoryController {
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
             - current: **当前页码**，Long 类型，必填，**从 1 开始**，默认为 1
-            - size: **每页大小**，Long 类型，必填，范围 1-100，默认为 10
+            - size: **每页大小**，Long 类型，必填，范围 1-500，默认为 10
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": {IPage<History>对象}}** ，包含作品列表和分页信息
@@ -79,14 +79,14 @@ public class HistoryController {
             - 如果作品已被删除，则不会出现在历史记录列表中
             - **每个作品只返回一条记录**（最近一次访问的记录）
             - 如果多次访问同一作品，只显示最新的那次访问记录
-            - 每页大小限制：**1-100**
+            - 每页大小限制：**1-500**
             """
     )
     @GetMapping("/{current}/{size}")
     public ResponsePojo<IPage<History>> getUserHistory(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
-        @Parameter(description = "每页大小，范围 1-100", required = true, example = "10") @PathVariable Long size
+        @Parameter(description = "每页大小，范围 1-500", required = true, example = "10") @PathVariable Long size
     ) {
         // 参数校验
         ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
