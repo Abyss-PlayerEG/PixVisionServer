@@ -14,10 +14,7 @@ import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
-import top.playereg.pix_vision.util.JWTUtils;
-import top.playereg.pix_vision.util.PixVisionLogger;
-import top.playereg.pix_vision.util.RegexUtils;
-import top.playereg.pix_vision.util.StrSwitchUtils;
+import top.playereg.pix_vision.util.*;
 
 import java.util.List;
 
@@ -98,11 +95,9 @@ public class UserProfileController {
         @Parameter(description = "关键词（可选），支持 UUID 精确查询或用户名/邮箱/昵称模糊查询") @RequestParam(required = false) String keyword
     ) {
         // 参数校验
-        if (current == null || current < 1) {
-            return ResponsePojo.error(null, "页码必须大于 0");
-        }
-        if (size == null || size < 1 || size > 100) {
-            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
+        if (error != null) {
+            return (ResponsePojo<IPage<User>>) (ResponsePojo<?>) error;
         }
 
         // 判断关键词类型：UUID 精确查询 or 普通关键词模糊查询
@@ -196,11 +191,9 @@ public class UserProfileController {
         @Parameter(description = "用户角色列表（可选），支持多个角色", example = "11") @RequestParam(required = false) List<Integer> userRoles
     ) {
         // 参数校验
-        if (current == null || current < 1) {
-            return ResponsePojo.error(null, "页码必须大于 0");
-        }
-        if (size == null || size < 1 || size > 100) {
-            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
+        if (error != null) {
+            return (ResponsePojo<IPage<User>>) (ResponsePojo<?>) error;
         }
 
         log.info("按角色分页查询用户信息 - 页码: {}, 每页: {}, 角色列表: {}", current, size, userRoles != null ? userRoles.toString() : "无");

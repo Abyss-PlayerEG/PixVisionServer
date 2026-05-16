@@ -12,6 +12,7 @@ import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.pojo.commentsPojo.Comments;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
+import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
@@ -160,13 +161,9 @@ public class AdminCommentsController {
         @Parameter(description = "评论关键字（可选）", required = false) @RequestParam(required = false) String keyword
     ) {
         // 参数校验
-        if (current == null || current < 1) {
-            log.warn("页码错误: {}", current);
-            return ResponsePojo.error(null, "页码错误");
-        }
-        if (size == null || size < 1 || size > 100) {
-            log.warn("每页大小错误: {}", size);
-            return ResponsePojo.error(null, "每页大小错误");
+        ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
+        if (error != null) {
+            return (ResponsePojo<IPage<Comments>>) (ResponsePojo<?>) error;
         }
 
         try {

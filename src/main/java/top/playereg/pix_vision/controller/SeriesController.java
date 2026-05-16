@@ -14,6 +14,7 @@ import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 /**
@@ -208,13 +209,9 @@ public class SeriesController {
             log.warn("用户 ID 无效: {}", userId);
             return ResponsePojo.error(null, "用户 ID 无效");
         }
-        if (current == null || current < 1) {
-            log.warn("页码无效: {}", current);
-            return ResponsePojo.error(null, "页码必须大于 0");
-        }
-        if (size == null || size < 1 || size > 100) {
-            log.warn("每页数量无效: {}", size);
-            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        ResponsePojo<?> error = PageUtils.validatePageParams(current.longValue(), size.longValue());
+        if (error != null) {
+            return (ResponsePojo<IPage<Series>>) (ResponsePojo<?>) error;
         }
 
         // 调用服务层分页查询

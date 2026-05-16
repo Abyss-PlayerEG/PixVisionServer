@@ -12,6 +12,7 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
@@ -88,11 +89,9 @@ public class HistoryController {
         @Parameter(description = "每页大小，范围 1-100", required = true, example = "10") @PathVariable Long size
     ) {
         // 参数校验
-        if (current == null || current < 1) {
-            return ResponsePojo.error(null, "页码必须大于 0");
-        }
-        if (size == null || size < 1 || size > 100) {
-            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
+        if (error != null) {
+            return (ResponsePojo<IPage<History>>) (ResponsePojo<?>) error;
         }
 
         // 提取 Token

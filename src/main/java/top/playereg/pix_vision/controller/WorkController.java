@@ -17,6 +17,7 @@ import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
@@ -215,11 +216,9 @@ public class WorkController {
         @Schema(description = "是否原创（可选）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isOriginal
     ) {
         // 参数校验
-        if (current == null || current < 1) {
-            return ResponsePojo.error(null, "页码必须大于 0");
-        }
-        if (size == null || size < 1 || size > 100) {
-            return ResponsePojo.error(null, "每页大小必须在 1-100 之间");
+        ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
+        if (error != null) {
+            return (ResponsePojo<IPage<Works>>) (ResponsePojo<?>) error;
         }
 
         // 构建分页对象
@@ -609,9 +608,10 @@ public class WorkController {
         log.info("开始查询用户作品，用户 ID: {}, 用户名: {}, 页码: {}, 每页大小: {}", userId, username, current, size);
 
         // 校验分页参数
-        if (current == null || current < 1 || size == null || size < 1 || size > 100) {
+        ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
+        if (error != null) {
             log.warn("页码或每页大小参数错误，用户 ID: {}, current: {}, size: {}", userId, current, size);
-            return ResponsePojo.error(null, "页码或每页大小错误，current >= 1, 1 <= size <= 100");
+            return (ResponsePojo<IPage<Works>>) (ResponsePojo<?>) error;
         }
 
         try {

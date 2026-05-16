@@ -12,6 +12,7 @@ import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.SecondaryComment;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.CommentService;
+import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.ArrayList;
@@ -440,13 +441,9 @@ public class CommentServiceImpl implements CommentService {
                                            Integer workId, Integer userId,
                                            Integer commentFloor, Integer approvalStatus,
                                            String keyword) {
-        // 参数校验
-        if (current == null || current < 1) {
-            current = 1L;
-        }
-        if (size == null || size < 1 || size > 100) {
-            size = 10L;
-        }
+        // 参数校验与默认值处理
+        current = PageUtils.getValidCurrent(current);
+        size = PageUtils.getValidSize(size);
 
         log.info("开始分页查询评论，页码: {}, 每页大小: {}, 作品ID: {}, 用户ID: {}, 评论层级: {}, 审核状态: {}, 关键字: {}",
             current, size, workId, userId, commentFloor, approvalStatus, keyword);
