@@ -170,4 +170,13 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @author PlayerEG
      */
     java.util.List<java.util.Map<String, Object>> selectAllWorkTotalViewCounts();
+
+    /**
+     * 统计单个作品的总浏览记录数（登录用户 + 游客，用于缓存回源）
+     *
+     * @param workId 作品 ID
+     * @return 总浏览数
+     * @author PlayerEG
+     */
+    int selectTotalViewCountByWorkId(@Param("workId") Integer workId);
 }

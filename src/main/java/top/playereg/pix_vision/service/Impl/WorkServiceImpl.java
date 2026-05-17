@@ -66,7 +66,29 @@ public class WorkServiceImpl implements WorkService {
      */
     @Override
     public IPage<Works> selectHomepageWorks(Page<Works> page, String workTitle, Integer userId, Integer seriesId, Boolean isOriginal) {
-        return worksMapper.selectHomepageWorks(page, workTitle, userId, seriesId, isOriginal);
+        IPage<Works> result = worksMapper.selectHomepageWorks(page, workTitle, userId, seriesId, isOriginal);
+
+        // 为列表中的每个作品填充最新的浏览量（优先 Redis，其次回源）
+        if (result != null && !result.getRecords().isEmpty()) {
+            for (Works work : result.getRecords()) {
+                try {
+                    String key = VIEW_COUNT_KEY_PREFIX + work.getWork_id();
+                    Object viewCountObj = redisTemplate.opsForValue().get(key);
+                    if (viewCountObj != null) {
+                        work.setView_count(((Number) viewCountObj).intValue());
+                    } else {
+                        // Redis 缺失，触发回源并缓存
+                        int dbCount = worksMapper.selectTotalViewCountByWorkId(work.getWork_id());
+                        work.setView_count(dbCount);
+                        redisTemplate.opsForValue().set(key, dbCount, 5, java.util.concurrent.TimeUnit.MINUTES);
+                    }
+                } catch (Exception e) {
+                    log.warn("列表页填充浏览量失败，作品 ID: {}", work.getWork_id());
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -315,9 +337,7 @@ public class WorkServiceImpl implements WorkService {
             } else {
                 // Redis 缓存缺失，触发回源：从数据库统计并重新缓存
                 log.info("Redis 缓存缺失，触发浏览量回源，作品 ID: {}", workId);
-                int loginCount = historyMapper.selectCountByWorkId(workId);
-                int guestCount = guestHistoryMapper.selectCountByWorkId(workId);
-                int dbCount = loginCount + guestCount;
+                int dbCount = worksMapper.selectTotalViewCountByWorkId(workId);
                 work.setView_count(dbCount);
                 // 存入 Redis 并设置 TTL
                 redisTemplate.opsForValue().set(key, dbCount, 5, java.util.concurrent.TimeUnit.MINUTES);

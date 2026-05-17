@@ -247,4 +247,15 @@
             ) g ON t.work_id = g.work_id
     </select>
 
+    <!-- 统计单个作品的总浏览记录数（登录用户 + 游客，用于缓存回源） -->
+    <select id="selectTotalViewCountByWorkId" resultType="java.lang.Integer">
+        SELECT (IFNULL(h.cnt, 0) + IFNULL(g.cnt, 0)) AS count
+        FROM (
+            SELECT COUNT(*) AS cnt FROM tb_history WHERE work_id = #{workId}
+        ) h,
+        (
+            SELECT COUNT(*) AS cnt FROM tb_guest_history WHERE work_id = #{workId}
+        ) g
+    </select>
+
 </mapper>
