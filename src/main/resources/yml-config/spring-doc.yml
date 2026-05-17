@@ -1,5 +1,7 @@
 # 文档配置
 springdoc:
+  cache:
+    disabled: false
   enabled: off # 启用 API 文档（生产环境设为 off，开发环境设为 on）
   api-docs:
     enabled: ${springdoc.enabled}

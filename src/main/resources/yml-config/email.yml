@@ -11,3 +11,8 @@ spring:
     default-encoding: UTF-8         # 编码
     ssl-enable: false               # 不直接建立 SSL 连接
     starttls-enable: false          # 启用 STARTTLS 升级
+
+management:
+  health:
+    mail:
+      enabled: false # 禁用邮件健康检查，防止启动时因网络问题卡顿
