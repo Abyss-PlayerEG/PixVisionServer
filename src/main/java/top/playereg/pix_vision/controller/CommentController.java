@@ -234,5 +234,105 @@ public class CommentController {
         return ResponsePojo.success(comments, "查询成功");
     }
 
+    /**
+     * 删除评论（需要登录认证）
+     *
+     * @param request   HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param commentId 评论 ID（必填）
+     * @return 响应数据，表示评论是否删除成功
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "删除评论接口",
+        description = """
+            # 删除评论（需要登录认证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 权限控制：用户只能删除自己的评论
+            - 级联删除：删除一级评论时，其下属的所有二级评论也会一并删除
+            - 逻辑删除：数据库中仅更新 is_delete 字段
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - commentId: **评论 ID**，Integer 类型，必填
+
+            ## 返回说明：
+            - **删除成功**：返回 **{"data": true}** 和“评论删除成功”提示
+            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
+            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
+            - **评论不存在**：返回 **{"data": false}** 和“评论不存在或已删除”提示
+            - **无权操作**：返回 **{"data": false}** 和“无权删除他人评论”提示
+            - **删除失败**：返回 **{"data": false}** 和“评论删除失败”提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验评论 ID 参数有效性
+            5. 查询评论是否存在且未被删除
+            6. 验证当前用户是否为评论所有者
+            7. 如果是一级评论，查找其下属的所有二级评论 ID
+            8. 执行批量逻辑删除（将 is_delete 设为 1）
+            9. 返回删除结果
+
+            ## 注意事项：
+            - **需要携带有效的 Token 才能删除评论**
+            - Token 必须在白名单中（未过期、未登出）
+            - 用户**只能删除自己发布的评论**
+            - 删除一级评论会**自动级联删除**其下的所有二级评论
+            - 删除二级评论只影响当前评论
+            - 该操作为逻辑删除，数据仍保留在数据库中
+            """
+    )
+    @PostMapping("/delete")
+    public ResponsePojo<Boolean> deleteComment(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "评论 ID", required = true, example = "10") @RequestParam Integer commentId
+    ) {
+        log.debug("删除评论 - 评论 ID: {}", commentId);
+
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "删除评论接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("删除评论失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始删除评论，用户 ID: {}, 用户名: {}, 评论 ID: {}", userId, username, commentId);
+
+        // 参数校验
+        if (commentId == null) {
+            log.warn("删除评论失败 - 缺少评论 ID");
+            return ResponsePojo.error(false, "缺少必要参数：评论 ID");
+        }
+
+        // 调用服务层删除评论
+        Boolean result = commentService.deleteComment(userId, commentId);
+
+        if (result != null && result) {
+            log.info("评论删除成功，用户 ID: {}, 用户名: {}, 评论 ID: {}", userId, username, commentId);
+            return ResponsePojo.success(true, "评论删除成功");
+        } else {
+            log.warn("评论删除失败，用户 ID: {}, 用户名: {}, 评论 ID: {}", userId, username, commentId);
+            return ResponsePojo.error(false, "评论删除失败");
+        }
+    }
+
 
 }

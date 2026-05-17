@@ -65,6 +65,20 @@ public interface CommentService {
     AdminBatchOperateCommentResult batchDeleteComments(List<Integer> commentIds);
 
     /**
+     * 删除评论（用户只能删除自己的评论）
+     * <p>
+     * 如果删除的是一级评论，其下属的所有二级评论也会一并删除。
+     * 如果是二级评论，则只删除当前评论。
+     * </p>
+     *
+     * @param userId    用户 ID
+     * @param commentId 评论 ID
+     * @return 是否删除成功
+     * @author PlayerEG
+     */
+    Boolean deleteComment(Integer userId, Integer commentId);
+
+    /**
      * 分页查询评论列表（支持多条件过滤）
      *
      * @param current        当前页码

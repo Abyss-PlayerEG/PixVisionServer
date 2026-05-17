@@ -51,13 +51,4 @@ public class SwaggerConfig {
             .packagesToScan("top.playereg.pix_vision.controller")
             .build();
     }
-
-    @Bean
-    public GroupedOpenApi userApi() {
-        return GroupedOpenApi.builder()
-            .group("4_UserApi")
-            .pathsToMatch("/api/user/**")
-            .packagesToScan("top.playereg.pix_vision.controller")
-            .build();
-    }
 }

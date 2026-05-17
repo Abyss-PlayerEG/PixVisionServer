@@ -424,6 +424,62 @@ public class CommentServiceImpl implements CommentService {
     }
 
     /**
+     * 删除评论（用户只能删除自己的评论）
+     *
+     * @param userId    用户 ID
+     * @param commentId 评论 ID
+     * @return 是否删除成功
+     */
+    @Override
+    public Boolean deleteComment(Integer userId, Integer commentId) {
+        if (userId == null || commentId == null) {
+            log.warn("删除评论失败 - 参数为空");
+            return false;
+        }
+
+        try {
+            // 1. 查询评论是否存在
+            Comments comment = commentsMapper.selectById(commentId);
+            if (comment == null || comment.getIs_delete()) {
+                log.warn("删除评论失败 - 评论不存在或已删除: {}", commentId);
+                return false;
+            }
+
+            // 2. 验证权限：只能删除自己的评论
+            if (!comment.getUser_id().equals(userId)) {
+                log.warn("删除评论失败 - 无权删除他人评论，用户 ID: {}, 评论所有者 ID: {}", userId, comment.getUser_id());
+                return false;
+            }
+
+            // 3. 收集需要删除的评论 ID
+            List<Integer> idsToDelete = new ArrayList<>();
+            idsToDelete.add(commentId);
+
+            // 4. 如果是一级评论，查找并添加其下属的所有二级评论
+            if (comment.getComment_floor() == 1) {
+                List<Integer> childIds = commentsMapper.selectChildCommentIds(commentId);
+                if (childIds != null && !childIds.isEmpty()) {
+                    idsToDelete.addAll(childIds);
+                    log.info("一级评论 {} 包含 {} 个二级评论，将一并删除", commentId, childIds.size());
+                }
+            }
+
+            // 5. 执行批量逻辑删除
+            boolean result = commentsMapper.deleteComments(idsToDelete, 1);
+            if (result) {
+                log.info("评论删除成功，用户 ID: {}, 删除的评论 ID 列表: {}", userId, idsToDelete);
+                return true;
+            } else {
+                log.error("评论删除失败，数据库操作未生效");
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("删除评论异常 - 用户 ID: {}, 评论 ID: {}, 错误: {}", userId, commentId, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
      * 分页查询评论列表（支持多条件过滤）
      *
      * @param current        当前页码
