@@ -22,7 +22,7 @@ import top.playereg.pix_vision.util.PixVisionLogger;
  *
  * @author PlayerEG
  */
-@Tag(name = "作品合集接口", description = "提供作品系列的新增、查询、删除等功能")
+@Tag(name = "用户接口 - 作品合集", description = "提供作品系列的新增、查询、删除等功能")
 @RestController
 @RequestMapping("/api/work/series")
 public class SeriesController {

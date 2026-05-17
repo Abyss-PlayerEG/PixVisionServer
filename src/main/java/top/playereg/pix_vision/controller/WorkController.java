@@ -30,7 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/work")
 @RequiredArgsConstructor
-@Tag(name = "作品接口", description = "提供作品的新增、查询、修改、删除等功能")
+@Tag(name = "用户接口 - 作品", description = "提供作品的新增、查询、修改、删除等功能")
 public class WorkController {
     private static final PixVisionLogger log = PixVisionLogger.create(WorkController.class);
 

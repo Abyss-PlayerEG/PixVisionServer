@@ -25,7 +25,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/comment")
 @RequiredArgsConstructor
-@Tag(name = "评论接口", description = "提供评论新增、查询等评论相关功能")
+@Tag(name = "用户接口 - 评论", description = "提供评论新增、查询等评论相关功能")
 public class CommentController {
 
     private static final PixVisionLogger log = PixVisionLogger.create(CommentController.class);

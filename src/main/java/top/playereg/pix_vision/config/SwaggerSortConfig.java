@@ -36,6 +36,7 @@ public class SwaggerSortConfig {
      * 索引越小，在尾部区域越靠前。
      */
     private static final String[] PRIORITY_LAST = {
+        "用户接口",
         "系统管理员接口",
         "JWT 鉴权测试接口",
         "ServerRoot"
