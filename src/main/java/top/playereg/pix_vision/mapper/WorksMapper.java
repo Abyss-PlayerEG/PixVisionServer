@@ -144,4 +144,14 @@ public interface WorksMapper extends BaseMapper<Works> {
         @Param("userId") Integer userId,
         @Param("approvalStatus") Integer approvalStatus
     );
+
+    /**
+     * 原子更新作品点赞数
+     *
+     * @param workId 作品 ID
+     * @param delta  变化量（+1 或 -1）
+     * @return 影响的行数
+     * @author PlayerEG
+     */
+    int updateLikeCount(@Param("workId") Integer workId, @Param("delta") int delta);
 }

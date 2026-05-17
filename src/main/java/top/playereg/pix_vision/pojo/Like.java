@@ -1,27 +1,41 @@
 package top.playereg.pix_vision.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
+/**
+ * 点赞（赞赏）实体类
+ *
+ * @author PlayerEG
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(description = "赞赏实体")
+@TableName("tb_like")
+@Schema(description = "点赞实体")
 public class Like {
 
+    @TableField("user_id")
     @Schema(description = "用户 ID")
-    Integer user_id;
+    private Integer user_id;
 
+    @TableField("work_id")
     @Schema(description = "作品 ID")
-    Integer work_id;
+    private Integer work_id;
 
     @TableLogic
+    @TableField("is_delete")
     @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
-    Boolean is_delete;
+    private Boolean is_delete;
 
-    @Schema(description = "操作时间戳（ISO 8601格式）")
-    String time;
+    @TableField("time")
+    @Schema(description = "操作时间")
+    private LocalDateTime time;
 }

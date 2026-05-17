@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.LikesMapper">
+
+    <!-- 查询用户是否已点赞某作品 -->
+    <select id="selectByUserAndWork" resultType="top.playereg.pix_vision.pojo.Like">
+        SELECT user_id, work_id, is_delete, time
+        FROM tb_like
+        WHERE user_id = #{userId}
+          AND work_id = #{workId}
+            LIMIT 1
+    </select>
+
+    <!-- 插入点赞记录 -->
+    <insert id="insertLike">
+        INSERT INTO tb_like (user_id, work_id, is_delete, time)
+        VALUES (#{user_id}, #{work_id}, #{is_delete}, #{time})
+    </insert>
+
+    <!-- 更新点赞记录的删除状态 -->
+    <update id="updateDeleteStatus">
+        UPDATE tb_like
+        SET is_delete = #{isDelete},
+            time      = NOW()
+        WHERE user_id = #{userId}
+          AND work_id = #{workId}
+    </update>
+
+    <!-- 统计作品的点赞总数（仅统计未删除的记录） -->
+    <select id="countLikesByWorkId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM tb_like
+        WHERE work_id = #{workId}
+          AND is_delete = 0
+    </select>
+
+</mapper>

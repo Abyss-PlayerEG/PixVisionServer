@@ -206,4 +206,13 @@
         ORDER BY w.create_time DESC
     </select>
 
+    <!-- 原子更新作品点赞数 -->
+    <update id="updateLikeCount">
+        UPDATE tb_works
+        SET like_count  = like_count + #{delta},
+            update_time = NOW()
+        WHERE work_id = #{workId}
+          AND is_delete = 0
+    </update>
+
 </mapper>
