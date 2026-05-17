@@ -287,7 +287,7 @@ public class WorkController {
             return ResponsePojo.error(null, "作品 ID 无效");
         }
 
-        // 调用服务层查询作品
+        // 调用服务层查询作品（内部已包含从 Redis 读取最新浏览量逻辑）
         Works work = workService.getWorkById(workId);
 
         // 返回结果为空，则返回错误信息
@@ -296,24 +296,24 @@ public class WorkController {
             return ResponsePojo.error(null, "作品不存在或已删除");
         }
 
-        // 增加浏览次数（异步执行，不影响主流程）
-        try {
-            workService.incrementViewCount(workId);
-        } catch (Exception e) {
-            // 即使增加浏览次数失败，也不影响查询结果
-            log.error("增加浏览次数异常，作品 ID: {}, 错误: {}", workId, e.getMessage());
-        }
-
-        // 记录访问历史（如果提供了有效的 Token）
+        // 记录访问行为并增加浏览量（异步执行，不影响主流程）
         String token = JWTUtils.extractTokenWithLog(request, "查询作品详情接口");
         if (token != null && !token.isEmpty()) {
             Integer userId = JWTUtils.getUserIdFromToken(token);
             if (userId != null) {
+                // 登录用户：记录历史并增加计数
                 try {
                     workService.addHistory(userId, workId);
                 } catch (Exception e) {
                     log.error("添加历史记录异常，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage());
                 }
+            }
+        } else {
+            // 游客访问：记录到 tb_guest_history 并增加计数
+            try {
+                workService.addGuestHistory(workId);
+            } catch (Exception e) {
+                log.error("添加游客历史记录异常，作品 ID: {}, 错误: {}", workId, e.getMessage());
             }
         }
 

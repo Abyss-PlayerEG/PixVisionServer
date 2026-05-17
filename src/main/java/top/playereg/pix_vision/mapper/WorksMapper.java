@@ -154,4 +154,20 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @author PlayerEG
      */
     int updateLikeCount(@Param("workId") Integer workId, @Param("delta") int delta);
+
+    /**
+     * 批量更新作品的浏览量计数（用于启动预热同步）
+     *
+     * @param viewData 包含 work_id 和 count 的列表
+     * @author PlayerEG
+     */
+    void batchUpdateViewCounts(java.util.List<java.util.Map<String, Object>> viewData);
+
+    /**
+     * 统计所有作品的总浏览记录数（登录用户 + 游客，用于启动预热）
+     *
+     * @return 作品 ID 与对应总浏览数的列表
+     * @author PlayerEG
+     */
+    java.util.List<java.util.Map<String, Object>> selectAllWorkTotalViewCounts();
 }

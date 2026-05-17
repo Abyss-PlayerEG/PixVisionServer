@@ -3,8 +3,10 @@ package top.playereg.pix_vision.service.Impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.FilePathConfig;
+import top.playereg.pix_vision.mapper.GuestHistoryMapper;
 import top.playereg.pix_vision.mapper.HistoryMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
@@ -38,12 +40,18 @@ public class WorkServiceImpl implements WorkService {
     @Autowired
     private HistoryMapper historyMapper;
 
+    private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
+
     // 允许上传的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
         "jpg", "jpeg", "png"
     );
     @Autowired
     private SeriesMapper seriesMapper;
+    @Autowired
+    private GuestHistoryMapper guestHistoryMapper;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 分页查询首页作品列表（支持多条件查询）
@@ -298,12 +306,32 @@ public class WorkServiceImpl implements WorkService {
             return null;
         }
 
+        // 从 Redis 获取最新的浏览量并覆盖
+        try {
+            String key = VIEW_COUNT_KEY_PREFIX + workId;
+            Object viewCountObj = redisTemplate.opsForValue().get(key);
+            if (viewCountObj != null) {
+                work.setView_count(((Number) viewCountObj).intValue());
+            } else {
+                // Redis 缓存缺失，触发回源：从数据库统计并重新缓存
+                log.info("Redis 缓存缺失，触发浏览量回源，作品 ID: {}", workId);
+                int loginCount = historyMapper.selectCountByWorkId(workId);
+                int guestCount = guestHistoryMapper.selectCountByWorkId(workId);
+                int dbCount = loginCount + guestCount;
+                work.setView_count(dbCount);
+                // 存入 Redis 并设置 TTL
+                redisTemplate.opsForValue().set(key, dbCount, 5, java.util.concurrent.TimeUnit.MINUTES);
+            }
+        } catch (Exception e) {
+            log.warn("从 Redis 获取浏览量失败，使用数据库默认值，作品 ID: {}", workId);
+        }
+
         log.info("查询作品成功，作品 ID: {}", workId);
         return work;
     }
 
     /**
-     * 增加作品浏览次数
+     * 增加作品浏览次数（优化为 Redis 计数）
      *
      * @param workId 作品 ID
      * @return 是否成功
@@ -316,19 +344,25 @@ public class WorkServiceImpl implements WorkService {
             return false;
         }
 
-        int affectedRows = worksMapper.incrementViewCount(workId);
-
-        if (affectedRows > 0) {
-            log.debug("作品浏览次数 +1，作品 ID: {}", workId);
+        try {
+            String key = VIEW_COUNT_KEY_PREFIX + workId;
+            // 1. 在 Redis 中自增
+            Long count = redisTemplate.opsForValue().increment(key);
+            // 2. 如果自增后为 1，说明是刚创建的 Key，设置过期时间
+            if (count != null && count == 1) {
+                redisTemplate.expire(key, 5, java.util.concurrent.TimeUnit.MINUTES);
+            }
+            log.debug("作品浏览量 Redis 自增成功，作品 ID: {}, 当前值: {}", workId, count);
             return true;
-        } else {
-            log.warn("增加浏览次数失败，作品可能不存在或已删除，作品 ID: {}", workId);
+        } catch (Exception e) {
+            log.error("Redis 增加浏览量异常，作品 ID: {}, 错误: {}", workId, e.getMessage());
+            // 降级处理：如果 Redis 失败，可以尝试直接更新数据库（可选）
             return false;
         }
     }
 
     /**
-     * 添加用户访问历史记录
+     * 添加用户访问历史记录（同步更新 Redis 浏览量）
      *
      * @param userId 用户 ID
      * @param workId 作品 ID
@@ -344,11 +378,38 @@ public class WorkServiceImpl implements WorkService {
             int rows = historyMapper.insertHistory(userId, workId);
             if (rows > 0) {
                 log.debug("添加历史记录成功，用户 ID: {}, 作品 ID: {}", userId, workId);
+                // 历史记录插入成功后，同步增加 Redis 中的浏览量计数
+                incrementViewCount(workId);
             } else {
                 log.warn("添加历史记录失败（影响行数为 0），用户 ID: {}, 作品 ID: {}", userId, workId);
             }
         } catch (Exception e) {
             log.error("添加历史记录异常，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage());
+        }
+    }
+
+    /**
+     * 添加游客访问历史记录（同步更新 Redis 浏览量）
+     *
+     * @param workId 作品 ID
+     * @author PlayerEG
+     */
+    public void addGuestHistory(Integer workId) {
+        if (workId == null) {
+            return;
+        }
+
+        try {
+            int rows = guestHistoryMapper.insertGuestHistory(workId);
+            if (rows > 0) {
+                log.debug("添加游客历史记录成功，作品 ID: {}", workId);
+                // 历史记录插入成功后，同步增加 Redis 中的浏览量计数
+                incrementViewCount(workId);
+            } else {
+                log.warn("添加游客历史记录失败（影响行数为 0），作品 ID: {}", workId);
+            }
+        } catch (Exception e) {
+            log.error("添加游客历史记录异常，作品 ID: {}, 错误: {}", workId, e.getMessage());
         }
     }
 

@@ -100,6 +100,14 @@ public interface WorkService {
     void addHistory(Integer userId, Integer workId);
 
     /**
+     * 添加游客访问历史记录
+     *
+     * @param workId 作品 ID
+     * @author PlayerEG
+     */
+    void addGuestHistory(Integer workId);
+
+    /**
      * 获取用户个人访问历史记录（分页）
      *
      * @param page   分页对象

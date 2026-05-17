@@ -215,4 +215,36 @@
           AND is_delete = 0
     </update>
 
+    <!-- 批量更新作品的浏览量计数（用于启动预热同步） -->
+    <update id="batchUpdateViewCounts">
+        UPDATE tb_works
+        SET view_count = CASE work_id
+        <foreach collection="list" item="item">
+            WHEN #{item.work_id} THEN #{item.count}
+        </foreach>
+        END
+        WHERE work_id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.work_id}
+        </foreach>
+    </update>
+
+    <!-- 统计所有作品的总浏览记录数（登录用户 + 游客，用于启动预热） -->
+    <select id="selectAllWorkTotalViewCounts" resultType="java.util.HashMap">
+        SELECT t.work_id,
+               (IFNULL(h.cnt, 0) + IFNULL(g.cnt, 0)) AS count
+        FROM (
+            SELECT DISTINCT work_id FROM tb_history
+            UNION
+            SELECT DISTINCT work_id FROM tb_guest_history
+            ) t
+            LEFT JOIN (
+            SELECT work_id, COUNT (*) AS cnt FROM tb_history GROUP BY work_id
+            ) h
+        ON t.work_id = h.work_id
+            LEFT JOIN (
+            SELECT work_id, COUNT (*) AS cnt FROM tb_guest_history GROUP BY work_id
+            ) g ON t.work_id = g.work_id
+    </select>
+
 </mapper>

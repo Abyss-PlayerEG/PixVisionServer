@@ -47,4 +47,12 @@
         AND is_delete = 0
     </update>
 
+    <!-- 统计指定作品的历史浏览记录数（用于缓存回源） -->
+    <select id="selectCountByWorkId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM tb_history
+        WHERE work_id = #{workId}
+          AND is_delete = 0
+    </select>
+
 </mapper>
