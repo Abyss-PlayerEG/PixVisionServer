@@ -59,4 +59,13 @@ public interface HistoryMapper extends com.baomidou.mybatisplus.core.mapper.Base
      * @author PlayerEG
      */
     int selectCountByWorkId(@Param("workId") Integer workId);
+
+    /**
+     * 清空指定用户的所有历史记录（逻辑删除）
+     *
+     * @param userId 用户 ID
+     * @return 影响行数
+     * @author PlayerEG
+     */
+    int clearAllHistoryByUserId(@Param("userId") Integer userId);
 }

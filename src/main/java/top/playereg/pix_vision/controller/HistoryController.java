@@ -3,6 +3,7 @@ package top.playereg.pix_vision.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -143,30 +144,36 @@ public class HistoryController {
 
             ## 特性
             - 需要 Token 认证
-            - 支持单条/批量删除
+            - 支持单条/批量删除指定作品
+            - 支持一键清空所有历史记录
             - SQL 层面权限验证（只能删除自己的历史记录）
             - 逻辑删除（数据不真正从数据库移除）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
-            - workIds: 要删除的作品 ID 列表，整形数组类型，必填
+            - workIds: 要删除的作品 ID 列表，整形数组类型。当 clearAll 为 false 或 null 时必填
               * 单条删除：传入 [1]
               * 批量删除：传入 [1, 2, 3]
+            - clearAll: 是否清空所有历史记录，布尔值，可选。默认为 false
+              * true: 清空当前用户的所有历史记录（此时 workIds 可为空）
+              * false/null: 执行基于 workIds 的批量删除
 
             ## 返回说明：
             - **删除成功**：返回 **{"data": true}** 和“历史记录删除成功”提示
+            - **清空成功**：返回 **{"data": true}** 和“历史记录已清空”提示
             - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
             - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
-            - **作品 ID 列表为空**：返回 **{"data": false}** 和“作品 ID 列表不能为空”提示
+            - **参数错误**：返回 **{"data": false}** 和相应的错误提示
             - **删除失败**：返回 **{"data": false}** 和“历史记录删除失败”提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token
             2. 验证 Token 是否在白名单中
             3. 从 Token 中解析用户 ID
-            4. 校验作品 ID 列表参数有效性
-            5. 执行批量逻辑删除（SQL 层面验证 user_id，确保只能删除自己的历史记录）
-            6. 返回删除结果
+            4. 判断 clearAll 参数：
+               - 若为 true，则清空该用户所有历史记录
+               - 若为 false 或 null，则校验 workIds 并执行批量逻辑删除
+            5. 返回操作结果
 
             ## 注意事项：
             - **需要携带有效的 Token 才能删除历史记录**
@@ -179,9 +186,10 @@ public class HistoryController {
     @PostMapping("/delete")
     public ResponsePojo<Boolean> deleteHistory(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
-        @Parameter(description = "要删除的作品 ID 列表（支持单条或多条）", required = true, example = "1,2,3") @RequestParam List<Integer> workIds
+        @Parameter(description = "要删除的作品 ID 列表（支持单条或多条）", required = false, example = "1,2,3") @RequestParam(required = false) List<Integer> workIds,
+        @Schema(description = "是否清空所有历史记录", allowableValues = {"true", "false"}, defaultValue = "true") @RequestParam(required = false) Boolean clearAll
     ) {
-        log.debug("删除历史记录 - 作品 ID: {}", workIds);
+        log.debug("删除历史记录 - 作品 ID: {}, 清空全部: {}", workIds, clearAll);
 
         // 提取 Token
         String token = JWTUtils.extractTokenWithLog(request, "删除历史记录接口");
@@ -205,25 +213,35 @@ public class HistoryController {
         }
 
         String username = JWTUtils.getUsernameFromToken(token);
-        int workCount = workIds != null ? workIds.size() : 0;
-        log.info("开始删除历史记录，用户 ID: {}, 用户名: {}, 作品 ID 数量: {}", userId, username, workCount);
+        log.info("开始删除历史记录，用户 ID: {}, 用户名: {}, 清空全部: {}", userId, username, clearAll);
 
-        // 校验作品 ID 列表参数
-        if (workIds == null || workIds.isEmpty()) {
-            log.warn("作品 ID 列表为空，用户 ID: {}", userId);
-            return ResponsePojo.error(false, "作品 ID 列表不能为空");
-        }
-
-        // 调用服务层批量删除历史记录
-        Boolean result = workService.batchDeleteHistory(workIds, userId);
-
-        if (result) {
-            String successMsg = workCount == 1 ? "历史记录删除成功" : "批量删除历史记录成功";
-            log.info("{}，用户 ID: {}, 用户名: {}, 删除数量: {}", successMsg, userId, username, workCount);
-            return ResponsePojo.success(true, successMsg);
+        Boolean result;
+        // 如果 clearAll 为 true，则清空该用户所有历史记录
+        if (Boolean.TRUE.equals(clearAll)) {
+            result = workService.clearUserHistory(userId);
+            if (result) {
+                log.info("清空历史记录成功，用户 ID: {}, 用户名: {}", userId, username);
+                return ResponsePojo.success(true, "历史记录已清空");
+            } else {
+                log.warn("清空历史记录失败或无记录可删，用户 ID: {}, 用户名: {}", userId, username);
+                return ResponsePojo.error(false, "清空历史记录失败");
+            }
         } else {
-            log.warn("历史记录删除失败，用户 ID: {}, 用户名: {}", userId, username);
-            return ResponsePojo.error(false, "历史记录删除失败");
+            // 否则执行批量删除指定作品
+            if (workIds == null || workIds.isEmpty()) {
+                log.warn("作品 ID 列表为空且未选择清空，用户 ID: {}", userId);
+                return ResponsePojo.error(false, "作品 ID 列表不能为空");
+            }
+            result = workService.batchDeleteHistory(workIds, userId);
+            if (result) {
+                int workCount = workIds.size();
+                String successMsg = workCount == 1 ? "历史记录删除成功" : "批量删除历史记录成功";
+                log.info("{}，用户 ID: {}, 用户名: {}, 删除数量: {}", successMsg, userId, username, workCount);
+                return ResponsePojo.success(true, successMsg);
+            } else {
+                log.warn("历史记录删除失败，用户 ID: {}, 用户名: {}", userId, username);
+                return ResponsePojo.error(false, "历史记录删除失败");
+            }
         }
     }
 }

@@ -389,6 +389,30 @@ public class WorkServiceImpl implements WorkService {
     }
 
     /**
+     * 清空用户的所有访问历史记录
+     *
+     * @param userId 当前用户 ID
+     * @return 删除结果
+     * @author PlayerEG
+     */
+    @Override
+    public Boolean clearUserHistory(Integer userId) {
+        if (userId == null || userId <= 0) {
+            log.warn("无效的用户 ID，无法清空历史记录: {}", userId);
+            return false;
+        }
+
+        int affectedRows = historyMapper.clearAllHistoryByUserId(userId);
+        if (affectedRows > 0) {
+            log.info("清空历史记录成功，用户 ID: {}, 删除数量: {}", userId, affectedRows);
+            return true;
+        } else {
+            log.info("无历史记录可清空，用户 ID: {}", userId);
+            return true; // 即使没有记录也视为成功
+        }
+    }
+
+    /**
      * 添加游客访问历史记录（同步更新 Redis 浏览量）
      *
      * @param workId 作品 ID

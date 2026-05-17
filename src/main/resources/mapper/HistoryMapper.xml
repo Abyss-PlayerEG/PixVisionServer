@@ -55,4 +55,12 @@
           AND is_delete = 0
     </select>
 
+    <!-- 清空指定用户的所有历史记录（逻辑删除） -->
+    <update id="clearAllHistoryByUserId">
+        UPDATE tb_history
+        SET is_delete = 1
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
 </mapper>
