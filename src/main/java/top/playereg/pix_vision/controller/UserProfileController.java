@@ -46,7 +46,7 @@ public class UserProfileController {
      * @author PlayerEG
      */
     @GetMapping("/page/{current}/{size}")
-    @PublicAccess
+    @PublicAccess("分页查询用户信息，无需认证")
     @Operation(
         summary = "分页查询用户信息",
         description = """
@@ -143,7 +143,7 @@ public class UserProfileController {
      * @author PlayerEG
      */
     @GetMapping("/page-by-role/{current}/{size}")
-    @PublicAccess
+    @PublicAccess("按角色分页查询用户信息，无需认证")
     @Operation(
         summary = "按角色分页查询用户信息",
         description = """
@@ -223,7 +223,7 @@ public class UserProfileController {
      * @author PlayerEG
      */
     @GetMapping("/info/{userId}")
-    @PublicAccess
+    @PublicAccess("根据用户 ID 查询用户信息，无需认证")
     @Operation(
         summary = "根据用户 ID 查询用户信息",
         description = """

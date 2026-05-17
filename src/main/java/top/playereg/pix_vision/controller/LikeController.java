@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.service.LikeService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -165,6 +166,7 @@ public class LikeController {
             - **查询成功**：返回 **{"data": 点赞数}**
             """
     )
+    @PublicAccess("查询作品点赞总数，无需认证")
     @GetMapping("/count/{workId}")
     public ResponsePojo<Integer> getLikeCount(
         @Parameter(description = "作品 ID", required = true, example = "1") @PathVariable Integer workId
