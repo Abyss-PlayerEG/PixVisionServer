@@ -239,11 +239,11 @@
             SELECT DISTINCT work_id FROM tb_guest_history
             ) t
             LEFT JOIN (
-            SELECT work_id, COUNT (*) AS cnt FROM tb_history GROUP BY work_id
+            SELECT work_id, COUNT(*) AS cnt FROM tb_history GROUP BY work_id
             ) h
         ON t.work_id = h.work_id
             LEFT JOIN (
-            SELECT work_id, COUNT (*) AS cnt FROM tb_guest_history GROUP BY work_id
+            SELECT work_id, COUNT(*) AS cnt FROM tb_guest_history GROUP BY work_id
             ) g ON t.work_id = g.work_id
     </select>
 
