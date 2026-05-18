@@ -15,6 +15,7 @@ import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.ImageUtils;
+import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
 
@@ -39,6 +40,12 @@ public class WorkServiceImpl implements WorkService {
 
     @Autowired
     private HistoryMapper historyMapper;
+    @Autowired
+    private SeriesMapper seriesMapper;
+    @Autowired
+    private GuestHistoryMapper guestHistoryMapper;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
     private static final long CACHE_TTL_HOURS = 2; // Redis缓存TTL：2小时
@@ -47,12 +54,6 @@ public class WorkServiceImpl implements WorkService {
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
         "jpg", "jpeg", "png"
     );
-    @Autowired
-    private SeriesMapper seriesMapper;
-    @Autowired
-    private GuestHistoryMapper guestHistoryMapper;
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 分页查询首页作品列表（支持多条件查询）
@@ -140,7 +141,7 @@ public class WorkServiceImpl implements WorkService {
                         log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
                         continue;
                     }
-                    
+
                     boolean renamed = actualFile.renameTo(deletedFile);
                     if (renamed) {
                         renamedCount++;
@@ -777,7 +778,7 @@ public class WorkServiceImpl implements WorkService {
                 log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
                 return;
             }
-            
+
             boolean renamed = actualFile.renameTo(deletedFile);
             if (renamed) {
                 log.info("旧图片文件重命名为 .del 成功: {} -> {}", actualFile.getName(), imgFileName + ".del");
@@ -833,24 +834,24 @@ public class WorkServiceImpl implements WorkService {
                 // 确定目标后缀
                 String targetSuffix = getFileSuffixByApprovalStatus(approvalStatus);
                 String targetFileName = imgFileName + targetSuffix;
-                
+
                 // 查找当前实际存在的文件（可能是 .pend、.fail 或正常格式）
                 File actualFile = findActualWorkFile(imgFileName);
                 File targetFile = new File(FilePathConfig.WorksPath, targetFileName);
-                
+
                 if (actualFile != null && actualFile.exists()) {
                     // 如果目标文件已存在，跳过
                     if (targetFile.exists()) {
                         log.warn("目标文件已存在，跳过重命名: {} -> {}", actualFile.getName(), targetFileName);
                         continue;
                     }
-                    
+
                     // 如果当前文件已经是目标文件，无需重命名
                     if (actualFile.getName().equals(targetFileName)) {
                         log.debug("文件已是目标状态，无需重命名: {}", targetFileName);
                         continue;
                     }
-                    
+
                     // 执行重命名
                     boolean renamed = actualFile.renameTo(targetFile);
                     if (renamed) {
@@ -915,7 +916,7 @@ public class WorkServiceImpl implements WorkService {
     private File findActualWorkFile(String baseFileName) {
         // 尝试的顺序：正常格式 > .pend > .fail
         String[] possibleSuffixes = {"", ".pend", ".fail"};
-        
+
         for (String suffix : possibleSuffixes) {
             String fileName = baseFileName + suffix;
             File file = new File(FilePathConfig.WorksPath, fileName);
@@ -923,7 +924,7 @@ public class WorkServiceImpl implements WorkService {
                 return file;
             }
         }
-        
+
         return null; // 都没找到
     }
 
@@ -974,7 +975,7 @@ public class WorkServiceImpl implements WorkService {
                         log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
                         continue;
                     }
-                    
+
                     boolean renamed = actualFile.renameTo(deletedFile);
                     if (renamed) {
                         renamedCount++;
@@ -1038,6 +1039,57 @@ public class WorkServiceImpl implements WorkService {
 
         log.info("查询用户作品完成，用户 ID: {}, 总数: {}, 当前页: {}",
             userId, result.getTotal(), result.getCurrent());
+
+        return result;
+    }
+
+    /**
+     * 管理员分页查询作品列表（支持多条件过滤）
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @param keyword 关键字（可选，模糊搜索标题）
+     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    @Override
+    public IPage<Works> getAdminWorksPage(Long current, Long size, String keyword, String orderBy) {
+        // 参数校验与默认值处理
+        current = PageUtils.getValidCurrent(current);
+        size = PageUtils.getValidSize(size);
+
+        log.info("开始管理员分页查询作品，页码: {}, 每页大小: {}, 关键字: {}, 排序: {}",
+            current, size, keyword, orderBy);
+
+        // 创建分页对象
+        Page<Works> page = new Page<>(current, size);
+
+        // 调用 Mapper 层查询
+        IPage<Works> result = worksMapper.selectAdminWorksPage(page, keyword, orderBy);
+
+        // 为列表中的每个作品填充最新的浏览量（优先 Redis，其次回源）
+        if (result != null && !result.getRecords().isEmpty()) {
+            for (Works work : result.getRecords()) {
+                try {
+                    String key = VIEW_COUNT_KEY_PREFIX + work.getWork_id();
+                    Object viewCountObj = redisTemplate.opsForValue().get(key);
+                    if (viewCountObj != null) {
+                        work.setView_count(((Number) viewCountObj).intValue());
+                    } else {
+                        // Redis 缺失，触发回源并缓存
+                        int dbCount = worksMapper.selectTotalViewCountByWorkId(work.getWork_id());
+                        work.setView_count(dbCount);
+                        redisTemplate.opsForValue().set(key, dbCount, 5, java.util.concurrent.TimeUnit.MINUTES);
+                    }
+                } catch (Exception e) {
+                    log.warn("管理员分页查询时填充浏览量失败，作品 ID: {}", work.getWork_id());
+                }
+            }
+        }
+
+        log.info("管理员分页查询作品完成，总数: {}, 当前页: {}, 每页大小: {}",
+            result.getTotal(), result.getCurrent(), result.getSize());
 
         return result;
     }

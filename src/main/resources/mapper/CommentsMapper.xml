@@ -107,7 +107,15 @@
         <if test="keyword != null and keyword != ''">
             AND comment_text LIKE CONCAT('%', #{keyword}, '%')
         </if>
-        ORDER BY time DESC
+        ORDER BY
+        <choose>
+            <when test="orderBy == 'oldest'">
+                time ASC
+            </when>
+            <otherwise>
+                time DESC
+            </otherwise>
+        </choose>
     </select>
 
 

@@ -496,19 +496,19 @@ public class CommentServiceImpl implements CommentService {
     public IPage<Comments> getCommentsPage(Long current, Long size,
                                            Integer workId, Integer userId,
                                            Integer commentFloor, Integer approvalStatus,
-                                           String keyword) {
+                                           String keyword, String orderBy) {
         // 参数校验与默认值处理
         current = PageUtils.getValidCurrent(current);
         size = PageUtils.getValidSize(size);
 
-        log.info("开始分页查询评论，页码: {}, 每页大小: {}, 作品ID: {}, 用户ID: {}, 评论层级: {}, 审核状态: {}, 关键字: {}",
-            current, size, workId, userId, commentFloor, approvalStatus, keyword);
+        log.info("开始分页查询评论，页码: {}, 每页大小: {}, 作品ID: {}, 用户ID: {}, 评论层级: {}, 审核状态: {}, 关键字: {}, 排序: {}",
+            current, size, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
 
         // 创建分页对象
         Page<Comments> page = new Page<>(current, size);
 
         // 调用 Mapper 层查询
-        IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword);
+        IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
 
         log.info("分页查询评论完成，总数: {}, 当前页: {}, 每页大小: {}",
             result.getTotal(), result.getCurrent(), result.getSize());

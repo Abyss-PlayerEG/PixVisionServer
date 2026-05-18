@@ -208,4 +208,16 @@ public interface WorkService {
         Integer userId,
         Integer approvalStatus
     );
+
+    /**
+     * 管理员分页查询作品列表（支持多条件过滤）
+     *
+     * @param current   当前页码
+     * @param size      每页大小
+     * @param keyword   关键字（可选，模糊搜索标题）
+     * @param orderBy   排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    IPage<Works> getAdminWorksPage(Long current, Long size, String keyword, String orderBy);
 }

@@ -84,5 +84,6 @@ public interface CommentsMapper extends BaseMapper<Comments> {
                                        @Param("userId") Integer userId,
                                        @Param("commentFloor") Integer commentFloor,
                                        @Param("approvalStatus") Integer approvalStatus,
-                                       @Param("keyword") String keyword);
+                                       @Param("keyword") String keyword,
+                                       @Param("orderBy") String orderBy);
 }
