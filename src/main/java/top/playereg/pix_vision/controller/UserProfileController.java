@@ -216,55 +216,185 @@ public class UserProfileController {
     }
 
     /**
-     * 根据用户 ID 查询用户信息
+     * 根据用户 ID 或 UUID 查询用户信息
      *
-     * @param userId 用户 ID
+     * @param userId 用户 ID（可选）
+     * @param uuid   用户 UUID（可选，字符串格式）
      * @return 响应数据，包含用户详细信息
      * @author PlayerEG
      */
-    @GetMapping("/info/{userId}")
-    @PublicAccess("根据用户 ID 查询用户信息，无需认证")
+    @GetMapping("/info")
+    @PublicAccess("根据用户 ID 或 UUID 查询用户信息，无需认证")
     @Operation(
-        summary = "根据用户 ID 查询用户信息",
+        summary = "根据用户 ID 或 UUID 查询用户信息",
         description = """
-            # 根据用户 ID 查询用户信息（无需登录认证）
+            # 根据用户 ID 或 UUID 查询用户信息（无需登录认证）
 
             ## 特性
             - 公开接口（无需 Token 认证）
-            - 精确查询单个用户
+            - 支持通过用户 ID 或 UUID 精确查询单个用户
             - 自动转换二进制 UUID 为字符串格式
+            - userId 和 uuid 至少提供一个
 
             ## 参数说明：
-            - userId: **用户 ID**，Integer 类型，路径变量，必填
+            - userId: **用户 ID**，Integer 类型，可选，与 uuid 二选一
+            - uuid: **用户 UUID**，String 类型，可选，支持两种格式：
+              * 32位不带连字符：`6ddae8a5837d4721a1b783a7f98c67aa`
+              * 36位带连字符：`550e8400-e29b-41d4-a716-446655440000`
+              * 与 userId 二选一
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": {User对象}}** ，包含用户详细信息
-            - **用户 ID 无效**：返回 **{"data": null}** 和"用户 ID 不能为空"提示
+            - **参数缺失**：返回 **{"data": null}** 和"请提供用户 ID 或 UUID"提示
+            - **UUID 格式错误**：返回 **{"data": null}** 和"UUID 格式错误"提示
             - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
 
             ## 业务逻辑：
-            1. 校验用户 ID 参数有效性
-            2. 根据用户 ID 查询用户信息
-            3. 将二进制 UUID 转换为字符串格式
-            4. 返回用户详细信息
+            1. 校验参数：userId 和 uuid 至少提供一个
+            2. 如果提供 uuid，验证格式并转换为二进制
+            3. 根据 userId 或 uuid 查询用户信息
+            4. 将二进制 UUID 转换为字符串格式
+            5. 隐藏敏感字段后返回用户详细信息
 
             ## 注意事项：
             - 这是一个**公开接口**，无需 Token 认证
+            - **userId 和 uuid 至少提供一个**，优先使用 userId
             - 只返回**未删除**的用户（is_delete=0）
-            - 返回完整的用户信息（包括密码字段，前端应自行决定是否展示）
-            - 用户 ID 必须是有效的正整数
+            - 返回的字段不包含敏感信息（password、user_uuid、user_role、status 均被隐藏）
+            - UUID 支持两种格式：32位不带连字符 或 36位带连字符
             """
     )
-    public ResponsePojo<User> getUserInfoById(
-        @Parameter(description = "用户 ID", required = true, example = "1") @PathVariable Integer userId
+    public ResponsePojo<User> getUserInfo(
+        @Parameter(description = "用户 ID（可选），与 uuid 二选一", example = "1") @RequestParam(required = false) Integer userId,
+        @Parameter(description = "用户 UUID（可选），标准格式，与 userId 二选一", example = "550e8400-e29b-41d4-a716-446655440000") @RequestParam(required = false) String uuid
     ) {
-        // 参数校验
-        if (userId == null || userId <= 0) {
-            log.warn("查询用户信息失败 - 用户 ID 无效: {}", userId);
-            return ResponsePojo.error(null, "用户 ID 不能为空");
+        // 参数校验：userId 和 uuid 至少提供一个
+        if (userId == null && (uuid == null || uuid.isEmpty())) {
+            log.warn("查询用户信息失败 - 缺少必要参数");
+            return ResponsePojo.error(null, "请提供用户 ID 或 UUID");
         }
 
-        log.info("查询用户信息 - 用户 ID: {}", userId);
+        User user = null;
+
+        // 优先使用 userId 查询
+        if (userId != null && userId > 0) {
+            log.info("通过用户 ID 查询用户信息 - 用户 ID: {}", userId);
+            user = userService.selectAllUserById(userId);
+        } else if (uuid != null && !uuid.isEmpty()) {
+            // 使用 uuid 查询
+            log.info("通过 UUID 查询用户信息 - UUID: {}", uuid);
+
+            // 验证 UUID 格式（支持32位和36位两种格式）
+            boolean isValid = RegexUtils.isUUID(uuid) || RegexUtils.isValidUuid(uuid);
+            if (!isValid) {
+                log.warn("UUID 格式错误: {}", uuid);
+                return ResponsePojo.error(null, "UUID 格式错误，支持32位或36位格式");
+            }
+
+            // 将字符串 UUID 转换为二进制
+            byte[] uuidBytes;
+            if (uuid.length() == 32) {
+                // 32位格式，直接转换
+                uuidBytes = StrSwitchUtils.uuid2Bytes(uuid);
+            } else {
+                // 36位格式，先去除连字符再转换
+                String uuidWithoutHyphens = uuid.replace("-", "");
+                uuidBytes = StrSwitchUtils.uuid2Bytes(uuidWithoutHyphens);
+            }
+            user = userService.selectAllUserByUuid(uuidBytes);
+        }
+
+        // 检查用户是否存在（SQL 已过滤 is_delete=0，只需判断 null）
+        if (user == null) {
+            log.warn("用户不存在或已被删除 - 用户 ID: {}, UUID: {}", userId, uuid);
+            return ResponsePojo.error(null, "用户不存在");
+        }
+
+        // 将二进制 UUID 转换为字符串格式
+        user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
+
+        // 隐藏敏感字段
+        user.setUser_uuid(null);
+        user.setPassword(null);
+        user.setUser_role(null);
+        user.setStatus(null);
+
+        log.info("查询用户信息成功 - 用户 ID: {}, 用户名: {}", user.getUser_id(), user.getUsername());
+
+        return ResponsePojo.success(user, "查询成功");
+    }
+
+    /**
+     * 通过 Token 查询当前用户个人信息
+     *
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @return 响应数据，包含当前用户的详细信息
+     * @author PlayerEG
+     */
+    @GetMapping("/me")
+    @Operation(
+        summary = "查询当前用户个人信息",
+        description = """
+            # 查询当前用户个人信息（需要登录认证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 自动从 Token 解析当前用户 ID
+            - 隐藏敏感字段（密码、角色、状态等）
+            - 适用于个人中心页面
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": {User对象}}** ，包含当前用户的详细信息
+            - **Token 不存在**：返回 **{"data": null}** 和"Token 不存在"提示
+            - **Token 已失效**：返回 **{"data": null}** 和"Token 已失效"提示
+            - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 根据用户 ID 查询用户信息
+            5. 将二进制 UUID 转换为字符串格式
+            6. 隐藏敏感字段（密码、UUID、角色、状态）
+            7. 返回用户详细信息
+
+            ## 注意事项：
+            - **必须携带有效的 Token**
+            - Token 必须在白名单中（未过期、未登出）
+            - 只返回**未删除**的用户（is_delete=0）
+            - 返回的字段不包含敏感信息（password、user_uuid、user_role、status 均被隐藏）
+            - 适合用于个人中心、用户资料编辑等场景
+            """
+    )
+    public ResponsePojo<User> getCurrentUserInfo(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request
+    ) {
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "查询当前用户信息接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("查询当前用户信息失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始查询当前用户信息，用户 ID: {}, 用户名: {}", userId, username);
 
         // 调用服务层查询用户信息
         User user = userService.selectAllUserById(userId);
@@ -284,7 +414,7 @@ public class UserProfileController {
         user.setUser_role(null);
         user.setStatus(null);
 
-        log.info("查询用户信息成功 - 用户 ID: {}, 用户名: {}", userId, user.getUsername());
+        log.info("查询当前用户信息成功 - 用户 ID: {}, 用户名: {}", userId, username);
 
         return ResponsePojo.success(user, "查询成功");
     }

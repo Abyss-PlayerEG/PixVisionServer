@@ -115,6 +115,21 @@ public class RegexUtils {
     }
 
     /**
+     * 标准 UUID 格式验证（36位，包含连字符）
+     * <p>
+     * 验证 UUID 是否符合标准格式：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+     * 例如：550e8400-e29b-41d4-a716-446655440000
+     * </p>
+     *
+     * @param uuid 待验证的 UUID 字符串
+     * @return true-格式正确，false-格式错误
+     * @author PlayerEG
+     */
+    public static boolean isValidUuid(String uuid) {
+        return isMatch("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", uuid, "标准UUID", "36位，格式: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");
+    }
+
+    /**
      * 用户名正则匹配
      * 6-16位, 只允许字母、数字和_
      *

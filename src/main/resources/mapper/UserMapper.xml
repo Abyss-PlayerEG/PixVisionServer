@@ -78,6 +78,23 @@
           AND is_delete = 0
     </select>
 
+    <!-- 通过 UUID 查询用户 - 全字段查询 -->
+    <select id="selectAllUserInfoByUuid"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+        SELECT user_id,
+               user_uuid,
+               username,
+               password,
+               nickname,
+               user_role,
+               avatar_url,
+               email,
+               status
+        FROM tb_user
+        WHERE user_uuid = #{uuidBytes, jdbcType=BINARY}
+          AND is_delete = 0
+    </select>
+
     <!-- 通过用户 ID 查询用户角色（用于权限验证，仅查询必要字段） -->
     <select id="selectUserRoleById"
             parameterType="java.lang.Integer"

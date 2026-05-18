@@ -50,6 +50,14 @@ public interface UserMapper extends BaseMapper<User> {
     User selectAllUserInfoById(Integer userId);
 
     /**
+     * 根据 UUID 查询用户 - 全字段查询
+     *
+     * @param uuidBytes UUID 字节数组（16字节）
+     * @return 用户实体
+     */
+    User selectAllUserInfoByUuid(@Param("uuidBytes") byte[] uuidBytes);
+
+    /**
      * 根据用户 ID 查询用户角色和用户名（用于权限验证）
      * <p>
      * 仅查询 user_id, username, user_role 三个字段，提升性能

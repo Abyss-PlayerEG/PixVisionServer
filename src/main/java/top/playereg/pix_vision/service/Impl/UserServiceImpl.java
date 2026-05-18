@@ -127,6 +127,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User selectAllUserByUuid(byte[] uuidBytes) {
+        return userMapper.selectAllUserInfoByUuid(uuidBytes);
+    }
+
+    @Override
     public User selectUserRoleById(Integer userId) {
         return userMapper.selectUserRoleById(userId);
     }

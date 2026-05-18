@@ -48,6 +48,14 @@ public interface UserService {
     User selectAllUserById(Integer userId);
 
     /**
+     * 根据 UUID 查询用户信息
+     *
+     * @param uuidBytes UUID 字节数组（16字节）
+     * @return 用户对象
+     */
+    User selectAllUserByUuid(byte[] uuidBytes);
+
+    /**
      * 根据用户 ID 查询用户角色和用户名（用于权限验证）
      * <p>
      * 仅查询 user_id, username, user_role 三个字段，提升性能
