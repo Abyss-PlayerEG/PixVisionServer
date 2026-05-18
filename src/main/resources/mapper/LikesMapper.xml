@@ -56,7 +56,15 @@
           AND l.is_delete = 0
           AND w.is_delete = 0
           AND w.approval_status = 10
-        ORDER BY l.time DESC
+        ORDER BY
+            <choose>
+                <when test="orderBy != null and orderBy == 'oldest'">
+                    l.time ASC
+                </when>
+                <otherwise>
+                    l.time DESC
+                </otherwise>
+            </choose>
     </select>
 
 </mapper>

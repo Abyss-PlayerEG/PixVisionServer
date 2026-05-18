@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -229,9 +230,10 @@ public class StarController {
     public ResponsePojo<IPage<Works>> getUserStarredWorks(
         @Parameter(description = "用户 ID", required = true, example = "1") @PathVariable Integer userId,
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
-        @Parameter(description = "每页大小，范围 1-500", required = true, example = "10") @PathVariable Long size
+        @Parameter(description = "每页大小，范围 1-500", required = true, example = "10") @PathVariable Long size,
+        @Schema(description = "排序方式：'oldest' - 按最早收藏，其他值或 null - 按最新收藏（默认）", allowableValues = {"newest", "oldest"}, example = "newest") @RequestParam(required = false, defaultValue = "newest") String orderBy
     ) {
-        log.debug("分页查询用户收藏作品 - 用户 ID: {}, 页码: {}, 每页大小: {}", userId, current, size);
+        log.debug("分页查询用户收藏作品 - 用户 ID: {}, 页码: {}, 每页大小: {}, 排序: {}", userId, current, size, orderBy);
 
         // 参数校验
         if (userId == null || userId <= 0) {
@@ -249,7 +251,7 @@ public class StarController {
             Page<Works> page = new Page<>(current, size);
 
             // 调用服务层查询
-            IPage<Works> result = starService.getUserStarredWorks(page, userId);
+            IPage<Works> result = starService.getUserStarredWorks(page, userId, orderBy);
 
             if (result != null && result.getRecords() != null) {
                 log.info("查询用户收藏作品成功，用户 ID: {}, 总数: {}, 当前页: {}",

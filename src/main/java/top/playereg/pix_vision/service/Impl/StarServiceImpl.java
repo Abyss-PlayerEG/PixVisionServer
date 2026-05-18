@@ -151,7 +151,7 @@ public class StarServiceImpl implements StarService {
      *
      * <h3>使用场景</h3>
      * <ol>
-     *   <li>前端展示用户的"我的收藏"列表时调用。</li>
+     *   <li>前端展示用户的“我的收藏”列表时调用。</li>
      *   <li>查看自己收藏过的作品历史记录。</li>
      * </ol>
      *
@@ -159,31 +159,33 @@ public class StarServiceImpl implements StarService {
      * <ul>
      *   <li>这是一个公开接口，无需登录认证。</li>
      *   <li>只返回审核通过的作品（approval_status = 10）。</li>
-     *   <li>按收藏时间倒序排列，最新收藏的作品排在前面。</li>
+     *   <li>默认按收藏时间倒序排列，最新收藏的作品排在前面。</li>
+     *   <li>可通过 orderBy 参数控制排序方式：'oldest' - 按最早收藏。</li>
      *   <li>如果用户没有收藏过任何作品，返回空的分页结果。</li>
      * </ul>
      *
      * @param page   分页对象
      * @param userId 用户 ID
+     * @param orderBy 排序方式："oldest" - 按最早收藏，其他值或 null - 按最新收藏（默认）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> getUserStarredWorks(Page<Works> page, Integer userId) {
+    public IPage<Works> getUserStarredWorks(Page<Works> page, Integer userId, String orderBy) {
         if (userId == null || userId <= 0) {
             log.warn("用户 ID 无效: {}", userId);
             return new Page<>(page.getCurrent(), page.getSize());
         }
-
-        log.info("开始查询用户收藏作品，用户 ID: {}, 页码: {}, 每页大小: {}",
-            userId, page.getCurrent(), page.getSize());
-
+    
+        log.info("开始查询用户收藏作品，用户 ID: {}, 页码: {}, 每页大小: {}, 排序: {}",
+            userId, page.getCurrent(), page.getSize(), orderBy);
+    
         // 调用 Mapper 层查询
-        IPage<Works> result = starsMapper.selectUserStarredWorks(page, userId);
-
+        IPage<Works> result = starsMapper.selectUserStarredWorks(page, userId, orderBy);
+    
         log.info("查询用户收藏作品完成，用户 ID: {}, 总数: {}, 当前页: {}",
             userId, result.getTotal(), result.getCurrent());
-
+    
         return result;
     }
 }

@@ -159,27 +159,29 @@ public class LikeServiceImpl implements LikeService {
      * <ul>
      *   <li>这是一个公开接口，无需登录认证。</li>
      *   <li>只返回审核通过的作品（approval_status = 10）。</li>
-     *   <li>按点赞时间倒序排列，最新点赞的作品排在前面。</li>
+     *   <li>默认按点赞时间倒序排列，最新点赞的作品排在前面。</li>
+     *   <li>可通过 orderBy 参数控制排序方式：'oldest' - 按最早点赞。</li>
      *   <li>如果用户没有点赞过任何作品，返回空的分页结果。</li>
      * </ul>
      *
      * @param page   分页对象
      * @param userId 用户 ID
+     * @param orderBy 排序方式："oldest" - 按最早点赞，其他值或 null - 按最新点赞（默认）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> getUserLikedWorks(Page<Works> page, Integer userId) {
+    public IPage<Works> getUserLikedWorks(Page<Works> page, Integer userId, String orderBy) {
         if (userId == null || userId <= 0) {
             log.warn("用户 ID 无效: {}", userId);
             return new Page<>(page.getCurrent(), page.getSize());
         }
 
-        log.info("开始查询用户点赞作品，用户 ID: {}, 页码: {}, 每页大小: {}",
-            userId, page.getCurrent(), page.getSize());
+        log.info("开始查询用户点赞作品，用户 ID: {}, 页码: {}, 每页大小: {}, 排序: {}",
+            userId, page.getCurrent(), page.getSize(), orderBy);
 
         // 调用 Mapper 层查询
-        IPage<Works> result = likesMapper.selectUserLikedWorks(page, userId);
+        IPage<Works> result = likesMapper.selectUserLikedWorks(page, userId, orderBy);
 
         log.info("查询用户点赞作品完成，用户 ID: {}, 总数: {}, 当前页: {}",
             userId, result.getTotal(), result.getCurrent());

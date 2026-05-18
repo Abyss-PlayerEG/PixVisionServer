@@ -42,8 +42,9 @@ public interface StarService {
      *
      * @param page   分页对象
      * @param userId 用户 ID
+     * @param orderBy 排序方式："oldest" - 按最早收藏，其他值或 null - 按最新收藏（默认）
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Works> getUserStarredWorks(Page<Works> page, Integer userId);
+    IPage<Works> getUserStarredWorks(Page<Works> page, Integer userId, String orderBy);
 }

@@ -57,8 +57,9 @@ public interface LikesMapper {
      *
      * @param page   分页对象
      * @param userId 用户 ID
+     * @param orderBy 排序方式："oldest" - 按最早点赞，其他值或 null - 按最新点赞（默认）
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Works> selectUserLikedWorks(Page<Works> page, @Param("userId") Integer userId);
+    IPage<Works> selectUserLikedWorks(Page<Works> page, @Param("userId") Integer userId, @Param("orderBy") String orderBy);
 }
