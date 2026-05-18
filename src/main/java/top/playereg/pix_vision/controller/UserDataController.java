@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
+import top.playereg.pix_vision.service.BilibiliApiService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
@@ -33,6 +34,7 @@ public class UserDataController {
 
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;
+    private final BilibiliApiService bilibiliApiService;
 
     /**
      * 新增用户拓展数据
@@ -80,6 +82,8 @@ public class UserDataController {
             - **数据内容为空**：返回 **{"data": null}** 和"数据内容不能为空"提示
             - **数据内容过长**：返回 **{"data": null}** 和"数据内容长度不能超过 96 个字符"提示
             - **数据内容格式错误**：根据不同数据类型返回相应的格式错误提示
+            - **B站账号不存在**：返回 **{"data": null}** 和"B站账号不存在，请检查 UID 是否正确"提示
+            - **B站检测失败**：返回 **{"data": null}** 和"B站账号检测失败"提示
             - **添加失败**：返回 **{"data": false}** 和"用户拓展数据添加失败"提示
 
             ## 业务逻辑：
@@ -89,9 +93,10 @@ public class UserDataController {
             4. 校验数据类型名称参数（非空、是否为预设值）
             5. 校验数据内容参数（非空、长度限制）
             6. **根据数据类型进行单独的正则格式验证**
-            7. 检查用户是否存在
-            8. 调用服务层新增用户拓展数据
-            9. 返回添加结果
+            7. **如果是 Bilibili 账号，调用 Python API 检测账号是否存在**
+            8. 检查用户是否存在
+            9. 调用服务层新增用户拓展数据
+            10. 返回添加结果
 
             ## 注意事项：
             - 需要携带有效的 Token 才能添加拓展数据
@@ -99,6 +104,7 @@ public class UserDataController {
             - **dataName 必须为预设的固定值**，不支持自定义数据类型名称
             - 数据内容长度限制：**不超过 96 个字符**
             - **不同数据类型有不同的格式要求**，系统会自动进行正则验证
+            - **Bilibili 账号会调用 Python API 检测账号是否存在**，检测失败则无法添加
             - 同一用户可以添加多条拓展数据（1 对 n 关系）
             - 每种数据类型每个用户只能有一条有效记录
             """
@@ -185,6 +191,24 @@ public class UserDataController {
                 default -> "数据内容格式不正确";
             };
             return ResponsePojo.error(null, errorMsg);
+        }
+
+        // 如果是 Bilibili 账号，调用 Python API 检测账号是否存在
+        if ("Bilibili".equals(dataName)) {
+            try {
+                log.info("开始检测 B站账号是否存在: userId={}", dataContent);
+                Boolean exists = bilibiliApiService.checkAccountExists(dataContent);
+
+                if (!exists) {
+                    log.warn("B站账号不存在: userId={}", dataContent);
+                    return ResponsePojo.error(null, "B站账号不存在，请检查 UID 是否正确");
+                }
+
+                log.info("B站账号存在，继续添加拓展数据: userId={}", dataContent);
+            } catch (RuntimeException e) {
+                log.error("B站账号检测失败: userId={}, error={}", dataContent, e.getMessage());
+                return ResponsePojo.error(null, "B站账号检测失败: " + e.getMessage());
+            }
         }
 
         // 调用服务层新增用户拓展数据

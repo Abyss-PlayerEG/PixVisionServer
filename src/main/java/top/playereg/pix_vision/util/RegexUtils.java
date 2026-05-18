@@ -330,6 +330,6 @@ public class RegexUtils {
      * @author PlayerEG
      */
     public static boolean isBilibiliUid(String bilibiliUid) {
-        return isMatch("^\\d{1,10}$", bilibiliUid, "Bilibili UID", "1-10位纯数字");
+        return isMatch("^\\d{1,16}$", bilibiliUid, "Bilibili UID", "1-16位纯数字");
     }
 }
