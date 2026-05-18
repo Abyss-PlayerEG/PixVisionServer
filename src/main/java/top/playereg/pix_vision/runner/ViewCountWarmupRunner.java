@@ -27,7 +27,7 @@ public class ViewCountWarmupRunner implements ApplicationRunner {
 
     private static final PixVisionLogger log = PixVisionLogger.create(ViewCountWarmupRunner.class);
     private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
-    private static final long CACHE_TTL_MINUTES = 5;
+    private static final long CACHE_TTL_HOURS = 2; // Redis缓存TTL：2小时
 
     private final WorksMapper worksMapper;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -55,8 +55,8 @@ public class ViewCountWarmupRunner implements ApplicationRunner {
 
                 if (workId != null) {
                     String key = VIEW_COUNT_KEY_PREFIX + workId;
-                    // 1. 存入 Redis，设置 5 分钟过期时间
-                    redisTemplate.opsForValue().set(key, viewCount, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+                    // 1. 存入 Redis，设置 2 小时过期时间
+                    redisTemplate.opsForValue().set(key, viewCount, CACHE_TTL_HOURS, TimeUnit.HOURS);
 
                     // 2. 准备数据库更新数据
                     java.util.Map<String, Object> dbRecord = new java.util.HashMap<>();

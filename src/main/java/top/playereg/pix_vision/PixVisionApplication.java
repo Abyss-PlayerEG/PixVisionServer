@@ -8,6 +8,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.egg.EggNoBug;
 import top.playereg.pix_vision.enums.LogColor;
@@ -18,6 +19,7 @@ import java.util.List;
 
 @SpringBootApplication
 @MapperScan("top.playereg.pix_vision.mapper")
+@EnableScheduling
 @SuppressWarnings("all")
 public class PixVisionApplication implements ApplicationListener<ApplicationReadyEvent> {
     private static final PixVisionLogger log = PixVisionLogger.create(PixVisionApplication.class);

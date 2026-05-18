@@ -41,6 +41,7 @@ public class WorkServiceImpl implements WorkService {
     private HistoryMapper historyMapper;
 
     private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
+    private static final long CACHE_TTL_HOURS = 2; // Redis缓存TTL：2小时
 
     // 允许上传的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
@@ -80,7 +81,7 @@ public class WorkServiceImpl implements WorkService {
                         // Redis 缺失，触发回源并缓存
                         int dbCount = worksMapper.selectTotalViewCountByWorkId(work.getWork_id());
                         work.setView_count(dbCount);
-                        redisTemplate.opsForValue().set(key, dbCount, 5, java.util.concurrent.TimeUnit.MINUTES);
+                        redisTemplate.opsForValue().set(key, dbCount, CACHE_TTL_HOURS, java.util.concurrent.TimeUnit.HOURS);
                     }
                 } catch (Exception e) {
                     log.warn("列表页填充浏览量失败，作品 ID: {}", work.getWork_id());
@@ -346,7 +347,7 @@ public class WorkServiceImpl implements WorkService {
                 int dbCount = worksMapper.selectTotalViewCountByWorkId(workId);
                 work.setView_count(dbCount);
                 // 存入 Redis 并设置 TTL
-                redisTemplate.opsForValue().set(key, dbCount, 5, java.util.concurrent.TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(key, dbCount, CACHE_TTL_HOURS, java.util.concurrent.TimeUnit.HOURS);
             }
         } catch (Exception e) {
             log.warn("从 Redis 获取浏览量失败，使用数据库默认值，作品 ID: {}", workId);
@@ -376,7 +377,7 @@ public class WorkServiceImpl implements WorkService {
             Long count = redisTemplate.opsForValue().increment(key);
             // 2. 如果自增后为 1，说明是刚创建的 Key，设置过期时间
             if (count != null && count == 1) {
-                redisTemplate.expire(key, 5, java.util.concurrent.TimeUnit.MINUTES);
+                redisTemplate.expire(key, CACHE_TTL_HOURS, java.util.concurrent.TimeUnit.HOURS);
             }
             log.debug("作品浏览量 Redis 自增成功，作品 ID: {}, 当前值: {}", workId, count);
             return true;
