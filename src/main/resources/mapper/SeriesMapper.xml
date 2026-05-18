@@ -43,7 +43,7 @@
                 #{create_user})
     </insert>
 
-    <!-- 根据用户 ID 分页查询所有作品系列（排除逻辑删除） -->
+    <!-- 根据用户 ID 分页查询所有作品系列（排除逻辑删除，只返回审核通过的系列） -->
     <select id="selectSeriesByUserId" resultType="top.playereg.pix_vision.pojo.Series">
         SELECT series_id,
                user_id,
@@ -56,6 +56,7 @@
         FROM tb_series
         WHERE user_id = #{userId}
           AND is_delete = 0
+          AND approval_status = 10
         ORDER BY create_time DESC
     </select>
 
