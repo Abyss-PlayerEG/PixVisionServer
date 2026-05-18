@@ -124,26 +124,31 @@ public class WorkServiceImpl implements WorkService {
             return false;
         }
 
-        // 3. 将文件后缀名改为 .del
+        // 3. 将文件后缀名改为 .del（处理各种状态的文件）
         int renamedCount = 0;
         for (Works work : userWorks) {
             String imgFileName = work.getImg_url();
             if (imgFileName != null && !imgFileName.isEmpty()) {
-                File originalFile = new File(FilePathConfig.WorksPath, imgFileName);
+                // 查找实际存在的文件（可能是正常格式、.pend 或 .fail）
+                File actualFile = findActualWorkFile(imgFileName);
                 File deletedFile = new File(FilePathConfig.WorksPath, imgFileName + ".del");
 
-                if (originalFile.exists() && !deletedFile.exists()) {
-                    boolean renamed = originalFile.renameTo(deletedFile);
+                if (actualFile != null && actualFile.exists()) {
+                    // 如果目标文件已存在，跳过
+                    if (deletedFile.exists()) {
+                        log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
+                        continue;
+                    }
+                    
+                    boolean renamed = actualFile.renameTo(deletedFile);
                     if (renamed) {
                         renamedCount++;
-                        log.info("作品文件重命名为 .del 成功: {} -> {}", imgFileName, imgFileName + ".del");
+                        log.info("作品文件重命名为 .del 成功: {} -> {}", actualFile.getName(), imgFileName + ".del");
                     } else {
-                        log.error("作品文件重命名失败: {}", imgFileName);
+                        log.error("作品文件重命名失败: {}", actualFile.getName());
                     }
-                } else if (!originalFile.exists()) {
-                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
                 } else {
-                    log.warn("作品文件已标记为删除，跳过重命名: {}", imgFileName);
+                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
                 }
             }
         }
@@ -262,11 +267,12 @@ public class WorkServiceImpl implements WorkService {
             }
         }
 
-        // 8. 生成唯一文件名（保留原始扩展名）
+        // 8. 生成唯一文件名（保留原始扩展名，添加 .pend 后缀表示待审核）
         String uniqueFileName = UUID.randomUUID().toString().replace("-", "") + "." + extension;
-        String savePath = Paths.get(FilePathConfig.WorksPath, uniqueFileName).toString();
+        String pendFileName = uniqueFileName + ".pend"; // 待审核文件
+        String savePath = Paths.get(FilePathConfig.WorksPath, pendFileName).toString();
 
-        // 9. 保存文件
+        // 9. 保存文件（以 .pend 后缀保存）
         File saveFile = new File(savePath);
         File parentDir = saveFile.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
@@ -274,13 +280,13 @@ public class WorkServiceImpl implements WorkService {
         }
 
         cn.hutool.core.io.FileUtil.writeBytes(fileBytes, saveFile);
-        log.info("作品图片保存成功: {}", savePath);
+        log.info("作品图片保存成功（待审核状态）: {}", savePath);
 
-        // 10. 构建 Works 对象并插入数据库
+        // 10. 构建 Works 对象并插入数据库（数据库存储正常格式的文件名）
         Works works = new Works();
         works.setUser_id(userId);
         works.setWork_title(workTitle.trim());
-        works.setImg_url(uniqueFileName); // 只存文件名
+        works.setImg_url(uniqueFileName); // 数据库存储正常格式（如 uuid.png），不随审核状态变化
         works.setSeries_id(finalSeriesId); // null 表示不属于任何系列，> 0 表示具体系列 ID
         works.setLike_count(0);
         works.setStar_count(0);
@@ -603,11 +609,12 @@ public class WorkServiceImpl implements WorkService {
                 throw new IllegalArgumentException("文件不是有效的图片格式，请上传 JPG/JPEG/PNG 格式的图片");
             }
 
-            // 5. 生成唯一文件名（保留原始扩展名）
+            // 5. 生成唯一文件名（保留原始扩展名，添加 .pend 后缀表示待审核）
             String uniqueFileName = UUID.randomUUID().toString().replace("-", "") + "." + extension;
-            String savePath = Paths.get(FilePathConfig.WorksPath, uniqueFileName).toString();
+            String pendFileName = uniqueFileName + ".pend"; // 待审核文件
+            String savePath = Paths.get(FilePathConfig.WorksPath, pendFileName).toString();
 
-            // 6. 保存新文件
+            // 6. 保存新文件（以 .pend 后缀保存）
             File saveFile = new File(savePath);
             File parentDir = saveFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
@@ -615,14 +622,14 @@ public class WorkServiceImpl implements WorkService {
             }
 
             cn.hutool.core.io.FileUtil.writeBytes(fileBytes, saveFile);
-            log.info("新作品图片保存成功: {}", savePath);
+            log.info("新作品图片保存成功（待审核状态）: {}", savePath);
 
-            // 7. 删除旧图片文件
+            // 7. 删除旧图片文件（处理各种状态的文件）
             if (oldImgUrl != null && !oldImgUrl.isEmpty()) {
                 deleteOldImageFile(oldImgUrl);
             }
 
-            // 8. 设置新图片 URL
+            // 8. 设置新图片 URL（数据库存储正常格式）
             newImgUrl = uniqueFileName;
         }
 
@@ -751,7 +758,7 @@ public class WorkServiceImpl implements WorkService {
     /**
      * 删除旧图片文件（重命名为 .del 后缀）
      *
-     * @param imgFileName 图片文件名
+     * @param imgFileName 图片文件名（数据库存储的正常格式）
      * @author PlayerEG
      */
     private void deleteOldImageFile(String imgFileName) {
@@ -759,20 +766,25 @@ public class WorkServiceImpl implements WorkService {
             return;
         }
 
-        File originalFile = new File(FilePathConfig.WorksPath, imgFileName);
+        // 查找实际存在的文件（可能是正常格式、.pend 或 .fail）
+        File actualFile = findActualWorkFile(imgFileName);
         File deletedFile = new File(FilePathConfig.WorksPath, imgFileName + ".del");
 
-        if (originalFile.exists() && !deletedFile.exists()) {
-            boolean renamed = originalFile.renameTo(deletedFile);
-            if (renamed) {
-                log.info("旧图片文件重命名为 .del 成功: {} -> {}", imgFileName, imgFileName + ".del");
-            } else {
-                log.error("旧图片文件重命名失败: {}", imgFileName);
+        if (actualFile != null && actualFile.exists()) {
+            // 如果目标文件已存在，跳过
+            if (deletedFile.exists()) {
+                log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
+                return;
             }
-        } else if (!originalFile.exists()) {
-            log.warn("旧图片文件不存在，跳过删除: {}", imgFileName);
+            
+            boolean renamed = actualFile.renameTo(deletedFile);
+            if (renamed) {
+                log.info("旧图片文件重命名为 .del 成功: {} -> {}", actualFile.getName(), imgFileName + ".del");
+            } else {
+                log.error("旧图片文件重命名失败: {}", actualFile.getName());
+            }
         } else {
-            log.warn("旧图片文件已标记为删除，跳过重命名: {}", imgFileName);
+            log.warn("旧图片文件不存在，跳过删除: {}", imgFileName);
         }
     }
 
@@ -795,23 +807,123 @@ public class WorkServiceImpl implements WorkService {
 
         int totalCount = workIds.size();
 
-        // 使用自定义 SQL 批量更新审核状态
-        int affectedRows = worksMapper.adminBatchUpdateApprovalStatus(workIds, approvalStatus);
+        // 1. 先查询所有作品信息，获取文件名和当前审核状态
+        List<Works> worksList = worksMapper.selectBatchIds(workIds);
+        if (worksList == null || worksList.isEmpty()) {
+            log.warn("未找到对应的作品，作品 ID 列表: {}", workIds);
+            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(totalCount, 0, workIds);
+        }
+
+        // 2. 过滤出未删除的作品
+        List<Works> validWorks = worksList.stream()
+            .filter(work -> !work.getIs_delete())
+            .toList();
+
+        if (validWorks.isEmpty()) {
+            log.warn("没有可更新的作品（可能已全部删除），作品 ID 列表: {}", workIds);
+            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(totalCount, 0, workIds);
+        }
+
+        // 3. 根据新的审核状态重命名文件
+        int renamedCount = 0;
+        for (Works work : validWorks) {
+            String imgFileName = work.getImg_url();
+            if (imgFileName != null && !imgFileName.isEmpty()) {
+                // 确定目标后缀
+                String targetSuffix = getFileSuffixByApprovalStatus(approvalStatus);
+                String targetFileName = imgFileName + targetSuffix;
+                
+                // 查找当前实际存在的文件（可能是 .pend、.fail 或正常格式）
+                File actualFile = findActualWorkFile(imgFileName);
+                File targetFile = new File(FilePathConfig.WorksPath, targetFileName);
+                
+                if (actualFile != null && actualFile.exists()) {
+                    // 如果目标文件已存在，跳过
+                    if (targetFile.exists()) {
+                        log.warn("目标文件已存在，跳过重命名: {} -> {}", actualFile.getName(), targetFileName);
+                        continue;
+                    }
+                    
+                    // 如果当前文件已经是目标文件，无需重命名
+                    if (actualFile.getName().equals(targetFileName)) {
+                        log.debug("文件已是目标状态，无需重命名: {}", targetFileName);
+                        continue;
+                    }
+                    
+                    // 执行重命名
+                    boolean renamed = actualFile.renameTo(targetFile);
+                    if (renamed) {
+                        renamedCount++;
+                        log.info("作品文件重命名成功: {} -> {}", actualFile.getName(), targetFileName);
+                    } else {
+                        log.error("作品文件重命名失败: {} -> {}", actualFile.getName(), targetFileName);
+                    }
+                } else {
+                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
+                }
+            }
+        }
+
+        log.info("文件重命名完成，成功: {}/{}", renamedCount, validWorks.size());
+
+        // 4. 使用自定义 SQL 批量更新审核状态
+        List<Integer> validWorkIds = validWorks.stream()
+            .map(Works::getWork_id)
+            .toList();
+        int affectedRows = worksMapper.adminBatchUpdateApprovalStatus(validWorkIds, approvalStatus);
 
         int successCount = affectedRows > 0 ? affectedRows : 0;
         List<Integer> failedWorkIds = new java.util.ArrayList<>();
 
         // 计算失败的 ID（简化处理：如果影响行数小于总数，则认为全部失败）
-        if (affectedRows < totalCount) {
-            failedWorkIds.addAll(workIds);
+        if (affectedRows < validWorkIds.size()) {
+            failedWorkIds.addAll(validWorkIds);
         }
 
-        log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {}",
-            totalCount, successCount, failedWorkIds.size(), approvalStatus);
+        log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {}, 文件重命名: {}",
+            totalCount, successCount, failedWorkIds.size(), approvalStatus, renamedCount);
 
         return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(
             totalCount, successCount, failedWorkIds
         );
+    }
+
+    /**
+     * 根据审核状态获取文件后缀
+     *
+     * @param approvalStatus 审核状态（10-正常、20-待审核、30-未过审）
+     * @return 文件后缀（空字符串表示正常格式，.pend 表示待审核，.fail 表示未过审）
+     * @author PlayerEG
+     */
+    private String getFileSuffixByApprovalStatus(Integer approvalStatus) {
+        return switch (approvalStatus) {
+            case 10 -> "";      // 正常：无后缀
+            case 20 -> ".pend"; // 待审核：.pend 后缀
+            case 30 -> ".fail"; // 未过审：.fail 后缀
+            default -> "";      // 默认无后缀
+        };
+    }
+
+    /**
+     * 查找作品实际存在的文件（尝试不同的后缀）
+     *
+     * @param baseFileName 基础文件名（如 uuid.png）
+     * @return 实际存在的文件对象，如果都不存在则返回 null
+     * @author PlayerEG
+     */
+    private File findActualWorkFile(String baseFileName) {
+        // 尝试的顺序：正常格式 > .pend > .fail
+        String[] possibleSuffixes = {"", ".pend", ".fail"};
+        
+        for (String suffix : possibleSuffixes) {
+            String fileName = baseFileName + suffix;
+            File file = new File(FilePathConfig.WorksPath, fileName);
+            if (file.exists() && file.isFile()) {
+                return file;
+            }
+        }
+        
+        return null; // 都没找到
     }
 
     /**
@@ -846,26 +958,31 @@ public class WorkServiceImpl implements WorkService {
             return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
         }
 
-        // 3. 将文件后缀名改为 .del
+        // 3. 将文件后缀名改为 .del（处理各种状态的文件）
         int renamedCount = 0;
         for (Works work : validWorks) {
             String imgFileName = work.getImg_url();
             if (imgFileName != null && !imgFileName.isEmpty()) {
-                File originalFile = new File(FilePathConfig.WorksPath, imgFileName);
+                // 查找实际存在的文件（可能是正常格式、.pend 或 .fail）
+                File actualFile = findActualWorkFile(imgFileName);
                 File deletedFile = new File(FilePathConfig.WorksPath, imgFileName + ".del");
 
-                if (originalFile.exists() && !deletedFile.exists()) {
-                    boolean renamed = originalFile.renameTo(deletedFile);
+                if (actualFile != null && actualFile.exists()) {
+                    // 如果目标文件已存在，跳过
+                    if (deletedFile.exists()) {
+                        log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
+                        continue;
+                    }
+                    
+                    boolean renamed = actualFile.renameTo(deletedFile);
                     if (renamed) {
                         renamedCount++;
-                        log.info("作品文件重命名为 .del 成功: {} -> {}", imgFileName, imgFileName + ".del");
+                        log.info("作品文件重命名为 .del 成功: {} -> {}", actualFile.getName(), imgFileName + ".del");
                     } else {
-                        log.error("作品文件重命名失败: {}", imgFileName);
+                        log.error("作品文件重命名失败: {}", actualFile.getName());
                     }
-                } else if (!originalFile.exists()) {
-                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
                 } else {
-                    log.warn("作品文件已标记为删除，跳过重命名: {}", imgFileName);
+                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
                 }
             }
         }

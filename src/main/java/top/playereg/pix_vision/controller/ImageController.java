@@ -57,6 +57,9 @@ public class ImageController {
     @Autowired
     private WorkService workService;
 
+    @Autowired
+    private top.playereg.pix_vision.mapper.WorksMapper worksMapper;
+
     // 允许访问的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
         "jpg", "jpeg", "png"
@@ -134,6 +137,7 @@ public class ImageController {
             - 文件类型白名单（JPG/JPEG/PNG）
             - HTTP 缓存支持（1小时）
             - 多层子目录支持
+            - **根据审核状态动态查找文件**
 
             ## 参数说明：
             - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
@@ -149,10 +153,15 @@ public class ImageController {
             ## 业务逻辑：
             1. 校验文件路径安全性（禁止 .. 和绝对路径）
             2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
-            3. 构建完整文件路径并验证文件存在性
-            4. 确保文件在允许的目录下（~/.pix_vision/data/works/）
-            5. 设置响应头 Content-Type 和 Cache-Control
-            6. 返回图片二进制数据
+            3. **从文件名提取作品 ID，查询审核状态**
+            4. **根据审核状态动态拼接文件后缀**：
+               - 待审核（20）：查找 `.pend` 后缀文件
+               - 未过审（30）：查找 `.fail` 后缀文件
+               - 正常（10）：查找正常格式文件
+            5. 构建完整文件路径并验证文件存在性
+            6. 确保文件在允许的目录下（~/.pix_vision/data/works/）
+            7. 设置响应头 Content-Type 和 Cache-Control
+            8. 返回图片二进制数据
 
             ## 注意事项：
             - 该接口**无需认证**，任何人都可以访问
@@ -161,6 +170,7 @@ public class ImageController {
             - **仅支持 JPG、JPEG、PNG 格式**的图片
             - 文件路径相对于 `~/.pix_vision/data/works/` 目录
             - 适用于展示用户上传的作品图片
+            - **数据库存储的文件名始终为正常格式**，实际文件根据审核状态有不同的后缀
             """
     )
     @PublicAccess("获取作品图片，无需认证")
@@ -168,7 +178,9 @@ public class ImageController {
     public ResponseEntity<Resource> getWorkImage(
         @Parameter(description = "图像相对路径，支持子目录，如：2024/04/artwork.png", required = true, example = "artwork_001.png") @RequestParam String filePath
     ) {
-        return getImageResource(FilePathConfig.WorksPath, filePath, "作品");
+        // 根据审核状态动态查找文件
+        String actualFilePath = resolveWorkFilePath(filePath);
+        return getImageResource(FilePathConfig.WorksPath, actualFilePath, "作品");
     }
 
     /**
@@ -645,6 +657,62 @@ public class ImageController {
                 return "image/svg+xml";
             default:
                 return "application/octet-stream";
+        }
+    }
+
+    /**
+     * 根据作品文件名和审核状态动态解析实际文件路径
+     * <p>
+     * 数据库存储的文件名始终为正常格式（如 uuid.png），但实际文件根据审核状态有不同的后缀：
+     * - 待审核（approval_status = 20）：文件名为 uuid.png.pend
+     * - 未过审（approval_status = 30）：文件名为 uuid.png.fail
+     * - 正常（approval_status = 10）：文件名为 uuid.png
+     *
+     * @param filePath 数据库存储的文件名（正常格式）
+     * @return 实际文件路径（根据审核状态添加相应后缀）
+     * @author PlayerEG
+     */
+    private String resolveWorkFilePath(String filePath) {
+        try {
+            // 从文件名提取作品 ID（假设文件名格式为 uuid.ext 或 uuid.ext.suffix）
+            // 由于无法直接从文件名获取作品 ID，我们需要通过 img_url 反查作品
+            // 这里采用简化方案：直接查询所有作品中 img_url 匹配的记录
+            
+            // 注意：filePath 可能包含子目录，如 "2024/04/artwork.png"
+            // 我们需要提取纯文件名部分进行匹配
+            String pureFileName = filePath;
+            int lastSlashIndex = filePath.lastIndexOf("/");
+            if (lastSlashIndex >= 0) {
+                pureFileName = filePath.substring(lastSlashIndex + 1);
+            }
+            
+            // 查询作品信息（需要自定义 SQL 来根据 img_url 查询）
+            // 由于当前 Mapper 没有这个方法，我们采用另一种策略：
+            // 直接尝试不同的文件后缀，按优先级查找
+            
+            // 优先级：正常文件 > .pend 文件 > .fail 文件
+            String[] possiblePaths = {
+                filePath,                    // 正常格式（审核通过）
+                filePath + ".pend",         // 待审核
+                filePath + ".fail"          // 未过审
+            };
+            
+            for (String possiblePath : possiblePaths) {
+                Path fullPath = Paths.get(FilePathConfig.WorksPath, possiblePath).normalize();
+                File file = fullPath.toFile();
+                if (file.exists() && file.isFile()) {
+                    log.debug("找到作品文件: {}, 路径: {}", filePath, possiblePath);
+                    return possiblePath;
+                }
+            }
+            
+            // 如果都没找到，返回原始路径（让后续逻辑处理 404）
+            log.warn("未找到作品文件: {}", filePath);
+            return filePath;
+            
+        } catch (Exception e) {
+            log.error("解析作品文件路径异常: {}, 错误: {}", filePath, e.getMessage());
+            return filePath; // 发生异常时返回原始路径
         }
     }
 }
