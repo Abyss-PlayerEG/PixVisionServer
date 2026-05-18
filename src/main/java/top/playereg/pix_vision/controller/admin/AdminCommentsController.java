@@ -105,6 +105,7 @@ public class AdminCommentsController {
      * @param userId       用户ID（可选）
      * @param commentFloor 评论层级（可选，1-一级评论、2-二级评论）
      * @param keyword      评论关键字（可选）
+     * @param orderBy      排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）
      * @return 分页结果
      * @author PlayerEG
      */
@@ -117,7 +118,7 @@ public class AdminCommentsController {
             - 需要审核员或系统管理员角色（role=55 或 77）才能访问
             - MyBatis-Plus 分页支持
             - 支持多条件过滤：作品、用户、评论层级、审核状态、关键字
-            - 按时间倒序排列（最新评论优先）
+            - 支持按时间排序（最新/最早）
 
             ## 参数说明：
             - **current**: **当前页码**，Long 类型，必填，从 1 开始
@@ -127,6 +128,9 @@ public class AdminCommentsController {
             - **commentFloor**: **评论层级**，Integer 类型，可选，1-一级评论、2-二级评论
             - **approvalStatus**: **审核状态**，Integer 类型，可选，10-正常、20-待审核、30-未过审
             - **keyword**: **评论关键字**，String 类型，可选，模糊搜索评论内容
+            - **orderBy**: **排序方式**，String 类型，可选
+              - 'oldest': 按最早发布排列
+              - 其他值或 null: 按最新发布排列（默认）
 
             ## 返回说明：
             - **成功**：返回 IPage<Comments> 对象，包含评论列表和分页信息
@@ -136,7 +140,7 @@ public class AdminCommentsController {
             1. 校验分页参数（current>=1, 1<=size<=100）
             2. 构建 MyBatis-Plus 分页对象
             3. 根据可选参数构建动态 SQL 查询
-            4. 按时间倒序排列（time DESC）
+            4. 根据排序参数动态调整 ORDER BY 子句
             5. 返回分页结果集
 
             ## 注意事项：
@@ -158,7 +162,8 @@ public class AdminCommentsController {
             allowableValues = {"10", "20", "30"},
             example = "20"
         ) @RequestParam(required = false) Integer approvalStatus,
-        @Parameter(description = "评论关键字（可选）", required = false) @RequestParam(required = false) String keyword
+        @Parameter(description = "评论关键字（可选）", required = false) @RequestParam(required = false) String keyword,
+        @Schema(description = "排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）", allowableValues = {"newest", "oldest"}, example = "newest") @RequestParam(required = false, defaultValue = "newest") String orderBy
     ) {
         // 参数校验
         ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
@@ -167,7 +172,7 @@ public class AdminCommentsController {
         }
 
         try {
-            IPage<Comments> result = commentService.getCommentsPage(current, size, workId, userId, commentFloor, approvalStatus, keyword);
+            IPage<Comments> result = commentService.getCommentsPage(current, size, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
             return ResponsePojo.success(result, "查询成功");
         } catch (Exception e) {
             log.error("分页查询评论异常，错误: {}", e.getMessage(), e);

@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.Works;
 
+import java.util.List;
+
 /**
  * 作品数据访问层
  * <p>
@@ -179,4 +181,15 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @author PlayerEG
      */
     int selectTotalViewCountByWorkId(@Param("workId") Integer workId);
+
+    /**
+     * 管理员分页查询作品列表（支持多条件过滤）
+     *
+     * @param page    分页对象
+     * @param keyword 关键字（可选，模糊搜索标题）
+     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    IPage<Works> selectAdminWorksPage(Page<Works> page, @Param("keyword") String keyword, @Param("orderBy") String orderBy);
 }

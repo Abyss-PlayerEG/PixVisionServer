@@ -258,4 +258,24 @@
         ) g
     </select>
 
+    <!-- 管理员分页查询作品列表（支持多条件过滤，不过滤审核状态） -->
+    <select id="selectAdminWorksPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM tb_works
+        WHERE is_delete = 0
+        <if test="keyword != null and keyword != ''">
+            AND work_title LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY
+        <choose>
+            <when test="orderBy == 'oldest'">
+                create_time ASC
+            </when>
+            <otherwise>
+                create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
 </mapper>

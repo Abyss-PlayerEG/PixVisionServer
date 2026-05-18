@@ -94,5 +94,5 @@ public interface CommentService {
     IPage<Comments> getCommentsPage(Long current, Long size,
                                     Integer workId, Integer userId,
                                     Integer commentFloor, Integer approvalStatus,
-                                    String keyword);
+                                    String keyword, String orderBy);
 }
