@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.StarsMapper">
+
+    <!-- 查询用户是否已收藏某作品 -->
+    <select id="selectByUserAndWork" resultType="top.playereg.pix_vision.pojo.Star">
+        SELECT user_id, work_id, is_delete, time
+        FROM tb_star
+        WHERE user_id = #{userId}
+          AND work_id = #{workId}
+            LIMIT 1
+    </select>
+
+    <!-- 插入收藏记录 -->
+    <insert id="insertStar">
+        INSERT INTO tb_star (user_id, work_id, is_delete, time)
+        VALUES (#{user_id}, #{work_id}, #{is_delete}, #{time})
+    </insert>
+
+    <!-- 更新收藏记录的删除状态 -->
+    <update id="updateDeleteStatus">
+        UPDATE tb_star
+        SET is_delete = #{isDelete},
+            time      = NOW()
+        WHERE user_id = #{userId}
+          AND work_id = #{workId}
+    </update>
+
+    <!-- 统计作品的收藏总数（仅统计未删除的记录） -->
+    <select id="countStarsByWorkId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM tb_star
+        WHERE work_id = #{workId}
+          AND is_delete = 0
+    </select>
+
+    <!-- 分页查询用户收藏过的作品列表（只返回审核通过的作品） -->
+    <select id="selectUserStarredWorks" resultType="top.playereg.pix_vision.pojo.Works">
+        SELECT w.work_id,
+               w.user_id,
+               w.work_title,
+               w.img_url,
+               w.series_id,
+               w.like_count,
+               w.star_count,
+               w.view_count,
+               w.is_original_work,
+               w.out_url,
+               w.update_time,
+               w.update_user,
+               w.create_time,
+               w.create_user
+        FROM tb_star s
+                 INNER JOIN tb_works w ON s.work_id = w.work_id
+        WHERE s.user_id = #{userId}
+          AND s.is_delete = 0
+          AND w.is_delete = 0
+          AND w.approval_status = 10
+        ORDER BY s.time DESC
+    </select>
+
+</mapper>

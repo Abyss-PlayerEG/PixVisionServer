@@ -8,8 +8,6 @@ import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.Works;
 
-import java.util.List;
-
 /**
  * 作品数据访问层
  * <p>
@@ -156,6 +154,16 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @author PlayerEG
      */
     int updateLikeCount(@Param("workId") Integer workId, @Param("delta") int delta);
+
+    /**
+     * 原子更新作品收藏数
+     *
+     * @param workId 作品 ID
+     * @param delta  变化量（+1 或 -1）
+     * @return 影响的行数
+     * @author PlayerEG
+     */
+    int updateStarCount(@Param("workId") Integer workId, @Param("delta") int delta);
 
     /**
      * 批量更新作品的浏览量计数（用于启动预热同步）

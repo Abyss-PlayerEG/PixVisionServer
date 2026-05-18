@@ -215,6 +215,15 @@
           AND is_delete = 0
     </update>
 
+    <!-- 原子更新作品收藏数 -->
+    <update id="updateStarCount">
+        UPDATE tb_works
+        SET star_count  = star_count + #{delta},
+            update_time = NOW()
+        WHERE work_id = #{workId}
+          AND is_delete = 0
+    </update>
+
     <!-- 批量更新作品的浏览量计数（用于启动预热同步） -->
     <update id="batchUpdateViewCounts">
         UPDATE tb_works
