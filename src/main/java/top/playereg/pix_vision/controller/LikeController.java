@@ -1,5 +1,7 @@
 package top.playereg.pix_vision.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -7,10 +9,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.LikeService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
+import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 /**
@@ -173,5 +177,91 @@ public class LikeController {
     ) {
         Integer count = likeService.getLikeCount(workId);
         return ResponsePojo.success(count, "查询成功");
+    }
+
+    /**
+     * 分页查询用户点赞过的作品列表
+     *
+     * @param userId  用户 ID
+     * @param current 当前页码（从 1 开始）
+     * @param size    每页大小（范围 1-500）
+     * @return 响应数据，包含分页的作品列表
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "分页查询用户点赞作品",
+        description = """
+            # 分页查询用户点赞作品（无需登录认证）
+
+            ## 特性
+            - 公开接口（无需 Token 认证）
+            - MyBatis-Plus 分页支持
+            - 只返回审核通过的作品（approval_status = 10）
+            - 按点赞时间倒序排列（最新点赞优先）
+
+            ## 参数说明：
+            - **userId**: 用户 ID，Integer 类型，必填
+            - **current**: 当前页码，Long 类型，必填，从 1 开始
+            - **size**: 每页大小，Long 类型，必填，范围 1-500
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": IPage<Works>}** ，包含分页信息和作品列表
+            - **用户 ID 无效**：返回 **{"data": null}** 和“用户 ID 无效”提示
+
+            ## 业务逻辑：
+            1. 校验用户 ID、页码和每页数量参数有效性
+            2. 调用 Service 层进行分页查询
+            3. 关联查询 tb_like 和 tb_works 表
+            4. 过滤条件：用户点赞且未删除（l.is_delete=0）、作品未删除（w.is_delete=0）、审核通过（w.approval_status=10）
+            5. 按点赞时间倒序返回结果
+
+            ## 注意事项：
+            - **此接口为公开接口，无需登录即可访问**
+            - 如果用户没有点赞过任何作品，返回空列表 []
+            - **只返回审核通过的作品**，待审核和未过审的作品不可见
+            - 建议合理设置每页数量（size），避免一次性加载过多数据
+            - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
+            - 使用 **RESTful 风格**路径参数，格式：`/user-liked/{userId}/{current}/{size}`
+            """
+    )
+    @PublicAccess("分页查询用户点赞作品，无需认证")
+    @GetMapping("/user-liked/{userId}/{current}/{size}")
+    public ResponsePojo<IPage<Works>> getUserLikedWorks(
+        @Parameter(description = "用户 ID", required = true, example = "1") @PathVariable Integer userId,
+        @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,
+        @Parameter(description = "每页大小，范围 1-500", required = true, example = "10") @PathVariable Long size
+    ) {
+        log.debug("分页查询用户点赞作品 - 用户 ID: {}, 页码: {}, 每页大小: {}", userId, current, size);
+
+        // 参数校验
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return ResponsePojo.error(null, "用户 ID 无效");
+        }
+
+        ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
+        if (error != null) {
+            return (ResponsePojo<IPage<Works>>) (ResponsePojo<?>) error;
+        }
+
+        try {
+            // 构建分页对象
+            Page<Works> page = new Page<>(current, size);
+
+            // 调用服务层查询
+            IPage<Works> result = likeService.getUserLikedWorks(page, userId);
+
+            if (result != null && result.getRecords() != null) {
+                log.info("查询用户点赞作品成功，用户 ID: {}, 总数: {}, 当前页: {}",
+                    userId, result.getTotal(), result.getCurrent());
+                return ResponsePojo.success(result, "查询成功");
+            } else {
+                log.warn("查询用户点赞作品返回结果为空，用户 ID: {}", userId);
+                return ResponsePojo.error(null, "查询失败，返回结果为空");
+            }
+        } catch (Exception e) {
+            log.error("查询用户点赞作品异常，用户 ID: {}, 错误: {}", userId, e.getMessage(), e);
+            return ResponsePojo.error(null, "查询失败：" + e.getMessage());
+        }
     }
 }

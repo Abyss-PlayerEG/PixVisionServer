@@ -1,10 +1,12 @@
-
 package top.playereg.pix_vision.mapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.Like;
+import top.playereg.pix_vision.pojo.Works;
 
 /**
  * 点赞 Mapper 接口
@@ -49,4 +51,14 @@ public interface LikesMapper {
      * @return 点赞数量
      */
     Integer countLikesByWorkId(@Param("workId") Integer workId);
+
+    /**
+     * 分页查询用户点赞过的作品列表（只返回审核通过的作品）
+     *
+     * @param page   分页对象
+     * @param userId 用户 ID
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    IPage<Works> selectUserLikedWorks(Page<Works> page, @Param("userId") Integer userId);
 }

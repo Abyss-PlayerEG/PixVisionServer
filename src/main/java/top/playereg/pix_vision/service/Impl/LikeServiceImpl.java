@@ -1,11 +1,14 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.mapper.LikesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.Like;
+import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.service.LikeService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -138,5 +141,49 @@ public class LikeServiceImpl implements LikeService {
      */
     private void updateWorkLikeCount(Integer workId, int delta) {
         worksMapper.updateLikeCount(workId, delta);
+    }
+
+    /**
+     * 分页查询用户点赞过的作品列表（只返回审核通过的作品）
+     * <p>
+     * 通过关联查询 tb_like 和 tb_works 表，获取用户点赞且未删除、审核通过的作品。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>前端展示用户的“我喜欢”列表时调用。</li>
+     *   <li>查看自己点赞过的作品历史记录。</li>
+     * </ol>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>这是一个公开接口，无需登录认证。</li>
+     *   <li>只返回审核通过的作品（approval_status = 10）。</li>
+     *   <li>按点赞时间倒序排列，最新点赞的作品排在前面。</li>
+     *   <li>如果用户没有点赞过任何作品，返回空的分页结果。</li>
+     * </ul>
+     *
+     * @param page   分页对象
+     * @param userId 用户 ID
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    @Override
+    public IPage<Works> getUserLikedWorks(Page<Works> page, Integer userId) {
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return new Page<>(page.getCurrent(), page.getSize());
+        }
+
+        log.info("开始查询用户点赞作品，用户 ID: {}, 页码: {}, 每页大小: {}",
+            userId, page.getCurrent(), page.getSize());
+
+        // 调用 Mapper 层查询
+        IPage<Works> result = likesMapper.selectUserLikedWorks(page, userId);
+
+        log.info("查询用户点赞作品完成，用户 ID: {}, 总数: {}, 当前页: {}",
+            userId, result.getTotal(), result.getCurrent());
+
+        return result;
     }
 }

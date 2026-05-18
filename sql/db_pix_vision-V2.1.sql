@@ -108,13 +108,15 @@ DROP TABLE IF EXISTS `tb_messages`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `tb_messages` (
-  `message_id` int NOT NULL AUTO_INCREMENT COMMENT 'id唯一值',
-  `message` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci DEFAULT NULL COMMENT '消息内容',
-  `project` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci DEFAULT NULL COMMENT '消息主题',
-  `to` int DEFAULT NULL COMMENT '接收者',
-  `is_read` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已读，0 - 未读、1 - 已读',
-  `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
-  PRIMARY KEY (`message_id`)
+`message_id` int NOT NULL AUTO_INCREMENT COMMENT 'id唯一值',
+`message` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci DEFAULT NULL COMMENT '消息内容',
+`project` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci DEFAULT NULL COMMENT '消息主题',
+`to` int DEFAULT NULL COMMENT '接收者',
+`is_read` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已读，0 - 未读、1 - 已读',
+`is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
+PRIMARY KEY (`message_id`),
+KEY `tb_messages_tb_user_FK` (`to`),
+CONSTRAINT `tb_messages_tb_user_FK` FOREIGN KEY (`to`) REFERENCES `tb_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_german2_ci COMMENT='消息列表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 

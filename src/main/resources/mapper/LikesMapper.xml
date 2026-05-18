@@ -34,4 +34,29 @@
           AND is_delete = 0
     </select>
 
+    <!-- 分页查询用户点赞过的作品列表（只返回审核通过的作品） -->
+    <select id="selectUserLikedWorks" resultType="top.playereg.pix_vision.pojo.Works">
+        SELECT w.work_id,
+               w.user_id,
+               w.work_title,
+               w.img_url,
+               w.series_id,
+               w.like_count,
+               w.star_count,
+               w.view_count,
+               w.is_original_work,
+               w.out_url,
+               w.update_time,
+               w.update_user,
+               w.create_time,
+               w.create_user
+        FROM tb_like l
+                 INNER JOIN tb_works w ON l.work_id = w.work_id
+        WHERE l.user_id = #{userId}
+          AND l.is_delete = 0
+          AND w.is_delete = 0
+          AND w.approval_status = 10
+        ORDER BY l.time DESC
+    </select>
+
 </mapper>

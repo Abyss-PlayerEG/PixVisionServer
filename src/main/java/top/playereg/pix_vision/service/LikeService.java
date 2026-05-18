@@ -1,5 +1,9 @@
 package top.playereg.pix_vision.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import top.playereg.pix_vision.pojo.Works;
+
 /**
  * 点赞服务接口
  *
@@ -32,4 +36,14 @@ public interface LikeService {
      * @return 点赞数
      */
     Integer getLikeCount(Integer workId);
+
+    /**
+     * 分页查询用户点赞过的作品列表（只返回审核通过的作品）
+     *
+     * @param page   分页对象
+     * @param userId 用户 ID
+     * @return 分页结果
+     * @author PlayerEG
+     */
+    IPage<Works> getUserLikedWorks(Page<Works> page, Integer userId);
 }
