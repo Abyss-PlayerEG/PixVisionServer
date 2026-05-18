@@ -220,4 +220,13 @@ public interface WorkService {
      * @author PlayerEG
      */
     IPage<Works> getAdminWorksPage(Long current, Long size, String keyword, String orderBy);
+
+    /**
+     * 查询用户统计数据（作品数、点赞总数、收藏总数、查看总数）
+     *
+     * @param userId 用户 ID
+     * @return 包含 workCount, totalLikes, totalStars, totalViews 的 Map
+     * @author PlayerEG
+     */
+    java.util.Map<String, Object> getUserStats(Integer userId);
 }

@@ -1066,7 +1066,7 @@ public class WorkServiceImpl implements WorkService {
         Page<Works> page = new Page<>(current, size);
 
         // 调用 Mapper 层查询
-        IPage<Works> result = worksMapper.selectAdminWorksPage(page, keyword, orderBy);
+        IPage<Works> result = worksMapper.adminSelectWorks(page, keyword, orderBy);
 
         // 为列表中的每个作品填充最新的浏览量（优先 Redis，其次回源）
         if (result != null && !result.getRecords().isEmpty()) {
@@ -1092,5 +1092,40 @@ public class WorkServiceImpl implements WorkService {
             result.getTotal(), result.getCurrent(), result.getSize());
 
         return result;
+    }
+
+    /**
+     * 查询用户统计数据（作品数、点赞总数、收藏总数、查看总数）
+     *
+     * @param userId 用户 ID
+     * @return 包含 workCount, totalLikes, totalStars, totalViews 的 Map
+     * @author PlayerEG
+     */
+    @Override
+    public java.util.Map<String, Object> getUserStats(Integer userId) {
+        if (userId == null || userId <= 0) {
+            log.warn("查询用户统计数据失败 - 无效的用户 ID: {}", userId);
+            return new java.util.HashMap<>();
+        }
+
+        log.info("开始查询用户统计数据 - 用户 ID: {}", userId);
+
+        // 调用 Mapper 层查询统计数据
+        java.util.Map<String, Object> stats = worksMapper.selectUserStats(userId);
+
+        if (stats == null) {
+            log.warn("用户统计数据为空 - 用户 ID: {}", userId);
+            stats = new java.util.HashMap<>();
+            stats.put("work_count", 0);
+            stats.put("total_likes", 0L);
+            stats.put("total_stars", 0L);
+            stats.put("total_views", 0L);
+        }
+
+        log.info("查询用户统计数据成功 - 用户 ID: {}, 作品数: {}, 点赞总数: {}, 收藏总数: {}, 查看总数: {}",
+            userId, stats.get("work_count"), stats.get("total_likes"),
+            stats.get("total_stars"), stats.get("total_views"));
+
+        return stats;
     }
 }

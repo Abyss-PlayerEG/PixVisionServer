@@ -70,4 +70,18 @@ public class User {
 
     @Schema(description = "用户 UUID 字符串", example = "字符串类型uuid")
     private String string_user_uuid;
+
+    // ==================== 统计数据字段（非数据库字段，仅用于接口返回）====================
+
+    @Schema(description = "作品发布数", example = "10")
+    private Integer work_count;
+
+    @Schema(description = "被点赞总数", example = "100")
+    private Long total_likes;
+
+    @Schema(description = "被收藏总数", example = "50")
+    private Long total_stars;
+
+    @Schema(description = "被查看总数", example = "1000")
+    private Long total_views;
 }

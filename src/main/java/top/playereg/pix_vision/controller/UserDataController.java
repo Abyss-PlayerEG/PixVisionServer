@@ -13,6 +13,7 @@ import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
+import top.playereg.pix_vision.util.RegexUtils;
 
 import java.util.List;
 
@@ -37,8 +38,8 @@ public class UserDataController {
      * 新增用户拓展数据
      *
      * @param request     HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
-     * @param dataName    数据名称（如：电话、邮箱、网站等，长度不超过 26 个字符）
-     * @param dataContent 数据内容（如：具体的电话号码、邮箱地址等，长度不超过 96 个字符）
+     * @param dataName    数据类型名称（固定值：电话、邮箱、QQ、微信、Bilibili、钉钉等）
+     * @param dataContent 数据内容（如：具体的电话号码、QQ号等，长度不超过 96 个字符）
      * @return 响应数据，表示添加是否成功
      * @author PlayerEG
      */
@@ -50,46 +51,62 @@ public class UserDataController {
 
             ## 特性
             - Token 认证（支持 Header 和 URL 参数两种方式）
-            - 数据长度限制校验（名称≤26字符，内容≤96字符）
+            - 数据类型名称固定为预设的社交平台名称
+            - 数据内容长度限制校验（≤96字符）
             - 1对n关系（同一用户可添加多条拓展数据）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
-            - dataName: 数据名称，字符串类型，必填，长度不超过 26 个字符（如：电话、邮箱、网站、微信等）
-            - dataContent: 数据内容，字符串类型，必填，长度不超过 96 个字符（如：具体的电话号码、邮箱地址、网站 url 等）
+            - dataName: **数据类型名称**，字符串类型，必填，**固定值**包括：
+              * 电话
+              * 邮箱
+              * QQ
+              * 微信
+              * Bilibili
+              * 其他预设社交平台名称
+            - dataContent: 数据内容，字符串类型，必填，长度不超过 96 个字符，**不同数据类型有不同的格式要求**：
+              * **电话**：11位中国大陆手机号（如：13800138000）
+              * **邮箱**：标准邮箱格式（如：user@example.com）
+              * **QQ**：5-11位数字，不能以0开头（如：123456789）
+              * **微信**：6-20位，以字母开头，允许字母、数字、下划线、减号（如：wxid_123456）
+              * **Bilibili**：1-10位纯数字UID（如：123456789）
 
             ## 返回说明：
             - **添加成功**：返回 **{"data": true}** 和"用户拓展数据添加成功"提示
             - **Token 不存在**：返回 **{"data": null}** 和"Token 不存在"提示
             - **Token 已失效**：返回 **{"data": null}** 和"Token 已失效"提示
-            - **数据名称为空**：返回 **{"data": null}** 和"数据名称不能为空"提示
-            - **数据名称过长**：返回 **{"data": null}** 和"数据名称长度不能超过 26 个字符"提示
+            - **数据类型为空**：返回 **{"data": null}** 和"数据类型不能为空"提示
+            - **数据类型不支持**：返回 **{"data": null}** 和"不支持的数据类型"提示
             - **数据内容为空**：返回 **{"data": null}** 和"数据内容不能为空"提示
             - **数据内容过长**：返回 **{"data": null}** 和"数据内容长度不能超过 96 个字符"提示
+            - **数据内容格式错误**：根据不同数据类型返回相应的格式错误提示
             - **添加失败**：返回 **{"data": false}** 和"用户拓展数据添加失败"提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
             2. 验证 Token 是否在白名单中
             3. 从 Token 中解析用户 ID
-            4. 校验数据名称和数据内容参数（非空、长度限制）
-            5. 检查用户是否存在
-            6. 调用服务层新增用户拓展数据
-            7. 返回添加结果
+            4. 校验数据类型名称参数（非空、是否为预设值）
+            5. 校验数据内容参数（非空、长度限制）
+            6. **根据数据类型进行单独的正则格式验证**
+            7. 检查用户是否存在
+            8. 调用服务层新增用户拓展数据
+            9. 返回添加结果
 
             ## 注意事项：
             - 需要携带有效的 Token 才能添加拓展数据
             - Token 必须在白名单中（未过期、未登出）
-            - 数据名称长度限制：**不超过 26 个字符**
+            - **dataName 必须为预设的固定值**，不支持自定义数据类型名称
             - 数据内容长度限制：**不超过 96 个字符**
+            - **不同数据类型有不同的格式要求**，系统会自动进行正则验证
             - 同一用户可以添加多条拓展数据（1 对 n 关系）
-            - 常见的数据名称示例：电话、邮箱、网站、微信、QQ 等
+            - 每种数据类型每个用户只能有一条有效记录
             """
     )
     public ResponsePojo<Boolean> addUserData(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
-        @Parameter(description = "数据名称，长度不超过 26 个字符", required = true, example = "电话") @RequestParam String dataName,
-        @Parameter(description = "数据内容，长度不超过 96 个字符", required = true, example = "13800138000") @RequestParam String dataContent
+        @Parameter(description = "数据类型名称（固定值：电话、邮箱、QQ、微信、Bilibili、钉钉等）", required = true, example = "QQ") @RequestParam String dataName,
+        @Parameter(description = "数据内容，长度不超过 96 个字符", required = true, example = "123456789") @RequestParam String dataContent
     ) {
         // 提取 Token
         String token = JWTUtils.extractTokenWithLog(request, "新增用户拓展数据接口");
@@ -113,17 +130,27 @@ public class UserDataController {
         }
 
         String username = JWTUtils.getUsernameFromToken(token);
-        log.info("开始新增用户拓展数据，用户 ID: {}, 用户名: {}, 数据名称: {}, 数据内容: {}", userId, username, dataName, dataContent);
+        log.info("开始新增用户拓展数据，用户 ID: {}, 用户名: {}, 数据类型: {}, 数据内容: {}", userId, username, dataName, dataContent);
 
-        // 校验数据名称参数
+        // 定义支持的数据类型固定值列表（已移除“钉钉”）
+        java.util.Set<String> allowedDataNames = new java.util.HashSet<>();
+        allowedDataNames.add("电话");
+        allowedDataNames.add("邮箱");
+        allowedDataNames.add("QQ");
+        allowedDataNames.add("微信");
+        allowedDataNames.add("Bilibili");
+        // 可以继续添加其他预设的社交平台名称
+
+        // 校验数据类型参数
         if (dataName == null || dataName.isEmpty()) {
-            log.warn("数据名称为空，用户 ID: {}", userId);
-            return ResponsePojo.error(null, "数据名称不能为空");
+            log.warn("数据类型为空，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "数据类型不能为空");
         }
 
-        if (dataName.length() > 26) {
-            log.warn("数据名称长度不符合要求，用户 ID: {}, 数据名称长度: {}", userId, dataName.length());
-            return ResponsePojo.error(null, "数据名称长度不能超过 26 个字符");
+        // 校验数据类型是否为预设的固定值
+        if (!allowedDataNames.contains(dataName)) {
+            log.warn("不支持的数据类型: {}, 用户 ID: {}", dataName, userId);
+            return ResponsePojo.error(null, "不支持的数据类型，支持的类型包括：" + String.join("、", allowedDataNames));
         }
 
         // 校验数据内容参数
@@ -137,11 +164,34 @@ public class UserDataController {
             return ResponsePojo.error(null, "数据内容长度不能超过 96 个字符");
         }
 
+        // 根据不同数据类型进行单独的正则验证
+        boolean isValid = switch (dataName) {
+            case "电话" -> RegexUtils.isPhone(dataContent);
+            case "邮箱" -> RegexUtils.isEmail(dataContent);
+            case "QQ" -> RegexUtils.isQQ(dataContent);
+            case "微信" -> RegexUtils.isWechat(dataContent);
+            case "Bilibili" -> RegexUtils.isBilibiliUid(dataContent);
+            default -> false; // 理论上不会到达这里
+        };
+
+        if (!isValid) {
+            log.warn("数据内容格式不正确 - 数据类型: {}, 数据内容: {}, 用户 ID: {}", dataName, dataContent, userId);
+            String errorMsg = switch (dataName) {
+                case "电话" -> "电话号码格式不正确，请输入11位中国大陆手机号";
+                case "邮箱" -> "邮箱地址格式不正确";
+                case "QQ" -> "QQ号码格式不正确，请输入5-11位数字";
+                case "微信" -> "微信号格式不正确，6-20位，以字母开头";
+                case "Bilibili" -> "Bilibili UID格式不正确，请输入1-10位纯数字";
+                default -> "数据内容格式不正确";
+            };
+            return ResponsePojo.error(null, errorMsg);
+        }
+
         // 调用服务层新增用户拓展数据
         Boolean result = userService.addUserData(userId, dataName, dataContent);
 
         if (result) {
-            log.info("用户拓展数据添加成功，用户 ID: {}, 用户名: {}, 数据名称: {}", userId, username, dataName);
+            log.info("用户拓展数据添加成功，用户 ID: {}, 用户名: {}, 数据类型: {}", userId, username, dataName);
             return ResponsePojo.success(true, "用户拓展数据添加成功");
         } else {
             log.error("用户拓展数据添加失败，用户 ID: {}, 用户名: {}", userId, username);
@@ -188,7 +238,7 @@ public class UserDataController {
             - 自动过滤已逻辑删除的数据（is_delete=0）
             - 返回结果按创建时间倒序排列（最新的在前）
             - 如果用户没有拓展数据，返回空列表 []
-            - 常见的数据名称示例：电话、邮箱、网站、微信、QQ 等
+            - 数据类型名称为预设的固定值：电话、邮箱、QQ、微信、Bilibili、钉钉等
             """
     )
     @PublicAccess("查询用户拓展数据，无需认证")

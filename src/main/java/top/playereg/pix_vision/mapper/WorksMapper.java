@@ -199,5 +199,18 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Works> selectAdminWorksPage(Page<Works> page, @Param("keyword") String keyword, @Param("orderBy") String orderBy);
+    IPage<Works> adminSelectWorks(
+        Page<Works> page,
+        @Param("keyword") String keyword,
+        @Param("orderBy") String orderBy
+    );
+
+    /**
+     * 查询用户统计数据（作品数、点赞总数、收藏总数、查看总数）
+     *
+     * @param userId 用户 ID
+     * @return 包含 work_count, total_likes, total_stars, total_views 的 Map
+     * @author PlayerEG
+     */
+    java.util.Map<String, Object> selectUserStats(@Param("userId") Integer userId);
 }

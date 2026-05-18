@@ -287,4 +287,15 @@
         </choose>
     </select>
 
+    <!-- 查询用户统计数据（作品数、点赞总数、收藏总数、查看总数） -->
+    <select id="selectUserStats" resultType="java.util.HashMap">
+        SELECT COUNT(*) AS work_count,
+               COALESCE(SUM(like_count), 0) AS total_likes,
+               COALESCE(SUM(star_count), 0) AS total_stars,
+               COALESCE(SUM(view_count), 0) AS total_views
+        FROM tb_works
+        WHERE user_id = #{userId}
+          AND is_delete = 0
+    </select>
+
 </mapper>

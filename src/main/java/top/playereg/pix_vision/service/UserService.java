@@ -168,6 +168,14 @@ public interface UserService {
     User selectUserByUsernameOrEmail(String usernameOrEmail);
 
     /**
+     * 根据用户名精确查询用户信息
+     *
+     * @param username 用户名
+     * @return 用户对象，如果不存在返回 null
+     */
+    User selectUserByUsername(String username);
+
+    /**
      * 更新用户绑定邮箱（需要验证码验证）
      *
      * @param userId   用户 ID

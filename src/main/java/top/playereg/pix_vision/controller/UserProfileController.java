@@ -35,6 +35,7 @@ public class UserProfileController {
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;
     private final VerificationCodeServices verificationCodeServices;
+    private final top.playereg.pix_vision.service.WorkService workService;
 
     /**
      * 分页查询用户信息
@@ -122,9 +123,14 @@ public class UserProfileController {
         // 调用服务层查询用户信息
         IPage<User> result = userService.selectPageUserInfo(page, searchKeyword, uuidBytes);
 
-        // 将用户的 16 字节二进制UUID转换成字符串UUID
+        // 将用户的 16 字节二进制UUID转换成字符串UUID，并隐藏敏感字段
         for (User user : result.getRecords()) {
             user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
+            // 隐藏敏感字段和隐私信息
+            user.setUser_uuid(null);
+            user.setPassword(null);
+            user.setEmail(null);              // 隐藏邮箱
+            user.setString_user_uuid(null);  // 隐藏 UUID 字符串
         }
 
         log.info("分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}",
@@ -204,9 +210,14 @@ public class UserProfileController {
         // 调用服务层查询用户信息
         IPage<User> result = userService.selectPageUserInfoByRole(page, userRoles);
 
-        // 将用户的 16 字节二进制UUID转换成字符串UUID
+        // 将用户的 16 字节二进制UUID转换成字符串UUID，并隐藏敏感字段
         for (User user : result.getRecords()) {
             user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
+            // 隐藏敏感字段和隐私信息
+            user.setUser_uuid(null);
+            user.setPassword(null);
+            user.setEmail(null);              // 隐藏邮箱
+            user.setString_user_uuid(null);  // 隐藏 UUID 字符串
         }
 
         log.info("按角色分页查询成功 - 页码：{}, 每页：{}, 总数：{}, 返回：{}",
@@ -224,62 +235,64 @@ public class UserProfileController {
      * @author PlayerEG
      */
     @GetMapping("/info")
-    @PublicAccess("根据用户 ID 或 UUID 查询用户信息，无需认证")
+    @PublicAccess("根据 UUID 或用户名查询用户信息，无需认证")
     @Operation(
-        summary = "根据用户 ID 或 UUID 查询用户信息",
+        summary = "根据 UUID 或用户名查询用户信息",
         description = """
-            # 根据用户 ID 或 UUID 查询用户信息（无需登录认证）
+            # 根据 UUID 或用户名查询用户信息（无需登录认证）
 
             ## 特性
             - 公开接口（无需 Token 认证）
-            - 支持通过用户 ID 或 UUID 精确查询单个用户
+            - 支持通过 UUID 或用户名精确查询单个用户
             - 自动转换二进制 UUID 为字符串格式
-            - userId 和 uuid 至少提供一个
+            - uuid、username 至少提供一个
 
             ## 参数说明：
-            - userId: **用户 ID**，Integer 类型，可选，与 uuid 二选一
             - uuid: **用户 UUID**，String 类型，可选，支持两种格式：
               * 32位不带连字符：`6ddae8a5837d4721a1b783a7f98c67aa`
               * 36位带连字符：`550e8400-e29b-41d4-a716-446655440000`
-              * 与 userId 二选一
+              * 与 username 二选一
+            - username: **用户名**，String 类型，可选，精确匹配，与 uuid 二选一
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": {User对象}}** ，包含用户详细信息
-            - **参数缺失**：返回 **{"data": null}** 和"请提供用户 ID 或 UUID"提示
+            - **参数缺失**：返回 **{"data": null}** 和"请提供 UUID 或用户名"提示
             - **UUID 格式错误**：返回 **{"data": null}** 和"UUID 格式错误"提示
             - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
 
             ## 业务逻辑：
-            1. 校验参数：userId 和 uuid 至少提供一个
+            1. 校验参数：uuid、username 至少提供一个
             2. 如果提供 uuid，验证格式并转换为二进制
-            3. 根据 userId 或 uuid 查询用户信息
+            3. 根据 uuid 或 username 查询用户信息
             4. 将二进制 UUID 转换为字符串格式
             5. 隐藏敏感字段后返回用户详细信息
 
             ## 注意事项：
             - 这是一个**公开接口**，无需 Token 认证
-            - **userId 和 uuid 至少提供一个**，优先使用 userId
+            - **uuid、username 至少提供一个**
             - 只返回**未删除**的用户（is_delete=0）
-            - 返回的字段不包含敏感信息（password、user_uuid、user_role、status 均被隐藏）
+            - 返回的字段不包含敏感信息（password、user_uuid 均被隐藏）
             - UUID 支持两种格式：32位不带连字符 或 36位带连字符
+            - username 为精确匹配，不支持模糊查询
             """
     )
     public ResponsePojo<User> getUserInfo(
-        @Parameter(description = "用户 ID（可选），与 uuid 二选一", example = "1") @RequestParam(required = false) Integer userId,
-        @Parameter(description = "用户 UUID（可选），标准格式，与 userId 二选一", example = "550e8400-e29b-41d4-a716-446655440000") @RequestParam(required = false) String uuid
+        @Parameter(description = "用户 UUID（可选），标准格式，与 username 二选一", example = "550e8400-e29b-41d4-a716-446655440000") @RequestParam(required = false) String uuid,
+        @Parameter(description = "用户名（可选），精确匹配，与 uuid 二选一", example = "test_user") @RequestParam(required = false) String username
     ) {
-        // 参数校验：userId 和 uuid 至少提供一个
-        if (userId == null && (uuid == null || uuid.isEmpty())) {
+        // 参数校验：uuid、username 至少提供一个
+        if ((uuid == null || uuid.isEmpty()) && (username == null || username.isEmpty())) {
             log.warn("查询用户信息失败 - 缺少必要参数");
-            return ResponsePojo.error(null, "请提供用户 ID 或 UUID");
+            return ResponsePojo.error(null, "请提供 UUID 或用户名");
         }
 
         User user = null;
 
-        // 优先使用 userId 查询
-        if (userId != null && userId > 0) {
-            log.info("通过用户 ID 查询用户信息 - 用户 ID: {}", userId);
-            user = userService.selectAllUserById(userId);
+        // 优先使用 username 查询
+        if (username != null && !username.isEmpty()) {
+            // 使用 username 查询
+            log.info("通过用户名查询用户信息 - 用户名: {}", username);
+            user = userService.selectUserByUsername(username);
         } else if (uuid != null && !uuid.isEmpty()) {
             // 使用 uuid 查询
             log.info("通过 UUID 查询用户信息 - UUID: {}", uuid);
@@ -306,18 +319,30 @@ public class UserProfileController {
 
         // 检查用户是否存在（SQL 已过滤 is_delete=0，只需判断 null）
         if (user == null) {
-            log.warn("用户不存在或已被删除 - 用户 ID: {}, UUID: {}", userId, uuid);
+            log.warn("用户不存在或已被删除 - UUID: {}, 用户名: {}", uuid, username);
             return ResponsePojo.error(null, "用户不存在");
         }
 
         // 将二进制 UUID 转换为字符串格式
         user.setString_user_uuid(StrSwitchUtils.bytes2Uuid(user.getUser_uuid()));
 
-        // 隐藏敏感字段
+        // 隐藏敏感字段和隐私信息
         user.setUser_uuid(null);
         user.setPassword(null);
-        user.setUser_role(null);
-        user.setStatus(null);
+        // user_role 保留返回
+        // status 保留返回
+        user.setString_user_uuid(null);  // 隐藏 UUID 字符串
+        user.setEmail(null);              // 隐藏邮箱
+        // username 保留返回
+
+        // 查询用户统计数据
+        java.util.Map<String, Object> stats = workService.getUserStats(user.getUser_id());
+        if (stats != null) {
+            user.setWork_count(((Number) stats.get("work_count")).intValue());
+            user.setTotal_likes(((Number) stats.get("total_likes")).longValue());
+            user.setTotal_stars(((Number) stats.get("total_stars")).longValue());
+            user.setTotal_views(((Number) stats.get("total_views")).longValue());
+        }
 
         log.info("查询用户信息成功 - 用户 ID: {}, 用户名: {}", user.getUser_id(), user.getUsername());
 
@@ -411,8 +436,17 @@ public class UserProfileController {
         // 隐藏敏感字段
         user.setUser_uuid(null);
         user.setPassword(null);
-        user.setUser_role(null);
-        user.setStatus(null);
+        // user_role 保留返回
+        // status 保留返回
+
+        // 查询用户统计数据
+        java.util.Map<String, Object> stats = workService.getUserStats(userId);
+        if (stats != null) {
+            user.setWork_count(((Number) stats.get("work_count")).intValue());
+            user.setTotal_likes(((Number) stats.get("total_likes")).longValue());
+            user.setTotal_stars(((Number) stats.get("total_stars")).longValue());
+            user.setTotal_views(((Number) stats.get("total_views")).longValue());
+        }
 
         log.info("查询当前用户信息成功 - 用户 ID: {}, 用户名: {}", userId, username);
 

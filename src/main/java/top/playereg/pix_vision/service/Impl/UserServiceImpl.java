@@ -545,6 +545,31 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 根据用户名精确查询用户信息
+     *
+     * @param username 用户名
+     * @return 用户对象，如果不存在返回 null
+     */
+    @Override
+    public User selectUserByUsername(String username) {
+        if (username == null || username.isEmpty()) {
+            log.warn("查询用户信息失败：用户名为空");
+            return null;
+        }
+
+        log.info("通过用户名精确查询用户：{}", username);
+        User user = userMapper.selectAllUserInfoByUsername(username);
+
+        if (user != null) {
+            log.info("查询到用户 - 用户名：{}, 用户 ID: {}", user.getUsername(), user.getUser_id());
+        } else {
+            log.warn("用户不存在：{}", username);
+        }
+
+        return user;
+    }
+
+    /**
      * 更新用户绑定邮箱（需要验证码验证）
      *
      * @param userId   用户 ID

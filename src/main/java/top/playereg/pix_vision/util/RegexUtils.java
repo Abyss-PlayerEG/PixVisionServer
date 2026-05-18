@@ -254,4 +254,82 @@ public class RegexUtils {
             return false;
         }
     }
+
+    /**
+     * 电话号码格式验证
+     * <p>
+     * 验证中国大陆手机号码格式：
+     * <ul>
+     *   <li>11位数字</li>
+     *   <li>以1开头</li>
+     *   <li>第二位为3-9</li>
+     *   <li>示例：13800138000</li>
+     * </ul>
+     * </p>
+     *
+     * @param phone 待验证的电话号码
+     * @return true-格式正确，false-格式错误
+     * @author PlayerEG
+     */
+    public static boolean isPhone(String phone) {
+        return isMatch("^1[3-9]\\d{9}$", phone, "电话号码", "11位数字，以1开头，第二位为3-9");
+    }
+
+    /**
+     * QQ号码格式验证
+     * <p>
+     * 验证QQ号码格式：
+     * <ul>
+     *   <li>5-11位数字</li>
+     *   <li>不能以0开头</li>
+     *   <li>示例：123456789</li>
+     * </ul>
+     * </p>
+     *
+     * @param qq 待验证的QQ号码
+     * @return true-格式正确，false-格式错误
+     * @author PlayerEG
+     */
+    public static boolean isQQ(String qq) {
+        return isMatch("^[1-9]\\d{4,10}$", qq, "QQ号码", "5-11位数字，不能以0开头");
+    }
+
+    /**
+     * 微信号格式验证
+     * <p>
+     * 验证微信号格式：
+     * <ul>
+     *   <li>6-20位</li>
+     *   <li>允许字母、数字、下划线、减号</li>
+     *   <li>必须以字母开头</li>
+     *   <li>示例：wxid_123456</li>
+     * </ul>
+     * </p>
+     *
+     * @param wechat 待验证的微信号
+     * @return true-格式正确，false-格式错误
+     * @author PlayerEG
+     */
+    public static boolean isWechat(String wechat) {
+        return isMatch("^[a-zA-Z][a-zA-Z0-9_-]{5,19}$", wechat, "微信号", "6-20位，以字母开头，允许字母、数字、下划线、减号");
+    }
+
+    /**
+     * Bilibili UID格式验证
+     * <p>
+     * 验证Bilibili用户ID格式：
+     * <ul>
+     *   <li>纯数字</li>
+     *   <li>1-10位</li>
+     *   <li>示例：123456789</li>
+     * </ul>
+     * </p>
+     *
+     * @param bilibiliUid 待验证的Bilibili UID
+     * @return true-格式正确，false-格式错误
+     * @author PlayerEG
+     */
+    public static boolean isBilibiliUid(String bilibiliUid) {
+        return isMatch("^\\d{1,10}$", bilibiliUid, "Bilibili UID", "1-10位纯数字");
+    }
 }
