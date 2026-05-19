@@ -268,7 +268,7 @@
     </select>
 
     <!-- 管理员分页查询作品列表（支持多条件过滤，不过滤审核状态） -->
-    <select id="selectAdminWorksPage" resultMap="BaseResultMap">
+    <select id="adminSelectWorks" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM tb_works
