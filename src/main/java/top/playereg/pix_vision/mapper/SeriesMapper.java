@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import top.playereg.pix_vision.pojo.Series;
 
+import java.util.List;
+
 /**
  * 系列数据访问层
  * <p>
@@ -74,5 +76,36 @@ public interface SeriesMapper extends BaseMapper<Series> {
         @Param("userId") Integer userId,
         @Param("seriesTitle") String seriesTitle,
         @Param("aboutText") String aboutText
+    );
+
+    /**
+     * 批量更新系列审核状态（管理员操作）
+     *
+     * @param seriesIds       系列 ID 列表
+     * @param approvalStatus  审核状态（10-正常、20-待审核、30-未过审）
+     * @param userId          操作者 ID
+     * @return 影响的行数
+     */
+    int adminBatchUpdateApprovalStatus(
+        @Param("seriesIds") List<Integer> seriesIds,
+        @Param("approvalStatus") Integer approvalStatus,
+        @Param("userId") Integer userId
+    );
+
+    /**
+     * 管理员批量更新系列标题和描述（不验证用户权限）
+     *
+     * @param seriesIds      系列 ID 列表
+     * @param seriesTitle    系列标题（可为 null）
+     * @param aboutText      系列描述（可为 null）
+     * @param userId         操作者 ID
+     * @return 影响的行数
+     * @author blue_sky_ks
+     */
+    int adminBatchUpdateSeriesInfo(
+        @Param("seriesIds") List<Integer> seriesIds,
+        @Param("seriesTitle") String seriesTitle,
+        @Param("aboutText") String aboutText,
+        @Param("userId") Integer userId
     );
 }

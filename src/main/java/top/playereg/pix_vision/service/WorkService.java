@@ -175,12 +175,14 @@ public interface WorkService {
      *
      * @param workIds        作品 ID 列表
      * @param approvalStatus 审核状态：10 - 正常、20 - 待审核、30 - 未过审
+     * @param userId         操作者 ID
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * @author PlayerEG
      */
     top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
         List<Integer> workIds,
-        Integer approvalStatus
+        Integer approvalStatus,
+        Integer userId
     );
 
     /**
@@ -229,4 +231,19 @@ public interface WorkService {
      * @author PlayerEG
      */
     java.util.Map<String, Object> getUserStats(Integer userId);
+
+    /**
+     * 批量更新作品标题（管理员接口）
+     *
+     * @param workIds   作品 ID 列表
+     * @param workTitle 作品标题
+     * @param userId    操作者 ID
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author blue_sky_ks
+     */
+    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateWorkTitle(
+        List<Integer> workIds,
+        String workTitle,
+        Integer userId
+    );
 }

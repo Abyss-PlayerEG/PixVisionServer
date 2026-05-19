@@ -50,4 +50,49 @@ public interface SeriesService {
      * @return 修改结果
      */
     Boolean updateSeriesInfo(Integer seriesId, Integer userId, String seriesTitle, String aboutText);
+
+    /**
+     * 批量更新系列审核状态（管理员操作）
+     *
+     * @param seriesIds       系列 ID 列表
+     * @param approvalStatus  审核状态（10-正常、20-待审核、30-未过审）
+     * @param userId          操作者 ID
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     */
+    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
+        java.util.List<Integer> seriesIds,
+        Integer approvalStatus,
+        Integer userId
+    );
+
+    /**
+     * 批量删除作品合集（管理员操作）
+     *
+     * @param seriesIds   系列 ID 列表
+     * @param deleteWorks 是否删除系列内的作品（true=删除作品，false=将作品的 series_id 置空）
+     * @param userId      操作者 ID
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     */
+    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchDeleteSeries(
+        java.util.List<Integer> seriesIds,
+        Boolean deleteWorks,
+        Integer userId
+    );
+
+    /**
+     * 批量更新系列标题和描述（管理员操作）
+     *
+     * @param seriesIds      系列 ID 列表
+     * @param seriesTitle    系列标题（可选，最多 16 个字符）
+     * @param aboutText      系列描述（可选，最多 24 个字符）
+     * @param userId         操作者 ID
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author blue_sky_ks
+     */
+    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateSeriesInfo(
+        java.util.List<Integer> seriesIds,
+        String seriesTitle,
+        String aboutText,
+        Integer userId
+    );
 }

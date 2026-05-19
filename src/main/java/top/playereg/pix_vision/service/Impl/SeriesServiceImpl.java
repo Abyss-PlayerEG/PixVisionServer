@@ -7,11 +7,13 @@ import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.Series;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.io.File;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -334,5 +336,359 @@ public class SeriesServiceImpl implements SeriesService {
         }
 
         return renamedCount;
+    }
+
+    /**
+     * 批量更新系列审核状态（管理员操作）
+     *
+     * @param seriesIds       系列 ID 列表
+     * @param approvalStatus  审核状态（10-正常、20-待审核、30-未过审）
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     */
+    @Override
+    public AdminBatchOperateWorkResult batchUpdateApprovalStatus(List<Integer> seriesIds, Integer approvalStatus, Integer userId) {
+        if (seriesIds == null || seriesIds.isEmpty()) {
+            return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
+        }
+
+        int totalCount = seriesIds.size();
+
+        // 1. 先查询所有系列信息，验证是否存在且未删除
+        List<Series> seriesList = seriesMapper.selectBatchIds(seriesIds);
+        
+        // 构建查询到的系列ID集合
+        java.util.Set<Integer> foundSeriesIds = new java.util.HashSet<>();
+        if (seriesList != null && !seriesList.isEmpty()) {
+            for (Series series : seriesList) {
+                foundSeriesIds.add(series.getSeries_id());
+            }
+        }
+        
+        // 2. 找出未找到的系列ID（不存在的系列）
+        List<Integer> notFoundSeriesIds = new ArrayList<>();
+        for (Integer seriesId : seriesIds) {
+            if (!foundSeriesIds.contains(seriesId)) {
+                notFoundSeriesIds.add(seriesId);
+            }
+        }
+        
+        // 3. 过滤出未删除的系列
+        List<Series> validSeries = seriesList != null ? seriesList.stream()
+            .filter(series -> !series.getIs_delete())
+            .toList() : new ArrayList<>();
+        
+        // 4. 找出已删除的系列ID
+        List<Integer> deletedSeriesIds = new ArrayList<>();
+        if (seriesList != null) {
+            for (Series series : seriesList) {
+                if (series.getIs_delete()) {
+                    deletedSeriesIds.add(series.getSeries_id());
+                }
+            }
+        }
+        
+        // 合并所有失败的ID（不存在的 + 已删除的）
+        List<Integer> failedSeriesIds = new ArrayList<>();
+        failedSeriesIds.addAll(notFoundSeriesIds);
+        failedSeriesIds.addAll(deletedSeriesIds);
+
+        if (validSeries.isEmpty()) {
+            log.warn("没有可更新的系列（可能全部不存在或已删除），系列 ID 列表: {}", seriesIds);
+            return new AdminBatchOperateWorkResult(totalCount, 0, failedSeriesIds);
+        }
+
+        // 5. 使用自定义 SQL 批量更新审核状态
+        List<Integer> validSeriesIds = validSeries.stream()
+            .map(Series::getSeries_id)
+            .toList();
+        int affectedRows = seriesMapper.adminBatchUpdateApprovalStatus(validSeriesIds, approvalStatus, userId);
+
+        int successCount = affectedRows > 0 ? affectedRows : 0;
+        
+        // 如果数据库更新的影响行数小于有效系列数量，说明有部分更新失败
+        if (affectedRows < validSeriesIds.size()) {
+            // 简化处理：将所有有效系列ID都标记为失败（因为无法精确知道哪些失败了）
+            failedSeriesIds.addAll(validSeriesIds);
+            successCount = 0;
+        }
+
+        String statusName = getStatusName(approvalStatus);
+        log.info("批量更新系列审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {} ({}), 操作者 ID: {}",
+            totalCount, successCount, failedSeriesIds.size(), approvalStatus, statusName, userId);
+        
+        if (!notFoundSeriesIds.isEmpty()) {
+            log.warn("以下系列ID不存在: {}", notFoundSeriesIds);
+        }
+        if (!deletedSeriesIds.isEmpty()) {
+            log.warn("以下系列ID已删除: {}", deletedSeriesIds);
+        }
+
+        return new AdminBatchOperateWorkResult(
+            totalCount, successCount, failedSeriesIds
+        );
+    }
+
+    /**
+     * 获取审核状态名称
+     *
+     * @param approvalStatus 审核状态代码
+     * @return 状态名称
+     */
+    private String getStatusName(Integer approvalStatus) {
+        return switch (approvalStatus) {
+            case 10 -> "正常";
+            case 20 -> "待审核";
+            case 30 -> "未过审";
+            default -> "未知";
+        };
+    }
+
+    /**
+     * 批量删除作品合集（管理员操作）
+     *
+     * @param seriesIds   系列 ID 列表
+     * @param deleteWorks 是否删除系列内的作品（true=删除作品，false=将作品的 series_id 置空）
+     * @param userId      操作者 ID
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     */
+    @Override
+    public AdminBatchOperateWorkResult batchDeleteSeries(List<Integer> seriesIds, Boolean deleteWorks, Integer userId) {
+        if (seriesIds == null || seriesIds.isEmpty()) {
+            return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
+        }
+
+        if (deleteWorks == null) {
+            log.warn("删除作品标志为空，默认为 false");
+            deleteWorks = Boolean.FALSE;
+        }
+
+        int totalCount = seriesIds.size();
+
+        // 1. 先查询所有系列信息，验证是否存在且未删除
+        List<Series> seriesList = seriesMapper.selectBatchIds(seriesIds);
+        
+        // 构建查询到的系列ID集合
+        java.util.Set<Integer> foundSeriesIds = new java.util.HashSet<>();
+        if (seriesList != null && !seriesList.isEmpty()) {
+            for (Series series : seriesList) {
+                foundSeriesIds.add(series.getSeries_id());
+            }
+        }
+        
+        // 2. 找出未找到的系列ID（不存在的系列）
+        List<Integer> notFoundSeriesIds = new ArrayList<>();
+        for (Integer seriesId : seriesIds) {
+            if (!foundSeriesIds.contains(seriesId)) {
+                notFoundSeriesIds.add(seriesId);
+            }
+        }
+        
+        // 3. 过滤出未删除的系列
+        List<Series> validSeries = seriesList != null ? seriesList.stream()
+            .filter(series -> !series.getIs_delete())
+            .toList() : new ArrayList<>();
+        
+        // 4. 找出已删除的系列ID
+        List<Integer> deletedSeriesIds = new ArrayList<>();
+        if (seriesList != null) {
+            for (Series series : seriesList) {
+                if (series.getIs_delete()) {
+                    deletedSeriesIds.add(series.getSeries_id());
+                }
+            }
+        }
+        
+        // 合并所有失败的ID（不存在的 + 已删除的）
+        List<Integer> failedSeriesIds = new ArrayList<>();
+        failedSeriesIds.addAll(notFoundSeriesIds);
+        failedSeriesIds.addAll(deletedSeriesIds);
+
+        if (validSeries.isEmpty()) {
+            log.warn("没有可删除的系列（可能全部不存在或已删除），系列 ID 列表: {}", seriesIds);
+            return new AdminBatchOperateWorkResult(totalCount, 0, failedSeriesIds);
+        }
+
+        // 5. 逐个处理有效的系列
+        int successCount = 0;
+        for (Series series : validSeries) {
+            Integer seriesId = series.getSeries_id();
+            Integer workOwnerId = series.getUser_id();
+            
+            try {
+                // 处理系列内的作品
+                if (deleteWorks) {
+                    // 选择删除作品：查询系列下所有作品 ID，然后批量删除
+                    List<Integer> workIds = worksMapper.selectWorkIdsBySeriesId(seriesId, workOwnerId);
+                    if (workIds != null && !workIds.isEmpty()) {
+                        log.info("系列 {} 包含 {} 个作品，将一并删除，操作者 ID: {}", seriesId, workIds.size(), userId);
+
+                        // 先重命名文件
+                        int renamedCount = renameWorksFilesToDelete(workIds);
+                        log.info("作品文件重命名完成，成功: {}/{}", renamedCount, workIds.size());
+
+                        // 执行逻辑删除
+                        int deletedCount = worksMapper.batchDeleteWorks(workIds, workOwnerId);
+                        log.info("作品删除完成，删除数量: {}", deletedCount);
+                    } else {
+                        log.info("系列 {} 下没有作品，跳过作品删除", seriesId);
+                    }
+                } else {
+                    // 选择保留作品：将系列下所有作品的 series_id 置空
+                    int clearedCount = worksMapper.clearSeriesIdBySeriesId(seriesId, workOwnerId);
+                    log.info("已将 {} 个作品的 series_id 置空", clearedCount);
+                }
+
+                // 逻辑删除系列
+                int affectedRows = seriesMapper.deleteSeriesById(seriesId, workOwnerId);
+
+                if (affectedRows > 0) {
+                    successCount++;
+                    log.info("系列删除成功，系列 ID: {}, 作品所有者 ID: {}, 操作者 ID: {}", seriesId, workOwnerId, userId);
+                } else {
+                    log.error("系列删除失败，系列 ID: {}, 作品所有者 ID: {}", seriesId, workOwnerId);
+                    failedSeriesIds.add(seriesId);
+                }
+            } catch (Exception e) {
+                log.error("处理系列 {} 时发生异常: {}", seriesId, e.getMessage(), e);
+                failedSeriesIds.add(seriesId);
+            }
+        }
+
+        log.info("批量删除系列完成 - 总数: {}, 成功: {}, 失败: {}, 操作者 ID: {}",
+            totalCount, successCount, failedSeriesIds.size(), userId);
+        
+        if (!notFoundSeriesIds.isEmpty()) {
+            log.warn("以下系列ID不存在: {}", notFoundSeriesIds);
+        }
+        if (!deletedSeriesIds.isEmpty()) {
+            log.warn("以下系列ID已删除: {}", deletedSeriesIds);
+        }
+
+        return new AdminBatchOperateWorkResult(
+            totalCount, successCount, failedSeriesIds
+        );
+    }
+
+    /**
+     * 批量更新系列标题和描述（管理员操作）
+     *
+     * @param seriesIds   系列 ID 列表
+     * @param seriesTitle 系列标题（可选，最多 16 个字符）
+     * @param aboutText   系列描述（可选，最多 24 个字符）
+     * @param userId      操作者 ID
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author blue_sky_ks
+     */
+    @Override
+    public AdminBatchOperateWorkResult batchUpdateSeriesInfo(List<Integer> seriesIds, String seriesTitle, String aboutText, Integer userId) {
+        if (seriesIds == null || seriesIds.isEmpty()) {
+            return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
+        }
+
+        // 参数校验：至少需要提供一个字段
+        boolean hasTitle = seriesTitle != null && !seriesTitle.trim().isEmpty();
+        boolean hasDescription = aboutText != null && !aboutText.trim().isEmpty();
+
+        if (!hasTitle && !hasDescription) {
+            log.warn("系列标题和描述不能同时为空");
+            return new AdminBatchOperateWorkResult(seriesIds.size(), 0, seriesIds);
+        }
+
+        // 验证标题长度（最多 16 个字符）
+        String finalTitle = null;
+        if (hasTitle) {
+            String trimmedTitle = seriesTitle.trim();
+            if (trimmedTitle.length() > 16) {
+                log.warn("系列标题长度不符合要求，标题长度: {}", trimmedTitle.length());
+                return new AdminBatchOperateWorkResult(seriesIds.size(), 0, seriesIds);
+            }
+            finalTitle = trimmedTitle;
+        }
+
+        // 验证描述长度（最多 24 个字符）
+        String finalDescription = null;
+        if (hasDescription) {
+            String trimmedDescription = aboutText.trim();
+            if (trimmedDescription.length() > 24) {
+                log.warn("系列描述长度不符合要求，描述长度: {}", trimmedDescription.length());
+                return new AdminBatchOperateWorkResult(seriesIds.size(), 0, seriesIds);
+            }
+            finalDescription = trimmedDescription;
+        }
+
+        int totalCount = seriesIds.size();
+
+        // 1. 先查询所有系列信息，验证是否存在且未删除
+        List<Series> seriesList = seriesMapper.selectBatchIds(seriesIds);
+        
+        // 构建查询到的系列ID集合
+        java.util.Set<Integer> foundSeriesIds = new java.util.HashSet<>();
+        if (seriesList != null && !seriesList.isEmpty()) {
+            for (Series series : seriesList) {
+                foundSeriesIds.add(series.getSeries_id());
+            }
+        }
+        
+        // 2. 找出未找到的系列ID（不存在的系列）
+        List<Integer> notFoundSeriesIds = new ArrayList<>();
+        for (Integer seriesId : seriesIds) {
+            if (!foundSeriesIds.contains(seriesId)) {
+                notFoundSeriesIds.add(seriesId);
+            }
+        }
+        
+        // 3. 过滤出未删除的系列
+        List<Series> validSeries = seriesList != null ? seriesList.stream()
+            .filter(series -> !series.getIs_delete())
+            .toList() : new ArrayList<>();
+        
+        // 4. 找出已删除的系列ID
+        List<Integer> deletedSeriesIds = new ArrayList<>();
+        if (seriesList != null) {
+            for (Series series : seriesList) {
+                if (series.getIs_delete()) {
+                    deletedSeriesIds.add(series.getSeries_id());
+                }
+            }
+        }
+        
+        // 合并所有失败的ID（不存在的 + 已删除的）
+        List<Integer> failedSeriesIds = new ArrayList<>();
+        failedSeriesIds.addAll(notFoundSeriesIds);
+        failedSeriesIds.addAll(deletedSeriesIds);
+
+        if (validSeries.isEmpty()) {
+            log.warn("没有可更新的系列（可能全部不存在或已删除），系列 ID 列表: {}", seriesIds);
+            return new AdminBatchOperateWorkResult(totalCount, 0, failedSeriesIds);
+        }
+
+        // 5. 使用自定义 SQL 批量更新系列信息
+        List<Integer> validSeriesIds = validSeries.stream()
+            .map(Series::getSeries_id)
+            .toList();
+        int affectedRows = seriesMapper.adminBatchUpdateSeriesInfo(validSeriesIds, finalTitle, finalDescription, userId);
+
+        int successCount = affectedRows > 0 ? affectedRows : 0;
+        
+        // 如果数据库更新的影响行数小于有效系列数量，说明有部分更新失败
+        if (affectedRows < validSeriesIds.size()) {
+            // 简化处理：将所有有效系列ID都标记为失败（因为无法精确知道哪些失败了）
+            failedSeriesIds.addAll(validSeriesIds);
+            successCount = 0;
+        }
+
+        log.info("批量更新系列信息完成 - 总数: {}, 成功: {}, 失败: {}, 操作者 ID: {}",
+            totalCount, successCount, failedSeriesIds.size(), userId);
+        
+        if (!notFoundSeriesIds.isEmpty()) {
+            log.warn("以下系列ID不存在: {}", notFoundSeriesIds);
+        }
+        if (!deletedSeriesIds.isEmpty()) {
+            log.warn("以下系列ID已删除: {}", deletedSeriesIds);
+        }
+
+        return new AdminBatchOperateWorkResult(
+            totalCount, successCount, failedSeriesIds
+        );
     }
 }

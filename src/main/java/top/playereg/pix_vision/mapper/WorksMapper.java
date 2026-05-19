@@ -122,12 +122,14 @@ public interface WorksMapper extends BaseMapper<Works> {
      *
      * @param workIds        作品 ID 列表
      * @param approvalStatus 审核状态：10 - 正常、20 - 待审核、30 - 未过审
+     * @param userId         操作者 ID
      * @return 影响的行数
      * @author PlayerEG
      */
     int adminBatchUpdateApprovalStatus(
         @Param("workIds") java.util.List<Integer> workIds,
-        @Param("approvalStatus") Integer approvalStatus
+        @Param("approvalStatus") Integer approvalStatus,
+        @Param("userId") Integer userId
     );
 
     /**
@@ -213,4 +215,19 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @author PlayerEG
      */
     java.util.Map<String, Object> selectUserStats(@Param("userId") Integer userId);
+
+    /**
+     * 管理员批量更新作品标题（不验证用户权限）
+     *
+     * @param workIds   作品 ID 列表
+     * @param workTitle 作品标题
+     * @param userId    操作者 ID
+     * @return 影响的行数
+     * @author blue_sky_ks
+     */
+    int adminBatchUpdateWorkTitle(
+        @Param("workIds") java.util.List<Integer> workIds,
+        @Param("workTitle") String workTitle,
+        @Param("userId") Integer userId
+    );
 }

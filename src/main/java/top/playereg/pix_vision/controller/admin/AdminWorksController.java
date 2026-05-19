@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
@@ -76,6 +77,7 @@ public class AdminWorksController {
     )
     @PostMapping("/update/approval-status")
     public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateApprovalStatus(
+        HttpServletRequest request,
         @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds,
         @Schema(description = "审核状态：10-正常、20-待审核、30-未过审", allowableValues = {"10", "20", "30"}, example = "30") @RequestParam Integer approvalStatus
     ) {
@@ -96,21 +98,28 @@ public class AdminWorksController {
             return ResponsePojo.error(null, "审核状态无效，可选值：10-正常、20-待审核、30-未过审");
         }
 
+        // 从 Token 中获取操作者 ID
+        Integer userId = (Integer) request.getAttribute("userId");
+        if (userId == null) {
+            log.warn("无法获取用户 ID");
+            return ResponsePojo.error(null, "未授权访问");
+        }
+
         try {
             // 调用服务层批量更新作品审核状态
-            AdminBatchOperateWorkResult result = workService.batchUpdateApprovalStatus(workIds, approvalStatus);
+            AdminBatchOperateWorkResult result = workService.batchUpdateApprovalStatus(workIds, approvalStatus, userId);
 
             String statusName = getStatusName(approvalStatus);
             if (result.getSuccessCount() > 0) {
-                log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {} ({})",
-                    result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size(), approvalStatus, statusName);
+                log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {} ({}), 操作者 ID: {}",
+                    result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size(), approvalStatus, statusName, userId);
                 return ResponsePojo.success(result, "批量更新作品审核状态处理完成");
             } else {
-                log.warn("批量更新作品审核状态全部失败，作品 ID 列表: {}, 目标状态: {} ({})", workIds, approvalStatus, statusName);
+                log.warn("批量更新作品审核状态全部失败，作品 ID 列表: {}, 目标状态: {} ({}), 操作者 ID: {}", workIds, approvalStatus, statusName, userId);
                 return ResponsePojo.error(result, "更新失败，请检查作品 ID 是否正确");
             }
         } catch (Exception e) {
-            log.error("批量更新作品审核状态异常，作品 ID 列表: {}, 目标状态: {}, 错误: {}", workIds, approvalStatus, e.getMessage(), e);
+            log.error("批量更新作品审核状态异常，作品 ID 列表: {}, 目标状态: {}, 操作者 ID: {}, 错误: {}", workIds, approvalStatus, userId, e.getMessage(), e);
             return ResponsePojo.error(null, "更新失败：" + e.getMessage());
         }
     }
@@ -269,6 +278,99 @@ public class AdminWorksController {
         } catch (Exception e) {
             log.error("分页查询作品异常，错误: {}", e.getMessage(), e);
             return ResponsePojo.error(null, "查询失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量更新作品标题
+     *
+     * @param workIds   作品 ID 列表
+     * @param workTitle 作品标题
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author blue_sky_ks
+     */
+    @Operation(
+        summary = "批量更新作品标题",
+        description = """
+            # 批量更新作品标题（需要登录认证 + 角色权限[55, 77]）
+
+            ## 特性
+            - 需要审核员或系统管理员角色（role=55 或 77）才能访问
+            - 支持批量更新多个作品的标题
+            - 标题长度限制为最多 16 个字符
+            - 返回详细的操作结果统计信息
+
+            ## 参数说明：
+            - **workIds**: **作品 ID 列表**，List<Integer> 类型，请求参数，必填，不能为空
+            - **workTitle**: **作品标题**，String 类型，请求参数，必填，最多 16 个字符
+
+            ## 返回说明：
+            - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息
+            - **全部失败**：返回错误提示
+            - **参数错误**：返回错误提示
+
+            ## 业务逻辑：
+            1. 验证当前用户是否为审核员或系统管理员（由拦截器自动验证）
+            2. 校验作品 ID 列表和标题参数的有效性
+            3. 验证标题长度（最多 16 个字符）
+            4. 查询作品信息，过滤不存在或已删除的作品
+            5. 批量更新 tb_works 表中对应作品的 work_title 字段
+            6. 记录操作结果并返回统计信息
+
+            ## 注意事项：
+            - 标题会被自动去除首尾空格
+            - 设置为相同标题也会执行更新操作
+            - 此操作会立即生效，无需重启服务
+            - 建议谨慎使用，操作前请确认作品 ID 和标题的正确性
+            - 即使部分作品更新失败，其他作品仍会成功更新
+            """
+    )
+    @PostMapping("/update/work-title")
+    public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateWorkTitle(
+        HttpServletRequest request,
+        @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds,
+        @Schema(description = "作品标题（最多 16 个字符）", example = "新标题") @RequestParam String workTitle
+    ) {
+        // 参数校验
+        if (workIds == null || workIds.isEmpty()) {
+            log.warn("作品 ID 列表为空");
+            return ResponsePojo.error(null, "作品 ID 列表不能为空");
+        }
+
+        if (workTitle == null || workTitle.trim().isEmpty()) {
+            log.warn("作品标题为空");
+            return ResponsePojo.error(null, "作品标题不能为空");
+        }
+
+        // 验证标题长度
+        String trimmedTitle = workTitle.trim();
+        if (trimmedTitle.length() > 16) {
+            log.warn("作品标题长度不符合要求，标题长度: {}", trimmedTitle.length());
+            return ResponsePojo.error(null, "作品标题长度不能超过 16 个字符");
+        }
+
+        // 从 Token 中获取操作者 ID
+        Integer userId = (Integer) request.getAttribute("userId");
+        if (userId == null) {
+            log.warn("无法获取用户 ID");
+            return ResponsePojo.error(null, "未授权访问");
+        }
+
+        try {
+            // 调用服务层批量更新作品标题
+            AdminBatchOperateWorkResult result = workService.batchUpdateWorkTitle(workIds, trimmedTitle, userId);
+
+            if (result.getSuccessCount() > 0) {
+                log.info("批量更新作品标题完成 - 总数: {}, 成功: {}, 失败: {}, 新标题: {}, 操作者 ID: {}",
+                    result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size(), trimmedTitle, userId);
+                return ResponsePojo.success(result, "批量更新作品标题处理完成");
+            } else {
+                log.warn("批量更新作品标题全部失败，作品 ID 列表: {}, 新标题: {}, 操作者 ID: {}", workIds, trimmedTitle, userId);
+                return ResponsePojo.error(result, "更新失败，请检查作品 ID 是否正确");
+            }
+        } catch (Exception e) {
+            log.error("批量更新作品标题异常，作品 ID 列表: {}, 新标题: {}, 操作者 ID: {}, 错误: {}", workIds, trimmedTitle, userId, e.getMessage(), e);
+            return ResponsePojo.error(null, "更新失败：" + e.getMessage());
         }
     }
 }

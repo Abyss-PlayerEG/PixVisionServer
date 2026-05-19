@@ -106,4 +106,37 @@
         AND is_delete = 0
     </update>
 
+    <!-- 批量更新系列审核状态（管理员操作） -->
+    <update id="adminBatchUpdateApprovalStatus">
+        UPDATE tb_series
+        SET approval_status = #{approvalStatus},
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE is_delete = 0
+        AND series_id IN
+        <foreach collection="seriesIds" item="seriesId" open="(" separator="," close=")">
+            #{seriesId}
+        </foreach>
+    </update>
+
+    <!-- 管理员批量更新系列标题和描述（不验证用户权限） -->
+    <update id="adminBatchUpdateSeriesInfo">
+        UPDATE tb_series
+        <set>
+            <if test="seriesTitle != null">
+                series_title = #{seriesTitle},
+            </if>
+            <if test="aboutText != null">
+                about_text = #{aboutText},
+            </if>
+            update_time = NOW(),
+            update_user = #{userId}
+        </set>
+        WHERE is_delete = 0
+        AND series_id IN
+        <foreach collection="seriesIds" item="seriesId" open="(" separator="," close=")">
+            #{seriesId}
+        </foreach>
+    </update>
+
 </mapper>
