@@ -5,9 +5,6 @@ server:
   forward-headers-strategy: native # 启动时使用SpringBoot内置的Tomcat
 
 spring:
-  banner:
-    charset: utf-8
-    location: classpath:banner.txt
   config:
     import: # 引入配置文件
       - classpath:yml-config/email.yml # 邮件
@@ -19,19 +16,5 @@ spring:
       - classpath:yml-config/cors.yml # 跨域
       - classpath:yml-config/log-output.yml # 日志输出
       - classpath:yml-config/pix_vision.yml # 系统配置文件
+      - classpath:yml-config/spring-core.yml # Spring 核心配置
       - optional:file:${user.home}/${workspace-name}/application.yml # 用户自定义配置文件
-  devtools:
-    restart:
-      enabled: false # 禁用热部署
-  main:
-    banner-mode: console
-  mvc:
-    pathmatch:
-      matching-strategy: ant_path_matcher
-  servlet:
-    multipart:
-      max-file-size: 35MB      # 单个文件最大大小（作品上传需要 32MB，留有余量）
-      max-request-size: 35MB   # 整个请求最大大小
-  application:
-    name: PixVision  # 服务名称
-    version: DEV-2.0.0

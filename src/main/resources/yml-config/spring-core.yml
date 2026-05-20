@@ -1,0 +1,20 @@
+# Spring 核心配置
+spring:
+  banner:
+    charset: utf-8
+    location: classpath:banner.txt
+  devtools:
+    restart:
+      enabled: false # 禁用热部署
+  main:
+    banner-mode: console
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  servlet:
+    multipart:
+      max-file-size: 35MB      # 单个文件最大大小（作品上传需要 32MB，留有余量）
+      max-request-size: 35MB   # 整个请求最大大小
+  application:
+    name: PixVision  # 服务名称
+    version: DEV-2.0.0
