@@ -376,7 +376,7 @@ public class ImageController {
 
             // 10. 更新数据库中的头像路径（只保存相对路径）
             String avatarUrl = fileName; // 直接保存文件名，访问时使用 /api/get-image/avatar?filePath=xxx.png
-            Boolean updateResult = userService.updateUserAvatar(userId, avatarUrl);
+            Boolean updateResult = userService.updateUserAvatar(userId, avatarUrl, userId);
 
             if (!updateResult) {
                 log.error("更新用户头像路径失败，用户 ID: {}", userId);

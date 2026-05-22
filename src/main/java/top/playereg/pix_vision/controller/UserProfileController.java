@@ -540,7 +540,7 @@ public class UserProfileController {
         }
 
         // 调用服务层更新昵称
-        Boolean result = userService.updateUserNickname(userId, nickname);
+        Boolean result = userService.updateUserNickname(userId, nickname, userId);
 
         if (result) {
             log.info("用户昵称修改成功，用户 ID: {}, 用户名: {}, 新昵称: {}", userId, username, nickname);

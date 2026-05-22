@@ -1,6 +1,7 @@
 package top.playereg.pix_vision.service.Impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -204,6 +205,32 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 管理员分页查询用户列表（支持多条件过滤）
+     *
+     * @param page     页码（从 1 开始）
+     * @param size     每页大小
+     * @param userRole 用户角色（可选）
+     * @param status   用户状态（可选）
+     * @param isDelete 是否已删除（可选）
+     * @param nickname 昵称关键字（可选，模糊查询）
+     * @param orderBy  排序方式：'oldest' - 最早注册，其他值或 null - 最新注册（默认）
+     * @return 分页用户列表
+     */
+    @Override
+    public IPage<User> getAdminUserPage(Integer page, Integer size, Integer userRole,
+                                         Integer status, Boolean isDelete, String nickname, String orderBy) {
+        log.info("管理员分页查询用户 - 页码: {}, 每页: {}, 角色: {}, 状态: {}, 是否删除: {}, 昵称: {}, 排序: {}",
+            page, size, userRole, status, isDelete, nickname, orderBy);
+
+        Page<User> pageObj = new Page<>(page, size);
+        IPage<User> result = userMapper.adminSelectUsers(pageObj, userRole, status, isDelete, nickname, orderBy);
+
+        log.info("管理员分页查询用户完成 - 总条数: {}, 当前页条数: {}",
+            result.getTotal(), result.getRecords().size());
+        return result;
+    }
+
+    /**
      * 用户密码修改（通过邮箱）
      *
      * @param email       用户的邮箱
@@ -269,8 +296,8 @@ public class UserServiceImpl implements UserService {
      * @return 是否成功
      */
     @Override
-    public Boolean updateUserAvatar(Integer userId, String avatarUrl) {
-        log.info("更新用户头像，用户 ID: {}, 头像路径: {}", userId, avatarUrl);
+    public Boolean updateUserAvatar(Integer userId, String avatarUrl, Integer adminId) {
+        log.info("更新用户头像，用户 ID: {}, 头像路径: {}, 操作者 ID: {}", userId, avatarUrl, adminId);
 
         if (userId == null || userId <= 0) {
             log.error("用户 ID 无效: {}", userId);
@@ -282,7 +309,7 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        int result = userMapper.updateUserAvatar(userId, avatarUrl);
+        int result = userMapper.updateUserAvatar(userId, avatarUrl, adminId);
 
         if (result > 0) {
             log.info("用户头像更新成功，用户 ID: {}", userId);
@@ -301,8 +328,8 @@ public class UserServiceImpl implements UserService {
      * @return 是否成功
      */
     @Override
-    public Boolean updateUserNickname(Integer userId, String nickname) {
-        log.info("更新用户昵称，用户 ID: {}, 新昵称: {}", userId, nickname);
+    public Boolean updateUserNickname(Integer userId, String nickname, Integer adminId) {
+        log.info("更新用户昵称，用户 ID: {}, 新昵称: {}, 操作者 ID: {}", userId, nickname, adminId);
 
         if (userId == null || userId <= 0) {
             log.error("用户 ID 无效: {}", userId);
@@ -320,7 +347,7 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        int result = userMapper.updateUserNickname(userId, nickname);
+        int result = userMapper.updateUserNickname(userId, nickname, adminId);
 
         if (result > 0) {
             log.info("用户昵称更新成功，用户 ID: {}, 新昵称: {}", userId, nickname);
