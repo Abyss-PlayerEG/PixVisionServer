@@ -1,12 +1,11 @@
 package top.playereg.pix_vision.service.Impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import top.playereg.pix_vision.config.PythonServerConfig;
 import top.playereg.pix_vision.pojo.BilibiliAccountCheckResult;
 import top.playereg.pix_vision.pojo.PythonApiResponse;
 import top.playereg.pix_vision.service.BilibiliApiService;
@@ -27,11 +26,11 @@ public class BilibiliApiServiceImpl implements BilibiliApiService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${server.python-server-url:http://localhost:8000/api/v1}")
-    private String baseUrl;
+    private final PythonServerConfig pythonServerConfig;
 
-    public BilibiliApiServiceImpl(RestTemplate restTemplate) {
+    public BilibiliApiServiceImpl(RestTemplate restTemplate, PythonServerConfig pythonServerConfig) {
         this.restTemplate = restTemplate;
+        this.pythonServerConfig = pythonServerConfig;
     }
 
     /**
@@ -45,11 +44,7 @@ public class BilibiliApiServiceImpl implements BilibiliApiService {
     public Boolean checkAccountExists(String userId) {
         try {
             // 构建请求 URL
-            String url = UriComponentsBuilder
-                .fromUriString(baseUrl)
-                .path("/accounts/bilibili/{userId}")
-                .buildAndExpand(userId)
-                .toUriString();
+            String url = pythonServerConfig.getBilibiliAccountCheckUrl(userId);
 
             logger.info("调用 B站账号检测接口: {}", url);
 

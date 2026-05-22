@@ -1,6 +1,8 @@
 workspace-name: .pix_vision # 工作空间名称
+python-server:
+  base-url: http://localhost:8000/api/v1
+
 server:
-  python-server-url: http://localhost:8000/api/v1
   port: 9090
   forward-headers-strategy: native # 启动时使用SpringBoot内置的Tomcat
 

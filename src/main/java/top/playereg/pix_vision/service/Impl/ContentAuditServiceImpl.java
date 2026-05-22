@@ -1,7 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -9,7 +8,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import top.playereg.pix_vision.config.PythonServerConfig;
 import top.playereg.pix_vision.pojo.ContentAuditResult;
 import top.playereg.pix_vision.pojo.PythonApiResponse;
 import top.playereg.pix_vision.service.ContentAuditService;
@@ -37,8 +36,9 @@ public class ContentAuditServiceImpl implements ContentAuditService {
     private static final String STATUS_VIOLATION = "violation";
     @Autowired
     private RestTemplate restTemplate;
-    @Value("${server.python-server-url:http://localhost:8000/api/v1}")
-    private String baseUrl;
+
+    @Autowired
+    private PythonServerConfig pythonServerConfig;
 
     /**
      * 对评论文本进行 AI 审核
@@ -51,10 +51,7 @@ public class ContentAuditServiceImpl implements ContentAuditService {
     public ContentAuditResult auditContent(String text) {
         try {
             // 构建请求 URL
-            String url = UriComponentsBuilder
-                .fromUriString(baseUrl)
-                .path("/content/audit")
-                .toUriString();
+            String url = pythonServerConfig.getContentAuditUrl();
 
             log.debug("调用 AI 审核接口: {}, 文本长度: {}", url, text.length());
 
