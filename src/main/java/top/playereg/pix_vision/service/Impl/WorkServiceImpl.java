@@ -10,9 +10,11 @@ import top.playereg.pix_vision.mapper.GuestHistoryMapper;
 import top.playereg.pix_vision.mapper.HistoryMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
+import top.playereg.pix_vision.pojo.ContentAuditResult;
 import top.playereg.pix_vision.pojo.History;
 import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.pojo.Works;
+import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.ImageUtils;
 import top.playereg.pix_vision.util.PageUtils;
@@ -46,6 +48,9 @@ public class WorkServiceImpl implements WorkService {
     private GuestHistoryMapper guestHistoryMapper;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private ContentAuditService contentAuditService;
 
     private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
     private static final long CACHE_TTL_HOURS = 2; // Redis缓存TTL：2小时
@@ -269,12 +274,38 @@ public class WorkServiceImpl implements WorkService {
             }
         }
 
-        // 8. 生成唯一文件名（保留原始扩展名，添加 .pend 后缀表示待审核）
-        String uniqueFileName = UUID.randomUUID().toString().replace("-", "") + "." + extension;
-        String pendFileName = uniqueFileName + ".pend"; // 待审核文件
-        String savePath = Paths.get(FilePathConfig.WorksPath, pendFileName).toString();
+        // 8. 调用 AI 审核服务对作品标题进行内容安全审核
+        String auditText;
+        if (!isOriginal && outUrl != null && !outUrl.trim().isEmpty()) {
+            auditText = "作品标题: " + workTitle.trim() + "\n转载地址: " + outUrl.trim();
+        } else {
+            auditText = "作品标题: " + workTitle.trim();
+        }
 
-        // 9. 保存文件（以 .pend 后缀保存）
+        Integer approvalStatus = 20; // 默认待审核
+        ContentAuditResult auditResult = contentAuditService.auditContent(auditText);
+        if (auditResult != null) {
+            switch (auditResult.getStatus()) {
+                case "violation":
+                    approvalStatus = 30; // 违规，未过审
+                    break;
+                case "normal":
+                case "neutral":
+                default:
+                    approvalStatus = 20; // 正常/中立/未知，待审核
+                    break;
+            }
+            log.info("AI 作品审核结果 - 状态: {}, 原因: {}, 命中敏感词: {}, 最终审核状态: {}",
+                auditResult.getStatus(), auditResult.getReason(), auditResult.getInsult_words(), approvalStatus);
+        }
+
+        // 9. 生成唯一文件名（根据审核状态决定文件后缀）
+        String uniqueFileName = UUID.randomUUID().toString().replace("-", "") + "." + extension;
+        String fileSuffix = (approvalStatus == 30) ? ".fail" : ".pend";
+        String fileNameWithSuffix = uniqueFileName + fileSuffix;
+        String savePath = Paths.get(FilePathConfig.WorksPath, fileNameWithSuffix).toString();
+
+        // 10. 保存文件
         File saveFile = new File(savePath);
         File parentDir = saveFile.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
@@ -282,9 +313,9 @@ public class WorkServiceImpl implements WorkService {
         }
 
         cn.hutool.core.io.FileUtil.writeBytes(fileBytes, saveFile);
-        log.info("作品图片保存成功（待审核状态）: {}", savePath);
+        log.info("作品图片保存成功（审核状态: {}）: {}", approvalStatus, savePath);
 
-        // 10. 构建 Works 对象并插入数据库（数据库存储正常格式的文件名）
+        // 11. 构建 Works 对象并插入数据库（数据库存储正常格式的文件名）
         Works works = new Works();
         works.setUser_id(userId);
         works.setWork_title(workTitle.trim());
@@ -295,7 +326,7 @@ public class WorkServiceImpl implements WorkService {
         works.setView_count(0);
         works.setIs_original_work(isOriginal);
         works.setOut_url(isOriginal ? "" : outUrl.trim()); // 原创时为空字符串
-        works.setApproval_status(20); // 新发布作品默认为待审核状态
+        works.setApproval_status(approvalStatus);
         works.setIs_delete(false);
         works.setCreate_user(userId);
         works.setCreate_time(new Timestamp(System.currentTimeMillis()));
@@ -1164,7 +1195,7 @@ public class WorkServiceImpl implements WorkService {
 
         // 1. 先查询所有作品信息，验证是否存在且未删除
         List<Works> worksList = worksMapper.selectBatchIds(workIds);
-        
+
         // 构建查询到的作品ID集合
         java.util.Set<Integer> foundWorkIds = new java.util.HashSet<>();
         if (worksList != null && !worksList.isEmpty()) {
@@ -1172,7 +1203,7 @@ public class WorkServiceImpl implements WorkService {
                 foundWorkIds.add(work.getWork_id());
             }
         }
-        
+
         // 2. 找出未找到的作品ID（不存在的作品）
         List<Integer> notFoundWorkIds = new java.util.ArrayList<>();
         for (Integer workId : workIds) {
@@ -1180,12 +1211,12 @@ public class WorkServiceImpl implements WorkService {
                 notFoundWorkIds.add(workId);
             }
         }
-        
+
         // 3. 过滤出未删除的作品
         List<Works> validWorks = worksList != null ? worksList.stream()
             .filter(work -> !work.getIs_delete())
             .toList() : new java.util.ArrayList<>();
-        
+
         // 4. 找出已删除的作品ID
         List<Integer> deletedWorkIds = new java.util.ArrayList<>();
         if (worksList != null) {
@@ -1195,7 +1226,7 @@ public class WorkServiceImpl implements WorkService {
                 }
             }
         }
-        
+
         // 合并所有失败的ID（不存在的 + 已删除的）
         List<Integer> failedWorkIds = new java.util.ArrayList<>();
         failedWorkIds.addAll(notFoundWorkIds);
@@ -1213,7 +1244,7 @@ public class WorkServiceImpl implements WorkService {
         int affectedRows = worksMapper.adminBatchUpdateWorkTitle(validWorkIds, trimmedTitle, userId);
 
         int successCount = affectedRows > 0 ? affectedRows : 0;
-        
+
         // 如果数据库更新的影响行数小于有效作品数量，说明有部分更新失败
         if (affectedRows < validWorkIds.size()) {
             // 简化处理：将所有有效作品ID都标记为失败（因为无法精确知道哪些失败了）
@@ -1223,7 +1254,7 @@ public class WorkServiceImpl implements WorkService {
 
         log.info("批量更新作品标题完成 - 总数: {}, 成功: {}, 失败: {}, 新标题: {}, 操作者 ID: {}",
             totalCount, successCount, failedWorkIds.size(), trimmedTitle, userId);
-        
+
         if (!notFoundWorkIds.isEmpty()) {
             log.warn("以下作品ID不存在: {}", notFoundWorkIds);
         }
