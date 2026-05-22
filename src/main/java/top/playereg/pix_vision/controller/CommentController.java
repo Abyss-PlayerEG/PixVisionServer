@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.pojo.commentsPojo.CommentAddResult;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
@@ -63,7 +64,9 @@ public class CommentController {
             - commentText: **评论内容**，String 类型，必填，最多 125 个汉字
 
             ## 返回说明：
-            - **新增成功**：返回 **{"data": true}** 和"评论新增成功"提示
+            - **审核通过**：返回 **{"data": true}** 和"评论新增成功"提示
+            - **AI 审核不通过（违规）**：返回 **{"data": false}** 和"违规内容：{原因}"提示
+            - **AI 审核存疑（待审核）**：返回 **{"data": true}** 和"评论成功，等待人工审核"提示
             - **Token 不存在**：返回 **{"data": null}** 和"Token 不存在"提示
             - **Token 已失效**：返回 **{"data": null}** 和"Token 已失效"提示
             - **参数缺失**：返回 **{"data": false}** 和"缺少必要参数"提示
@@ -85,8 +88,10 @@ public class CommentController {
             7. 如果评论层级为 2，验证 parentCommentId 不为空
             8. 如果评论层级为 1，验证 parentCommentId 为空
             9. 如果是二级评论，验证父评论是否存在且属于同一作品
-            10. 创建评论对象并插入数据库
-            11. 返回新增结果
+            10. 调用 AI 审核服务对评论内容进行安全审核
+            11. 根据审核结果设置审核状态（通过-10/待审核-20/违规-30）
+            12. 创建评论对象并插入数据库
+            13. 根据审核状态返回差异化的响应消息
 
             ## 注意事项：
             - **需要携带有效的 Token 才能新增评论**
@@ -98,6 +103,10 @@ public class CommentController {
             - 一级评论不应提供父评论 ID
             - 父评论必须存在且属于同一作品
             - 评论会自动关联到当前登录用户
+            - 评论新增后会自动调用 AI 审核服务进行内容安全审核
+            - AI 审核不通过（违规）时直接拦截，data 返回 false
+            - AI 审核存疑时标记为待审核，评论需要人工审核后才会公开显示
+            - AI 审核服务不可用时自动降级为待审核状态
             """
     )
     @PostMapping("/add")
@@ -141,15 +150,33 @@ public class CommentController {
         }
 
         // 调用服务层新增评论
-        Boolean result = commentService.addComment(userId, workId, parentCommentId, commentFloor, commentText);
+        CommentAddResult result = commentService.addComment(userId, workId, parentCommentId, commentFloor, commentText);
 
-        if (result != null && result) {
-            log.info("评论新增成功，用户 ID: {}, 用户名: {}, 作品 ID: {}", userId, username, workId);
-            return ResponsePojo.success(true, "评论新增成功");
-        } else {
+        if (result.getSuccess() == null || !result.getSuccess()) {
             log.warn("评论新增失败，用户 ID: {}, 用户名: {}, 作品 ID: {}", userId, username, workId);
             return ResponsePojo.error(false, "评论新增失败");
         }
+
+        Integer approvalStatus = result.getApprovalStatus();
+        String auditReason = result.getAuditReason();
+
+        // 根据审核状态返回差异化响应
+        if (approvalStatus != null && approvalStatus == 30) {
+            // 违规内容
+            String reason = auditReason != null ? auditReason : "未知原因";
+            log.warn("评论审核不通过（违规），用户 ID: {}, 原因: {}", userId, reason);
+            return ResponsePojo.error(false, "违规内容：" + reason);
+        }
+
+        if (approvalStatus != null && approvalStatus == 20) {
+            // 待审核
+            log.info("评论新增成功，待人工审核，用户 ID: {}, 作品 ID: {}", userId, workId);
+            return ResponsePojo.success(true, "评论成功，等待人工审核");
+        }
+
+        // 审核通过（10）或其他
+        log.info("评论新增成功，用户 ID: {}, 用户名: {}, 作品 ID: {}", userId, username, workId);
+        return ResponsePojo.success(true, "评论新增成功");
     }
 
     /**

@@ -2,6 +2,7 @@ package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
+import top.playereg.pix_vision.pojo.commentsPojo.CommentAddResult;
 import top.playereg.pix_vision.pojo.commentsPojo.Comments;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
 
@@ -22,11 +23,11 @@ public interface CommentService {
      * @param parentCommentId 父评论 ID（可选，二级评论时必填）
      * @param commentFloor    评论层级（1 - 作品评论、2 - 二级评论）
      * @param commentText     评论内容（限制长度 125 个汉字）
-     * @return 是否新增成功
+     * @return 评论新增结果，包含是否成功、审核状态和审核原因
      * @author PlayerEG
      */
-    Boolean addComment(Integer userId, Integer workId, Integer parentCommentId,
-                       Integer commentFloor, String commentText);
+    CommentAddResult addComment(Integer userId, Integer workId, Integer parentCommentId,
+                                Integer commentFloor, String commentText);
 
     /**
      * 根据作品 ID 查询评论列表

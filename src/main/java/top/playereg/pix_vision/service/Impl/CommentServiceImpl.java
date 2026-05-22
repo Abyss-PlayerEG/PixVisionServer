@@ -6,12 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.CommentsMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
+import top.playereg.pix_vision.pojo.ContentAuditResult;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
+import top.playereg.pix_vision.pojo.commentsPojo.CommentAddResult;
 import top.playereg.pix_vision.pojo.commentsPojo.Comments;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
 import top.playereg.pix_vision.pojo.commentsPojo.VO.SecondaryComment;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.CommentService;
+import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -37,6 +40,9 @@ public class CommentServiceImpl implements CommentService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private ContentAuditService contentAuditService;
+
     /**
      * 新增评论
      *
@@ -49,36 +55,36 @@ public class CommentServiceImpl implements CommentService {
      * @author PlayerEG
      */
     @Override
-    public Boolean addComment(Integer userId, Integer workId, Integer parentCommentId,
+    public CommentAddResult addComment(Integer userId, Integer workId, Integer parentCommentId,
                               Integer commentFloor, String commentText) {
         // 参数校验
         if (userId == null || workId == null || commentFloor == null || commentText == null) {
             log.warn("新增评论失败 - 必要参数为空");
-            return false;
+            return new CommentAddResult(false, null, null);
         }
 
         // 验证评论层级
         if (commentFloor != 1 && commentFloor != 2) {
             log.warn("新增评论失败 - 评论层级无效: {}", commentFloor);
-            return false;
+            return new CommentAddResult(false, null, null);
         }
 
         // 验证评论内容长度（限制125个汉字）
         if (commentText.length() > 125) {
             log.warn("新增评论失败 - 评论内容过长: {} 字符", commentText.length());
-            return false;
+            return new CommentAddResult(false, null, null);
         }
 
         // 如果评论层级为2，父评论ID不能为空
         if (commentFloor == 2 && parentCommentId == null) {
             log.warn("新增评论失败 - 二级评论必须提供父评论ID");
-            return false;
+            return new CommentAddResult(false, null, null);
         }
 
         // 如果评论层级为1，父评论ID应该为空
         if (commentFloor == 1 && parentCommentId != null) {
             log.warn("新增评论失败 - 一级评论不应提供父评论ID");
-            return false;
+            return new CommentAddResult(false, null, null);
         }
 
         // 如果是二级评论，验证父评论是否存在并获取父评论信息
@@ -87,13 +93,13 @@ public class CommentServiceImpl implements CommentService {
             parentComment = commentsMapper.selectCommentById(parentCommentId);
             if (parentComment == null) {
                 log.warn("新增评论失败 - 父评论不存在: {}", parentCommentId);
-                return false;
+                return new CommentAddResult(false, null, null);
             }
 
             // 验证父评论是否属于同一作品
             if (!parentComment.getWork_id().equals(workId)) {
                 log.warn("新增评论失败 - 父评论不属于当前作品");
-                return false;
+                return new CommentAddResult(false, null, null);
             }
         }
 
@@ -121,7 +127,31 @@ public class CommentServiceImpl implements CommentService {
 
             comment.setComment_floor(commentFloor);
             comment.setComment_text(commentText);
-            comment.setApproval_status(20); // 新增评论默认为待审核状态
+
+            // 调用 AI 审核服务确定审核状态
+            Integer approvalStatus = 20; // 默认待审核
+            String auditReason = null;
+            ContentAuditResult auditResult = contentAuditService.auditContent(commentText);
+            if (auditResult != null) {
+                auditReason = auditResult.getReason();
+                switch (auditResult.getStatus()) {
+                    case "normal":
+                        approvalStatus = 10; // 审核通过，直接发布
+                        break;
+                    case "neutral":
+                        approvalStatus = 20; // 中立/存疑，待审核
+                        break;
+                    case "violation":
+                        approvalStatus = 30; // 违规，未过审
+                        break;
+                    default:
+                        log.warn("AI 审核返回未知状态: {}, 降级为待审核", auditResult.getStatus());
+                        break;
+                }
+                log.info("AI 审核结果 - 状态: {}, 原因: {}, 命中敏感词: {}, 最终审核状态: {}",
+                    auditResult.getStatus(), auditResult.getReason(), auditResult.getInsult_words(), approvalStatus);
+            }
+            comment.setApproval_status(approvalStatus);
             comment.setIs_delete(false);
             // time字段由数据库自动设置为当前时间，无需手动设置
 
@@ -138,14 +168,14 @@ public class CommentServiceImpl implements CommentService {
                     log.info("二级评论新增成功 - 用户ID: {}, 作品ID: {}, 评论ID: {}, 所属一级评论ID: {}",
                         userId, workId, comment.getComment_id(), comment.getIn_comment_id());
                 }
-                return true;
+                return new CommentAddResult(true, approvalStatus, auditReason);
             } else {
                 log.warn("评论新增失败 - 用户ID: {}, 作品ID: {}", userId, workId);
-                return false;
+                return new CommentAddResult(false, null, null);
             }
         } catch (Exception e) {
             log.error("评论新增异常 - 用户ID: {}, 作品ID: {}, 错误: {}", userId, workId, e.getMessage(), e);
-            return false;
+            return new CommentAddResult(false, null, null);
         }
     }
 
