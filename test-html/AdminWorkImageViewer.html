@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>管理员作品图像查看器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 22px;
+        }
+
+        .subtitle {
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        /* Token 输入区 */
+        .token-area {
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffc107;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .token-area label {
+            font-size: 13px;
+            color: #856404;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .token-area input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .token-area input:focus {
+            outline: none;
+            border-color: #ff9800;
+            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+        }
+
+        /* 状态图例 */
+        .legend {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .legend-dot.fail { background: #f56c6c; }
+        .legend-dot.pend { background: #e6a23c; }
+        .legend-dot.del  { background: #909399; }
+        .legend-dot.ok   { background: #67c23a; }
+
+        /* 分页控制 */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .pagination .page-info {
+            font-size: 14px;
+            color: #333;
+            min-width: 160px;
+            text-align: center;
+        }
+
+        .pagination .page-size-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .pagination select {
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #409eff;
+            color: white;
+        }
+
+        .btn-primary:hover { background: #66b1ff; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+
+        .btn-sm {
+            padding: 3px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            border: 1px solid #b3d8ff;
+            background: #e8f4fd;
+            color: #409eff;
+        }
+
+        .btn-sm:hover { background: #d9ecff; }
+
+        /* 作品表格 */
+        .works-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .works-table th {
+            background: #f5f7fa;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e4e7ed;
+        }
+
+        .works-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        .works-table tr:hover { background: #f5f7fa; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-badge.fail { background: #fef0f0; color: #f56c6c; }
+        .status-badge.pend { background: #fdf6ec; color: #e6a23c; }
+        .status-badge.del  { background: #f4f4f5; color: #909399; text-decoration: line-through; }
+        .status-badge.ok   { background: #f0f9eb; color: #67c23a; }
+
+        .work-title-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 图片预览浮层 */
+        .image-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            cursor: pointer;
+        }
+
+        .image-overlay.show { display: flex; }
+
+        .image-overlay img {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            cursor: default;
+        }
+
+        .image-overlay .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            z-index: 2001;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+
+        .image-overlay .close-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .image-overlay .overlay-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 16px;
+            border-radius: 4px;
+        }
+
+        /* 加载/错误提示 */
+        .loading, .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .error-msg {
+            padding: 12px;
+            background: #fef0f0;
+            color: #f56c6c;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-msg.show { display: block; }
+
+        /* 搜索 */
+        .search-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .search-row input {
+            flex: 1;
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .search-row input:focus {
+            outline: none;
+            border-color: #409eff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>管理员作品图像查看器</h1>
+        <p class="subtitle">通过管理员分页接口浏览所有作品，点击查看按钮预览 .fail / .pend / .del 文件</p>
+
+        <!-- Token 输入 -->
+        <div class="token-area">
+            <label>Token:</label>
+            <input id="auth-token" placeholder="请输入管理员 JWT Token（角色 55 或 77）" type="text">
+        </div>
+
+        <!-- 状态图例 -->
+        <div class="legend">
+            <div class="legend-item"><span class="legend-dot fail"></span> 未过审 (.fail)</div>
+            <div class="legend-item"><span class="legend-dot pend"></span> 待审核 (.pend)</div>
+            <div class="legend-item"><span class="legend-dot del"></span> 已删除 (.del)</div>
+            <div class="legend-item"><span class="legend-dot ok"></span> 审核通过</div>
+        </div>
+
+        <!-- 搜索 & 分页控制 -->
+        <div class="search-row">
+            <input id="keyword-input" placeholder="关键字搜索作品标题（可选）" type="text">
+            <button class="btn btn-primary" id="search-btn" onclick="searchWorks()">搜索</button>
+        </div>
+
+        <div class="pagination">
+            <button class="btn btn-primary" id="prev-btn" onclick="prevPage()">上一页</button>
+            <span class="page-info" id="page-info">第 1 页 / 共 ? 页（总数: ?）</span>
+            <button class="btn btn-primary" id="next-btn" onclick="nextPage()">下一页</button>
+            <span class="page-size-label">每页:</span>
+            <select id="page-size" onchange="changePageSize()">
+                <option value="10">10</option>
+                <option selected value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="error-msg" id="error-msg"></div>
+
+        <!-- 作品表格 -->
+        <table class="works-table" id="works-table">
+            <thead>
+                <tr>
+                    <th>作品 ID</th>
+                    <th>标题</th>
+                    <th>审核状态</th>
+                    <th>删除标记</th>
+                    <th>发布日期</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="works-tbody">
+                <tr><td class="loading" colspan="6">加载中...</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 底部分页 -->
+        <div class="pagination">
+            <button class="btn btn-primary" id="prev-btn2" onclick="prevPage()">上一页</button>
+            <span class="page-info" id="page-info2" style="min-width:160px;text-align:center;">-</span>
+            <button class="btn btn-primary" id="next-btn2" onclick="nextPage()">下一页</button>
+        </div>
+    </div>
+
+    <!-- 图片预览浮层 -->
+    <div class="image-overlay" id="image-overlay" onclick="closeOverlay(event)">
+        <span class="close-btn" onclick="closeOverlay()">&times;</span>
+        <img alt="作品图片" id="overlay-image" onclick="event.stopPropagation()" src="">
+        <div class="overlay-info" id="overlay-info"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:9090';
+
+        // 状态变量
+        let currentPage = 1;
+        let pageSize = 20;
+        let totalPages = 0;
+        let totalCount = 0;
+        let currentKeyword = '';
+
+        // 获取 Token
+        function getToken() {
+            return document.getElementById('auth-token').value.trim();
+        }
+
+        // 显示错误
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('error-msg').classList.remove('show');
+        }
+
+        // 获取审核状态文本
+        function getApprovalStatusText(status) {
+            switch (status) {
+                case 10: return '审核通过';
+                case 20: return '待审核';
+                case 30: return '未过审';
+                default: return '未知(' + status + ')';
+            }
+        }
+
+        // 获取审核状态 CSS 类
+        function getApprovalStatusClass(status) {
+            switch (status) {
+                case 10: return 'ok';
+                case 20: return 'pend';
+                case 30: return 'fail';
+                default: return '';
+            }
+        }
+
+        // 获取删除标记文本
+        function getDeleteText(isDelete) {
+            return isDelete ? '已删除' : '正常';
+        }
+
+        function getDeleteClass(isDelete) {
+            return isDelete ? 'del' : 'ok';
+        }
+
+        // 格式化日期
+        function formatDate(timestamp) {
+            if (!timestamp) return '-';
+            const d = new Date(timestamp);
+            return d.getFullYear() + '-' +
+                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                String(d.getDate()).padStart(2, '0') + ' ' +
+                String(d.getHours()).padStart(2, '0') + ':' +
+                String(d.getMinutes()).padStart(2, '0');
+        }
+
+        // 构建文件后缀提示
+        function getFileSuffixHint(approvalStatus, isDelete) {
+            if (isDelete) return '文件后缀: .del';
+            if (approvalStatus === 30) return '文件后缀: .fail';
+            if (approvalStatus === 20) return '文件后缀: .pend';
+            return '';
+        }
+
+        // 查看作品图片
+        function viewWorkImage(imgUrl, workTitle, approvalStatus, isDelete) {
+            if (!imgUrl) {
+                showError('该作品没有图片 URL');
+                return;
+            }
+
+            const token = getToken();
+            if (!token) {
+                showError('请先输入管理员 Token');
+                return;
+            }
+
+            const url = API_BASE_URL + '/api/image/work/admin-view?filePath=' + encodeURIComponent(imgUrl);
+
+            const overlay = document.getElementById('image-overlay');
+            const img = document.getElementById('overlay-image');
+            const info = document.getElementById('overlay-info');
+
+            // 显示加载状态
+            img.src = '';
+            overlay.classList.add('show');
+            info.textContent = '加载中...';
+
+            // 通过 fetch 加载，需要带 Token
+            fetch(url, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const objectUrl = URL.createObjectURL(blob);
+                img.src = objectUrl;
+                const suffixHint = getFileSuffixHint(approvalStatus, isDelete);
+                info.textContent = '#' + workTitle + (suffixHint ? ' | ' + suffixHint : '');
+            })
+            .catch(err => {
+                img.src = '';
+                info.textContent = '加载失败: ' + err.message;
+                showError('图片加载失败: ' + err.message);
+            });
+        }
+
+        // 关闭浮层
+        function closeOverlay(event) {
+            if (event && event.target !== document.getElementById('image-overlay') &&
+                event.target !== document.querySelector('.close-btn')) return;
+            const overlay = document.getElementById('image-overlay');
+            overlay.classList.remove('show');
+            document.getElementById('overlay-image').src = '';
+        }
+
+        // 键盘关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeOverlay();
+        });
+
+        // 加载作品列表
+        async function loadWorks(page, size, keyword) {
+            hideError();
+            const token = getToken();
+            if (!token) {
+                showError('请先输入管理员 Token（角色 55 或 77）');
+                document.getElementById('works-tbody').innerHTML =
+                    '<tr><td colspan="6" class="empty">请先输入 Token</td></tr>';
+                return;
+            }
+
+            document.getElementById('works-tbody').innerHTML =
+                '<tr><td colspan="6" class="loading">加载中...</td></tr>';
+
+            try {
+                let url = API_BASE_URL + '/api/admin/works/page/' + page + '/' + size;
+                if (keyword) {
+                    url += '?keyword=' + encodeURIComponent(keyword);
+                }
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (response.status === 401) {
+                    showError('Token 无效或已过期');
+                    document.getElementById('works-tbody').innerHTML =
+                        '<tr><td colspan="6" class="empty">Token 验证失败</td></tr>';
+                    return;
+                }
+
+                if (response.status === 403) {
+                    showError('权限不足，需要角色 55（审核员）或 77（系统管理员）');
+                    document.getElementById('works-tbody').innerHTML =
+                        '<tr><td colspan="6" class="empty">权限不足</td></tr>';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const result = await response.json();
+
+                if (result.recode !== 200 || !result.data) {
+                    showError('请求失败: ' + (result.message || '未知错误'));
+                    document.getElementById('works-tbody').innerHTML =
+                        '<tr><td colspan="6" class="empty">请求失败</td></tr>';
+                    return;
+                }
+
+                const data = result.data;
+                totalPages = data.pages || 0;
+                totalCount = data.total || 0;
+                currentPage = data.current || page;
+                const records = data.records || [];
+
+                updatePaginationUI();
+                renderWorksTable(records);
+
+            } catch (err) {
+                showError('网络错误: ' + err.message);
+                document.getElementById('works-tbody').innerHTML =
+                    '<tr><td colspan="6" class="empty">网络错误: ' + err.message + '</td></tr>';
+            }
+        }
+
+        // 渲染作品表格
+        function renderWorksTable(records) {
+            const tbody = document.getElementById('works-tbody');
+
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+                return;
+            }
+
+            let html = '';
+            for (const work of records) {
+                const statusText = getApprovalStatusText(work.approval_status);
+                const statusClass = getApprovalStatusClass(work.approval_status);
+                const deleteText = getDeleteText(work.is_delete);
+                const deleteClass = getDeleteClass(work.is_delete);
+                const date = formatDate(work.create_time);
+                const title = work.work_title || '(无标题)';
+
+                html += '<tr>';
+                html += '<td>' + (work.work_id || '-') + '</td>';
+                html += '<td class="work-title-cell" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</td>';
+                html += '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>';
+                html += '<td><span class="status-badge ' + deleteClass + '">' + deleteText + '</span></td>';
+                html += '<td>' + date + '</td>';
+                html += '<td>';
+                if (work.img_url) {
+                    html += '<button class="btn-sm" onclick="viewWorkImage(\'' +
+                        escapeHtml(work.img_url) + '\', \'' +
+                        escapeHtml(title) + '\', ' +
+                        (work.approval_status || 0) + ', ' +
+                        (work.is_delete || false) + ')">查看图片</button>';
+                } else {
+                    html += '<span style="color:#ccc;font-size:12px;">无图片</span>';
+                }
+                html += '</td>';
+                html += '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        // 更新分页 UI
+        function updatePaginationUI() {
+            const infoText = '第 ' + currentPage + ' 页 / 共 ' + totalPages + ' 页（总记录: ' + totalCount + '）';
+            document.getElementById('page-info').textContent = infoText;
+            document.getElementById('page-info2').textContent = infoText;
+
+            document.getElementById('prev-btn').disabled = currentPage <= 1;
+            document.getElementById('prev-btn2').disabled = currentPage <= 1;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages;
+            document.getElementById('next-btn2').disabled = currentPage >= totalPages;
+        }
+
+        // 上一页
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadWorks(currentPage, pageSize, currentKeyword);
+            }
+        }
+
+        // 下一页
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadWorks(currentPage, pageSize, currentKeyword);
+            }
+        }
+
+        // 切换每页大小
+        function changePageSize() {
+            pageSize = parseInt(document.getElementById('page-size').value);
+            currentPage = 1;
+            loadWorks(currentPage, pageSize, currentKeyword);
+        }
+
+        // 搜索
+        function searchWorks() {
+            currentKeyword = document.getElementById('keyword-input').value.trim();
+            currentPage = 1;
+            loadWorks(currentPage, pageSize, currentKeyword);
+        }
+
+        // HTML 转义
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // 回车搜索
+        document.getElementById('keyword-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') searchWorks();
+        });
+
+        // 初始加载
+        loadWorks(currentPage, pageSize, currentKeyword);
+    </script>
+</body>
+</html>

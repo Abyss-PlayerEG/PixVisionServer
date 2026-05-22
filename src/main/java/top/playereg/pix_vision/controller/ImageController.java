@@ -66,6 +66,11 @@ public class ImageController {
         "jpg", "jpeg", "png"
     );
 
+    // 作品文件的状态后缀（.fail / .pend / .del），用于剥离后获取真实图片扩展名
+    private static final List<String> WORK_FILE_SUFFIXES = Arrays.asList(
+        ".fail", ".pend", ".del"
+    );
+
     /**
      * 获取头像图片
      *
@@ -182,6 +187,72 @@ public class ImageController {
         // 根据审核状态动态查找文件
         String actualFilePath = resolveWorkFilePath(filePath);
         return getImageResource(FilePathConfig.WorksPath, actualFilePath, "作品");
+    }
+
+    /**
+     * 管理员查看非公开作品图片（.fail / .pend / .del）
+     *
+     * @param filePath 数据库存储的作品图片文件名（正常格式，如：uuid.png）
+     * @return 图片资源（二进制数据）
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "管理员查看非公开作品图片",
+        description = """
+            # 管理员查看非公开作品图片（需要登录认证 + 角色权限[55, 77]）
+
+            ## 特性
+            - Token 认证（通过拦截器自动验证）
+            - 角色权限控制（仅审核员和系统管理员）
+            - 路径安全校验（防目录遍历攻击）
+            - 文件类型白名单（JPG/JPEG/PNG）
+            - **按优先级查找非公开文件后缀**：.fail → .pend → .del → 正常
+            - 适用于审核员查看违规作品、待审核作品、已删除作品
+
+            ## 权限要求
+            - **角色代码 55**：审核员
+            - **角色代码 77**：系统管理员
+            - 其他角色访问将返回 **403 Forbidden**
+
+            ## 参数说明：
+            - filePath: **数据库存储的作品图片文件名**，字符串类型，必填，为正常格式（如 uuid.png），不含 .fail/.pend/.del 后缀
+
+            ## 返回说明：
+            - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg
+            - **未授权**：返回 401 状态码（Token 无效或不存在）
+            - **权限不足**：返回 403 状态码（角色不符合要求）
+            - **文件不存在**：返回 404 Not Found（所有后缀均未找到）
+            - **非法路径**：返回 400 Bad Request（包含 .. 或 / 开头）
+            - **不支持的格式**：返回 400 Bad Request（非 JPG/JPEG/PNG 格式）
+            - **服务器错误**：返回 500 Internal Server Error
+
+            ## 业务逻辑：
+            1. 校验文件路径安全性（禁止 .. 和绝对路径）
+            2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
+            3. 按优先级查找实际文件：
+               - `.fail` 后缀（违规未过审作品）
+               - `.pend` 后缀（待审核作品）
+               - `.del` 后缀（已删除作品）
+               - 正常格式（审核通过作品）
+            4. 构建完整文件路径并返回图片
+
+            ## 注意事项：
+            - 该接口**需要认证**，必须在请求头中携带有效的 Token
+            - **仅角色代码 55（审核员）和 77（系统管理员）**可以访问
+            - 传入的 filePath 为数据库存储的正常格式文件名（如 uuid.png），**不需要**手动添加 .fail/.pend/.del 后缀
+            - 接口会自动按优先级查找实际存在的文件
+            - 与公开接口 `/api/image/work/get` 的区别：公开接口优先查找正常文件，本接口优先查找非公开后缀文件
+            - 用于审核员在管理后台查看待审核、违规或已删除的作品图片
+            """
+    )
+    @RequireRole(value = {55, 77})
+    @GetMapping("/work/admin-view")
+    public ResponseEntity<Resource> adminViewWorkImage(
+        @Parameter(description = "数据库存储的作品图片文件名（正常格式，如：uuid.png）", required = true, example = "a1b2c3d4.png") @RequestParam String filePath
+    ) {
+        // 按管理员优先级查找文件（.fail → .pend → .del → 正常）
+        String actualFilePath = resolveAdminWorkFilePath(filePath);
+        return getImageResource(FilePathConfig.WorksPath, actualFilePath, "管理员查看作品");
     }
 
     /**
@@ -581,10 +652,10 @@ public class ImageController {
                 return ResponseEntity.badRequest().build();
             }
 
-            // 2. 检查文件扩展名是否在白名单中
-            String extension = getFileExtension(filePath);
-            if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
-                log.warn("不允许的文件类型: {}, 文件路径: {}", extension, filePath);
+            // 2. 剥离作品文件状态后缀，获取真实图片扩展名并检查白名单
+            String realExtension = getRealImageExtension(filePath);
+            if (!ALLOWED_EXTENSIONS.contains(realExtension.toLowerCase())) {
+                log.warn("不允许的文件类型: {}, 文件路径: {}", realExtension, filePath);
                 return ResponseEntity.badRequest().build();
             }
 
@@ -607,7 +678,7 @@ public class ImageController {
 
             // 6. 返回图片资源
             Resource resource = new FileSystemResource(file);
-            String contentType = getContentType(extension);
+            String contentType = getContentType(realExtension);
             log.info("返回{}图片: {}, 文件路径: {}", imageType, filePath, fullPath);
 
             return ResponseEntity.ok()
@@ -655,6 +726,31 @@ public class ImageController {
             return filename.substring(lastDotIndex + 1);
         }
         return "";
+    }
+
+    /**
+     * 获取文件真实图片扩展名，剥离作品状态后缀
+     * <p>
+     * 作品文件可能带有状态后缀（如 uuid.png.fail、uuid.png.pend、uuid.png.del），
+     * 本方法先剥离这些后缀，再提取真实的图片扩展名（如 png、jpg）。
+     * <p>
+     * 对于不含状态后缀的普通文件，行为与 {@link #getFileExtension(String)} 一致。
+     *
+     * @param filename 文件名（可能含有 .fail/.pend/.del 后缀）
+     * @return 真实图片扩展名（如 png、jpg、jpeg），不含点
+     * @author PlayerEG
+     * @see #getFileExtension(String)
+     */
+    private String getRealImageExtension(String filename) {
+        String lowerFilename = filename.toLowerCase();
+        for (String suffix : WORK_FILE_SUFFIXES) {
+            if (lowerFilename.endsWith(suffix)) {
+                // 剥离状态后缀后提取图片扩展名
+                String stripped = filename.substring(0, filename.length() - suffix.length());
+                return getFileExtension(stripped);
+            }
+        }
+        return getFileExtension(filename);
     }
 
     /**
@@ -737,6 +833,52 @@ public class ImageController {
         } catch (Exception e) {
             log.error("解析作品文件路径异常: {}, 错误: {}", filePath, e.getMessage());
             return filePath; // 发生异常时返回原始路径
+        }
+    }
+
+    /**
+     * 管理员视角解析作品文件路径（优先查找非公开后缀文件）
+     * <p>
+     * 与公开接口 {@link #resolveWorkFilePath(String)} 不同，本方法优先查找非公开后缀的文件：
+     * <ol>
+     *   <li>.fail - 违规未过审作品（approval_status = 30）</li>
+     *   <li>.pend - 待审核作品（approval_status = 20）</li>
+     *   <li>.del - 已删除作品（is_delete = 1）</li>
+     *   <li>正常格式 - 审核通过作品（approval_status = 10）</li>
+     * </ol>
+     * <p>
+     * 用于管理员在后台审核流程中查看各种状态的作品图片
+     *
+     * @param filePath 数据库存储的文件名（正常格式）
+     * @return 实际文件路径（根据文件系统中存在的文件添加相应后缀）
+     * @author PlayerEG
+     * @see #resolveWorkFilePath(String)
+     */
+    private String resolveAdminWorkFilePath(String filePath) {
+        try {
+            // 管理员优先级：.fail → .pend → .del → 正常格式
+            String[] possiblePaths = {
+                filePath + ".fail",
+                filePath + ".pend",
+                filePath + ".del",
+                filePath
+            };
+
+            for (String possiblePath : possiblePaths) {
+                Path fullPath = Paths.get(FilePathConfig.WorksPath, possiblePath).normalize();
+                File file = fullPath.toFile();
+                if (file.exists() && file.isFile()) {
+                    log.debug("管理员查看作品文件: {}, 实际路径: {}", filePath, possiblePath);
+                    return possiblePath;
+                }
+            }
+
+            log.warn("管理员未找到作品文件: {}", filePath);
+            return filePath;
+
+        } catch (Exception e) {
+            log.error("管理员解析作品文件路径异常: {}, 错误: {}", filePath, e.getMessage());
+            return filePath;
         }
     }
 }
