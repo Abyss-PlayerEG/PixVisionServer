@@ -10,10 +10,7 @@ import top.playereg.pix_vision.mapper.GuestHistoryMapper;
 import top.playereg.pix_vision.mapper.HistoryMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
-import top.playereg.pix_vision.pojo.ContentAuditResult;
-import top.playereg.pix_vision.pojo.History;
-import top.playereg.pix_vision.pojo.Series;
-import top.playereg.pix_vision.pojo.Works;
+import top.playereg.pix_vision.pojo.*;
 import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.ImageUtils;
@@ -195,7 +192,7 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
-    public Integer uploadWork(Integer userId, byte[] fileBytes, String fileName, long fileSize,
+    public WorkUploadResult uploadWork(Integer userId, byte[] fileBytes, String fileName, long fileSize,
                               String workTitle, Integer seriesId, Boolean isOriginal, String outUrl) {
         // 1. 验证文件格式
         String extension = getFileExtension(fileName);
@@ -283,8 +280,10 @@ public class WorkServiceImpl implements WorkService {
         }
 
         Integer approvalStatus = 20; // 默认待审核
+        String auditReason = null;
         ContentAuditResult auditResult = contentAuditService.auditContent(auditText);
         if (auditResult != null) {
+            auditReason = auditResult.getReason();
             switch (auditResult.getStatus()) {
                 case "violation":
                     approvalStatus = 30; // 违规，未过审
@@ -342,7 +341,7 @@ public class WorkServiceImpl implements WorkService {
         }
 
         log.info("作品发布成功，用户 ID: {}, 作品 ID: {}, 文件路径: {}", userId, works.getWork_id(), uniqueFileName);
-        return works.getWork_id();
+        return new WorkUploadResult(works.getWork_id(), approvalStatus, auditReason);
     }
 
     /**

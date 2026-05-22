@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.pojo.WorkUploadResult;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
@@ -438,7 +439,8 @@ public class ImageController {
             - outUrl: **外部转载链接**，字符串类型，转载时必填，原创时可选
 
             ## 返回说明：
-            - **上传成功**：返回 200 状态码和 **{"data": 作品 ID}**
+            - **上传成功（待审核）**：返回 200 状态码和 **{"data": true}**，message 为"人工审查后将直接发布"
+            - **AI 审核不通过（违规）**：返回 200 状态码和 **{"data": false}**，message 为审核原因
             - **未授权**：返回 401 状态码（Token 无效或不存在）
             - **权限不足**：返回 403 状态码（角色不符合要求）
             - **文件格式不支持**：返回 400 状态码
@@ -521,7 +523,7 @@ public class ImageController {
 
             // 5. 调用 Service 层处理业务逻辑
             Integer finalSeriesId = (seriesId != null && seriesId > 0) ? seriesId : null;
-            Integer workId = workService.uploadWork(
+            WorkUploadResult uploadResult = workService.uploadWork(
                 userId,
                 imageBytes,
                 originalFilename,
@@ -532,8 +534,21 @@ public class ImageController {
                 outUrl
             );
 
-            log.info("作品上传成功，用户 ID: {}, 作品 ID: {}", userId, workId);
-            return ResponseEntity.ok(ResponsePojo.success(true, "作品发布成功"));
+            Integer workId = uploadResult.getWorkId();
+            Integer approvalStatus = uploadResult.getApprovalStatus();
+            String auditReason = uploadResult.getAuditReason();
+
+            // 根据审核状态返回差异化响应
+            if (approvalStatus != null && approvalStatus == 30) {
+                // 违规内容
+                String reason = auditReason != null ? auditReason : "未知原因";
+                log.warn("作品审核不通过（违规），用户 ID: {}, 作品 ID: {}, 原因: {}", userId, workId, reason);
+                return ResponseEntity.ok(ResponsePojo.error(false, reason));
+            }
+
+            // 待审核（20）
+            log.info("作品上传成功，待人工审核，用户 ID: {}, 作品 ID: {}", userId, workId);
+            return ResponseEntity.ok(ResponsePojo.success(true, "人工审查后将直接发布"));
 
         } catch (IllegalArgumentException e) {
             log.error("参数验证失败: {}", e.getMessage());
@@ -686,7 +701,7 @@ public class ImageController {
             // 从文件名提取作品 ID（假设文件名格式为 uuid.ext 或 uuid.ext.suffix）
             // 由于无法直接从文件名获取作品 ID，我们需要通过 img_url 反查作品
             // 这里采用简化方案：直接查询所有作品中 img_url 匹配的记录
-            
+
             // 注意：filePath 可能包含子目录，如 "2024/04/artwork.png"
             // 我们需要提取纯文件名部分进行匹配
             String pureFileName = filePath;
@@ -694,18 +709,18 @@ public class ImageController {
             if (lastSlashIndex >= 0) {
                 pureFileName = filePath.substring(lastSlashIndex + 1);
             }
-            
+
             // 查询作品信息（需要自定义 SQL 来根据 img_url 查询）
             // 由于当前 Mapper 没有这个方法，我们采用另一种策略：
             // 直接尝试不同的文件后缀，按优先级查找
-            
+
             // 优先级：正常文件 > .pend 文件 > .fail 文件
             String[] possiblePaths = {
                 filePath,                    // 正常格式（审核通过）
                 filePath + ".pend",         // 待审核
                 filePath + ".fail"          // 未过审
             };
-            
+
             for (String possiblePath : possiblePaths) {
                 Path fullPath = Paths.get(FilePathConfig.WorksPath, possiblePath).normalize();
                 File file = fullPath.toFile();
@@ -714,11 +729,11 @@ public class ImageController {
                     return possiblePath;
                 }
             }
-            
+
             // 如果都没找到，返回原始路径（让后续逻辑处理 404）
             log.warn("未找到作品文件: {}", filePath);
             return filePath;
-            
+
         } catch (Exception e) {
             log.error("解析作品文件路径异常: {}, 错误: {}", filePath, e.getMessage());
             return filePath; // 发生异常时返回原始路径

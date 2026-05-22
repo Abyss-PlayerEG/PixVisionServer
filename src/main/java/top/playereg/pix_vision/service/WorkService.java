@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.pojo.History;
+import top.playereg.pix_vision.pojo.WorkUploadResult;
 import top.playereg.pix_vision.pojo.Works;
 
 import java.util.List;
@@ -58,10 +59,10 @@ public interface WorkService {
      * @param seriesId   系列 ID（null 表示不属于任何系列）
      * @param isOriginal 是否原创
      * @param outUrl     外部转载链接
-     * @return 新创建的作品 ID
+     * @return 上传结果，包含作品 ID、审核状态和审核原因
      * @author PlayerEG
      */
-    Integer uploadWork(
+    WorkUploadResult uploadWork(
         Integer userId,
         byte[] fileBytes,
         String fileName,
