@@ -170,6 +170,45 @@
         ORDER BY create_time DESC
     </select>
 
+    <!-- 管理员分页查询用户列表（支持多条件过滤） -->
+    <select id="adminSelectUsers"
+            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+        SELECT user_id,
+               user_uuid,
+               username,
+               password,
+               nickname,
+               user_role,
+               avatar_url,
+               email,
+               status,
+               is_delete,
+               create_time,
+               update_time
+        FROM tb_user
+        WHERE 1 = 1
+        <if test="userRole != null">
+            AND user_role = #{userRole}
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="isDelete != null">
+            AND is_delete = #{isDelete}
+        </if>
+        <if test="nickname != null and nickname != ''">
+            AND nickname LIKE CONCAT('%', #{nickname}, '%')
+        </if>
+        <choose>
+            <when test="orderBy == 'oldest'">
+                ORDER BY create_time ASC
+            </when>
+            <otherwise>
+                ORDER BY create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
     <!-- 修改密码 / 重置密码（通用） -->
     <update id="changeUserPassword">
         UPDATE tb_user
@@ -187,7 +226,7 @@
         UPDATE tb_user
         SET avatar_url  = #{avatarUrl},
             update_time = NOW(),
-            update_user = #{userId}
+            update_user = #{adminId}
         WHERE user_id = #{userId}
           AND is_delete = 0
     </update>
@@ -197,7 +236,7 @@
         UPDATE tb_user
         SET nickname    = #{nickname},
             update_time = NOW(),
-            update_user = #{userId}
+            update_user = #{adminId}
         WHERE user_id = #{userId}
           AND is_delete = 0
     </update>

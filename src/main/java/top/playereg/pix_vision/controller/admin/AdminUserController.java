@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.controller.admin;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,6 +24,7 @@ import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
+import top.playereg.pix_vision.util.StrSwitchUtils;
 
 import java.util.*;
 
@@ -110,14 +112,16 @@ public class AdminUserController {
     }
 
     /**
-     * 批量更新用户信息（角色和/或状态）
+     * 批量更新用户信息（角色、状态、头像和/或重置昵称）
      *
-     * @param request   HTTP 请求对象（用于获取当前管理员信息）
-     * @param userIds   目标用户 ID 列表
-     * @param newRole   新角色代码（可选，11-77）
-     * @param newStatus 新状态代码（可选，10-30）
+     * @param request       HTTP 请求对象（用于获取当前管理员信息）
+     * @param userIds       目标用户 ID 列表
+     * @param newRole       新角色代码（可选，11-77）
+     * @param newStatus     新状态代码（可选，10-30）
+     * @param newAvatar     新用户头像（可选）
+     * @param resetNickname 是否重置用户昵称（可选，默认 true）
      * @return 响应数据，包含批量更新的统计信息
-     * @author PlayerEG
+     * @author blue_sky_ks
      */
     @Operation(
         summary = "批量更新用户信息",
@@ -126,7 +130,8 @@ public class AdminUserController {
 
             ## 特性
             - 仅系统管理员可调用
-            - 支持批量修改用户的角色和/或状态
+            - 支持批量修改用户的角色、状态、头像和/或重置昵称
+            - 重置昵称时自动调用随机昵称生成方法，生成 "user_" 前缀的随机昵称
             - 自动清除被更新用户的角色缓存
             - 修改状态时自动移除该用户所有 Token，强制所有设备下线
             - 记录操作日志（update_user 字段设置为执行操作的管理员 ID）
@@ -143,6 +148,8 @@ public class AdminUserController {
               - 10: 正常
               - 20: 冻结
               - 30: 封禁
+            - **newAvatar**: 新用户头像路径（可选）
+            - **resetNickname**: 是否重置用户昵称（可选，默认 true），设为 false 时不重置
 
             ## 返回说明：
             - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息
@@ -159,12 +166,13 @@ public class AdminUserController {
             ## 安全限制：
             - 管理员不能修改自己的信息
             - 目标用户必须存在且未被删除
-            - 至少需要提供 newRole 或 newStatus 中的一个
+            - 至少需要提供 newRole、newStatus、newAvatar 或 resetNickname 中的一个
 
             ## 注意事项：
             - 修改角色后，目标用户下次请求时会自动获取新的角色信息
             - 修改状态后，会强制该用户所有设备下线
             - 建议谨慎分配高权限角色（如 77-系统管理员）
+            - 重置昵称时生成的随机昵称格式为 "user_" + 10位随机字母数字组合
             """
     )
     @RequireRole(value = {77})
@@ -183,10 +191,17 @@ public class AdminUserController {
             allowableValues = {"10", "20", "30"},
             example = "20"
         )
-        @RequestParam(required = false) Integer newStatus
+        @RequestParam(required = false) Integer newStatus,
+        @Schema(
+            description = "用户头像路径（可选）",
+            example = "default/1.png"
+        )
+        @RequestParam(required = false) String newAvatar,
+        @Parameter(description = "用户名称重置")
+        @RequestParam(required = false, defaultValue = "true") boolean resetNickname
     ) {
-        log.info("管理员开始批量更新用户信息 - 用户数量: {}, 新角色: {}, 新状态: {}",
-            userIds != null ? userIds.size() : 0, newRole, newStatus);
+        log.info("管理员开始批量更新用户信息 - 用户数量: {}, 新角色: {}, 新状态: {}, 新头像: {}, 重置昵称: {}",
+            userIds != null ? userIds.size() : 0, newRole, newStatus, newAvatar, resetNickname);
 
         // 参数校验
         if (userIds == null || userIds.isEmpty()) {
@@ -194,9 +209,9 @@ public class AdminUserController {
             return ResponsePojo.error(null, "用户 ID 列表不能为空");
         }
 
-        if (newRole == null && newStatus == null) {
+        if (newRole == null && newStatus == null && newAvatar == null && !resetNickname) {
             log.warn("未提供任何更新字段");
-            return ResponsePojo.error(null, "请至少提供 newRole 或 newStatus 中的一个参数");
+            return ResponsePojo.error(null, "请至少提供 newRole、newStatus、newAvatar 或 resetNickname 中的一个参数");
         }
 
         try {
@@ -238,12 +253,25 @@ public class AdminUserController {
                     if (!statusRes) success = false;
 
                     // 如果状态更新成功，强制下线
-                    if (success) {
+                    if (statusRes) {
                         User targetUser = userService.selectAllUserById(targetUserId);
                         if (targetUser != null) {
                             tokenWhitelistService.removeAllUserTokens(targetUserId, targetUser.getUsername());
                         }
                     }
+                }
+
+                // 更新头像
+                if (newAvatar != null) {
+                    Boolean avatarRes = userService.updateUserAvatar(targetUserId, newAvatar, adminId);
+                    if (!avatarRes) success = false;
+                }
+
+                // 重置昵称（随机生成）
+                if (resetNickname) {
+                    String generatedNickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
+                    Boolean nicknameRes = userService.updateUserNickname(targetUserId, generatedNickname, adminId);
+                    if (!nicknameRes) success = false;
                 }
 
                 if (success) {
@@ -526,7 +554,7 @@ public class AdminUserController {
      *
      * @param userIds 目标用户 ID 列表
      * @return 响应数据，包含批量重置密码的统计信息
-     * @author PlayerEG
+     * @author blue_sky_ks
      */
     @Operation(
         summary = "批量重置用户密码",
@@ -641,6 +669,109 @@ public class AdminUserController {
             log.error("批量重置密码异常 - 错误: {}", e.getMessage(), e);
             AdminResetPasswordResult result = new AdminResetPasswordResult(totalCount, 0, 0, userIds); // 异常时所有都视为失败
             return ResponsePojo.error(result, "系统错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 分页查询用户信息
+     *
+     * @param page      页码（默认 1）
+     * @param size      每页条目数（默认 10）
+     * @param user_role 用户角色（可选）
+     * @param status    用户状态（可选）
+     * @param is_delete 是否已删除（可选）
+     * @param nickname  昵称关键字（可选，模糊查询）
+     * @param orderBy   排序方式（可选）
+     * @return 响应数据，包含分页用户列表
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "分页查询用户信息",
+        description = """
+            # 分页查询用户信息（需要登录认证 + 角色权限[55, 77]）
+
+            ## 特性
+            - 支持分页查询用户完整信息
+            - 支持按用户角色筛选（可选）
+            - 支持按用户状态筛选（可选）
+            - 支持按删除标记筛选（可选）
+            - 支持按昵称关键字模糊查询（可选）
+            - 支持排序方式（可选）
+            - 审核员和系统管理员均可调用
+
+            ## 参数说明：
+            - **page**: 页码（可选，默认 1）
+            - **size**: 每页条目数（可选，默认 10）
+            - **user_role**: 用户角色（可选），可选值：
+              - 11: 普通用户
+              - 22: 创作者
+              - 55: 审核员
+              - 66: 工单管理员
+              - 77: 系统管理员
+            - **status**: 用户状态（可选），可选值：
+              - 10: 正常
+              - 20: 冻结
+              - 30: 封禁
+            - **is_delete**: 是否已删除（可选）
+              - true: 仅查已删除
+              - false: 仅查未删除
+            - **nickname**: 昵称关键字（可选，模糊匹配）
+            - **orderBy**: 排序方式（可选）
+              - 'oldest': 按最早注册排列
+              - 其他值或不传: 按最新注册排列（默认）
+
+            ## 返回说明：
+            - **成功**：返回分页用户列表（含总条数、总页数等分页信息）
+            - **结果为空**：返回空分页对象和成功状态
+            - **失败**：返回错误提示
+
+            ## 业务逻辑：
+            1. 构建分页对象（Page）
+            2. 将筛选条件传入 Service 层
+            3. 数据库执行动态 SQL 分页查询
+            4. 返回分页结果
+
+            ## 注意事项：
+            - 返回的用户信息包含密码字段，请谨慎处理
+            - 查询结果为空时返回空分页对象和成功状态
+            - 所有筛选条件均为可选，不传则不过滤
+            """
+    )
+    @PostMapping("/page-select")
+    public ResponsePojo<IPage<User>> selectUserPage(
+        @Parameter(description = "页码", example = "1", required = true ) @RequestParam( defaultValue = "1") Integer page,
+        @Parameter(description = "每页条目数", example = "10", required = true) @RequestParam( defaultValue = "10") Integer size,
+        @Schema(
+            description = "用户角色（可选，11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）",
+            allowableValues = {"11", "22", "55", "66", "77"},
+            example = "11"
+        ) @RequestParam(required = false) Integer user_role,
+        @Schema(
+            description = "用户状态（可选，10-正常, 20-冻结, 30-封禁）",
+            allowableValues = {"10", "20", "30"},
+            example = "10"
+        ) @RequestParam(required = false) Integer status,
+        @Parameter(description = "是否已删除（可选）", example = "false")
+        @RequestParam(required = false) Boolean is_delete,
+        @Parameter(description = "昵称关键字（可选，模糊查询）", example = "李华")
+        @RequestParam(required = false) String nickname,
+        @Schema(
+            description = "排序方式：'oldest' - 最早注册，其他值或不传 - 最新注册（默认）",
+            allowableValues = {"newest", "oldest"},
+            example = "newest"
+        ) @RequestParam(required = false) String orderBy
+    ) {
+        log.info("分页查询用户信息 - 页码: {}, 每页: {}, 角色: {}, 状态: {}, 是否删除: {}, 昵称: {}, 排序: {}",
+            page, size, user_role, status, is_delete, nickname, orderBy);
+
+        try {
+            IPage<User> result = userService.getAdminUserPage(page, size, user_role, status, is_delete, nickname, orderBy);
+
+            log.info("分页查询用户信息完成 - 总条数: {}, 当前页条数: {}", result.getTotal(), result.getRecords().size());
+            return ResponsePojo.success(result, "查询成功，共 " + result.getTotal() + " 条记录");
+        } catch (Exception e) {
+            log.error("分页查询用户信息异常 - 错误: {}", e.getMessage(), e);
+            return ResponsePojo.error(null, "系统错误: " + e.getMessage());
         }
     }
 }

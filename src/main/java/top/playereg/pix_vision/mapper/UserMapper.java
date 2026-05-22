@@ -2,6 +2,7 @@ package top.playereg.pix_vision.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -98,6 +99,24 @@ public interface UserMapper extends BaseMapper<User> {
     IPage<User> selectUsersByRoles(IPage<?> page, @Param("userRoles") java.util.List<Integer> userRoles);
 
     /**
+     * 管理员分页查询用户列表（支持多条件过滤）
+     *
+     * @param page     分页对象
+     * @param userRole 用户角色（可选）
+     * @param status   用户状态（可选，10-正常, 20-冻结, 30-封禁）
+     * @param isDelete 是否已删除（可选）
+     * @param nickname 昵称关键字（可选，模糊查询）
+     * @param orderBy  排序方式：'oldest' - 最早注册，其他值或 null - 最新注册（默认）
+     * @return 分页用户列表
+     */
+    IPage<User> adminSelectUsers(Page<User> page,
+                                  @Param("userRole") Integer userRole,
+                                  @Param("status") Integer status,
+                                  @Param("isDelete") Boolean isDelete,
+                                  @Param("nickname") String nickname,
+                                  @Param("orderBy") String orderBy);
+
+    /**
      * 用户密码修改 / 重置密码（通用）
      *
      * @param email       用户的邮箱
@@ -112,18 +131,20 @@ public interface UserMapper extends BaseMapper<User> {
      *
      * @param userId    用户 ID
      * @param avatarUrl 头像路径
+     * @param adminId   执行操作的用户 ID（用户自己更新时传自身 ID，管理员更新时传管理员 ID）
      * @return 影响行数
      */
-    int updateUserAvatar(@Param("userId") Integer userId, @Param("avatarUrl") String avatarUrl);
+    int updateUserAvatar(@Param("userId") Integer userId, @Param("avatarUrl") String avatarUrl, @Param("adminId") Integer adminId);
 
     /**
      * 更新用户昵称
      *
      * @param userId   用户 ID
      * @param nickname 新昵称
+     * @param adminId  执行操作的用户 ID（用户自己更新时传自身 ID，管理员更新时传管理员 ID）
      * @return 影响行数
      */
-    int updateUserNickname(@Param("userId") Integer userId, @Param("nickname") String nickname);
+    int updateUserNickname(@Param("userId") Integer userId, @Param("nickname") String nickname, @Param("adminId") Integer adminId);
 
     /**
      * 逻辑删除用户账户

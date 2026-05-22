@@ -86,6 +86,21 @@ public interface UserService {
     IPage<User> selectPageUserInfoByRole(IPage<User> page, java.util.List<Integer> userRoles);
 
     /**
+     * 管理员分页查询用户列表（支持多条件过滤）
+     *
+     * @param page     页码（从 1 开始）
+     * @param size     每页大小
+     * @param userRole 用户角色（可选，11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）
+     * @param status   用户状态（可选，10-正常, 20-冻结, 30-封禁）
+     * @param isDelete 是否已删除（可选）
+     * @param nickname 昵称关键字（可选，模糊查询）
+     * @param orderBy  排序方式：'oldest' - 最早注册，其他值或 null - 最新注册（默认）
+     * @return 分页用户列表
+     */
+    IPage<User> getAdminUserPage(Integer page, Integer size, Integer userRole,
+                                  Integer status, Boolean isDelete, String nickname, String orderBy);
+
+    /**
      * 用户密码修改（通过邮箱）
      *
      * @param email       用户的邮箱
@@ -111,18 +126,20 @@ public interface UserService {
      *
      * @param userId    用户 ID
      * @param avatarUrl 头像路径
+     * @param adminId   执行操作的用户 ID（用户自己更新时传自身 ID，管理员更新时传管理员 ID）
      * @return 是否成功
      */
-    Boolean updateUserAvatar(Integer userId, String avatarUrl);
+    Boolean updateUserAvatar(Integer userId, String avatarUrl, Integer adminId);
 
     /**
      * 更新用户昵称
      *
      * @param userId   用户 ID
      * @param nickname 新昵称
+     * @param adminId  执行操作的用户 ID（用户自己更新时传自身 ID，管理员更新时传管理员 ID）
      * @return 是否成功
      */
-    Boolean updateUserNickname(Integer userId, String nickname);
+    Boolean updateUserNickname(Integer userId, String nickname, Integer adminId);
 
     /**
      * 新增用户拓展数据
