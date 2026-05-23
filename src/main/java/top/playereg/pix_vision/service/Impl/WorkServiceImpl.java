@@ -314,11 +314,24 @@ public class WorkServiceImpl implements WorkService {
         cn.hutool.core.io.FileUtil.writeBytes(fileBytes, saveFile);
         log.info("作品图片保存成功（审核状态: {}）: {}", approvalStatus, savePath);
 
+        // 10.5 生成并保存封面缩略图
+        String thumbName = thumbFileName(uniqueFileName);
+        String thumbSavePath = Paths.get(FilePathConfig.WorksPath, thumbName + fileSuffix).toString();
+        try {
+            byte[] thumbBytes = ImageUtils.generateThumbnail(fileBytes, 400);
+            cn.hutool.core.io.FileUtil.writeBytes(thumbBytes, new File(thumbSavePath));
+            log.info("封面缩略图保存成功（审核状态: {}）: {}", approvalStatus, thumbSavePath);
+        } catch (Exception e) {
+            log.error("封面生成失败，thumb_url 设为 NULL，原图: {}", uniqueFileName, e);
+            thumbName = null;
+        }
+
         // 11. 构建 Works 对象并插入数据库（数据库存储正常格式的文件名）
         Works works = new Works();
         works.setUser_id(userId);
         works.setWork_title(workTitle.trim());
         works.setImg_url(uniqueFileName); // 数据库存储正常格式（如 uuid.png），不随审核状态变化
+        works.setThumb_url(thumbName); // 封面缩略图文件名（如 uuid_thumb.jpg），生成失败时为 null
         works.setSeries_id(finalSeriesId); // null 表示不属于任何系列，> 0 表示具体系列 ID
         works.setLike_count(0);
         works.setStar_count(0);
@@ -602,6 +615,7 @@ public class WorkServiceImpl implements WorkService {
         // 保存旧图片文件名，用于后续删除
         String oldImgUrl = existingWork.getImg_url();
         String newImgUrl = null; // 新图片文件名
+        String newThumbUrl = null; // 新封面文件名
 
         // 处理图片文件上传（如果提供）
         if (file != null && !file.isEmpty()) {
@@ -655,6 +669,19 @@ public class WorkServiceImpl implements WorkService {
 
             cn.hutool.core.io.FileUtil.writeBytes(fileBytes, saveFile);
             log.info("新作品图片保存成功（待审核状态）: {}", savePath);
+
+            // 6.5 生成并保存新封面缩略图
+            String thumbName = thumbFileName(uniqueFileName);
+            String thumbSavePath = Paths.get(FilePathConfig.WorksPath, thumbName + ".pend").toString();
+            try {
+                byte[] thumbBytes = ImageUtils.generateThumbnail(fileBytes, 400);
+                cn.hutool.core.io.FileUtil.writeBytes(thumbBytes, new File(thumbSavePath));
+                newThumbUrl = thumbName;
+                log.info("新封面缩略图保存成功: {}", thumbSavePath);
+            } catch (Exception e) {
+                log.error("新封面生成失败，thumb_url 设为 NULL，原图: {}", uniqueFileName, e);
+                newThumbUrl = null;
+            }
 
             // 7. 删除旧图片文件（处理各种状态的文件）
             if (oldImgUrl != null && !oldImgUrl.isEmpty()) {
@@ -760,8 +787,8 @@ public class WorkServiceImpl implements WorkService {
             }
         }
 
-        // 执行更新（使用 newImgUrl、finalSeriesId 和 shouldUpdateSeriesId）
-        int affectedRows = worksMapper.updateWorkInfo(workId, userId, workTitle, newImgUrl, finalSeriesId, shouldUpdateSeriesId, finalIsOriginal, finalOutUrl);
+        // 执行更新（使用 newImgUrl、newThumbUrl、finalSeriesId 和 shouldUpdateSeriesId）
+        int affectedRows = worksMapper.updateWorkInfo(workId, userId, workTitle, newImgUrl, newThumbUrl, finalSeriesId, shouldUpdateSeriesId, finalIsOriginal, finalOutUrl);
 
         if (affectedRows > 0) {
             log.info("作品修改成功，作品 ID: {}, 用户 ID: {}, 审核状态已重置为待审核", workId, userId);
@@ -785,6 +812,21 @@ public class WorkServiceImpl implements WorkService {
             return filename.substring(lastDotIndex + 1);
         }
         return "";
+    }
+
+    /**
+     * 根据原图文件名推导封面缩略图文件名
+     * <p>
+     * 将原图的扩展名替换为 _thumb.jpg，生成封面文件名。
+     * 支持 png、jpg、jpeg 三种格式的原图。
+     *
+     * @param imgUrl 原图文件名（如 uuid.png）
+     * @return 封面文件名（如 uuid_thumb.jpg），输入为 null 时返回 null
+     * @author PlayerEG
+     */
+    private String thumbFileName(String imgUrl) {
+        if (imgUrl == null) return null;
+        return imgUrl.replaceFirst("\\.(png|jpg|jpeg)$", "_thumb.jpg");
     }
 
     /**

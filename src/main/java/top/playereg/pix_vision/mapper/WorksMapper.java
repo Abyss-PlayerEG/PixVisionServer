@@ -82,6 +82,7 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @param userId             用户 ID（确保只能修改自己的作品）
      * @param workTitle          作品标题（可为 null）
      * @param imgUrl             图片 URL（可为 null）
+     * @param thumbUrl           封面缩略图文件名（可为 null）
      * @param seriesId           系列 ID（可为 null，null 表示不更新或设置为 NULL）
      * @param shouldUpdateSeries 是否应该更新 series_id（true=更新，false=不更新）
      * @param isOriginal         是否原创（可为 null）
@@ -93,6 +94,7 @@ public interface WorksMapper extends BaseMapper<Works> {
         @Param("userId") Integer userId,
         @Param("workTitle") String workTitle,
         @Param("imgUrl") String imgUrl,
+        @Param("thumbUrl") String thumbUrl,
         @Param("seriesId") Integer seriesId,
         @Param("shouldUpdateSeries") Boolean shouldUpdateSeries,
         @Param("isOriginal") Boolean isOriginal,

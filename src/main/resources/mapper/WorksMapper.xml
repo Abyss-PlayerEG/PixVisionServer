@@ -8,6 +8,7 @@
         <result column="user_id" property="user_id"/>
         <result column="work_title" property="work_title"/>
         <result column="img_url" property="img_url"/>
+        <result column="thumb_url" property="thumb_url"/>
         <result column="series_id" property="series_id"/>
         <result column="like_count" property="like_count"/>
         <result column="star_count" property="star_count"/>
@@ -25,7 +26,7 @@
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
         work_id
-        , user_id, work_title, img_url, series_id, like_count, star_count, view_count, is_original_work, out_url, approval_status, is_delete, update_time, update_user, create_time, create_user
+        , user_id, work_title, img_url, thumb_url, series_id, like_count, star_count, view_count, is_original_work, out_url, approval_status, is_delete, update_time, update_user, create_time, create_user
     </sql>
 
     <!-- 分页查询首页作品列表（支持多条件查询，未删除且审核通过，按创建时间倒序） -->
@@ -34,6 +35,7 @@
         w.user_id,
         w.work_title,
         w.img_url,
+        w.thumb_url,
         w.series_id,
         w.like_count,
         w.star_count,
@@ -127,6 +129,9 @@
             <if test="imgUrl != null">
                 img_url = #{imgUrl},
             </if>
+            <if test="thumbUrl != null">
+                thumb_url = #{thumbUrl},
+            </if>
             <if test="shouldUpdateSeries != null and shouldUpdateSeries">
                 series_id = #{seriesId},
             </if>
@@ -186,6 +191,7 @@
         w.user_id,
         w.work_title,
         w.img_url,
+        w.thumb_url,
         w.series_id,
         w.like_count,
         w.star_count,

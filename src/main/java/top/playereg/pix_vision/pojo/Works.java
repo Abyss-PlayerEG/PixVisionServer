@@ -28,6 +28,9 @@ public class Works {
     @Schema(description = "图片 URL")
     String img_url;
 
+    @Schema(description = "封面缩略图文件名")
+    String thumb_url;
+
     @Schema(description = "系列 ID")
     Integer series_id;
 
