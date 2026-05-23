@@ -128,31 +128,20 @@ public class WorkServiceImpl implements WorkService {
             return false;
         }
 
-        // 3. 将文件后缀名改为 .del（处理各种状态的文件）
+        // 3. 将原图和封面文件后缀名改为 .del（处理各种状态的文件）
         int renamedCount = 0;
         for (Works work : userWorks) {
             String imgFileName = work.getImg_url();
             if (imgFileName != null && !imgFileName.isEmpty()) {
-                // 查找实际存在的文件（可能是正常格式、.pend 或 .fail）
-                File actualFile = findActualWorkFile(imgFileName);
-                File deletedFile = new File(FilePathConfig.WorksPath, imgFileName + ".del");
+                // 重命名原图文件
+                if (renameWorkFile(imgFileName, ".del")) {
+                    renamedCount++;
+                }
 
-                if (actualFile != null && actualFile.exists()) {
-                    // 如果目标文件已存在，跳过
-                    if (deletedFile.exists()) {
-                        log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
-                        continue;
-                    }
-
-                    boolean renamed = actualFile.renameTo(deletedFile);
-                    if (renamed) {
-                        renamedCount++;
-                        log.info("作品文件重命名为 .del 成功: {} -> {}", actualFile.getName(), imgFileName + ".del");
-                    } else {
-                        log.error("作品文件重命名失败: {}", actualFile.getName());
-                    }
-                } else {
-                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
+                // 同步重命名封面文件（封面可能不存在，静默忽略）
+                String thumbFileName = thumbFileName(imgFileName);
+                if (thumbFileName != null && renameWorkFile(thumbFileName, ".del")) {
+                    renamedCount++;
                 }
             }
         }
@@ -830,9 +819,9 @@ public class WorkServiceImpl implements WorkService {
     }
 
     /**
-     * 删除旧图片文件（重命名为 .del 后缀）
+     * 删除旧图片文件（重命名为 .del 后缀），同步处理原图和封面
      *
-     * @param imgFileName 图片文件名（数据库存储的正常格式）
+     * @param imgFileName 原图文件名（数据库存储的正常格式，如 uuid.png）
      * @author PlayerEG
      */
     private void deleteOldImageFile(String imgFileName) {
@@ -840,25 +829,13 @@ public class WorkServiceImpl implements WorkService {
             return;
         }
 
-        // 查找实际存在的文件（可能是正常格式、.pend 或 .fail）
-        File actualFile = findActualWorkFile(imgFileName);
-        File deletedFile = new File(FilePathConfig.WorksPath, imgFileName + ".del");
+        // 1. 重命名旧原图文件为 .del
+        renameWorkFile(imgFileName, ".del");
 
-        if (actualFile != null && actualFile.exists()) {
-            // 如果目标文件已存在，跳过
-            if (deletedFile.exists()) {
-                log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
-                return;
-            }
-
-            boolean renamed = actualFile.renameTo(deletedFile);
-            if (renamed) {
-                log.info("旧图片文件重命名为 .del 成功: {} -> {}", actualFile.getName(), imgFileName + ".del");
-            } else {
-                log.error("旧图片文件重命名失败: {}", actualFile.getName());
-            }
-        } else {
-            log.warn("旧图片文件不存在，跳过删除: {}", imgFileName);
+        // 2. 同步重命名旧封面文件为 .del（封面可能不存在，静默忽略）
+        String thumbFileName = thumbFileName(imgFileName);
+        if (thumbFileName != null) {
+            renameWorkFile(thumbFileName, ".del");
         }
     }
 
@@ -899,42 +876,23 @@ public class WorkServiceImpl implements WorkService {
             return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(totalCount, 0, workIds);
         }
 
-        // 3. 根据新的审核状态重命名文件
+        // 3. 根据新的审核状态重命名原图和封面文件
         int renamedCount = 0;
         for (Works work : validWorks) {
             String imgFileName = work.getImg_url();
             if (imgFileName != null && !imgFileName.isEmpty()) {
                 // 确定目标后缀
                 String targetSuffix = getFileSuffixByApprovalStatus(approvalStatus);
-                String targetFileName = imgFileName + targetSuffix;
 
-                // 查找当前实际存在的文件（可能是 .pend、.fail 或正常格式）
-                File actualFile = findActualWorkFile(imgFileName);
-                File targetFile = new File(FilePathConfig.WorksPath, targetFileName);
+                // 重命名原图文件
+                if (renameWorkFile(imgFileName, targetSuffix)) {
+                    renamedCount++;
+                }
 
-                if (actualFile != null && actualFile.exists()) {
-                    // 如果目标文件已存在，跳过
-                    if (targetFile.exists()) {
-                        log.warn("目标文件已存在，跳过重命名: {} -> {}", actualFile.getName(), targetFileName);
-                        continue;
-                    }
-
-                    // 如果当前文件已经是目标文件，无需重命名
-                    if (actualFile.getName().equals(targetFileName)) {
-                        log.debug("文件已是目标状态，无需重命名: {}", targetFileName);
-                        continue;
-                    }
-
-                    // 执行重命名
-                    boolean renamed = actualFile.renameTo(targetFile);
-                    if (renamed) {
-                        renamedCount++;
-                        log.info("作品文件重命名成功: {} -> {}, 操作者 ID: {}", actualFile.getName(), targetFileName, userId);
-                    } else {
-                        log.error("作品文件重命名失败: {} -> {}", actualFile.getName(), targetFileName);
-                    }
-                } else {
-                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
+                // 同步重命名封面文件（封面可能不存在，静默忽略）
+                String thumbFileName = thumbFileName(imgFileName);
+                if (thumbFileName != null && renameWorkFile(thumbFileName, targetSuffix)) {
+                    renamedCount++;
                 }
             }
         }
@@ -1002,6 +960,55 @@ public class WorkServiceImpl implements WorkService {
     }
 
     /**
+     * 将作品文件重命名为指定后缀
+     * <p>
+     * 自动查找当前实际存在的文件（可能为正常格式、.pend 或 .fail），
+     * 并将其重命名为目标后缀格式。如果目标文件已存在或当前文件已是目标状态，则跳过。
+     * <p>
+     * 封面文件可能不存在（thumb_url 为 NULL 时），重命名失败不会抛出异常，静默忽略。
+     *
+     * @param baseFileName 基础文件名（如 uuid.png 或 uuid_thumb.jpg），正常格式，不含状态后缀
+     * @param targetSuffix 目标后缀（如 ".del"、".pend"、".fail"，空字符串表示正常格式）
+     * @return 是否成功重命名（null 输入、文件不存在、目标已存在均返回 false）
+     * @author PlayerEG
+     */
+    private boolean renameWorkFile(String baseFileName, String targetSuffix) {
+        if (baseFileName == null || baseFileName.isEmpty()) {
+            return false;
+        }
+
+        // 查找实际存在的文件（可能是正常格式、.pend 或 .fail）
+        File actualFile = findActualWorkFile(baseFileName);
+        if (actualFile == null || !actualFile.exists()) {
+            log.debug("文件不存在，跳过重命名: {}", baseFileName);
+            return false;
+        }
+
+        File targetFile = new File(FilePathConfig.WorksPath, baseFileName + targetSuffix);
+
+        // 如果目标文件已存在，跳过
+        if (targetFile.exists()) {
+            log.warn("目标文件已存在，跳过重命名: {}", actualFile.getName());
+            return false;
+        }
+
+        // 如果当前文件已经是目标文件，无需重命名
+        String targetName = baseFileName + targetSuffix;
+        if (actualFile.getName().equals(targetName)) {
+            log.debug("文件已是目标状态，无需重命名: {}", targetName);
+            return false;
+        }
+
+        boolean renamed = actualFile.renameTo(targetFile);
+        if (renamed) {
+            log.info("文件重命名成功: {} -> {}", actualFile.getName(), targetName);
+        } else {
+            log.error("文件重命名失败: {}", actualFile.getName());
+        }
+        return renamed;
+    }
+
+    /**
      * 管理员批量删除作品（逻辑删除）
      *
      * @param workIds 作品 ID 列表
@@ -1033,31 +1040,20 @@ public class WorkServiceImpl implements WorkService {
             return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
         }
 
-        // 3. 将文件后缀名改为 .del（处理各种状态的文件）
+        // 3. 将原图和封面文件后缀名改为 .del（处理各种状态的文件）
         int renamedCount = 0;
         for (Works work : validWorks) {
             String imgFileName = work.getImg_url();
             if (imgFileName != null && !imgFileName.isEmpty()) {
-                // 查找实际存在的文件（可能是正常格式、.pend 或 .fail）
-                File actualFile = findActualWorkFile(imgFileName);
-                File deletedFile = new File(FilePathConfig.WorksPath, imgFileName + ".del");
+                // 重命名原图文件
+                if (renameWorkFile(imgFileName, ".del")) {
+                    renamedCount++;
+                }
 
-                if (actualFile != null && actualFile.exists()) {
-                    // 如果目标文件已存在，跳过
-                    if (deletedFile.exists()) {
-                        log.warn("删除标记文件已存在，跳过重命名: {}", actualFile.getName());
-                        continue;
-                    }
-
-                    boolean renamed = actualFile.renameTo(deletedFile);
-                    if (renamed) {
-                        renamedCount++;
-                        log.info("作品文件重命名为 .del 成功: {} -> {}", actualFile.getName(), imgFileName + ".del");
-                    } else {
-                        log.error("作品文件重命名失败: {}", actualFile.getName());
-                    }
-                } else {
-                    log.warn("作品文件不存在，跳过重命名: {}", imgFileName);
+                // 同步重命名封面文件（封面可能不存在，静默忽略）
+                String thumbFileName = thumbFileName(imgFileName);
+                if (thumbFileName != null && renameWorkFile(thumbFileName, ".del")) {
+                    renamedCount++;
                 }
             }
         }

@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.controller.admin;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,8 +17,6 @@ import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
-
-import com.baomidou.mybatisplus.core.metadata.IPage;
 
 @RestController
 @RequestMapping("/api/admin/works")
@@ -140,7 +139,7 @@ public class AdminWorksController {
             - 需要系统管理员角色（role=77）才能访问
             - 支持批量删除多个作品
             - 逻辑删除作品（is_delete = 1）
-            - 将作品图片文件重命名为 .del 后缀
+            - 原图和封面文件同步重命名为 .del 后缀
             - 返回详细的操作结果统计信息
 
             ## 参数说明：
@@ -154,14 +153,17 @@ public class AdminWorksController {
             ## 业务逻辑：
             1. 校验作品 ID 列表参数的有效性（非空）
             2. 查询作品信息并获取文件名
-            3. 将作品图片文件重命名为 .del 后缀
-            4. 执行数据库逻辑删除（is_delete = 1）
-            5. 记录操作日志并返回统计信息
+            3. 将原图文件重命名为 .del 后缀
+            4. 同步将封面文件重命名为 .del 后缀（封面不存在时静默跳过）
+            5. 执行数据库逻辑删除（is_delete = 1）
+            6. 记录操作日志并返回统计信息
 
             ## 注意事项：
             - 这是一个**受保护接口**，只有系统管理员（role=77）可以访问
             - 删除操作是逻辑删除，数据不会从数据库中物理移除
-            - 作品文件会被重命名为 .del 后缀（如 123.png → 123.png.del）
+            - **原图和封面文件**都会被重命名为 .del 后缀（如 123.png → 123.png.del，123_thumb.jpg → 123_thumb.jpg.del）
+            - 封面文件不存在时（thumb_url 为 NULL），静默跳过，仅重命名原图文件
+            - 支持任意当前状态的文件重命名（正常/.pend/.fail → .del）
             - 删除后作品在前端不可见
             - 建议在执行前确认作品 ID 的正确性
             """
