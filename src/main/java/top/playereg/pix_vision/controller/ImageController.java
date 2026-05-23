@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.controller;
 
+import cn.hutool.core.io.FileUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -443,7 +444,7 @@ public class ImageController {
                 parentDir.mkdirs();
             }
 
-            cn.hutool.core.io.FileUtil.writeBytes(resizedImage, saveFile);
+            FileUtil.writeBytes(resizedImage, saveFile);
             log.info("头像文件保存成功: {}", savePath);
 
             // 10. 更新数据库中的头像路径（只保存相对路径）

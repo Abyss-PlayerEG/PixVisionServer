@@ -3,7 +3,7 @@
 img_url → thumb_url 数据库批量回填脚本
 
 连接 MySQL，读取 tb_works 表中所有已有 img_url 但 thumb_url 为空的记录，
-将 img_url 的扩展名 (.png/.jpg/.jpeg) 替换为 _thumb.webp 后写回 thumb_url 字段。
+将 img_url 的扩展名 (.png/.jpg/.jpeg) 替换为 _thumb.jpg 后写回 thumb_url 字段。
 
 依赖: pip install pymysql
 
@@ -34,7 +34,7 @@ THUMB_RE = re.compile(r"\.(png|jpg|jpeg)$", re.IGNORECASE)
 
 def img_to_thumb(img_url: str) -> str:
     """从 img_url 派生 thumb_url"""
-    return THUMB_RE.sub("_thumb.webp", img_url)
+    return THUMB_RE.sub("_thumb.jpg", img_url)
 
 
 # ---------- 主流程 ----------
@@ -50,11 +50,10 @@ def main():
 
     cursor = conn.cursor()
 
-    # 查询所有 thumb_url 为空但有 img_url 的记录
+    # 查询所有有 img_url 的记录（覆盖已有 thumb_url）
     cursor.execute(
         "SELECT work_id, img_url FROM tb_works "
-        "WHERE img_url IS NOT NULL AND img_url != '' "
-        "AND (thumb_url IS NULL OR thumb_url = '')"
+        "WHERE img_url IS NOT NULL AND img_url != ''"
     )
     rows = cursor.fetchall()
 

@@ -11,12 +11,13 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 
 /**
  * 图像处理工具类
  * <p>
  * 提供图像格式验证、尺寸检测、格式转换、Base64 编解码、图像缩放等功能。
- * 支持 JPG、JPEG、PNG 格式的图像处理，所有输出统一转换为 PNG 格式以保证质量。
+ * 支持 JPG、JPEG、PNG 格式的图像处理，输出格式支持 PNG、JPG。
  * </p>
  *
  * <h3>使用场景</h3>
@@ -29,10 +30,11 @@ import java.io.File;
  *
  * <h3>注意事项</h3>
  * <ul>
- *   <li>仅支持 JPG、JPEG、PNG 三种格式，其他格式会抛出异常</li>
+ *   <li>仅支持 JPG、JPEG、PNG 三种输入格式，其他格式会抛出异常</li>
+ *   <li>输出支持 PNG、JPG 两种目标格式</li>
+ *   <li>转换到 JPG 格式时透明背景自动填充白色</li>
  *   <li>图像缩放时保持宽高比，避免变形</li>
  *   <li>Base64ToImage 方法已废弃，推荐使用二进制文件上传</li>
- *   <li>所有输出图像统一为 PNG 格式，保证透明通道支持</li>
  *   <li>图像缩放使用双三次插值算法，保证高质量</li>
  * </ul>
  *
@@ -41,6 +43,10 @@ import java.io.File;
  */
 public class ImageUtils {
     private static final PixVisionLogger log = PixVisionLogger.create(ImageUtils.class);
+
+    static {
+        System.setProperty("java.awt.headless", "true");
+    }
 
     /**
      * 验证文件是否为有效的图片格式
@@ -93,13 +99,7 @@ public class ImageUtils {
         }
 
         try {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
-            BufferedImage image = ImageIO.read(inputStream);
-
-            if (image == null) {
-                throw new RuntimeException("无法识别的图像格式");
-            }
-
+            BufferedImage image = readImage(imageBytes);
             int width = image.getWidth();
             int height = image.getHeight();
 
@@ -114,33 +114,129 @@ public class ImageUtils {
     }
 
     /**
-     * 任意图像强制格式转换为 png
+     * 获取图像宽度（像素）
      *
-     * @param image         图像字节数组（支持 jpg、jpeg、png 格式）
-     * @param saveImagePath 保存路径（必须以 .png 结尾）
-     * @return void
+     * @param imageBytes 图像字节数组
+     * @return 图像宽度（像素）
+     * @throws IllegalArgumentException 数据为空时
+     * @throws RuntimeException 无法识别图像格式时
      * @author PlayerEG
      */
-    public static void imageToPng(byte[] image, String saveImagePath) {
+    public static int getImageWidth(byte[] imageBytes) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new IllegalArgumentException("图像数据不能为空");
+        }
+        BufferedImage image = readImage(imageBytes);
+        return image.getWidth();
+    }
+
+    /**
+     * 获取图像高度（像素）
+     *
+     * @param imageBytes 图像字节数组
+     * @return 图像高度（像素）
+     * @throws IllegalArgumentException 数据为空时
+     * @throws RuntimeException 无法识别图像格式时
+     * @author PlayerEG
+     */
+    public static int getImageHeight(byte[] imageBytes) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new IllegalArgumentException("图像数据不能为空");
+        }
+        BufferedImage image = readImage(imageBytes);
+        return image.getHeight();
+    }
+
+    /**
+     * 从字节数组读取 BufferedImage
+     *
+     * @param imageBytes 图像字节数组
+     * @return BufferedImage 对象
+     * @throws RuntimeException 无法识别图像格式时
+     */
+    private static BufferedImage readImage(byte[] imageBytes) {
+        try {
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
+            BufferedImage image = ImageIO.read(inputStream);
+            if (image == null) {
+                throw new RuntimeException("无法识别的图像格式");
+            }
+            return image;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("读取图像失败：" + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 将图像字节数据编码为指定格式
+     *
+     * @param imageBytes   图像字节数组
+     * @param targetFormat 目标格式（"png" 或 "jpg"）
+     * @return 编码后的字节数组
+     * @throws IOException 编码失败时
+     */
+    private static byte[] encodeToFormat(byte[] imageBytes, String targetFormat) throws IOException {
+        BufferedImage bufferedImage = readImage(imageBytes);
+
+        // JPG 不支持透明通道，需将 ARGB 转为 RGB
+        if ("jpg".equals(targetFormat) && bufferedImage.getType() != BufferedImage.TYPE_INT_RGB) {
+            BufferedImage rgbImage = new BufferedImage(
+                bufferedImage.getWidth(),
+                bufferedImage.getHeight(),
+                BufferedImage.TYPE_INT_RGB
+            );
+            Graphics2D g = rgbImage.createGraphics();
+            g.setColor(Color.WHITE);
+            g.fillRect(0, 0, rgbImage.getWidth(), rgbImage.getHeight());
+            g.drawImage(bufferedImage, 0, 0, null);
+            g.dispose();
+            bufferedImage = rgbImage;
+        }
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        boolean writeSuccess = ImageIO.write(bufferedImage, targetFormat, outputStream);
+        byte[] outputBytes = outputStream.toByteArray();
+
+        if (!writeSuccess || outputBytes.length == 0) {
+            throw new RuntimeException("图像编码失败，输出为空");
+        }
+
+        return outputBytes;
+    }
+
+    /**
+     * 将任意图像强制转换为指定格式并保存
+     * <p>
+     * 根据保存路径的扩展名自动识别目标格式，支持 PNG、JPG 两种输出格式。
+     * 输入支持 JPG、JPEG、PNG 格式。转换到 JPG 时透明背景自动填充白色。
+     * </p>
+     *
+     * @param image         图像字节数组（支持 jpg、jpeg、png 格式）
+     * @param saveImagePath 保存路径，扩展名决定目标格式（.png / .jpg / .jpeg）
+     * @throws IllegalArgumentException 参数不合法或扩展名不支持
+     * @author PlayerEG
+     */
+    public static void convertImageFormat(byte[] image, String saveImagePath) {
         if (image == null || image.length == 0) {
             throw new IllegalArgumentException("图像数据不能为空");
         }
         if (StrUtil.isBlank(saveImagePath)) {
             throw new IllegalArgumentException("保存路径不能为空");
         }
-        if (!saveImagePath.toLowerCase().endsWith(".png")) {
-            throw new IllegalArgumentException("保存路径必须以 .png 结尾");
-        }
+
+        // 从扩展名识别目标格式
+        String ext = FileUtil.extName(saveImagePath).toLowerCase();
+        String targetFormat = switch (ext) {
+            case "png" -> "png";
+            case "jpg", "jpeg" -> "jpg";
+            default -> throw new IllegalArgumentException(
+                "不支持的目标格式: " + ext + "，仅支持 png/jpg/jpeg"
+            );
+        };
 
         try {
-            // 将字节数组转换为 BufferedImage
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(image);
-            BufferedImage bufferedImage = ImageIO.read(inputStream);
-
-            if (bufferedImage == null) {
-                throw new RuntimeException("无法识别的图像格式");
-            }
-
             // 创建输出目录（如果不存在）
             File outputFile = new File(saveImagePath);
             File parentDir = outputFile.getParentFile();
@@ -148,17 +244,15 @@ public class ImageUtils {
                 parentDir.mkdirs();
             }
 
-            // 转换为 PNG 格式并保存
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            ImageIO.write(bufferedImage, "png", outputStream);
-            byte[] pngBytes = outputStream.toByteArray();
-
-            FileUtil.writeBytes(pngBytes, saveImagePath);
-            log.info("图像已转换为 PNG 格式并保存：{}", saveImagePath);
-            log.info("原始大小：{} bytes, PNG 大小：{} bytes", image.length, pngBytes.length);
+            byte[] outputBytes = encodeToFormat(image, targetFormat);
+            FileUtil.writeBytes(outputBytes, saveImagePath);
+            log.info("图像已转换为 {} 格式并保存：{}", targetFormat.toUpperCase(), saveImagePath);
+            log.info("原始大小：{} bytes, 输出大小：{} bytes", image.length, outputBytes.length);
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("图像转 PNG 失败：{}, 错误：{}", saveImagePath, e.getMessage(), e);
-            throw new RuntimeException("图像转 PNG 失败：" + e.getMessage(), e);
+            log.error("图像格式转换失败：{}, 错误：{}", saveImagePath, e.getMessage(), e);
+            throw new RuntimeException("图像格式转换失败：" + e.getMessage(), e);
         }
     }
 
@@ -250,19 +344,7 @@ public class ImageUtils {
         }
 
         try {
-            // 将字节数组转换为 BufferedImage
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
-            BufferedImage originalImage = ImageIO.read(inputStream);
-
-            if (originalImage == null) {
-                // 提供更详细的错误信息
-                String errorMsg = String.format(
-                    "无法识别的图像格式。文件大小: %d bytes, 请确认上传的是有效的 JPG/JPEG/PNG 图片文件",
-                    imageBytes.length
-                );
-                log.error(errorMsg);
-                throw new RuntimeException(errorMsg);
-            }
+            BufferedImage originalImage = readImage(imageBytes);
 
             int originalWidth = originalImage.getWidth();
             int originalHeight = originalImage.getHeight();
@@ -327,6 +409,84 @@ public class ImageUtils {
         } catch (Exception e) {
             log.error("图像缩放失败：{}x{}, 错误：{}", width, height, e.getMessage(), e);
             throw new RuntimeException("图像缩放失败：" + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 智能生成封面缩略图
+     * <p>
+     * 自动判断图像宽高方向，以较短边为基准缩放至目标尺寸，保持宽高比。
+     * 横图（宽大于高）约束高度，竖图（高大于宽）约束宽度，输出为 JPG 格式。
+     * 若原图尺寸已小于等于目标尺寸，则直接返回原数据。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>作品封面的懒生成，按需生成 400px 缩略图</li>
+     *   <li>列表页、瀑布流等需要统一尺寸缩略图的场景</li>
+     * </ol>
+     *
+     * <h3>使用示例</h3>
+     * <pre>{@code
+     * byte[] original = FileUtil.readBytes("photo.png");
+     * byte[] thumb = ImageUtils.generateThumbnail(original, 400);
+     * FileUtil.writeBytes(thumb, "thumb.jpg");
+     * }</pre>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>输出固定为 JPG 格式，透明背景自动填充白色</li>
+     *   <li>目标尺寸为较短边的像素值，长边等比例缩放</li>
+     *   <li>原图小于目标尺寸时不缩放，避免放大失真</li>
+     * </ul>
+     *
+     * @param imageBytes 原始图像字节数组
+     * @param targetSize 目标尺寸（较短边的像素值），如 400 表示短边不超过 400px
+     * @return JPG 格式的缩略图字节数组
+     * @throws IllegalArgumentException 参数不合法时
+     * @author PlayerEG
+     */
+    public static byte[] generateThumbnail(byte[] imageBytes, int targetSize) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new IllegalArgumentException("图像数据不能为空");
+        }
+        if (targetSize <= 0) {
+            throw new IllegalArgumentException("目标尺寸必须大于 0");
+        }
+
+        try {
+            int originalWidth = getImageWidth(imageBytes);
+            int originalHeight = getImageHeight(imageBytes);
+
+            // 原图已足够小，直接返回 JPG 编码
+            if (originalWidth <= targetSize && originalHeight <= targetSize) {
+                log.info("原图尺寸 {}x{} 已小于目标 {}，无需缩放", originalWidth, originalHeight, targetSize);
+                return encodeToFormat(imageBytes, "jpg");
+            }
+
+            // 以较短边为基准缩放
+            byte[] resizedBytes;
+            if (originalWidth > originalHeight) {
+                // 横图：约束高度
+                resizedBytes = resizeImage(imageBytes, 0, targetSize, true);
+            } else {
+                // 竖图或正方形：约束宽度
+                resizedBytes = resizeImage(imageBytes, targetSize, 0, true);
+            }
+
+            // resizeImage 输出 PNG，转为 JPG（复用编码与透明处理逻辑）
+            byte[] jpgBytes = encodeToFormat(resizedBytes, "jpg");
+
+            int resultWidth = getImageWidth(jpgBytes);
+            int resultHeight = getImageHeight(jpgBytes);
+
+            log.info("智能压缩完成：{}x{} -> {}x{}, 大小：{} bytes",
+                originalWidth, originalHeight, resultWidth, resultHeight, jpgBytes.length);
+
+            return jpgBytes;
+        } catch (Exception e) {
+            log.error("封面生成失败：targetSize={}, 错误：{}", targetSize, e.getMessage(), e);
+            throw new RuntimeException("封面生成失败：" + e.getMessage(), e);
         }
     }
 }
