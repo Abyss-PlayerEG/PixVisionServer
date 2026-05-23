@@ -307,7 +307,7 @@ public class WorkServiceImpl implements WorkService {
         String thumbName = thumbFileName(uniqueFileName);
         String thumbSavePath = Paths.get(FilePathConfig.WorksPath, thumbName + fileSuffix).toString();
         try {
-            byte[] thumbBytes = ImageUtils.generateThumbnail(fileBytes, 400);
+            byte[] thumbBytes = ImageUtils.generateThumbnail(fileBytes, 512);
             cn.hutool.core.io.FileUtil.writeBytes(thumbBytes, new File(thumbSavePath));
             log.info("封面缩略图保存成功（审核状态: {}）: {}", approvalStatus, thumbSavePath);
         } catch (Exception e) {

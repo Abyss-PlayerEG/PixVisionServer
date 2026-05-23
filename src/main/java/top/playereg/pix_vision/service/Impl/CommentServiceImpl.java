@@ -341,9 +341,11 @@ public class CommentServiceImpl implements CommentService {
         User user = userMap.get(comment.getUser_id());
         if (user != null) {
             vo.setNickname(user.getNickname());
+            vo.setUsername(user.getUsername());
             vo.setUser_avatar(user.getAvatar_url());
         } else {
             vo.setNickname("未知用户");
+            vo.setUsername("未知用户");
             vo.setUser_avatar("");
         }
 
@@ -375,22 +377,26 @@ public class CommentServiceImpl implements CommentService {
         User user = userMap.get(comment.getUser_id());
         if (user != null) {
             vo.setNickname(user.getNickname());
+            vo.setUsername(user.getUsername());
             vo.setUser_avatar(user.getAvatar_url());
         } else {
             vo.setNickname("未知用户");
+            vo.setUsername("未知用户");
             vo.setUser_avatar("");
         }
 
-        // 设置被回复者的昵称和 ID（二级评论特有）
+        // 设置被回复者的昵称、用户名和 ID（二级评论特有）
         if (comment.getParent_comment_id() != null) {
             Comments parentComment = parentCommentMap.get(comment.getParent_comment_id());
             if (parentComment != null) {
                 User parentUser = userMap.get(parentComment.getUser_id());
                 if (parentUser != null) {
                     vo.setReplied_nickname(parentUser.getNickname());
+                    vo.setReplied_username(parentUser.getUsername());
                     vo.setReplied_user_id(parentUser.getUser_id());
                 } else {
                     vo.setReplied_nickname("未知用户");
+                    vo.setReplied_username("未知用户");
                     vo.setReplied_user_id(null);
                 }
             }

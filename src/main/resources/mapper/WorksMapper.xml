@@ -249,12 +249,12 @@
         SELECT t.work_id,
                (IFNULL(h.cnt, 0) + IFNULL(g.cnt, 0)) AS count
         FROM (
-            SELECT DISTINCT work_id FROM tb_history
+            SELECT DISTINCT work_id FROM tb_history WHERE is_delete = 0
             UNION
             SELECT DISTINCT work_id FROM tb_guest_history
             ) t
             LEFT JOIN (
-            SELECT work_id, COUNT(*) AS cnt FROM tb_history GROUP BY work_id
+            SELECT work_id, COUNT(*) AS cnt FROM tb_history WHERE is_delete = 0 GROUP BY work_id
             ) h
         ON t.work_id = h.work_id
             LEFT JOIN (

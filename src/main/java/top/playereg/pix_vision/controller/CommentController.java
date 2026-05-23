@@ -176,7 +176,7 @@ public class CommentController {
 
         // 审核通过（10）或其他
         log.info("评论新增成功，用户 ID: {}, 用户名: {}, 作品 ID: {}", userId, username, workId);
-        return ResponsePojo.success(true, "评论新增成功");
+        return ResponsePojo.success(true, "发布成功");
     }
 
     /**
