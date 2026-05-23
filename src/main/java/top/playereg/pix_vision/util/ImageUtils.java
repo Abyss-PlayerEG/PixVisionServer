@@ -485,7 +485,7 @@ public class ImageUtils {
 
             return jpgBytes;
         } catch (Exception e) {
-            log.error("封面生成失败：targetSize={}, 错误：{}", targetSize, e.getMessage(), e);
+            log.error("智能压缩失败：targetSize={}, 错误：{}", targetSize, e.getMessage(), e);
             throw new RuntimeException("封面生成失败：" + e.getMessage(), e);
         }
     }
