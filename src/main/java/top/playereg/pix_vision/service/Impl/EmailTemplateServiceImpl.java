@@ -84,9 +84,9 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     /**
-     * 构建验证码邮件的占位符映射
+     * 构建邮件的占位符映射
      *
-     * @param code      验证码
+     * @param code      验证码/密码
      * @param username  用户名
      * @param emailText 邮件内容类型
      * @return 占位符映射表
