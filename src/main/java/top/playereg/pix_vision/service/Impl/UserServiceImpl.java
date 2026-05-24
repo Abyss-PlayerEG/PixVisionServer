@@ -5,10 +5,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import top.playereg.pix_vision.mapper.UserDataChangeLockMapper;
 import top.playereg.pix_vision.mapper.UserDataMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
+import top.playereg.pix_vision.pojo.ContentAuditResult;
+import top.playereg.pix_vision.pojo.NicknameChangeResult;
+import top.playereg.pix_vision.pojo.UserDataChangeLock;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
+import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
@@ -36,6 +41,10 @@ public class UserServiceImpl implements UserService {
     private RedisTemplate<String, Object> redisTemplate;
     @Autowired
     private TokenWhitelistService tokenWhitelistService;
+    @Autowired
+    private ContentAuditService contentAuditService;
+    @Autowired
+    private UserDataChangeLockMapper userDataChangeLockMapper;
 
     /**
      * 注册用户
@@ -356,6 +365,107 @@ public class UserServiceImpl implements UserService {
             log.error("用户昵称更新失败，用户 ID: {}", userId);
             return false;
         }
+    }
+
+    /**
+     * 更新用户昵称（带 AI 审核）
+     *
+     * @param userId   用户 ID
+     * @param nickname 新昵称
+     * @param adminId  执行操作的用户 ID
+     * @return 昵称修改结果
+     * @author PlayerEG
+     */
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public NicknameChangeResult updateNicknameWithAudit(Integer userId, String nickname, Integer adminId) {
+        log.info("开始带AI审核的昵称修改 - 用户ID: {}, 新昵称: {}", userId, nickname);
+
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return new NicknameChangeResult(false, null, null);
+        }
+
+        if (nickname == null || nickname.isEmpty()) {
+            log.error("昵称不能为空");
+            return new NicknameChangeResult(false, null, null);
+        }
+
+        if (nickname.length() < 1 || nickname.length() > 20) {
+            log.error("昵称长度必须在 1-20 个字符之间，当前长度: {}", nickname.length());
+            return new NicknameChangeResult(false, null, null);
+        }
+
+        // 查询用户当前昵称作为 old_data
+        User currentUser = userMapper.selectAllUserInfoById(userId);
+        if (currentUser == null) {
+            log.error("用户不存在 - 用户ID: {}", userId);
+            return new NicknameChangeResult(false, null, null);
+        }
+
+        String oldNickname = currentUser.getNickname();
+
+        // 新旧昵称相同，无需审核和更新
+        if (nickname.equals(oldNickname)) {
+            log.info("新旧昵称相同，跳过更新 - 用户ID: {}, 昵称: {}", userId, nickname);
+            return new NicknameChangeResult(true, 10, null);
+        }
+
+        // 调用 AI 审核服务
+        Integer approvalStatus = 20; // 默认待审核
+        String auditReason = null;
+        ContentAuditResult auditResult = contentAuditService.auditContent(nickname);
+
+        if (auditResult != null) {
+            auditReason = auditResult.getReason();
+            switch (auditResult.getStatus()) {
+                case "normal":
+                    approvalStatus = 10;
+                    break;
+                case "neutral":
+                    approvalStatus = 20;
+                    break;
+                case "violation":
+                    approvalStatus = 30;
+                    break;
+                default:
+                    log.warn("AI 审核返回未知状态: {}, 降级为待审核", auditResult.getStatus());
+                    break;
+            }
+            log.info("AI 审核结果 - 状态: {}, 原因: {}, 命中敏感词: {}, 最终审核状态: {}",
+                auditResult.getStatus(), auditResult.getReason(), auditResult.getInsult_words(), approvalStatus);
+        } else {
+            log.warn("AI 审核服务不可用，降级为待审核");
+        }
+
+        // 审核通过时直接更新昵称
+        if (approvalStatus == 10) {
+            int result = userMapper.updateUserNickname(userId, nickname, adminId);
+            if (result <= 0) {
+                log.error("昵称更新失败 - 用户ID: {}", userId);
+                return new NicknameChangeResult(false, null, null);
+            }
+            log.info("昵称审核通过，已直接更新 - 用户ID: {}", userId);
+        }
+
+        // 插入锁定记录
+        UserDataChangeLock lock = new UserDataChangeLock();
+        lock.setUserId(userId);
+        lock.setType(100); // 昵称类型
+        lock.setNickname(nickname);
+        lock.setOldData(oldNickname);
+        lock.setApprovalStatus(approvalStatus);
+
+        int insertResult = userDataChangeLockMapper.insertLock(lock);
+        if (insertResult <= 0) {
+            log.error("插入锁定记录失败 - 用户ID: {}", userId);
+            return new NicknameChangeResult(false, null, null);
+        }
+
+        log.info("昵称修改锁定记录已插入 - 用户ID: {}, 审核状态: {}, lockId: {}",
+            userId, approvalStatus, lock.getLockId());
+
+        return new NicknameChangeResult(true, approvalStatus, auditReason);
     }
 
     /**

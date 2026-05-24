@@ -142,6 +142,35 @@ public interface UserService {
     Boolean updateUserNickname(Integer userId, String nickname, Integer adminId);
 
     /**
+     * 更新用户昵称（带 AI 审核）
+     * <p>
+     * 与 {@link #updateUserNickname} 不同，此方法会先调用 AI 审核服务检查新昵称。
+     * 根据审核结果决定是否立即更新昵称，并将审核记录写入 tb_user_data_change_lock 表。
+     * </p>
+     *
+     * <h3>审核结果处理</h3>
+     * <ul>
+     *   <li>normal（通过）：直接更新昵称，lock 记录 approval_status=10</li>
+     *   <li>neutral / AI 不可用（待审核）：不更新昵称，lock 记录 approval_status=20</li>
+     *   <li>violation（违规）：不更新昵称，lock 记录 approval_status=30</li>
+     * </ul>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>用户自行修改昵称时调用此方法（经过 AI 审核）</li>
+     *   <li>管理员直接修改昵称时调用 {@link #updateUserNickname}（跳过审核）</li>
+     * </ol>
+     *
+     * @param userId   用户 ID
+     * @param nickname 新昵称
+     * @param adminId  执行操作的用户 ID（用户自己更新时传自身 ID）
+     * @return 昵称修改结果，包含成功状态、审核状态和审核原因
+     * @author PlayerEG
+     * @see #updateUserNickname(Integer, String, Integer)
+     */
+    top.playereg.pix_vision.pojo.NicknameChangeResult updateNicknameWithAudit(Integer userId, String nickname, Integer adminId);
+
+    /**
      * 新增用户拓展数据
      *
      * @param userId      用户 ID

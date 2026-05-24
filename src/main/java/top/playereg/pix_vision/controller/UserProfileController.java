@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.playereg.pix_vision.pojo.NicknameChangeResult;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.TokenWhitelistService;
@@ -471,6 +472,7 @@ public class UserProfileController {
             - Token 认证（支持 Header 和 URL 参数两种方式）
             - 昵称长度限制校验（1-20字符）
             - 支持中文、英文、数字和特殊字符
+            - AI 内容安全审核（调用 Python AI 审核服务）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -478,6 +480,8 @@ public class UserProfileController {
 
             ## 返回说明：
             - **修改成功**：返回 **{"data": true}** 和"昵称修改成功"提示
+            - **AI 审核不通过（违规）**：返回 **{"data": false}** 和"违规内容：{原因}"提示
+            - **AI 审核存疑（待审核）**：返回 **{"data": true}** 和"昵称修改已提交，等待人工审核"提示
             - **Token 不存在**：返回 **{"data": null}** 和"Token 不存在"提示
             - **Token 已失效**：返回 **{"data": null}** 和"Token 已失效"提示
             - **昵称为空**：返回 **{"data": null}** 和"昵称不能为空"提示
@@ -489,14 +493,22 @@ public class UserProfileController {
             2. 验证 Token 是否在白名单中
             3. 从 Token 中解析用户 ID
             4. 校验昵称参数（非空、长度 1-20）
-            5. 调用服务层更新用户昵称
-            6. 返回修改结果
+            5. 调用 AI 审核服务对昵称内容进行安全审核
+            6. 根据审核结果：
+               - 通过：直接更新昵称并记录 lock 表
+               - 存疑：暂不更新，将变更记录写入 lock 表，等待人工审核
+               - 违规：暂不更新，将违规记录写入 lock 表
+            7. 返回差异化的响应消息
 
             ## 注意事项：
             - 需要携带有效的 Token 才能修改昵称
             - Token 必须在白名单中（未过期、未登出）
             - 昵称长度限制：**1-20 个字符**
             - 昵称可以包含中文、英文、数字和特殊字符
+            - 昵称修改会自动调用 AI 审核服务进行内容安全审核
+            - AI 审核不通过（违规）时直接拦截，data 返回 false
+            - AI 审核存疑时标记为待审核，管理员审核通过后昵称才会更新
+            - AI 审核服务不可用时自动降级为待审核状态
             - 修改成功后，下次登录时会看到新昵称
             """
     )
@@ -539,16 +551,33 @@ public class UserProfileController {
             return ResponsePojo.error(null, "昵称长度必须在 1-20 个字符之间");
         }
 
-        // 调用服务层更新昵称
-        Boolean result = userService.updateUserNickname(userId, nickname, userId);
+        // 调用带 AI 审核的昵称修改服务
+        NicknameChangeResult result = userService.updateNicknameWithAudit(userId, nickname, userId);
 
-        if (result) {
-            log.info("用户昵称修改成功，用户 ID: {}, 用户名: {}, 新昵称: {}", userId, username, nickname);
-            return ResponsePojo.success(true, "昵称修改成功");
-        } else {
+        if (result.getSuccess() == null || !result.getSuccess()) {
             log.error("用户昵称修改失败，用户 ID: {}, 用户名: {}", userId, username);
             return ResponsePojo.error(false, "昵称修改失败");
         }
+
+        Integer approvalStatus = result.getApprovalStatus();
+        String auditReason = result.getAuditReason();
+
+        // 违规内容
+        if (approvalStatus != null && approvalStatus == 30) {
+            String reason = auditReason != null ? auditReason : "未知原因";
+            log.warn("昵称审核不通过（违规），用户 ID: {}, 原因: {}", userId, reason);
+            return ResponsePojo.error(false, "违规内容：" + reason);
+        }
+
+        // 待审核
+        if (approvalStatus != null && approvalStatus == 20) {
+            log.info("昵称修改已提交，等待人工审核，用户 ID: {}", userId);
+            return ResponsePojo.success(true, "昵称修改已提交，等待人工审核");
+        }
+
+        // 审核通过（10）
+        log.info("用户昵称修改成功，用户 ID: {}, 用户名: {}, 新昵称: {}", userId, username, nickname);
+        return ResponsePojo.success(true, "昵称修改成功");
     }
 
     /**
