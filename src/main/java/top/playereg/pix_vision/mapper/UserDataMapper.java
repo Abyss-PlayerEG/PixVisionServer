@@ -50,4 +50,13 @@ public interface UserDataMapper extends BaseMapper<UserData> {
      * @return 影响行数
      */
     int batchDeleteUserDataByIds(@Param("dataIds") List<Integer> dataIds, @Param("userId") Integer userId);
+
+    /**
+     * 统计用户指定类型的拓展数据数量（排除逻辑删除）
+     *
+     * @param userId   用户 ID
+     * @param dataName 数据类型名称
+     * @return 数量，0 表示不存在
+     */
+    int countByUserIdAndDataName(@Param("userId") Integer userId, @Param("dataName") String dataName);
 }

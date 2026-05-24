@@ -311,7 +311,7 @@ public class RegexUtils {
      * @author PlayerEG
      */
     public static boolean isWechat(String wechat) {
-        return isMatch("^[a-zA-Z][a-zA-Z0-9_-]{5,19}$", wechat, "微信号", "6-20位，以字母开头，允许字母、数字、下划线、减号");
+        return isMatch("^[a-zA-Z0-9_-]{5,19}$", wechat, "微信号", "6-20位，允许字母、数字、下划线、减号");
     }
 
     /**

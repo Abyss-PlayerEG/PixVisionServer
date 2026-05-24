@@ -2,6 +2,7 @@ package top.playereg.pix_vision.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +56,7 @@ public class UserDataController {
             - Token 认证（支持 Header 和 URL 参数两种方式）
             - 数据类型名称固定为预设的社交平台名称
             - 数据内容长度限制校验（≤96字符）
-            - 1对n关系（同一用户可添加多条拓展数据）
+            - 每种数据类型每个用户只能有一条有效记录，重复新增直接返回
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -84,6 +85,7 @@ public class UserDataController {
             - **数据内容格式错误**：根据不同数据类型返回相应的格式错误提示
             - **B站账号不存在**：返回 **{"data": null}** 和"B站账号不存在，请检查 UID 是否正确"提示
             - **B站检测失败**：返回 **{"data": null}** 和"B站账号检测失败"提示
+            - **重复添加**：返回 **{"data": true}** 和"该类型数据已存在，无需重复添加"提示
             - **添加失败**：返回 **{"data": false}** 和"用户拓展数据添加失败"提示
 
             ## 业务逻辑：
@@ -94,7 +96,7 @@ public class UserDataController {
             5. 校验数据内容参数（非空、长度限制）
             6. **根据数据类型进行单独的正则格式验证**
             7. **如果是 Bilibili 账号，调用 Python API 检测账号是否存在**
-            8. 检查用户是否存在
+            8. **检查该用户是否已存在同类型数据，若已存在则直接返回**
             9. 调用服务层新增用户拓展数据
             10. 返回添加结果
 
@@ -105,13 +107,16 @@ public class UserDataController {
             - 数据内容长度限制：**不超过 96 个字符**
             - **不同数据类型有不同的格式要求**，系统会自动进行正则验证
             - **Bilibili 账号会调用 Python API 检测账号是否存在**，检测失败则无法添加
-            - 同一用户可以添加多条拓展数据（1 对 n 关系）
-            - 每种数据类型每个用户只能有一条有效记录
+            - **每种数据类型每个用户只能有一条有效记录**，重复添加会直接返回并提示已存在
             """
     )
     public ResponsePojo<Boolean> addUserData(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
-        @Parameter(description = "数据类型名称（固定值：电话、邮箱、QQ、微信、Bilibili、钉钉等）", required = true, example = "QQ") @RequestParam String dataName,
+        @Schema(
+            description = "数据类型名称（固定值：QQ、邮箱、Bilibili、电话、微信）",
+            allowableValues = {"QQ", "邮箱", "Bilibili", "电话", "微信"},
+            example = "QQ"
+        ) @RequestParam String dataName,
         @Parameter(description = "数据内容，长度不超过 96 个字符", required = true, example = "123456789") @RequestParam String dataContent
     ) {
         // 提取 Token
@@ -183,11 +188,11 @@ public class UserDataController {
         if (!isValid) {
             log.warn("数据内容格式不正确 - 数据类型: {}, 数据内容: {}, 用户 ID: {}", dataName, dataContent, userId);
             String errorMsg = switch (dataName) {
-                case "电话" -> "电话号码格式不正确，请输入11位中国大陆手机号";
+                case "电话" -> "电话号码格式不正确";
                 case "邮箱" -> "邮箱地址格式不正确";
-                case "QQ" -> "QQ号码格式不正确，请输入5-11位数字";
-                case "微信" -> "微信号格式不正确，6-20位，以字母开头";
-                case "Bilibili" -> "Bilibili UID格式不正确，请输入1-10位纯数字";
+                case "QQ" -> "QQ号码格式不正确";
+                case "微信" -> "微信号格式不正确";
+                case "Bilibili" -> "Bilibili UID格式不正确";
                 default -> "数据内容格式不正确";
             };
             return ResponsePojo.error(null, errorMsg);
@@ -209,6 +214,12 @@ public class UserDataController {
                 log.error("B站账号检测失败: userId={}, error={}", dataContent, e.getMessage());
                 return ResponsePojo.error(null, "B站账号检测失败: " + e.getMessage());
             }
+        }
+
+        // 检查该用户是否已存在同类型数据（每种类型只能有一条）
+        if (userService.isUserDataExists(userId, dataName)) {
+            log.info("用户已存在此类型数据，无需重复添加 - 用户 ID: {}, 数据类型: {}", userId, dataName);
+            return ResponsePojo.success(true, "该类型数据已存在，无需重复添加");
         }
 
         // 调用服务层新增用户拓展数据

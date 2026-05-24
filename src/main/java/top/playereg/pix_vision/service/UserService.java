@@ -152,6 +152,15 @@ public interface UserService {
     Boolean addUserData(Integer userId, String dataName, String dataContent);
 
     /**
+     * 检查用户是否已存在指定类型的拓展数据
+     *
+     * @param userId   用户 ID
+     * @param dataName 数据类型名称
+     * @return true-已存在，false-不存在
+     */
+    boolean isUserDataExists(Integer userId, String dataName);
+
+    /**
      * 查询用户所有拓展数据
      *
      * @param userId 用户 ID

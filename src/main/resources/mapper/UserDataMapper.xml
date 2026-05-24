@@ -55,4 +55,13 @@
         </foreach>
     </update>
 
+    <!-- 检查用户是否已存在指定类型的拓展数据（排除逻辑删除） -->
+    <select id="countByUserIdAndDataName" resultType="int">
+        SELECT COUNT(*)
+        FROM tb_user_data
+        WHERE user_id = #{userId}
+          AND user_data_name = #{dataName}
+          AND is_delete = 0
+    </select>
+
 </mapper>

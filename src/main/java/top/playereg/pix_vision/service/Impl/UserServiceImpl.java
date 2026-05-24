@@ -427,6 +427,21 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 检查用户是否已存在指定类型的拓展数据
+     *
+     * @param userId   用户 ID
+     * @param dataName 数据类型名称
+     * @return true-已存在，false-不存在
+     */
+    @Override
+    public boolean isUserDataExists(Integer userId, String dataName) {
+        if (userId == null || userId <= 0 || dataName == null || dataName.isEmpty()) {
+            return false;
+        }
+        return userDataMapper.countByUserIdAndDataName(userId, dataName) > 0;
+    }
+
+    /**
      * 查询用户所有拓展数据
      *
      * @param userId 用户 ID
