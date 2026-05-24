@@ -7,9 +7,9 @@
     <insert id="insertLock" parameterType="top.playereg.pix_vision.pojo.UserDataChangeLock"
             useGeneratedKeys="true" keyProperty="lockId">
         INSERT INTO tb_user_data_change_lock
-        (user_id, type, nickname, old_data, approval_status)
+        (user_id, type, nickname, user_role, avatar_url, old_data, approval_status, create_time)
         VALUES
-        (#{userId}, #{type}, #{nickname}, #{oldData}, #{approvalStatus})
+        (#{userId}, #{type}, #{nickname}, #{userRole}, #{avatarUrl}, #{oldData}, #{approvalStatus}, NOW())
     </insert>
 
 </mapper>

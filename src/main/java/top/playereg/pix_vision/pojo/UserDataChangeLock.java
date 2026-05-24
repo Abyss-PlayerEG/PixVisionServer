@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.sql.Timestamp;
+
 /**
  * 用户数据变更锁定实体
  * <p>对应 tb_user_data_change_lock 表，用于存放待审核的用户信息变更记录</p>
@@ -39,4 +41,7 @@ public class UserDataChangeLock {
 
     /** 审核状态：10-通过、20-待审核、30-未过审 */
     private Integer approvalStatus;
+
+    /** 数据条目创建时间戳 */
+    private Timestamp createTime;
 }
