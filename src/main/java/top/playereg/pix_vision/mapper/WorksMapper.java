@@ -243,4 +243,15 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @author PlayerEG
      */
     Integer selectLastWorkId();
+
+    /**
+     * 随机获取一个可见作品（未删除且审核通过）
+     * <p>
+     * 使用 ORDER BY RAND() LIMIT 1 实现完全随机。
+     * 返回完整 Works 对象，无可见作品时返回 null。
+     *
+     * @return 随机作品对象，无作品时返回 null
+     * @author PlayerEG
+     */
+    Works selectRandomWork();
 }

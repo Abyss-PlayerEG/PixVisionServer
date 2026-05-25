@@ -1337,4 +1337,25 @@ public class WorkServiceImpl implements WorkService {
 
         return result;
     }
+
+    /**
+     * 随机获取一个可见作品（未删除且审核通过）
+     * <p>
+     * 直接查询数据库，使用 ORDER BY RAND() LIMIT 1 实现完全随机选取。
+     * 返回后通过 {@link #getWorkById(Integer)} 填充最新浏览量。
+     * </p>
+     *
+     * @return 随机作品对象，无可见作品时返回 null
+     * @author PlayerEG
+     */
+    @Override
+    public Works getRandomWork() {
+        Works work = worksMapper.selectRandomWork();
+        if (work == null || work.getWork_id() == null) {
+            return null;
+        }
+
+        // 通过 getWorkById 填充最新浏览量（包含 Redis 回源逻辑）
+        return getWorkById(work.getWork_id());
+    }
 }

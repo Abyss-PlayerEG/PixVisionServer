@@ -255,4 +255,14 @@ public interface WorkService {
      * @author PlayerEG
      */
     Integer getLastWorkId();
+
+    /**
+     * 随机获取一个可见作品（未删除且审核通过）
+     * <p>
+     * 从数据库中随机选取一个符合条件的作品，适用于前端随机推荐场景。
+     *
+     * @return 随机作品对象，无可见作品时返回 null
+     * @author PlayerEG
+     */
+    Works getRandomWork();
 }
