@@ -26,7 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/user-data-change")
 @RequiredArgsConstructor
-@Tag(name = "系统管理员接口 - 用户数据变更审核")
+@Tag(name = "系统管理员接口 - 用户数据变更审核", description = "提供用户数据变更审核的后台接口，包括批量审核和分页查询待审核记录等操作")
 @RequireRole(value = {55, 77})
 public class AdminUserDataChangeController {
     private static final PixVisionLogger log = PixVisionLogger.create(AdminUserDataChangeController.class);
