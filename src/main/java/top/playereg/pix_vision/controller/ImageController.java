@@ -110,11 +110,14 @@ public class ImageController {
         - 支持子目录结构，如：`default/11.png`、`custom/user_avatar.jpg`
         - **仅支持 JPG、JPEG、PNG 格式**的图片
         - 文件路径相对于 `~/.pix_vision/data/avatar/` 目录
+        - 仅返回审核通过的正常格式文件，待审核/未过审文件不可通过本接口访问
         """)
     @PublicAccess("获取头像图片，无需认证")
     @GetMapping("/avatar/get")
     public ResponseEntity<Resource> getAvatar(@Parameter(description = "图像相对路径，支持子目录，如：default/11.png", required = true, example = "default/1.png") @RequestParam String filePath) {
-        return getImageResource(FilePathConfig.AvatarPath, filePath, "头像");
+        // 根据审核状态动态查找头像文件
+        String actualFilePath = resolveAvatarFilePath(filePath);
+        return getImageResource(FilePathConfig.AvatarPath, actualFilePath, "头像");
     }
 
     /**
@@ -135,7 +138,6 @@ public class ImageController {
             - 文件类型白名单（JPG/JPEG/PNG）
             - HTTP 缓存支持（1小时）
             - 多层子目录支持
-            - **根据审核状态动态查找文件**
 
             ## 参数说明：
             - filePath: **图像相对路径**，字符串类型，必填，支持子目录结构
@@ -151,15 +153,10 @@ public class ImageController {
             ## 业务逻辑：
             1. 校验文件路径安全性（禁止 .. 和绝对路径）
             2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
-            3. **从文件名提取作品 ID，查询审核状态**
-            4. **根据审核状态动态拼接文件后缀**：
-               - 待审核（20）：查找 `.pend` 后缀文件
-               - 未过审（30）：查找 `.fail` 后缀文件
-               - 正常（10）：查找正常格式文件
-            5. 构建完整文件路径并验证文件存在性
-            6. 确保文件在允许的目录下（~/.pix_vision/data/works/）
-            7. 设置响应头 Content-Type 和 Cache-Control
-            8. 返回图片二进制数据
+            3. 构建完整文件路径并验证文件存在性
+            4. 确保文件在允许的目录下（~/.pix_vision/data/works/）
+            5. 设置响应头 Content-Type 和 Cache-Control
+            6. 返回图片二进制数据
 
             ## 注意事项：
             - 该接口**无需认证**，任何人都可以访问
@@ -168,7 +165,7 @@ public class ImageController {
             - **仅支持 JPG、JPEG、PNG 格式**的图片
             - 文件路径相对于 `~/.pix_vision/data/works/` 目录
             - 适用于展示用户上传的作品图片
-            - **数据库存储的文件名始终为正常格式**，实际文件根据审核状态有不同的后缀
+            - 仅返回审核通过的正常格式文件，待审核/违规文件不可通过本接口访问
             """)
     @PublicAccess("获取作品图片，无需认证")
     @GetMapping("/work/get")
@@ -404,9 +401,10 @@ public class ImageController {
             byte[] resizedImage = ImageUtils.resizeImage(imageBytes, 600, 600, true);
             log.info("头像图片处理完成，处理后大小: {} bytes", resizedImage.length);
 
-            // 8. 生成唯一文件名
+            // 8. 生成唯一文件名（正常格式存入数据库，实际文件加 .pend 后缀）
             String fileName = UUID.randomUUID().toString().replace("-", "") + ".png";
-            String savePath = Paths.get(FilePathConfig.AvatarPath, fileName).toString();
+            String fileNameWithSuffix = fileName + ".pend";
+            String savePath = Paths.get(FilePathConfig.AvatarPath, fileNameWithSuffix).toString();
 
             // 9. 保存文件
             File saveFile = new File(savePath);
@@ -416,7 +414,7 @@ public class ImageController {
             }
 
             FileUtil.writeBytes(resizedImage, saveFile);
-            log.info("头像文件保存成功: {}", savePath);
+            log.info("头像文件保存成功（待审核）: {}", savePath);
 
             // 10. 插入人工审核锁定记录（不直接更新头像，等待管理员审核）
             String avatarUrl = fileName; // 直接保存文件名，访问时使用 /api/get-image/avatar?filePath=xxx.png
@@ -745,95 +743,95 @@ public class ImageController {
     /**
      * 根据作品文件名和审核状态动态解析实际文件路径
      * <p>
-     * 数据库存储的文件名始终为正常格式（如 uuid.png），但实际文件根据审核状态有不同的后缀：
-     * - 待审核（approval_status = 20）：文件名为 uuid.png.pend
-     * - 未过审（approval_status = 30）：文件名为 uuid.png.fail
-     * - 正常（approval_status = 10）：文件名为 uuid.png
+     * 数据库存储的文件名始终为正常格式（如 uuid.png），但实际文件根据审核状态有不同的后缀。
+     * 公开接口优先查找正常文件，按需回退到非公开后缀。
      *
      * @param filePath 数据库存储的文件名（正常格式）
-     * @return 实际文件路径（根据审核状态添加相应后缀）
+     * @return 实际文件路径（根据文件系统中存在的文件添加相应后缀）
      * @author PlayerEG
+     * @see #resolveFilePathWithSuffixes(String, String, String[])
      */
     private String resolveWorkFilePath(String filePath) {
-        try {
-            // 从文件名提取作品 ID（假设文件名格式为 uuid.ext 或 uuid.ext.suffix）
-            // 由于无法直接从文件名获取作品 ID，我们需要通过 img_url 反查作品
-            // 这里采用简化方案：直接查询所有作品中 img_url 匹配的记录
+        // 公开接口仅查找正常格式文件（无后缀），待审核/违规文件不可公开访问
+        return resolveFilePathWithSuffixes(FilePathConfig.WorksPath, filePath,
+            new String[]{""});
+    }
 
-            // 注意：filePath 可能包含子目录，如 "2024/04/artwork.png"
-            // 我们需要提取纯文件名部分进行匹配
-            String pureFileName = filePath;
-            int lastSlashIndex = filePath.lastIndexOf("/");
-            if (lastSlashIndex >= 0) {
-                pureFileName = filePath.substring(lastSlashIndex + 1);
-            }
-
-            // 查询作品信息（需要自定义 SQL 来根据 img_url 查询）
-            // 由于当前 Mapper 没有这个方法，我们采用另一种策略：
-            // 直接尝试不同的文件后缀，按优先级查找
-
-            // 优先级：正常文件 > .pend 文件 > .fail 文件
-            String[] possiblePaths = {filePath,                    // 正常格式（审核通过）
-                filePath + ".pend",         // 待审核
-                filePath + ".fail"          // 未过审
-            };
-
-            for (String possiblePath : possiblePaths) {
-                Path fullPath = Paths.get(FilePathConfig.WorksPath, possiblePath).normalize();
-                File file = fullPath.toFile();
-                if (file.exists() && file.isFile()) {
-                    log.debug("找到作品文件: {}, 路径: {}", filePath, possiblePath);
-                    return possiblePath;
-                }
-            }
-
-            // 如果都没找到，返回原始路径（让后续逻辑处理 404）
-            log.warn("未找到作品文件: {}", filePath);
-            return filePath;
-
-        } catch (Exception e) {
-            log.error("解析作品文件路径异常: {}, 错误: {}", filePath, e.getMessage());
-            return filePath; // 发生异常时返回原始路径
-        }
+    /**
+     * 根据头像文件名和审核状态动态解析实际文件路径
+     * <p>
+     * 数据库存储的文件名始终为正常格式（如 uuid.png），但实际文件根据审核状态有不同的后缀：
+     * - 待审核（approval_status = 20）：文件名为 uuid.png.pend
+     * - 正常（approval_status = 10）：文件名为 uuid.png
+     * <p>
+     * 公开接口优先查找正常文件，再查找待审核文件。
+     *
+     * @param filePath 数据库存储的文件名（正常格式）
+     * @return 实际文件路径（根据文件系统中存在的文件添加相应后缀）
+     * @author PlayerEG
+     * @see #resolveFilePathWithSuffixes(String, String, String[])
+     */
+    private String resolveAvatarFilePath(String filePath) {
+        // 公开接口仅查找正常格式文件（无后缀），待审核/未过审文件不可公开访问
+        return resolveFilePathWithSuffixes(FilePathConfig.AvatarPath, filePath,
+            new String[]{""});
     }
 
     /**
      * 管理员视角解析作品文件路径（优先查找非公开后缀文件）
      * <p>
-     * 与公开接口 {@link #resolveWorkFilePath(String)} 不同，本方法优先查找非公开后缀的文件：
-     * <ol>
-     *   <li>.fail - 违规未过审作品（approval_status = 30）</li>
-     *   <li>.pend - 待审核作品（approval_status = 20）</li>
-     *   <li>.del - 已删除作品（is_delete = 1）</li>
-     *   <li>正常格式 - 审核通过作品（approval_status = 10）</li>
-     * </ol>
-     * <p>
-     * 用于管理员在后台审核流程中查看各种状态的作品图片
+     * 与公开接口 {@link #resolveWorkFilePath(String)} 不同，本方法优先查找非公开后缀的文件。
+     * 用于管理员在后台审核流程中查看各种状态的作品图片。
      *
      * @param filePath 数据库存储的文件名（正常格式）
      * @return 实际文件路径（根据文件系统中存在的文件添加相应后缀）
      * @author PlayerEG
      * @see #resolveWorkFilePath(String)
+     * @see #resolveFilePathWithSuffixes(String, String, String[])
      */
     private String resolveAdminWorkFilePath(String filePath) {
-        try {
-            // 管理员优先级：.fail → .pend → .del → 正常格式
-            String[] possiblePaths = {filePath + ".fail", filePath + ".pend", filePath + ".del", filePath};
+        // 管理员优先级：.fail → .pend → .del → 正常格式
+        return resolveFilePathWithSuffixes(FilePathConfig.WorksPath, filePath,
+            new String[]{".fail", ".pend", ".del", ""});
+    }
 
-            for (String possiblePath : possiblePaths) {
-                Path fullPath = Paths.get(FilePathConfig.WorksPath, possiblePath).normalize();
+    /**
+     * 按后缀优先级动态解析文件路径
+     * <p>
+     * 数据库存储的文件名始终为正常格式（如 uuid.png），但实际文件可能带有状态后缀。
+     * 本方法按传入的后缀优先级依次查找，返回第一个存在的文件路径。
+     * <p>
+     * 后缀为空字符串时表示正常格式（无后缀）。
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>公开接口：后缀优先级 ["", ".pend", ".fail"]，优先展示正常文件</li>
+     *   <li>管理员接口：后缀优先级 [".fail", ".pend", ".del", ""]，优先展示待审核/违规文件</li>
+     * </ol>
+     *
+     * @param basePath 文件基础目录路径
+     * @param filePath 数据库存储的正常格式文件名
+     * @param suffixes 按优先级排序的后缀数组，空字符串表示无后缀
+     * @return 实际存在的文件路径（含后缀），都不存在时返回原始 filePath
+     * @author PlayerEG
+     */
+    private String resolveFilePathWithSuffixes(String basePath, String filePath, String[] suffixes) {
+        try {
+            for (String suffix : suffixes) {
+                String possiblePath = filePath + suffix;
+                Path fullPath = Paths.get(basePath, possiblePath).normalize();
                 File file = fullPath.toFile();
                 if (file.exists() && file.isFile()) {
-                    log.debug("管理员查看作品文件: {}, 实际路径: {}", filePath, possiblePath);
+                    log.debug("解析文件路径: {} -> {}", filePath, possiblePath);
                     return possiblePath;
                 }
             }
 
-            log.warn("管理员未找到作品文件: {}", filePath);
+            log.warn("未找到文件: {}, 基础路径: {}", filePath, basePath);
             return filePath;
 
         } catch (Exception e) {
-            log.error("管理员解析作品文件路径异常: {}, 错误: {}", filePath, e.getMessage());
+            log.error("解析文件路径异常: {}, 错误: {}", filePath, e.getMessage());
             return filePath;
         }
     }
