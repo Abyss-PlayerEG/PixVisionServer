@@ -13,7 +13,6 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.service.*;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
-import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RegexUtils;
 
@@ -110,37 +109,14 @@ public class EmailController {
 
         log.info("发送注册验证码，用户名：{}，邮箱：{}", username, email);
 
-        // 检查是否已有验证码存在
-        if (verificationCodeServices.hasRedisVCode(email)) {
-            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(email);
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", email, remainingTime);
-
-            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
-            errorData.put("remainingSeconds", remainingTime);
-            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
-
-            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
+        // 调用一站式验证码邮件发送方法
+        EmailService.VerificationEmailResult result = emailService.sendVerificationEmail(email, username, "注册验证", "PixVision 注册验证码");
+        if (!result.isSuccess()) {
+            if (result.getExistingCodeRemainingSeconds() != null) {
+                return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", result.getExistingCodeRemainingSeconds()));
+            }
+            return ResponsePojo.error(false, result.getErrorMessage());
         }
-
-        // 生成验证码
-        String verificationCode = verificationCodeServices.verificationCode();
-
-        // 使用模板服务渲染邮件 HTML
-        String html = emailTemplateService.renderVerificationEmail(
-            verificationCode,
-            username,
-            "注册验证"
-        );
-
-        try {
-            emailService.sendEMail(email, "PixVision 注册验证码", html);
-        } catch (Exception e) {
-            log.error("注册验证码邮件发送失败：{}", e.getMessage());
-            return ResponsePojo.error(false, "邮件发送失败");
-        }
-
-        // 将验证码存入Redis
-        verificationCodeServices.setRedisVCode(email, verificationCode);
 
         return ResponsePojo.success(true, "邮件发送成功");
     }
@@ -216,37 +192,14 @@ public class EmailController {
         String targetEmail = user.getEmail();
         log.info("发送登录验证码，用户名：{}，邮箱：{}", username, targetEmail);
 
-        // 检查是否已有验证码存在
-        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
-
-            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
-            errorData.put("remainingSeconds", remainingTime);
-            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
-
-            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
+        // 调用一站式验证码邮件发送方法
+        EmailService.VerificationEmailResult result = emailService.sendVerificationEmail(targetEmail, username, "登录验证", "PixVision 登录验证码");
+        if (!result.isSuccess()) {
+            if (result.getExistingCodeRemainingSeconds() != null) {
+                return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", result.getExistingCodeRemainingSeconds()));
+            }
+            return ResponsePojo.error(false, result.getErrorMessage());
         }
-
-        // 生成验证码
-        String verificationCode = verificationCodeServices.verificationCode();
-
-        // 使用模板服务渲染邮件 HTML
-        String html = emailTemplateService.renderVerificationEmail(
-            verificationCode,
-            username,
-            "登录验证"
-        );
-
-        try {
-            emailService.sendEMail(targetEmail, "PixVision 登录验证码", html);
-        } catch (Exception e) {
-            log.error("登录验证码邮件发送失败：{}", e.getMessage());
-            return ResponsePojo.error(false, "邮件发送失败");
-        }
-
-        // 将验证码存入Redis
-        verificationCodeServices.setRedisVCode(targetEmail, verificationCode);
 
         return ResponsePojo.success(true, "邮件发送成功");
     }
@@ -324,37 +277,14 @@ public class EmailController {
         String targetEmail = user.getEmail();
         log.info("发送改密验证码，用户名：{}，邮箱：{}", username, targetEmail);
 
-        // 检查是否已有验证码存在
-        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
-
-            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
-            errorData.put("remainingSeconds", remainingTime);
-            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
-
-            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
+        // 调用一站式验证码邮件发送方法
+        EmailService.VerificationEmailResult result = emailService.sendVerificationEmail(targetEmail, username, "重置密码", "PixVision 重置密码验证码");
+        if (!result.isSuccess()) {
+            if (result.getExistingCodeRemainingSeconds() != null) {
+                return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", result.getExistingCodeRemainingSeconds()));
+            }
+            return ResponsePojo.error(false, result.getErrorMessage());
         }
-
-        // 生成验证码
-        String verificationCode = verificationCodeServices.verificationCode();
-
-        // 使用模板服务渲染邮件 HTML
-        String html = emailTemplateService.renderVerificationEmail(
-            verificationCode,
-            username,
-            "重置密码"
-        );
-
-        try {
-            emailService.sendEMail(targetEmail, "PixVision 重置密码验证码", html);
-        } catch (Exception e) {
-            log.error("改密验证码邮件发送失败：{}", e.getMessage());
-            return ResponsePojo.error(false, "邮件发送失败");
-        }
-
-        // 将验证码存入Redis
-        verificationCodeServices.setRedisVCode(targetEmail, verificationCode);
 
         return ResponsePojo.success(true, "邮件发送成功");
     }
@@ -413,65 +343,24 @@ public class EmailController {
     public ResponsePojo<Boolean> sendChangePasswordCode(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
     ) {
-        // 提取 Token
-        String token = JWTUtils.extractTokenWithLog(request, "修改密码验证码接口");
-
-        if (token == null || token.isEmpty()) {
-            log.error("修改密码验证码失败 - Token 不存在");
-            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
-        }
-
-        // 从 Token 中获取用户 ID
-        Integer userId = top.playereg.pix_vision.util.JWTUtils.getUserIdFromToken(token);
-        if (userId == null || userId <= 0) {
-            log.error("无法从 Token 中获取用户 ID");
-            return ResponsePojo.error(false, "Token 无效");
-        }
-
-        log.info("发送修改密码验证码，用户 ID: {}", userId);
-
-        // 根据用户 ID 查询用户信息
-        User user = userService.selectAllUserById(userId);
+        // 提取 Token 并验证用户身份
+        User user = userService.extractUserFromToken(request, "修改密码验证码接口");
         if (user == null) {
-            log.warn("用户不存在，用户 ID: {}", userId);
-            return ResponsePojo.error(false, "用户不存在");
+            return ResponsePojo.error(false, "认证失败，请重新登录");
         }
 
         String username = user.getUsername();
         String targetEmail = user.getEmail();
         log.info("发送修改密码验证码，用户名：{}，邮箱：{}", username, targetEmail);
 
-        // 检查是否已有验证码存在
-        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
-
-            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
-            errorData.put("remainingSeconds", remainingTime);
-            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
-
-            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
+        // 调用一站式验证码邮件发送方法
+        EmailService.VerificationEmailResult result = emailService.sendVerificationEmail(targetEmail, username, "修改密码", "PixVision 修改密码验证码");
+        if (!result.isSuccess()) {
+            if (result.getExistingCodeRemainingSeconds() != null) {
+                return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", result.getExistingCodeRemainingSeconds()));
+            }
+            return ResponsePojo.error(false, result.getErrorMessage());
         }
-
-        // 生成验证码
-        String verificationCode = verificationCodeServices.verificationCode();
-
-        // 使用模板服务渲染邮件 HTML
-        String html = emailTemplateService.renderVerificationEmail(
-            verificationCode,
-            username,
-            "修改密码"
-        );
-
-        try {
-            emailService.sendEMail(targetEmail, "PixVision 修改密码验证码", html);
-        } catch (Exception e) {
-            log.error("修改密码验证码邮件发送失败：{}", e.getMessage());
-            return ResponsePojo.error(false, "邮件发送失败");
-        }
-
-        // 将验证码存入Redis
-        verificationCodeServices.setRedisVCode(targetEmail, verificationCode);
 
         return ResponsePojo.success(true, "邮件发送成功");
     }
@@ -531,65 +420,24 @@ public class EmailController {
     public ResponsePojo<Boolean> sendDeleteAccountCode(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
     ) {
-        // 提取 Token
-        String token = JWTUtils.extractTokenWithLog(request, "注销账户验证码接口");
-
-        if (token == null || token.isEmpty()) {
-            log.error("注销账户验证码失败 - Token 不存在");
-            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
-        }
-
-        // 从 Token 中获取用户 ID
-        Integer userId = top.playereg.pix_vision.util.JWTUtils.getUserIdFromToken(token);
-        if (userId == null || userId <= 0) {
-            log.error("无法从 Token 中获取用户 ID");
-            return ResponsePojo.error(false, "Token 无效");
-        }
-
-        log.info("发送注销账户验证码，用户 ID: {}", userId);
-
-        // 根据用户 ID 查询用户信息
-        User user = userService.selectAllUserById(userId);
+        // 提取 Token 并验证用户身份
+        User user = userService.extractUserFromToken(request, "注销账户验证码接口");
         if (user == null) {
-            log.warn("用户不存在，用户 ID: {}", userId);
-            return ResponsePojo.error(false, "用户不存在");
+            return ResponsePojo.error(false, "认证失败，请重新登录");
         }
 
         String username = user.getUsername();
         String targetEmail = user.getEmail();
         log.info("发送注销账户验证码，用户名：{}，邮箱：{}", username, targetEmail);
 
-        // 检查是否已有验证码存在
-        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
-
-            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
-            errorData.put("remainingSeconds", remainingTime);
-            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
-
-            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
+        // 调用一站式验证码邮件发送方法
+        EmailService.VerificationEmailResult result = emailService.sendVerificationEmail(targetEmail, username, "注销账户", "PixVision 注销账户验证码");
+        if (!result.isSuccess()) {
+            if (result.getExistingCodeRemainingSeconds() != null) {
+                return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", result.getExistingCodeRemainingSeconds()));
+            }
+            return ResponsePojo.error(false, result.getErrorMessage());
         }
-
-        // 生成验证码
-        String verificationCode = verificationCodeServices.verificationCode();
-
-        // 使用模板服务渲染邮件 HTML
-        String html = emailTemplateService.renderVerificationEmail(
-            verificationCode,
-            username,
-            "注销账户"
-        );
-
-        try {
-            emailService.sendEMail(targetEmail, "PixVision 注销账户验证码", html);
-        } catch (Exception e) {
-            log.error("注销账户验证码邮件发送失败：{}", e.getMessage());
-            return ResponsePojo.error(false, "邮件发送失败");
-        }
-
-        // 将验证码存入Redis
-        verificationCodeServices.setRedisVCode(targetEmail, verificationCode);
 
         return ResponsePojo.success(true, "邮件发送成功");
     }
@@ -648,65 +496,24 @@ public class EmailController {
     public ResponsePojo<Boolean> sendRoleChangeCode(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
     ) {
-        // 提取 Token
-        String token = JWTUtils.extractTokenWithLog(request, "权限变更验证码接口");
-
-        if (token == null || token.isEmpty()) {
-            log.error("权限变更验证码失败 - Token 不存在");
-            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
-        }
-
-        // 从 Token 中获取用户 ID
-        Integer userId = JWTUtils.getUserIdFromToken(token);
-        if (userId == null || userId <= 0) {
-            log.error("无法从 Token 中获取用户 ID");
-            return ResponsePojo.error(false, "Token 无效");
-        }
-
-        log.info("发送权限变更验证码，用户 ID: {}", userId);
-
-        // 根据用户 ID 查询用户信息
-        User user = userService.selectAllUserById(userId);
+        // 提取 Token 并验证用户身份
+        User user = userService.extractUserFromToken(request, "权限变更验证码接口");
         if (user == null) {
-            log.warn("用户不存在，用户 ID: {}", userId);
-            return ResponsePojo.error(false, "用户不存在");
+            return ResponsePojo.error(false, "认证失败，请重新登录");
         }
 
         String username = user.getUsername();
         String targetEmail = user.getEmail();
         log.info("发送权限变更验证码，用户名：{}，邮箱：{}", username, targetEmail);
 
-        // 检查是否已有验证码存在
-        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
-            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
-
-            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
-            errorData.put("remainingSeconds", remainingTime);
-            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
-
-            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
+        // 调用一站式验证码邮件发送方法
+        EmailService.VerificationEmailResult result = emailService.sendVerificationEmail(targetEmail, username, "权限变更", "PixVision 权限变更验证码");
+        if (!result.isSuccess()) {
+            if (result.getExistingCodeRemainingSeconds() != null) {
+                return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", result.getExistingCodeRemainingSeconds()));
+            }
+            return ResponsePojo.error(false, result.getErrorMessage());
         }
-
-        // 生成验证码
-        String verificationCode = verificationCodeServices.verificationCode();
-
-        // 使用模板服务渲染邮件 HTML
-        String html = emailTemplateService.renderVerificationEmail(
-            verificationCode,
-            username,
-            "权限变更"
-        );
-
-        try {
-            emailService.sendEMail(targetEmail, "PixVision 权限变更验证码", html);
-        } catch (Exception e) {
-            log.error("权限变更验证码邮件发送失败：{}", e.getMessage());
-            return ResponsePojo.error(false, "邮件发送失败");
-        }
-
-        // 将验证码存入Redis
-        verificationCodeServices.setRedisVCode(targetEmail, verificationCode);
 
         return ResponsePojo.success(true, "邮件发送成功");
     }
@@ -778,39 +585,21 @@ public class EmailController {
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request,
         @Parameter(description = "新邮箱地址，需符合标准邮箱格式", required = true, example = "newemail@example.com") @RequestParam String newEmail
     ) {
-        // 提取 Token
-        String token = JWTUtils.extractTokenWithLog(request, "更改邮箱验证码接口");
-
-        if (token == null || token.isEmpty()) {
-            log.error("更改邮箱验证码失败 - Token 不存在");
-            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        // 提取 Token 并验证用户身份
+        User user = userService.extractUserFromToken(request, "更改邮箱验证码接口");
+        if (user == null) {
+            return ResponsePojo.error(false, "认证失败，请重新登录");
         }
-
-        // 从 Token 中获取用户 ID
-        Integer userId = JWTUtils.getUserIdFromToken(token);
-        if (userId == null || userId <= 0) {
-            log.error("无法从 Token 中获取用户 ID");
-            return ResponsePojo.error(false, "Token 无效");
-        }
-
-        log.info("发送更改邮箱验证码，用户 ID: {}, 新邮箱: {}", userId, newEmail);
 
         // 校验新邮箱参数
         if (newEmail == null || newEmail.isEmpty()) {
-            log.warn("新邮箱为空，用户 ID: {}", userId);
+            log.warn("新邮箱为空，用户 ID: {}", user.getUser_id());
             return ResponsePojo.error(false, "新邮箱不能为空");
         }
 
         if (!RegexUtils.isEmail(newEmail)) {
-            log.warn("邮箱格式错误，用户 ID: {}, 邮箱: {}", userId, newEmail);
+            log.warn("邮箱格式错误，用户 ID: {}, 邮箱: {}", user.getUser_id(), newEmail);
             return ResponsePojo.error(false, "邮箱格式错误");
-        }
-
-        // 根据用户 ID 查询用户信息
-        User user = userService.selectAllUserById(userId);
-        if (user == null) {
-            log.warn("用户不存在，用户 ID: {}", userId);
-            return ResponsePojo.error(false, "用户不存在");
         }
 
         String username = user.getUsername();
@@ -819,48 +608,25 @@ public class EmailController {
 
         // 检查新邮箱是否已被其他用户使用
         User existingUser = userService.selectAllUserByEmail(newEmail);
-        if (existingUser != null && !existingUser.getUser_id().equals(userId)) {
+        if (existingUser != null && !existingUser.getUser_id().equals(user.getUser_id())) {
             log.warn("新邮箱已被其他用户使用: {}", newEmail);
             return ResponsePojo.error(false, "该邮箱已被其他账号使用");
         }
 
         // 如果新邮箱与当前邮箱相同，给出提示
         if (newEmail.equals(currentEmail)) {
-            log.warn("新邮箱与当前邮箱相同，用户 ID: {}", userId);
+            log.warn("新邮箱与当前邮箱相同，用户 ID: {}", user.getUser_id());
             return ResponsePojo.error(false, "新邮箱与当前邮箱相同，无需修改");
         }
 
-        // 检查是否已有验证码存在
-        if (verificationCodeServices.hasRedisVCode(newEmail)) {
-            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(newEmail);
-            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", newEmail, remainingTime);
-
-            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
-            errorData.put("remainingSeconds", remainingTime);
-            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
-
-            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
+        // 调用一站式验证码邮件发送方法（发送到新邮箱）
+        EmailService.VerificationEmailResult result = emailService.sendVerificationEmail(newEmail, username, "更改邮箱", "PixVision 更改邮箱验证码");
+        if (!result.isSuccess()) {
+            if (result.getExistingCodeRemainingSeconds() != null) {
+                return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", result.getExistingCodeRemainingSeconds()));
+            }
+            return ResponsePojo.error(false, result.getErrorMessage());
         }
-
-        // 生成验证码
-        String verificationCode = verificationCodeServices.verificationCode();
-
-        // 使用模板服务渲染邮件 HTML
-        String html = emailTemplateService.renderVerificationEmail(
-            verificationCode,
-            username,
-            "更改邮箱"
-        );
-
-        try {
-            emailService.sendEMail(newEmail, "PixVision 更改邮箱验证码", html);
-        } catch (Exception e) {
-            log.error("更改邮箱验证码邮件发送失败：{}", e.getMessage());
-            return ResponsePojo.error(false, "邮件发送失败");
-        }
-
-        // 将验证码存入Redis（使用新邮箱作为 key）
-        verificationCodeServices.setRedisVCode(newEmail, verificationCode);
 
         return ResponsePojo.success(true, "邮件发送成功");
     }

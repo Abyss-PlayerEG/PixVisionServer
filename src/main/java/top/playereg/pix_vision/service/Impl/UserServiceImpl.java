@@ -2,6 +2,7 @@ package top.playereg.pix_vision.service.Impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.VerificationCodeServices;
+import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
@@ -135,6 +137,42 @@ public class UserServiceImpl implements UserService {
     @Override
     public User selectAllUserById(Integer userId) {
         return userMapper.selectAllUserInfoById(userId);
+    }
+
+    /**
+     * 从 HTTP 请求中提取 Token 并验证用户身份
+     *
+     * @param request   HTTP 请求对象
+     * @param sceneName 场景名称
+     * @return 用户对象，认证失败返回 null
+     * @author PlayerEG
+     */
+    @Override
+    public User extractUserFromToken(HttpServletRequest request, String sceneName) {
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, sceneName);
+        if (token == null || token.isEmpty()) {
+            log.error("{} - Token 不存在", sceneName);
+            return null;
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null || userId <= 0) {
+            log.error("{} - 无法从 Token 中获取用户 ID", sceneName);
+            return null;
+        }
+
+        log.info("{} - 用户 ID: {}", sceneName, userId);
+
+        // 根据用户 ID 查询用户信息
+        User user = userMapper.selectAllUserInfoById(userId);
+        if (user == null) {
+            log.warn("{} - 用户不存在，用户 ID: {}", sceneName, userId);
+            return null;
+        }
+
+        return user;
     }
 
     @Override

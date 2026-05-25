@@ -1,6 +1,7 @@
 package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import jakarta.servlet.http.HttpServletRequest;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
 
@@ -46,6 +47,34 @@ public interface UserService {
      * @return 用户对象
      */
     User selectAllUserById(Integer userId);
+
+    /**
+     * 从 HTTP 请求中提取 Token 并验证用户身份
+     * <p>
+     * 封装了 Token 提取 → Token 校验 → 用户 ID 解析 → 用户信息查询的完整流程。
+     * 用于需要登录认证的 Controller 方法中快速获取当前用户信息。
+     * 此方法不进行 Token 白名单校验，适用于邮箱验证码发送等仅需确认用户身份的场景。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>邮箱验证码发送接口中获取当前登录用户</li>
+     *   <li>其他仅需确认用户身份而不需完整权限验证的场景</li>
+     * </ol>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>返回 null 表示认证失败，调用方应返回相应的错误响应</li>
+     *   <li>失败原因已通过日志记录</li>
+     *   <li>不进行 Token 白名单校验，如需白名单校验请使用拦截器或手动调用 TokenWhitelistService</li>
+     * </ul>
+     *
+     * @param request   HTTP 请求对象
+     * @param sceneName 场景名称（用于日志记录，如"修改密码验证码接口"）
+     * @return 用户对象，认证失败返回 null
+     * @author PlayerEG
+     */
+    User extractUserFromToken(HttpServletRequest request, String sceneName);
 
     /**
      * 根据 UUID 查询用户信息

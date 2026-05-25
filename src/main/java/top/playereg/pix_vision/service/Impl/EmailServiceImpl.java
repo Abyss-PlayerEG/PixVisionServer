@@ -3,11 +3,14 @@ package top.playereg.pix_vision.service.Impl;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.EmailConfig;
 import top.playereg.pix_vision.service.EmailService;
+import top.playereg.pix_vision.service.EmailTemplateService;
+import top.playereg.pix_vision.service.VerificationCodeServices;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 /**
@@ -24,6 +27,11 @@ public class EmailServiceImpl implements EmailService {
     private final EmailConfig emailConfig;
     private final JavaMailSender mailSender;
     private final String devSuccessLog = "模拟邮箱发送已开启";
+
+    @Autowired
+    private VerificationCodeServices verificationCodeServices;
+    @Autowired
+    private EmailTemplateService emailTemplateService;
 
     /**
      * 创建 MimeMessage
@@ -113,5 +121,48 @@ public class EmailServiceImpl implements EmailService {
             log.error("邮件发送失败: {}", e.getMessage());
             throw new RuntimeException("邮件发送失败: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 生成验证码并发送验证邮件（一站式方法）
+     * <p>
+     * 封装了验证码发送的完整流程：检查已存在验证码 → 生成验证码 → 渲染邮件模板 → 发送邮件 → 存入 Redis。
+     * </p>
+     *
+     * @param email        收件人邮箱
+     * @param username     用户名
+     * @param action       操作类型
+     * @param emailSubject 邮件主题
+     * @return 发送结果
+     * @author PlayerEG
+     */
+    @Override
+    public VerificationEmailResult sendVerificationEmail(String email, String username, String action, String emailSubject) {
+        // 检查是否已有未过期的验证码
+        if (verificationCodeServices.hasRedisVCode(email)) {
+            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(email);
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", email, remainingTime);
+            return VerificationEmailResult.existingCode(remainingTime);
+        }
+
+        // 生成验证码
+        String verificationCode = verificationCodeServices.verificationCode();
+
+        // 使用模板服务渲染邮件 HTML
+        String html = emailTemplateService.renderVerificationEmail(verificationCode, username, action);
+
+        // 发送邮件
+        try {
+            sendEMail(email, emailSubject, html);
+        } catch (Exception e) {
+            log.error("{}验证码邮件发送失败，邮箱：{}，错误：{}", action, email, e.getMessage());
+            return VerificationEmailResult.failure("邮件发送失败");
+        }
+
+        // 将验证码存入 Redis
+        verificationCodeServices.setRedisVCode(email, verificationCode);
+
+        log.info("{}验证码邮件发送成功，邮箱：{}", action, email);
+        return VerificationEmailResult.success();
     }
 }
