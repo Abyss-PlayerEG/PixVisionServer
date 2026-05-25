@@ -171,6 +171,29 @@ public interface UserService {
     top.playereg.pix_vision.pojo.NicknameChangeResult updateNicknameWithAudit(Integer userId, String nickname, Integer adminId);
 
     /**
+     * 更新用户头像（带人工审核锁定）
+     * <p>
+     * 与 {@link #updateUserAvatar} 不同，此方法不直接更新用户头像，
+     * 而是将变更记录写入 tb_user_data_change_lock 表，审核状态始终设为待审核（20），
+     * 等待管理员审核通过后才更新用户头像。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>用户自行上传头像时调用此方法（经人工审核）</li>
+     *   <li>管理员直接修改头像时调用 {@link #updateUserAvatar}（跳过审核）</li>
+     * </ol>
+     *
+     * @param userId       用户 ID
+     * @param newAvatarUrl 新头像路径
+     * @param adminId      执行操作的用户 ID（用户自己更新时传自身 ID）
+     * @return 是否成功
+     * @author PlayerEG
+     * @see #updateUserAvatar(Integer, String, Integer)
+     */
+    Boolean updateAvatarWithLock(Integer userId, String newAvatarUrl, Integer adminId);
+
+    /**
      * 新增用户拓展数据
      *
      * @param userId      用户 ID

@@ -290,7 +290,7 @@ public class ImageController {
     }
 
     /**
-     * 上传用户头像
+     * 上传用户头像（带人工审核）
      *
      * @param file    头像文件（JPG/JPEG/PNG 格式，最大 5MB，必须是正方形）
      * @param request HTTP 请求对象（用于获取用户 ID）
@@ -307,12 +307,13 @@ public class ImageController {
         - 正方形图片校验
         - 自动缩放至600x600 PNG格式
         - UUID 唯一文件名生成
+        - 人工审核机制（提交后等待管理员审核）
 
         ## 参数说明：
         - file: **头像文件**，MultipartFile 类型，必填
 
         ## 返回说明：
-        - **上传成功**：返回 200 状态码和成功消息
+        - **上传成功（待审核）**：返回 200 状态码和成功消息，头像路径在 data 中
         - **未授权**：返回 401 状态码（Token 无效或不存在）
         - **文件格式不支持**：返回 400 状态码
         - **文件大小超限**：返回 400 状态码（最大 5MB）
@@ -328,7 +329,8 @@ public class ImageController {
         6. 使用 ImageUtils.resizeImage() 将图片缩放为 600x600 的 PNG 格式
         7. 生成唯一的文件名（UUID.png）
         8. 保存文件到 ~/.pix_vision/data/avatar/ 目录
-        9. 更新数据库中的用户头像路径
+        9. 将头像变更记录写入 tb_user_data_change_lock 表（审核状态=待审核）
+        10. 等待管理员审核通过后，头像才会更新
 
         ## 注意事项：
         - 该接口**需要认证**，必须在请求头中携带有效的 Token
@@ -336,8 +338,9 @@ public class ImageController {
         - **头像必须是正方形图片**（宽高相等），如：800x800、1200x1200
         - 图片会被自动缩放为 **600x600** 像素的 PNG 格式
         - 文件名使用 UUID 生成，避免冲突
-        - 旧头像文件不会被自动删除，建议定期清理
         - 文件大小限制为 **5MB**
+        - 头像修改需要**管理员人工审核**，审核通过后才会生效
+        - 审核期间，用户仍使用旧头像
         """)
     @PostMapping("/avatar/upload")
     public ResponseEntity<ResponsePojo<String>> uploadAvatar(@Parameter(description = "头像文件", required = true) @RequestParam MultipartFile file, HttpServletRequest request) {
@@ -415,21 +418,21 @@ public class ImageController {
             FileUtil.writeBytes(resizedImage, saveFile);
             log.info("头像文件保存成功: {}", savePath);
 
-            // 10. 更新数据库中的头像路径（只保存相对路径）
+            // 10. 插入人工审核锁定记录（不直接更新头像，等待管理员审核）
             String avatarUrl = fileName; // 直接保存文件名，访问时使用 /api/get-image/avatar?filePath=xxx.png
-            Boolean updateResult = userService.updateUserAvatar(userId, avatarUrl, userId);
+            Boolean lockResult = userService.updateAvatarWithLock(userId, avatarUrl, userId);
 
-            if (!updateResult) {
-                log.error("更新用户头像路径失败，用户 ID: {}", userId);
-                // 如果数据库更新失败，删除已上传的文件
+            if (!lockResult) {
+                log.error("插入头像审核锁定记录失败，用户 ID: {}", userId);
+                // 如果锁定记录插入失败，删除已上传的文件
                 if (saveFile.exists()) {
                     saveFile.delete();
                 }
                 return ResponseEntity.status(500).body(ResponsePojo.error(null, "更新用户头像失败"));
             }
 
-            log.info("用户头像上传成功，用户 ID: {}, 头像路径: {}", userId, avatarUrl);
-            return ResponseEntity.ok(ResponsePojo.success(avatarUrl, "头像上传成功"));
+            log.info("头像修改已提交，等待人工审核，用户 ID: {}, 头像路径: {}", userId, avatarUrl);
+            return ResponseEntity.ok(ResponsePojo.success(avatarUrl, "头像修改已提交，等待人工审核"));
 
         } catch (IllegalArgumentException e) {
             log.error("参数验证失败: {}", e.getMessage());

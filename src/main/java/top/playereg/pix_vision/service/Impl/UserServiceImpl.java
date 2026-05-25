@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.mapper.UserDataChangeLockMapper;
 import top.playereg.pix_vision.mapper.UserDataMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
@@ -466,6 +467,77 @@ public class UserServiceImpl implements UserService {
             userId, approvalStatus, lock.getLockId());
 
         return new NicknameChangeResult(true, approvalStatus, auditReason);
+    }
+
+    /**
+     * 更新用户头像（带人工审核锁定）
+     * <p>
+     * 与 {@link #updateUserAvatar} 不同，此方法不直接更新用户头像，
+     * 而是将变更记录写入 tb_user_data_change_lock 表，审核状态始终设为待审核（20），
+     * 等待管理员审核通过后才更新用户头像。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>用户自行上传头像时调用此方法（经人工审核）</li>
+     *   <li>管理员直接修改头像时调用 {@link #updateUserAvatar}（跳过审核）</li>
+     * </ol>
+     *
+     * @param userId       用户 ID
+     * @param newAvatarUrl 新头像路径
+     * @param adminId      执行操作的用户 ID
+     * @return 是否成功
+     * @author PlayerEG
+     * @see #updateUserAvatar(Integer, String, Integer)
+     */
+    @Override
+    @Transactional
+    public Boolean updateAvatarWithLock(Integer userId, String newAvatarUrl, Integer adminId) {
+        log.info("开始头像修改（人工审核）- 用户ID: {}, 新头像: {}", userId, newAvatarUrl);
+
+        if (userId == null || userId <= 0) {
+            log.error("用户 ID 无效: {}", userId);
+            return false;
+        }
+
+        if (newAvatarUrl == null || newAvatarUrl.isEmpty()) {
+            log.error("头像路径不能为空");
+            return false;
+        }
+
+        // 查询用户当前头像作为 old_data
+        User currentUser = userMapper.selectAllUserInfoById(userId);
+        if (currentUser == null) {
+            log.error("用户不存在 - 用户ID: {}", userId);
+            return false;
+        }
+
+        String oldAvatar = currentUser.getAvatar_url();
+
+        // 新旧头像相同，无需审核
+        if (newAvatarUrl.equals(oldAvatar)) {
+            log.info("新旧头像相同，跳过更新 - 用户ID: {}, 头像: {}", userId, newAvatarUrl);
+            return true;
+        }
+
+        // 插入锁定记录，审核状态固定为待审核（20）
+        UserDataChangeLock lock = new UserDataChangeLock();
+        lock.setUserId(userId);
+        lock.setType(300); // 头像类型
+        lock.setAvatarUrl(newAvatarUrl);
+        lock.setOldData(oldAvatar);
+        lock.setApprovalStatus(20); // 固定待审核，不走 AI 审核
+
+        int insertResult = userDataChangeLockMapper.insertLock(lock);
+        if (insertResult <= 0) {
+            log.error("插入头像锁定记录失败 - 用户ID: {}", userId);
+            return false;
+        }
+
+        log.info("头像修改锁定记录已插入 - 用户ID: {}, lockId: {}, 待人工审核",
+            userId, lock.getLockId());
+
+        return true;
     }
 
     /**
@@ -1254,3 +1326,5 @@ public class UserServiceImpl implements UserService {
         return resultList;
     }
 }
+
+
