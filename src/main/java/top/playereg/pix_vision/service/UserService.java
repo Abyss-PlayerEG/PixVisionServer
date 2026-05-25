@@ -2,6 +2,8 @@ package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.servlet.http.HttpServletRequest;
+import top.playereg.pix_vision.pojo.UserDataChangeLockVO;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
 
@@ -438,4 +440,31 @@ public interface UserService {
      * @return 重置结果列表，每个元素包含 user_id, email, username, plainPassword
      */
     java.util.List<java.util.Map<String, Object>> batchResetUserPasswords(java.util.List<Integer> userIds);
+
+    /**
+     * 批量审核用户数据变更
+     * <p>
+     * 遍历 lockIds，验证当前状态必须为 20（待审核），
+     * 通过时连带更新用户数据，拒绝时处理头像文件。
+     * </p>
+     *
+     * @param lockIds  lock_id 列表
+     * @param approved true-通过 / false-拒绝
+     * @param adminId  执行操作的管理员 ID
+     * @return 批量操作结果
+     */
+    @org.springframework.transaction.annotation.Transactional
+    AdminBatchOperateWorkResult batchReviewUserDataChange(
+        List<Integer> lockIds, Boolean approved, Integer adminId
+    );
+
+    /**
+     * 分页查询待审核记录
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @param type    变更类型筛选（可选，100/200/300）
+     * @return 分页结果
+     */
+    IPage<UserDataChangeLockVO> getPendingLockPage(Long current, Long size, Integer type);
 }

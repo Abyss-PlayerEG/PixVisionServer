@@ -14,6 +14,8 @@ import top.playereg.pix_vision.mapper.UserMapper;
 import top.playereg.pix_vision.pojo.ContentAuditResult;
 import top.playereg.pix_vision.pojo.NicknameChangeResult;
 import top.playereg.pix_vision.pojo.UserDataChangeLock;
+import top.playereg.pix_vision.pojo.UserDataChangeLockVO;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.pojo.userPojo.User;
 import top.playereg.pix_vision.pojo.userPojo.UserData;
 import top.playereg.pix_vision.service.ContentAuditService;
@@ -24,7 +26,10 @@ import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -496,12 +501,12 @@ public class UserServiceImpl implements UserService {
 
         // 插入锁定记录
         UserDataChangeLock lock = new UserDataChangeLock();
-        lock.setUserId(userId);
+        lock.setUser_id(userId);
         lock.setType(100); // 昵称类型
         lock.setNickname(nickname);
-        lock.setOldData(oldNickname);
-        lock.setApprovalStatus(approvalStatus);
-        lock.setIsDelete(false);
+        lock.setOld_data(oldNickname);
+        lock.setApproval_status(approvalStatus);
+        lock.setIs_delete(false);
 
         int insertResult = userDataChangeLockMapper.insertLock(lock);
         if (insertResult <= 0) {
@@ -510,7 +515,7 @@ public class UserServiceImpl implements UserService {
         }
 
         log.info("昵称修改锁定记录已插入 - 用户ID: {}, 审核状态: {}, lockId: {}",
-            userId, approvalStatus, lock.getLockId());
+            userId, approvalStatus, lock.getLock_id());
 
         return new NicknameChangeResult(true, approvalStatus, auditReason);
     }
@@ -571,12 +576,12 @@ public class UserServiceImpl implements UserService {
 
         // 插入锁定记录，审核状态固定为待审核（20）
         UserDataChangeLock lock = new UserDataChangeLock();
-        lock.setUserId(userId);
+        lock.setUser_id(userId);
         lock.setType(300); // 头像类型
-        lock.setAvatarUrl(newAvatarUrl);
-        lock.setOldData(oldAvatar);
-        lock.setApprovalStatus(20); // 固定待审核，不走 AI 审核
-        lock.setIsDelete(false);
+        lock.setAvatar_url(newAvatarUrl);
+        lock.setOld_data(oldAvatar);
+        lock.setApproval_status(20); // 固定待审核，不走 AI 审核
+        lock.setIs_delete(false);
 
         int insertResult = userDataChangeLockMapper.insertLock(lock);
         if (insertResult <= 0) {
@@ -585,7 +590,7 @@ public class UserServiceImpl implements UserService {
         }
 
         log.info("头像修改锁定记录已插入 - 用户ID: {}, lockId: {}, 待人工审核",
-            userId, lock.getLockId());
+            userId, lock.getLock_id());
 
         return true;
     }
@@ -648,12 +653,12 @@ public class UserServiceImpl implements UserService {
 
         // 插入锁定记录，审核状态固定为待审核（20）
         UserDataChangeLock lock = new UserDataChangeLock();
-        lock.setUserId(userId);
+        lock.setUser_id(userId);
         lock.setType(200); // 权限类型
-        lock.setUserRole(targetRole);
-        lock.setOldData(String.valueOf(currentRole));
-        lock.setApprovalStatus(20); // 固定待审核
-        lock.setIsDelete(false);
+        lock.setUser_role(targetRole);
+        lock.setOld_data(String.valueOf(currentRole));
+        lock.setApproval_status(20); // 固定待审核
+        lock.setIs_delete(false);
 
         int insertResult = userDataChangeLockMapper.insertLock(lock);
         if (insertResult <= 0) {
@@ -662,7 +667,7 @@ public class UserServiceImpl implements UserService {
         }
 
         log.info("权限升级申请已提交 - 用户ID: {}, 当前角色: {}, 目标角色: {}, lockId: {}, 待人工审核",
-            userId, currentRole, targetRole, lock.getLockId());
+            userId, currentRole, targetRole, lock.getLock_id());
 
         return "权限升级申请已提交，等待管理员审核";
     }
@@ -768,14 +773,16 @@ public class UserServiceImpl implements UserService {
 
         for (UserDataChangeLock oldLock : oldLocks) {
             // 头像类型：重命名旧的 .pend 文件为 .del
-            if (type == 300 && oldLock.getAvatarUrl() != null) {
-                String oldPath = FilePathConfig.AvatarPath + "/" + oldLock.getAvatarUrl();
-                String newPath = oldPath.replace(".pend", ".del");
-                File file = new File(oldPath);
-                if (file.exists() && file.renameTo(new File(newPath))) {
-                    log.info("已将旧待审核头像重命名为 .del - {}", newPath);
-                } else if (file.exists()) {
-                    log.warn("旧待审核头像重命名失败 - {}", oldPath);
+            if (type == 300 && oldLock.getAvatar_url() != null) {
+                Path oldPath = Paths.get(FilePathConfig.AvatarPath, oldLock.getAvatar_url() + ".pend");
+                Path newPath = Paths.get(FilePathConfig.AvatarPath, oldLock.getAvatar_url() + ".del");
+                if (Files.exists(oldPath)) {
+                    try {
+                        Files.move(oldPath, newPath);
+                        log.info("已将旧待审核头像重命名为 .del - {}", newPath);
+                    } catch (Exception e) {
+                        log.warn("旧待审核头像重命名失败 - {}", oldPath);
+                    }
                 }
             }
         }
@@ -1569,6 +1576,121 @@ public class UserServiceImpl implements UserService {
 
         log.info("批量重置密码完成 - 成功数量: {}", resultList.size());
         return resultList;
+    }
+
+    /**
+     * 分页查询待审核的用户数据变更记录
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @param type    变更类型筛选（可选，100/200/300）
+     * @return 分页结果
+     */
+    @Override
+    public IPage<UserDataChangeLockVO> getPendingLockPage(Long current, Long size, Integer type) {
+        Page<UserDataChangeLockVO> page = new Page<>(current, size);
+        return userDataChangeLockMapper.selectPendingPage(page, type);
+    }
+
+    /**
+     * 批量审核用户数据变更
+     * <p>
+     * 遍历 lockIds，验证当前状态必须为 20（待审核），
+     * 通过时连带更新用户数据，拒绝时处理头像文件。
+     * </p>
+     *
+     * @param lockIds  lock_id 列表
+     * @param approved true-通过 / false-拒绝
+     * @param adminId  执行操作的管理员 ID
+     * @return 批量操作结果
+     */
+    @Override
+    @Transactional
+    public AdminBatchOperateWorkResult batchReviewUserDataChange(
+        List<Integer> lockIds, Boolean approved, Integer adminId
+    ) {
+        List<Integer> failedIds = new ArrayList<>();
+        int successCount = 0;
+
+        // 布尔值转数据库状态：true(通过)→10，false(拒绝)→30
+        Integer dbStatus = approved ? 10 : 30;
+
+        for (Integer lockId : lockIds) {
+            UserDataChangeLock lock = userDataChangeLockMapper.selectById(lockId);
+            if (lock == null) {
+                failedIds.add(lockId);
+                continue;
+            }
+
+            // 只能审核待审核状态的记录
+            if (lock.getApproval_status() != 20) {
+                failedIds.add(lockId);
+                continue;
+            }
+
+            Integer userId = lock.getUser_id();
+
+            // 审核通过：连带更新用户数据
+            if (dbStatus == 10) {
+                switch (lock.getType()) {
+                    case 100:
+                        userMapper.updateUserNickname(userId, lock.getNickname(), adminId);
+                        break;
+                    case 200:
+                        userMapper.updateUserRole(userId, lock.getUser_role(), adminId);
+                        clearUserRoleCache(userId);
+                        break;
+                    case 300:
+                        userMapper.updateUserAvatar(userId, lock.getAvatar_url(), adminId);
+                        renameAvatarFile(lock.getAvatar_url(), ".pend", "");
+                        break;
+                    default:
+                        log.warn("未知的变更类型 - lockId: {}, type: {}", lockId, lock.getType());
+                        failedIds.add(lockId);
+                        continue;
+                }
+            }
+
+            // 审核拒绝：头像文件处理
+            if (dbStatus == 30 && lock.getType() == 300) {
+                renameAvatarFile(lock.getAvatar_url(), ".pend", ".fail");
+            }
+
+            // 更新审核状态
+            lock.setApproval_status(dbStatus);
+            userDataChangeLockMapper.updateById(lock);
+            successCount++;
+        }
+
+        log.info("批量审核完成 - 总数: {}, 成功: {}, 失败: {}", lockIds.size(), successCount, failedIds.size());
+        return new AdminBatchOperateWorkResult(lockIds.size(), successCount, failedIds);
+    }
+
+    /**
+     * 重命名头像文件后缀
+     * <p>将头像文件名中的指定后缀替换为新的后缀</p>
+     *
+     * @param avatarUrl  头像路径（文件名部分）
+     * @param fromSuffix 原始后缀（如 .pend）
+     * @param toSuffix   目标后缀（如 .fail 或空字符串）
+     */
+    private void renameAvatarFile(String avatarUrl, String fromSuffix, String toSuffix) {
+        if (avatarUrl == null || avatarUrl.isEmpty()) {
+            return;
+        }
+        // 磁盘文件带 .pend 后缀，存储的 avatar_url 不带后缀
+        Path oldPath = Paths.get(FilePathConfig.AvatarPath, avatarUrl + fromSuffix);
+        Path newPath = Paths.get(FilePathConfig.AvatarPath, avatarUrl + toSuffix);
+        if (Files.exists(oldPath)) {
+            try {
+                Files.move(oldPath, newPath);
+                log.info("头像文件重命名成功 - {} -> {}", oldPath, newPath);
+            } catch (Exception e) {
+                log.warn("头像文件重命名失败 - {}", oldPath);
+            }
+        } else {
+            log.warn("头像文件不存在 - {}", oldPath);
+        }
     }
 }
 

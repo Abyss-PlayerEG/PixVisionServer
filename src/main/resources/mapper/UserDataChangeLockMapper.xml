@@ -5,17 +5,17 @@
 
     <!-- 插入锁定记录 -->
     <insert id="insertLock" parameterType="top.playereg.pix_vision.pojo.UserDataChangeLock"
-            useGeneratedKeys="true" keyProperty="lockId">
+            useGeneratedKeys="true" keyProperty="lock_id">
         INSERT INTO tb_user_data_change_lock
         (user_id, type, nickname, user_role, avatar_url, old_data, approval_status, is_delete, create_time)
         VALUES
-        (#{userId}, #{type}, #{nickname}, #{userRole}, #{avatarUrl}, #{oldData}, #{approvalStatus}, 0, NOW())
+        (#{user_id}, #{type}, #{nickname}, #{user_role}, #{avatar_url}, #{old_data}, #{approval_status}, 0, NOW())
     </insert>
 
     <!-- 查询有效待审核记录 -->
     <select id="selectPendingByUserAndType" resultType="top.playereg.pix_vision.pojo.UserDataChangeLock">
         SELECT * FROM tb_user_data_change_lock
-        WHERE user_id = #{userId}
+        WHERE user_id = #{user_id}
           AND type = #{type}
           AND approval_status = 20
           AND is_delete = 0
@@ -25,9 +25,46 @@
     <update id="updatePendingToDeleted">
         UPDATE tb_user_data_change_lock
         SET is_delete = 1
-        WHERE user_id = #{userId}
+        WHERE user_id = #{user_id}
           AND type = #{type}
           AND approval_status = 20
+          AND is_delete = 0
+    </update>
+
+    <!-- 分页查询待审核记录（含用户名关联） -->
+    <select id="selectPendingPage" resultType="top.playereg.pix_vision.pojo.UserDataChangeLockVO">
+        SELECT l.lock_id AS lock_id, l.user_id AS user_id, l.type,
+               l.nickname, l.user_role AS user_role, l.avatar_url AS avatar_url,
+               l.old_data AS old_data, l.create_time AS create_time,
+               u.username, u.nickname AS user_current_nickname
+        FROM tb_user_data_change_lock l
+        LEFT JOIN tb_user u ON l.user_id = u.user_id
+        WHERE l.approval_status = 20
+          AND l.is_delete = 0
+          <if test="type != null">
+            AND l.type = #{type}
+          </if>
+        ORDER BY l.create_time DESC
+    </select>
+
+    <!-- 根据 ID 列表批量查询锁定记录 -->
+    <select id="selectLockByIds" resultType="top.playereg.pix_vision.pojo.UserDataChangeLock">
+        SELECT * FROM tb_user_data_change_lock
+        WHERE lock_id IN
+        <foreach collection="lockIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          AND is_delete = 0
+    </select>
+
+    <!-- 批量更新审核状态 -->
+    <update id="batchUpdateApprovalStatus">
+        UPDATE tb_user_data_change_lock
+        SET approval_status = #{approvalStatus}
+        WHERE lock_id IN
+        <foreach collection="lockIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
           AND is_delete = 0
     </update>
 

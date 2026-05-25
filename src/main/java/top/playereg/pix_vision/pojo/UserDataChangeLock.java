@@ -19,10 +19,10 @@ public class UserDataChangeLock {
 
     /** 主键 ID */
     @TableId(type = IdType.AUTO)
-    private Integer lockId;
+    private Integer lock_id;
 
     /** 待审核用户 ID */
-    private Integer userId;
+    private Integer user_id;
 
     /** 修改类型：100-昵称、200-权限、300-头像 */
     private Integer type;
@@ -31,20 +31,20 @@ public class UserDataChangeLock {
     private String nickname;
 
     /** 修改的用户角色 */
-    private Integer userRole;
+    private Integer user_role;
 
     /** 更改的用户头像路径 */
-    private String avatarUrl;
+    private String avatar_url;
 
     /** 旧数据，用于回滚 */
-    private String oldData;
+    private String old_data;
 
     /** 审核状态：10-通过、20-待审核、30-未过审 */
-    private Integer approvalStatus;
+    private Integer approval_status;
 
     /** 软删除标记（false-正常 / true-已删除） */
-    private Boolean isDelete;
+    private Boolean is_delete;
 
     /** 数据条目创建时间戳 */
-    private Timestamp createTime;
+    private Timestamp create_time;
 }
