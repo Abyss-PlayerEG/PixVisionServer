@@ -299,16 +299,24 @@ public class WorkController {
             return ResponsePojo.error(null, "作品不存在或已删除");
         }
 
-        // 记录访问行为并增加浏览量（异步执行，不影响主流程）
+        // 记录访问行为并增加浏览量
         String token = JWTUtils.extractTokenWithLog(request, "查询作品详情接口");
         if (token != null && !token.isEmpty()) {
             Integer userId = JWTUtils.getUserIdFromToken(token);
             if (userId != null) {
-                // 登录用户：记录历史并增加计数
+                // 登录用户：记录到 tb_history 并增加计数
                 try {
                     workService.addHistory(userId, workId);
                 } catch (Exception e) {
                     log.error("添加历史记录异常，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, workId, e.getMessage());
+                }
+            } else {
+                // Token 存在但无法解析用户 ID（过期/格式错误），降级为游客记录
+                log.warn("Token 存在但无法解析用户 ID，降级为游客记录 - 作品 ID: {}", workId);
+                try {
+                    workService.addGuestHistory(workId);
+                } catch (Exception e) {
+                    log.error("添加游客历史记录异常，作品 ID: {}, 错误: {}", workId, e.getMessage());
                 }
             }
         } else {
@@ -687,76 +695,50 @@ public class WorkController {
     }
 
     /**
-     * 随机获取一个可见作品
+     * 随机获取一个可见作品 ID
      *
-     * @param request HTTP 请求对象，用于记录访问历史
-     * @return 随机作品详情
+     * @return 随机作品 ID
      * @author PlayerEG
      */
     @Operation(
-        summary = "随机获取一个可见作品",
+        summary = "随机获取一个可见作品 ID",
         description = """
-            # 随机获取一个可见作品（无需登录认证）
+            # 随机获取一个可见作品 ID（无需登录认证）
 
             ## 特性
             - 公开接口（无需认证）
             - 从所有未删除且审核通过的作品中完全随机选取
-            - 返回完整作品详情（包含浏览量等）
-            - 支持 Token（可选），提供则记录访问历史
+            - 仅返回作品 ID，不记录历史、不增加浏览量
 
             ## 参数说明：
-            - Authorization: Token（可选），格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
-            - 无需其他参数
+            - 无需参数
 
             ## 返回说明：
-            - **查询成功**：返回 **{"data": {Works对象}}** ，包含随机作品详细信息
+            - **查询成功**：返回 **{"data": 作品ID}**
             - **无可见作品**：返回 **{"data": null}** 和"暂无可用作品"提示
 
             ## 业务逻辑：
-            1. 调用 Mapper 执行 SELECT ... ORDER BY RAND() LIMIT 1
-            2. 通过 getWorkById 填充最新浏览量（Redis 缓存优先）
-            3. 如有 Token，记录用户访问历史
-            4. 返回完整作品信息
+            1. 执行 SELECT work_id FROM tb_works ... ORDER BY RAND() LIMIT 1
+            2. 返回随机作品 ID
 
             ## 注意事项：
             - 这是一个**公开接口**，无需 Token 认证
             - 仅从审核通过且未删除的作品中随机选取
-            - 返回字段与 /api/work/detail/{workId} 完全一致
-            - 每次请求可能返回相同或不同的作品
+            - 前端拿到 ID 后可调用 /api/work/detail/{workId} 获取完整详情
+            - 每次请求可能返回相同或不同的作品 ID
             """
     )
-    @PublicAccess("随机获取一个可见作品，无需认证")
+    @PublicAccess("随机获取一个可见作品 ID，无需认证")
     @GetMapping("/random")
-    public ResponsePojo<Works> getRandomWork(
-        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request
-    ) {
-        Works work = workService.getRandomWork();
+    public ResponsePojo<Integer> getRandomWork() {
+        Integer workId = workService.getRandomWorkId();
 
-        if (work == null) {
-            log.warn("随机获取作品失败 - 暂无可见作品");
+        if (workId == null) {
+            log.warn("随机获取作品 ID 失败 - 暂无可见作品");
             return ResponsePojo.error(null, "暂无可用作品");
         }
 
-        // 记录访问行为并增加浏览量（与 /detail/{workId} 逻辑一致）
-        String token = JWTUtils.extractTokenWithLog(request, "随机作品接口");
-        if (token != null && !token.isEmpty()) {
-            Integer userId = JWTUtils.getUserIdFromToken(token);
-            if (userId != null) {
-                try {
-                    workService.addHistory(userId, work.getWork_id());
-                } catch (Exception e) {
-                    log.error("随机作品记录历史异常，用户 ID: {}, 作品 ID: {}, 错误: {}", userId, work.getWork_id(), e.getMessage());
-                }
-            }
-        } else {
-            try {
-                workService.addGuestHistory(work.getWork_id());
-            } catch (Exception e) {
-                log.error("随机作品游客记录异常，作品 ID: {}, 错误: {}", work.getWork_id(), e.getMessage());
-            }
-        }
-
-        log.info("随机获取作品成功，作品 ID: {}, 标题: {}", work.getWork_id(), work.getWork_title());
-        return ResponsePojo.success(work, "查询成功");
+        log.info("随机获取作品 ID 成功: {}", workId);
+        return ResponsePojo.success(workId, "查询成功");
     }
 }

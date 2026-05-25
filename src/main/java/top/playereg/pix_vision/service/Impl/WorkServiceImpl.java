@@ -488,6 +488,7 @@ public class WorkServiceImpl implements WorkService {
      * @param workId 作品 ID
      * @author PlayerEG
      */
+    @Override
     public void addGuestHistory(Integer workId) {
         if (workId == null) {
             return;
@@ -1369,23 +1370,15 @@ public class WorkServiceImpl implements WorkService {
     }
 
     /**
-     * 随机获取一个可见作品（未删除且审核通过）
+     * 随机获取一个可见作品的 ID（未删除且审核通过）
      * <p>
-     * 直接查询数据库，使用 ORDER BY RAND() LIMIT 1 实现完全随机选取。
-     * 返回后通过 {@link #getWorkById(Integer)} 填充最新浏览量。
-     * </p>
+     * 仅返回 work_id，不记录历史、不增加浏览量。
      *
-     * @return 随机作品对象，无可见作品时返回 null
+     * @return 随机作品 ID，无可见作品时返回 null
      * @author PlayerEG
      */
     @Override
-    public Works getRandomWork() {
-        Works work = worksMapper.selectRandomWork();
-        if (work == null || work.getWork_id() == null) {
-            return null;
-        }
-
-        // 通过 getWorkById 填充最新浏览量（包含 Redis 回源逻辑）
-        return getWorkById(work.getWork_id());
+    public Integer getRandomWorkId() {
+        return worksMapper.selectRandomWorkId();
     }
 }

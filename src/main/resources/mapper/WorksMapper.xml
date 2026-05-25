@@ -325,10 +325,9 @@
           AND approval_status = 10
     </select>
 
-    <!-- 随机获取一个可见作品（未删除且审核通过，性能顾虑：RAND() 在大表上较慢，当前数据量级可接受） -->
-    <select id="selectRandomWork" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
+    <!-- 随机获取一个可见作品的 ID（未删除且审核通过） -->
+    <select id="selectRandomWorkId" resultType="java.lang.Integer">
+        SELECT work_id
         FROM tb_works
         WHERE is_delete = 0
           AND approval_status = 10
