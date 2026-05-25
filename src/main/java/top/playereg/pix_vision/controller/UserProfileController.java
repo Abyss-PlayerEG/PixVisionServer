@@ -229,49 +229,52 @@ public class UserProfileController {
     }
 
     /**
-     * 根据用户 ID 或 UUID 查询用户信息
+     * 根据用户 ID、用户名或 UUID 查询用户信息
      *
-     * @param userId 用户 ID（可选）
-     * @param uuid   用户 UUID（可选，字符串格式）
+     * @param userId   用户 ID（可选）
+     * @param username 用户名（可选）
+     * @param uuid     用户 UUID（可选，字符串格式）
      * @return 响应数据，包含用户详细信息
      * @author PlayerEG
      */
     @GetMapping("/info")
-    @PublicAccess("根据 UUID 或用户名查询用户信息，无需认证")
+    @PublicAccess("根据用户 ID、用户名或 UUID 查询用户信息，无需认证")
     @Operation(
-        summary = "根据 UUID 或用户名查询用户信息",
+        summary = "根据用户 ID、用户名或 UUID 查询用户信息",
         description = """
-            # 根据 UUID 或用户名查询用户信息（无需登录认证）
+            # 根据用户 ID、用户名或 UUID 查询用户信息（无需登录认证）
 
             ## 特性
             - 公开接口（无需 Token 认证）
-            - 支持通过 UUID 或用户名精确查询单个用户
+            - 支持通过用户 ID、用户名或 UUID 精确查询单个用户
             - 自动转换二进制 UUID 为字符串格式
-            - uuid、username 至少提供一个
+            - 查询优先级：userId > username > uuid
+            - userId、username、uuid 至少提供一个
 
             ## 参数说明：
+            - userId: **用户 ID**，Integer 类型，可选，直接通过主键查询（优先级最高）
+            - username: **用户名**，String 类型，可选，精确匹配
             - uuid: **用户 UUID**，String 类型，可选，支持两种格式：
               * 32位不带连字符：`6ddae8a5837d4721a1b783a7f98c67aa`
               * 36位带连字符：`550e8400-e29b-41d4-a716-446655440000`
-              * 与 username 二选一
-            - username: **用户名**，String 类型，可选，精确匹配，与 uuid 二选一
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": {User对象}}** ，包含用户详细信息
-            - **参数缺失**：返回 **{"data": null}** 和"请提供 UUID 或用户名"提示
+            - **参数缺失**：返回 **{"data": null}** 和"请提供用户 ID、用户名或 UUID"提示
             - **UUID 格式错误**：返回 **{"data": null}** 和"UUID 格式错误"提示
             - **用户不存在**：返回 **{"data": null}** 和"用户不存在"提示
 
             ## 业务逻辑：
-            1. 校验参数：uuid、username 至少提供一个
-            2. 如果提供 uuid，验证格式并转换为二进制
-            3. 根据 uuid 或 username 查询用户信息
+            1. 校验参数：userId、username、uuid 至少提供一个
+            2. 按优先级查询：userId > username > uuid
+            3. 如果使用 uuid，验证格式并转换为二进制
             4. 将二进制 UUID 转换为字符串格式
             5. 隐藏敏感字段后返回用户详细信息
 
             ## 注意事项：
             - 这是一个**公开接口**，无需 Token 认证
-            - **uuid、username 至少提供一个**
+            - **userId、username、uuid 至少提供一个**
+            - 查询优先级：userId（最快，主键查询）> username > uuid
             - 只返回**未删除**的用户（is_delete=0）
             - 返回的字段不包含敏感信息（password、user_uuid 均被隐藏）
             - UUID 支持两种格式：32位不带连字符 或 36位带连字符
@@ -279,19 +282,24 @@ public class UserProfileController {
             """
     )
     public ResponsePojo<User> getUserInfo(
-        @Parameter(description = "用户 UUID（可选），标准格式，与 username 二选一", example = "550e8400-e29b-41d4-a716-446655440000") @RequestParam(required = false) String uuid,
-        @Parameter(description = "用户名（可选），精确匹配，与 uuid 二选一", example = "test_user") @RequestParam(required = false) String username
+        @Parameter(description = "用户 ID（可选），直接通过主键查询，优先级最高", example = "1") @RequestParam(required = false) Integer userId,
+        @Parameter(description = "用户名（可选），精确匹配", example = "test_user") @RequestParam(required = false) String username,
+        @Parameter(description = "用户 UUID（可选），标准格式", example = "550e8400-e29b-41d4-a716-446655440000") @RequestParam(required = false) String uuid
     ) {
-        // 参数校验：uuid、username 至少提供一个
-        if ((uuid == null || uuid.isEmpty()) && (username == null || username.isEmpty())) {
+        // 参数校验：userId、username、uuid 至少提供一个
+        if (userId == null && (username == null || username.isEmpty()) && (uuid == null || uuid.isEmpty())) {
             log.warn("查询用户信息失败 - 缺少必要参数");
-            return ResponsePojo.error(null, "请提供 UUID 或用户名");
+            return ResponsePojo.error(null, "请提供用户 ID、用户名或 UUID");
         }
 
         User user = null;
 
-        // 优先使用 username 查询
-        if (username != null && !username.isEmpty()) {
+        // 优先级：userId > username > uuid
+        if (userId != null) {
+            // 使用 userId 查询（主键查询，性能最优）
+            log.info("通过用户 ID 查询用户信息 - 用户 ID: {}", userId);
+            user = userService.selectAllUserById(userId);
+        } else if (username != null && !username.isEmpty()) {
             // 使用 username 查询
             log.info("通过用户名查询用户信息 - 用户名: {}", username);
             user = userService.selectUserByUsername(username);
@@ -321,7 +329,7 @@ public class UserProfileController {
 
         // 检查用户是否存在（SQL 已过滤 is_delete=0，只需判断 null）
         if (user == null) {
-            log.warn("用户不存在或已被删除 - UUID: {}, 用户名: {}", uuid, username);
+            log.warn("用户不存在或已被删除 - 用户 ID: {}, 用户名: {}, UUID: {}", userId, username, uuid);
             return ResponsePojo.error(null, "用户不存在");
         }
 
