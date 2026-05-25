@@ -194,6 +194,63 @@ public interface UserService {
     Boolean updateAvatarWithLock(Integer userId, String newAvatarUrl, Integer adminId);
 
     /**
+     * 申请权限升级（需审核）
+     * <p>
+     * 用户申请升级到更高角色。该方法不直接更新用户角色，
+     * 而是将变更记录写入 tb_user_data_change_lock 表（type=200），
+     * 审核状态设为待审核（20），等待管理员审核通过后才更新。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>用户主动申请升级权限（如普通用户申请成为创作者）</li>
+     *   <li>需要邮箱验证码验证身份后方可申请</li>
+     * </ol>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>只能申请比当前角色更高的角色</li>
+     *   <li>不能有同类型待审核的记录</li>
+     *   <li>申请后需等待管理员审核</li>
+     * </ul>
+     *
+     * @param userId     用户 ID
+     * @param targetRole 目标角色代码（11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）
+     * @return 申请结果消息，包含是否成功及提示信息
+     * @author PlayerEG
+     * @see #applyRoleDowngrade(Integer, Integer)
+     */
+    String applyRoleUpgrade(Integer userId, Integer targetRole);
+
+    /**
+     * 自主降权（无需审核）
+     * <p>
+     * 用户主动降低自己的角色权限，无需管理员审核，直接更新数据库。
+     * 降权后自动清除角色缓存以确保权限验证获取最新信息。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>用户主动放弃高权限角色</li>
+     *   <li>需要邮箱验证码验证身份后方可降权</li>
+     * </ol>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>只能降到比当前角色更低的角色</li>
+     *   <li>不能有同类型待审核的记录</li>
+     *   <li>降权操作立即生效，不可撤销</li>
+     * </ul>
+     *
+     * @param userId     用户 ID
+     * @param targetRole 目标角色代码（11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员）
+     * @return 降权结果消息，包含是否成功及提示信息
+     * @author PlayerEG
+     * @see #applyRoleUpgrade(Integer, Integer)
+     */
+    String applyRoleDowngrade(Integer userId, Integer targetRole);
+
+    /**
      * 新增用户拓展数据
      *
      * @param userId      用户 ID

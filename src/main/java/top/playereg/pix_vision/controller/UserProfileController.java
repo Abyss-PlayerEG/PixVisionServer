@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ import java.util.List;
 @SuppressWarnings("all")
 @RequestMapping("/api/user/profile")
 @RequiredArgsConstructor
-@Tag(name = "用户接口 - 基础资料", description = "提供用户基本资料的查询和修改功能")
+@Tag(name = "用户接口 - 用户基础资料", description = "提供用户基本资料的查询和修改功能")
 public class UserProfileController {
     private static final PixVisionLogger log = PixVisionLogger.create(UserProfileController.class);
 
@@ -701,6 +702,165 @@ public class UserProfileController {
         } else {
             log.error("用户邮箱修改失败，用户 ID: {}, 用户名: {}", userId, username);
             return ResponsePojo.error(false, "邮箱修改失败，请检查验证码是否正确或邮箱是否已被使用");
+        }
+    }
+
+    /**
+     * 用户权限变更申请（升级/降权）
+     *
+     * @param request    HTTP 请求对象
+     * @param targetRole 目标角色代码
+     * @param vCode      邮箱验证码
+     * @return 响应数据
+     * @author PlayerEG
+     */
+    @PostMapping("/role/apply")
+    @Operation(
+        summary = "用户权限变更申请接口",
+        description = """
+            # 用户权限变更申请（需要登录认证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 邮箱验证码验证
+            - 智能识别升级/降权操作
+            - 升级操作需要管理员审核
+            - 降权操作立即生效
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - targetRole: **目标角色代码**，整数类型，必填
+              * 11-普通用户
+              * 22-创作者
+              * 55-审核员
+              * 66-工单管理员
+              * 77-系统管理员
+            - vCode: **邮箱验证码**，6 位大写字母或数字，字符串类型，必填
+
+            ## 返回说明：
+            - **升级申请成功**：返回 **{"data": "权限升级申请已提交，等待管理员审核"}**
+            - **降权成功**：返回 **{"data": "降权成功"}**
+            - **Token 不存在**：返回 **{"data": null}** 和"Token 不存在"提示
+            - **Token 已失效**：返回 **{"data": null}** 和"Token 已失效"提示
+            - **验证码错误**：返回 **{"data": null}** 和"验证码错误或已过期"提示
+            - **非法的目标角色**：返回 **{"data": null}** 和"非法的角色代码"提示
+            - **同角色操作**：返回 **{"data": null}** 和"当前已是该角色"提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 验证 Token 是否在白名单中
+            3. 从 Token 中解析用户 ID
+            4. 校验 targetRole 参数合法性
+            5. 校验 vCode 验证码格式
+            6. 查询用户当前角色和邮箱
+            7. 验证邮箱验证码
+            8. 比较当前角色与目标角色：
+               - 目标角色 > 当前角色：升级操作，插入审核锁定记录（type=200）
+               - 目标角色 < 当前角色：降权操作，直接更新角色并清除缓存
+               - 目标角色 = 当前角色：拒绝操作
+            9. 返回对应的结果消息
+
+            ## 注意事项：
+            - 需要携带有效的 Token 才能申请
+            - Token 必须在白名单中（未过期、未登出）
+            - 需要先通过 `/api/mail/send-role-change-code` 接口发送验证码
+            - 验证码有效期为 **5 分钟**
+            - 升级需要管理员审核通过后才生效
+            - 降权立即生效，不可撤销
+            - 角色层级：11 < 22 < 55 < 66 < 77
+            """)
+    public ResponsePojo<String> applyRoleChange(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Schema(
+            description = "目标角色代码",
+            allowableValues = {"11", "22", "55", "66", "77"},
+            example = "22"
+        ) @RequestParam Integer targetRole,
+        @Parameter(description = "邮箱验证码，6 位大写字母或数字", required = true, example = "ABC123") @RequestParam String vCode
+    ) {
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "权限变更申请接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("权限变更申请失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始权限变更申请 - 用户ID: {}, 用户名: {}, 目标角色: {}", userId, username, targetRole);
+
+        // 校验 targetRole 参数
+        if (targetRole == null) {
+            log.warn("目标角色为空，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "目标角色不能为空");
+        }
+
+        // 校验验证码参数
+        if (vCode == null || vCode.isEmpty()) {
+            log.warn("验证码为空，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "验证码不能为空");
+        }
+
+        if (!RegexUtils.isVCode(vCode, 6)) {
+            log.warn("验证码格式错误，用户 ID: {}", userId);
+            return ResponsePojo.error(null, "验证码格式错误，应为 6 位大写字母或数字");
+        }
+
+        // 查询用户信息以获取当前角色和邮箱
+        User currentUser = userService.selectAllUserById(userId);
+        if (currentUser == null) {
+            log.error("用户不存在 - 用户ID: {}", userId);
+            return ResponsePojo.error(null, "用户不存在");
+        }
+
+        Integer currentRole = currentUser.getUser_role();
+        String userEmail = currentUser.getEmail();
+
+        // 验证邮箱验证码
+        boolean isCodeValid = verificationCodeServices.verificationCodeVerify(userEmail, vCode);
+        if (!isCodeValid) {
+            log.warn("验证码错误或已过期 - 用户ID: {}, 邮箱: {}", userId, userEmail);
+            return ResponsePojo.error(null, "验证码错误或已过期");
+        }
+
+        // 判断是否为同角色操作
+        if (targetRole.equals(currentRole)) {
+            log.info("用户当前已是该角色 - 用户ID: {}, 角色: {}", userId, currentRole);
+            return ResponsePojo.error(null, "当前已是该角色，无需变更");
+        }
+
+        // 判断升级或降权
+        String resultMsg;
+        if (targetRole > currentRole) {
+            // 升级操作（需审核）
+            resultMsg = userService.applyRoleUpgrade(userId, targetRole);
+        } else {
+            // 降权操作（无需审核，直接生效）
+            resultMsg = userService.applyRoleDowngrade(userId, targetRole);
+        }
+
+        // 判断操作结果
+        if (resultMsg.contains("成功") || resultMsg.contains("已提交")) {
+            log.info("权限变更操作完成 - 用户ID: {}, 当前角色: {}, 目标角色: {}, 结果: {}",
+                userId, currentRole, targetRole, resultMsg);
+            return ResponsePojo.success(resultMsg, resultMsg);
+        } else {
+            log.warn("权限变更操作被拒绝 - 用户ID: {}, 当前角色: {}, 目标角色: {}, 原因: {}",
+                userId, currentRole, targetRole, resultMsg);
+            return ResponsePojo.error(null, resultMsg);
         }
     }
 }

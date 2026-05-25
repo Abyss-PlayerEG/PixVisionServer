@@ -595,6 +595,123 @@ public class EmailController {
     }
 
     /**
+     * 发送权限变更验证码邮件（用于已登录用户）
+     *
+     * @param request HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @return 响应数据，表示邮件是否发送成功
+     * @author PlayerEG
+     */
+    @PostMapping("/send-role-change-code")
+    @Operation(
+        summary = "发送权限变更验证码邮件",
+        description = """
+            # 发送权限变更验证码邮件（需要登录认证）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 从 Token 自动获取用户信息
+            - Redis 验证码存储
+            - HTML 邮件模板渲染
+            - 内置邮件主题
+            - 需要登录（受保护接口）
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+
+            ## 返回说明：
+            - **发送成功**：返回 **{"data": true}** 和"邮件发送成功"提示
+            - **发送失败**：返回 **{"data": false}** 和"邮件发送失败"提示
+            - **Token 不存在**：返回 **{"data": false}** 和"Token 不存在"提示
+            - **Token 无效**：返回 **{"data": false}** 和"Token 无效"提示
+            - **用户不存在**：返回 **{"data": false}** 和"用户不存在"提示
+            - **验证码已存在**：返回 **{"data": {"remainingSeconds": 剩余秒数, "message": "提示信息"}}** 和"验证码已存在，请检查邮箱或稍后重试"提示
+
+            ## 业务逻辑：
+            1. 从请求头或 URL 参数中提取 Token
+            2. 从 Token 中解析用户 ID
+            3. 根据用户 ID 查询用户信息，获取用户名和邮箱
+            4. 验证用户是否存在
+            5. 检查Redis中是否已有该邮箱的未过期验证码
+            6. 生成6位随机验证码并存入Redis
+            7. 使用HTML邮件模板渲染邮件内容
+            8. 发送邮件并将验证码与邮箱绑定存储
+
+            ## 注意事项：
+            - 验证码默认有效期由Redis配置决定（默认5分钟）
+            - 用户信息从 Token 中自动获取，无需传入
+            - 此接口用于**已登录用户申请权限变更**场景
+            - 邮件主题已内置为"PixVision 权限变更验证码"
+            - 需要携带有效的 Token 才能调用
+            - 收到验证码后，调用 `/api/user/profile/role/apply` 接口完成权限变更
+            - **如果邮箱已有未过期的验证码，将拒绝发送新的验证码**
+            """)
+    public ResponsePojo<Boolean> sendRoleChangeCode(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) jakarta.servlet.http.HttpServletRequest request
+    ) {
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "权限变更验证码接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("权限变更验证码失败 - Token 不存在");
+            return ResponsePojo.error(false, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null || userId <= 0) {
+            log.error("无法从 Token 中获取用户 ID");
+            return ResponsePojo.error(false, "Token 无效");
+        }
+
+        log.info("发送权限变更验证码，用户 ID: {}", userId);
+
+        // 根据用户 ID 查询用户信息
+        User user = userService.selectAllUserById(userId);
+        if (user == null) {
+            log.warn("用户不存在，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "用户不存在");
+        }
+
+        String username = user.getUsername();
+        String targetEmail = user.getEmail();
+        log.info("发送权限变更验证码，用户名：{}，邮箱：{}", username, targetEmail);
+
+        // 检查是否已有验证码存在
+        if (verificationCodeServices.hasRedisVCode(targetEmail)) {
+            Long remainingTime = verificationCodeServices.getRedisVCodeRemainingTime(targetEmail);
+            log.warn("该邮箱已有未过期的验证码，邮箱：{}，剩余时间：{}秒", targetEmail, remainingTime);
+
+            java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+            errorData.put("remainingSeconds", remainingTime);
+            errorData.put("message", "验证码已存在，请检查邮箱或稍后重试");
+
+            return ResponsePojo.error(false, StrUtil.format("验证码已存在，请检查邮箱或{}秒稍后重试", errorData.get("remainingSeconds")));
+        }
+
+        // 生成验证码
+        String verificationCode = verificationCodeServices.verificationCode();
+
+        // 使用模板服务渲染邮件 HTML
+        String html = emailTemplateService.renderVerificationEmail(
+            verificationCode,
+            username,
+            "权限变更"
+        );
+
+        try {
+            emailService.sendEMail(targetEmail, "PixVision 权限变更验证码", html);
+        } catch (Exception e) {
+            log.error("权限变更验证码邮件发送失败：{}", e.getMessage());
+            return ResponsePojo.error(false, "邮件发送失败");
+        }
+
+        // 将验证码存入Redis
+        verificationCodeServices.setRedisVCode(targetEmail, verificationCode);
+
+        return ResponsePojo.success(true, "邮件发送成功");
+    }
+
+    /**
      * 发送更改邮箱验证码邮件（用于已登录用户）
      *
      * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token

@@ -541,6 +541,159 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 申请权限升级（需审核）
+     * <p>
+     * 用户申请升级到更高角色。该方法不直接更新用户角色，
+     * 而是将变更记录写入 tb_user_data_change_lock 表（type=200），
+     * 审核状态设为待审核（20），等待管理员审核通过后才更新。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>用户主动申请升级权限（如普通用户申请成为创作者）</li>
+     *   <li>需要邮箱验证码验证身份后方可申请</li>
+     * </ol>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>只能申请比当前角色更高的角色</li>
+     *   <li>不能有同类型待审核的记录</li>
+     *   <li>申请后需等待管理员审核</li>
+     * </ul>
+     *
+     * @param userId     用户 ID
+     * @param targetRole 目标角色代码
+     * @return 申请结果消息
+     * @author PlayerEG
+     * @see #applyRoleDowngrade(Integer, Integer)
+     */
+    @Override
+    @Transactional
+    public String applyRoleUpgrade(Integer userId, Integer targetRole) {
+        log.info("开始权限升级申请 - 用户ID: {}, 目标角色: {}", userId, targetRole);
+
+        // 查询用户当前角色
+        User currentUser = userMapper.selectAllUserInfoById(userId);
+        if (currentUser == null) {
+            log.error("用户不存在 - 用户ID: {}", userId);
+            return "用户不存在";
+        }
+
+        Integer currentRole = currentUser.getUser_role();
+
+        // 校验目标角色是否合法
+        if (!isValidRole(targetRole)) {
+            log.warn("非法的目标角色: {}", targetRole);
+            return "非法的角色代码，允许的角色：11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员";
+        }
+
+        // 校验是否为升级（目标角色必须大于当前角色）
+        if (targetRole <= currentRole) {
+            log.warn("权限升级申请被拒绝 - 用户ID: {}, 当前角色: {}, 目标角色: {} (非升级操作)", userId, currentRole, targetRole);
+            return "只能申请比当前角色更高的权限";
+        }
+
+        // 插入锁定记录，审核状态固定为待审核（20）
+        UserDataChangeLock lock = new UserDataChangeLock();
+        lock.setUserId(userId);
+        lock.setType(200); // 权限类型
+        lock.setUserRole(targetRole);
+        lock.setOldData(String.valueOf(currentRole));
+        lock.setApprovalStatus(20); // 固定待审核
+
+        int insertResult = userDataChangeLockMapper.insertLock(lock);
+        if (insertResult <= 0) {
+            log.error("插入权限升级锁定记录失败 - 用户ID: {}", userId);
+            return "申请失败，请稍后重试";
+        }
+
+        log.info("权限升级申请已提交 - 用户ID: {}, 当前角色: {}, 目标角色: {}, lockId: {}, 待人工审核",
+            userId, currentRole, targetRole, lock.getLockId());
+
+        return "权限升级申请已提交，等待管理员审核";
+    }
+
+    /**
+     * 自主降权（无需审核）
+     * <p>
+     * 用户主动降低自己的角色权限，无需管理员审核，直接更新数据库。
+     * 降权后自动清除角色缓存以确保权限验证获取最新信息。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>用户主动放弃高权限角色</li>
+     *   <li>需要邮箱验证码验证身份后方可降权</li>
+     * </ol>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>只能降到比当前角色更低的角色</li>
+     *   <li>不能有同类型待审核的记录</li>
+     *   <li>降权操作立即生效，不可撤销</li>
+     * </ul>
+     *
+     * @param userId     用户 ID
+     * @param targetRole 目标角色代码
+     * @return 降权结果消息
+     * @author PlayerEG
+     * @see #applyRoleUpgrade(Integer, Integer)
+     */
+    @Override
+    @Transactional
+    public String applyRoleDowngrade(Integer userId, Integer targetRole) {
+        log.info("开始自主降权 - 用户ID: {}, 目标角色: {}", userId, targetRole);
+
+        // 查询用户当前角色
+        User currentUser = userMapper.selectAllUserInfoById(userId);
+        if (currentUser == null) {
+            log.error("用户不存在 - 用户ID: {}", userId);
+            return "用户不存在";
+        }
+
+        Integer currentRole = currentUser.getUser_role();
+
+        // 校验目标角色是否合法
+        if (!isValidRole(targetRole)) {
+            log.warn("非法的目标角色: {}", targetRole);
+            return "非法的角色代码，允许的角色：11-普通用户, 22-创作者, 55-审核员, 66-工单管理员, 77-系统管理员";
+        }
+
+        // 校验是否为降权（目标角色必须小于当前角色）
+        if (targetRole >= currentRole) {
+            log.warn("降权申请被拒绝 - 用户ID: {}, 当前角色: {}, 目标角色: {} (非降权操作)", userId, currentRole, targetRole);
+            return "只能降到比当前角色更低的权限";
+        }
+
+        // 直接更新用户角色
+        int updateResult = userMapper.updateUserRole(userId, targetRole, userId);
+        if (updateResult <= 0) {
+            log.error("降权更新角色失败 - 用户ID: {}, 目标角色: {}", userId, targetRole);
+            return "降权失败，请稍后重试";
+        }
+
+        // 清除角色缓存
+        clearUserRoleCache(userId);
+
+        log.info("降权成功 - 用户ID: {}, 原角色: {}, 新角色: {}", userId, currentRole, targetRole);
+
+        return "降权成功";
+    }
+
+    /**
+     * 校验角色代码是否合法
+     *
+     * @param role 角色代码
+     * @return true-合法，false-非法
+     */
+    private boolean isValidRole(Integer role) {
+        if (role == null) {
+            return false;
+        }
+        return role == 11 || role == 22 || role == 55 || role == 66 || role == 77;
+    }
+
+    /**
      * 新增用户拓展数据
      *
      * @param userId      用户 ID
