@@ -54,8 +54,13 @@ public class WorkServiceImpl implements WorkService {
 
     /** 最后作品 ID 缓存键 */
     private static final String LAST_WORK_ID_CACHE_KEY = "pix:work:last-id";
-    /** 最后作品 ID 缓存 TTL：1分钟 */
+    /** 最后作品 ID 缓存 TTL：5分钟 */
     private static final long LAST_WORK_ID_CACHE_TTL_MINUTES = 5;
+
+    /** 用户统计数据缓存键前缀 */
+    private static final String USER_STATS_KEY_PREFIX = "pix:user:stats:";
+    /** 用户统计数据缓存 TTL：1分钟 */
+    private static final long USER_STATS_CACHE_TTL_MINUTES = 1;
 
     // 允许上传的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
@@ -1182,6 +1187,23 @@ public class WorkServiceImpl implements WorkService {
             return new java.util.HashMap<>();
         }
 
+        String cacheKey = USER_STATS_KEY_PREFIX + userId;
+
+        // 优先从 Redis 获取缓存数据
+        try {
+            java.util.Map<Object, Object> cachedStats = redisTemplate.opsForHash().entries(cacheKey);
+            if (cachedStats != null && !cachedStats.isEmpty()) {
+                java.util.Map<String, Object> result = new java.util.HashMap<>();
+                for (java.util.Map.Entry<Object, Object> entry : cachedStats.entrySet()) {
+                    result.put(entry.getKey().toString(), entry.getValue());
+                }
+                log.info("从 Redis 缓存命中用户统计数据 - 用户 ID: {}", userId);
+                return result;
+            }
+        } catch (Exception e) {
+            log.warn("读取用户统计数据 Redis 缓存失败，回源数据库 - 用户 ID: {}, 错误: {}", userId, e.getMessage());
+        }
+
         log.info("开始查询用户统计数据 - 用户 ID: {}", userId);
 
         // 调用 Mapper 层查询统计数据
@@ -1194,6 +1216,14 @@ public class WorkServiceImpl implements WorkService {
             stats.put("total_likes", 0L);
             stats.put("total_stars", 0L);
             stats.put("total_views", 0L);
+        }
+
+        // 写入 Redis 缓存，TTL 1 分钟
+        try {
+            redisTemplate.opsForHash().putAll(cacheKey, stats);
+            redisTemplate.expire(cacheKey, USER_STATS_CACHE_TTL_MINUTES, java.util.concurrent.TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("写入用户统计数据 Redis 缓存失败 - 用户 ID: {}, 错误: {}", userId, e.getMessage());
         }
 
         log.info("查询用户统计数据成功 - 用户 ID: {}, 作品数: {}, 点赞总数: {}, 收藏总数: {}, 查看总数: {}",
