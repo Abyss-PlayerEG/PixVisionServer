@@ -467,4 +467,17 @@ public interface UserService {
      * @return 分页结果
      */
     IPage<UserDataChangeLockVO> getPendingLockPage(Long current, Long size, Integer type);
+
+    /**
+     * 批量初始化用户头像和昵称
+     * <p>
+     * 为指定用户列表随机分配默认头像（default/1.png ~ default/21.png）和随机昵称（user_xxxxxxxxxx）。
+     * 管理员不能初始化自己的头像和昵称。
+     * </p>
+     *
+     * @param userIds 目标用户 ID 列表
+     * @param adminId 执行操作的管理员 ID
+     * @return 批量操作结果，包含总数、成功数和失败 ID 列表
+     */
+    AdminBatchOperateWorkResult batchInitAvatarAndNickname(List<Integer> userIds, Integer adminId);
 }

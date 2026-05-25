@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchDeleteUserResult;
+import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchUpdateUserResult;
 import top.playereg.pix_vision.pojo.adminPojo.AdminResetPasswordResult;
 import top.playereg.pix_vision.pojo.userPojo.User;
@@ -669,6 +670,94 @@ public class AdminUserController {
             log.error("批量重置密码异常 - 错误: {}", e.getMessage(), e);
             AdminResetPasswordResult result = new AdminResetPasswordResult(totalCount, 0, 0, userIds); // 异常时所有都视为失败
             return ResponsePojo.error(result, "系统错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量初始化用户头像和昵称
+     *
+     * @param request HTTP 请求对象（用于获取当前管理员信息）
+     * @param userIds 目标用户 ID 列表
+     * @return 响应数据，包含批量初始化的统计信息
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "批量初始化用户头像和昵称",
+        description = """
+            # 批量初始化用户头像和昵称（需要登录认证 + 角色权限[77]）
+
+            ## 特性
+            - 仅系统管理员可调用
+            - 为指定用户随机分配默认头像（default/1.png ~ default/21.png）
+            - 为指定用户随机生成默认昵称（user_xxxxxxxxxx）
+            - 模拟注册时的随机头像和随机昵称初始化逻辑
+            - 管理员不能初始化自己的头像和昵称
+
+            ## 参数说明：
+            - **userIds**: 目标用户 ID 列表（必填）
+
+            ## 返回说明：
+            - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息
+            - **用户 ID 列表为空**：返回错误提示
+            - **失败**：返回错误提示
+
+            ## 业务逻辑：
+            1. 验证当前用户是否为系统管理员（由拦截器自动验证）
+            2. 从 Token 中获取当前管理员 ID
+            3. 遍历用户 ID 列表，为每个用户生成随机头像和随机昵称
+            4. 调用 updateUserAvatar 和 updateUserNickname 更新数据库
+            5. 返回包含总数、成功数和失败 ID 列表的结果
+
+            ## 注意事项：
+            - 随机头像范围为 default/1.png 到 default/21.png
+            - 随机昵称格式为 "user_" + 10位随机字母数字组合
+            - 管理员自身的头像和昵称不会被修改
+            - 初始化会直接覆盖用户当前的头像和昵称
+            """
+    )
+    @RequireRole(value = {77})
+    @PostMapping("/init-avatar-nickname")
+    public ResponsePojo<AdminBatchUpdateUserResult> batchInitAvatarAndNickname(
+        HttpServletRequest request,
+        @Parameter(description = "目标用户 ID 列表", required = true, example = "123,456") @RequestParam List<Integer> userIds
+    ) {
+        log.info("管理员开始批量初始化用户头像和昵称 - 用户数量: {}", userIds != null ? userIds.size() : 0);
+
+        // 参数校验
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("用户 ID 列表为空");
+            return ResponsePojo.error(null, "用户 ID 列表不能为空");
+        }
+
+        try {
+            // 从 Token 中获取当前管理员 ID
+            String token = JWTUtils.extractTokenWithLog(request, "批量初始化用户头像和昵称");
+            if (token == null || token.isEmpty()) {
+                log.error("Token 不存在");
+                return ResponsePojo.error(null, "未授权访问");
+            }
+
+            Integer adminId = JWTUtils.getUserIdFromToken(token);
+            if (adminId == null) {
+                log.error("无法从 Token 中获取管理员 ID");
+                return ResponsePojo.error(null, "Token 无效");
+            }
+
+            // 调用 Service 层批量初始化
+            AdminBatchOperateWorkResult result = userService.batchInitAvatarAndNickname(userIds, adminId);
+
+            // 转换为 Controller 层的返回类型
+            AdminBatchUpdateUserResult response = new AdminBatchUpdateUserResult(
+                result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds()
+            );
+
+            log.info("批量初始化用户头像和昵称完成 - 总数: {}, 成功: {}, 失败: {}",
+                result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size());
+            return ResponsePojo.success(response, "批量初始化处理完成");
+
+        } catch (Exception e) {
+            log.error("批量初始化用户头像和昵称异常 - 错误: {}", e.getMessage(), e);
+            return ResponsePojo.error(null, "系统错误: " + e.getMessage());
         }
     }
 

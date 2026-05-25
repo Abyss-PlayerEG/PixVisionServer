@@ -1692,6 +1692,54 @@ public class UserServiceImpl implements UserService {
             log.warn("头像文件不存在 - {}", oldPath);
         }
     }
+
+    /**
+     * 批量初始化用户头像和昵称
+     * <p>
+     * 为指定用户列表随机分配默认头像和随机昵称，模拟注册时的初始化逻辑。
+     * 管理员不能初始化自己的头像和昵称。
+     * </p>
+     *
+     * @param userIds 目标用户 ID 列表
+     * @param adminId 执行操作的管理员 ID
+     * @return 批量操作结果
+     */
+    @Override
+    public AdminBatchOperateWorkResult batchInitAvatarAndNickname(List<Integer> userIds, Integer adminId) {
+        log.info("批量初始化用户头像和昵称 - 用户数量: {}, 管理员ID: {}", userIds.size(), adminId);
+
+        List<Integer> failedIds = new ArrayList<>();
+        int successCount = 0;
+
+        for (Integer userId : userIds) {
+            // 管理员不能修改自己的信息
+            if (userId.equals(adminId)) {
+                log.warn("管理员不能初始化自己的头像和昵称，跳过 - 用户 ID: {}", adminId);
+                continue;
+            }
+
+            // 随机头像（default/1.png ~ default/21.png），模拟注册逻辑
+            int randomAvatarNum = (int) (Math.random() * 21) + 1;
+            String randomAvatar = "default/" + randomAvatarNum + ".png";
+
+            // 随机昵称（user_xxxxxxxxxx），模拟注册时的默认昵称生成
+            String randomNickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
+
+            boolean avatarSuccess = updateUserAvatar(userId, randomAvatar, adminId);
+            boolean nicknameSuccess = updateUserNickname(userId, randomNickname, adminId);
+
+            if (avatarSuccess && nicknameSuccess) {
+                successCount++;
+                log.info("用户头像和昵称初始化成功 - 用户ID: {}, 头像: {}, 昵称: {}", userId, randomAvatar, randomNickname);
+            } else {
+                failedIds.add(userId);
+                log.warn("用户头像和昵称初始化失败 - 用户ID: {}", userId);
+            }
+        }
+
+        log.info("批量初始化完成 - 总数: {}, 成功: {}, 失败: {}", userIds.size(), successCount, failedIds.size());
+        return new AdminBatchOperateWorkResult(userIds.size(), successCount, failedIds);
+    }
 }
 
 
