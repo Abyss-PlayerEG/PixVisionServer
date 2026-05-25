@@ -42,6 +42,9 @@ public class UserDataChangeLock {
     /** 审核状态：10-通过、20-待审核、30-未过审 */
     private Integer approvalStatus;
 
+    /** 软删除标记（false-正常 / true-已删除） */
+    private Boolean isDelete;
+
     /** 数据条目创建时间戳 */
     private Timestamp createTime;
 }

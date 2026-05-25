@@ -7,9 +7,28 @@
     <insert id="insertLock" parameterType="top.playereg.pix_vision.pojo.UserDataChangeLock"
             useGeneratedKeys="true" keyProperty="lockId">
         INSERT INTO tb_user_data_change_lock
-        (user_id, type, nickname, user_role, avatar_url, old_data, approval_status, create_time)
+        (user_id, type, nickname, user_role, avatar_url, old_data, approval_status, is_delete, create_time)
         VALUES
-        (#{userId}, #{type}, #{nickname}, #{userRole}, #{avatarUrl}, #{oldData}, #{approvalStatus}, NOW())
+        (#{userId}, #{type}, #{nickname}, #{userRole}, #{avatarUrl}, #{oldData}, #{approvalStatus}, 0, NOW())
     </insert>
+
+    <!-- 查询有效待审核记录 -->
+    <select id="selectPendingByUserAndType" resultType="top.playereg.pix_vision.pojo.UserDataChangeLock">
+        SELECT * FROM tb_user_data_change_lock
+        WHERE user_id = #{userId}
+          AND type = #{type}
+          AND approval_status = 20
+          AND is_delete = 0
+    </select>
+
+    <!-- 软删除待审核记录 -->
+    <update id="updatePendingToDeleted">
+        UPDATE tb_user_data_change_lock
+        SET is_delete = 1
+        WHERE user_id = #{userId}
+          AND type = #{type}
+          AND approval_status = 20
+          AND is_delete = 0
+    </update>
 
 </mapper>

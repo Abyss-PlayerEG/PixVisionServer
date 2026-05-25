@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.mapper.UserDataChangeLockMapper;
 import top.playereg.pix_vision.mapper.UserDataMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
@@ -23,6 +24,7 @@ import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.StrSwitchUtils;
 
+import java.io.File;
 import java.util.List;
 
 @Service
@@ -487,6 +489,11 @@ public class UserServiceImpl implements UserService {
             log.info("昵称审核通过，已直接更新 - 用户ID: {}", userId);
         }
 
+        // 待审核状态时，清除旧的同类型待审核记录
+        if (approvalStatus == 20) {
+            supersedePendingLocks(userId, 100);
+        }
+
         // 插入锁定记录
         UserDataChangeLock lock = new UserDataChangeLock();
         lock.setUserId(userId);
@@ -494,6 +501,7 @@ public class UserServiceImpl implements UserService {
         lock.setNickname(nickname);
         lock.setOldData(oldNickname);
         lock.setApprovalStatus(approvalStatus);
+        lock.setIsDelete(false);
 
         int insertResult = userDataChangeLockMapper.insertLock(lock);
         if (insertResult <= 0) {
@@ -558,6 +566,9 @@ public class UserServiceImpl implements UserService {
             return true;
         }
 
+        // 清除旧的同类型待审核记录
+        supersedePendingLocks(userId, 300);
+
         // 插入锁定记录，审核状态固定为待审核（20）
         UserDataChangeLock lock = new UserDataChangeLock();
         lock.setUserId(userId);
@@ -565,6 +576,7 @@ public class UserServiceImpl implements UserService {
         lock.setAvatarUrl(newAvatarUrl);
         lock.setOldData(oldAvatar);
         lock.setApprovalStatus(20); // 固定待审核，不走 AI 审核
+        lock.setIsDelete(false);
 
         int insertResult = userDataChangeLockMapper.insertLock(lock);
         if (insertResult <= 0) {
@@ -631,6 +643,9 @@ public class UserServiceImpl implements UserService {
             return "只能申请比当前角色更高的权限";
         }
 
+        // 清除旧的同类型待审核记录
+        supersedePendingLocks(userId, 200);
+
         // 插入锁定记录，审核状态固定为待审核（20）
         UserDataChangeLock lock = new UserDataChangeLock();
         lock.setUserId(userId);
@@ -638,6 +653,7 @@ public class UserServiceImpl implements UserService {
         lock.setUserRole(targetRole);
         lock.setOldData(String.valueOf(currentRole));
         lock.setApprovalStatus(20); // 固定待审核
+        lock.setIsDelete(false);
 
         int insertResult = userDataChangeLockMapper.insertLock(lock);
         if (insertResult <= 0) {
@@ -729,6 +745,44 @@ public class UserServiceImpl implements UserService {
             return false;
         }
         return role == 11 || role == 22 || role == 55 || role == 66 || role == 77;
+    }
+
+    /**
+     * 清除同一用户同类型的旧待审核记录
+     * <p>
+     * 仅在新记录的 approvalStatus 为 20 时调用。
+     * 将旧的待审核记录软删除（is_delete = 1），
+     * 头像类型同步将 .pend 文件重命名为 .del 标记废弃。
+     * </p>
+     *
+     * @param userId 用户 ID
+     * @param type   变更类型（100/200/300）
+     */
+    private void supersedePendingLocks(Integer userId, Integer type) {
+        List<UserDataChangeLock> oldLocks = userDataChangeLockMapper
+            .selectPendingByUserAndType(userId, type);
+
+        if (oldLocks.isEmpty()) {
+            return;
+        }
+
+        for (UserDataChangeLock oldLock : oldLocks) {
+            // 头像类型：重命名旧的 .pend 文件为 .del
+            if (type == 300 && oldLock.getAvatarUrl() != null) {
+                String oldPath = FilePathConfig.AvatarPath + "/" + oldLock.getAvatarUrl();
+                String newPath = oldPath.replace(".pend", ".del");
+                File file = new File(oldPath);
+                if (file.exists() && file.renameTo(new File(newPath))) {
+                    log.info("已将旧待审核头像重命名为 .del - {}", newPath);
+                } else if (file.exists()) {
+                    log.warn("旧待审核头像重命名失败 - {}", oldPath);
+                }
+            }
+        }
+
+        // 批量软删除
+        int count = userDataChangeLockMapper.updatePendingToDeleted(userId, type);
+        log.info("已软删除旧待审核记录 - userId: {}, type: {}, 条数: {}", userId, type, count);
     }
 
     /**
