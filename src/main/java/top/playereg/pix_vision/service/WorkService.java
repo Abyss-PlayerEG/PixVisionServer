@@ -247,4 +247,12 @@ public interface WorkService {
         String workTitle,
         Integer userId
     );
+
+    /**
+     * 获取最后一个公开作品的 work_id（仅统计未删除且审核通过的作品，用于前端分页计算）
+     *
+     * @return 最大 work_id，如果不存在则返回 0
+     * @author PlayerEG
+     */
+    Integer getLastWorkId();
 }

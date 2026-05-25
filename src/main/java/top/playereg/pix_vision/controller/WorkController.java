@@ -642,4 +642,47 @@ public class WorkController {
             return ResponsePojo.error(null, "查询失败：" + e.getMessage());
         }
     }
+
+    /**
+     * 获取最后一个公开作品的 work_id
+     *
+     * @return 最大 work_id
+     * @author PlayerEG
+     */
+    @Operation(
+        summary = "获取最后一个公开作品的 work_id",
+        description = """
+            # 获取最后一个公开作品的 work_id（无需登录认证）
+
+            ## 特性
+            - 公开接口（无需认证）
+            - 仅统计未删除且审核通过的作品
+            - 使用 MAX(work_id) 直接走主键索引，性能优异
+
+            ## 参数说明：
+            - 无需参数
+
+            ## 返回说明：
+            - **查询成功**：返回 **{"data": Integer}** ，最后一个作品的 work_id
+            - **无作品**：返回 **{"data": 0}**
+
+            ## 业务逻辑：
+            1. 调用 Service 查询 MAX(work_id)
+            2. 仅过滤 is_delete=0 且 approval_status=10 的可见作品
+            3. 如果没有任何符合条件的作品，返回 0
+
+            ## 注意事项：
+            - 这是一个**公开接口**，无需 Token 认证
+            - 仅统计审核通过且未删除的作品
+            - 如果没有任何可见作品，返回 0
+            - 前端可据此计算总页数或判断是否存在作品
+            """
+    )
+    @PublicAccess("获取最后一个作品的 work_id，无需认证")
+    @GetMapping("/last-id")
+    public ResponsePojo<Integer> getLastWorkId() {
+        Integer lastWorkId = workService.getLastWorkId();
+        log.info("查询最后一个作品 work_id: {}", lastWorkId);
+        return ResponsePojo.success(lastWorkId, "查询成功");
+    }
 }

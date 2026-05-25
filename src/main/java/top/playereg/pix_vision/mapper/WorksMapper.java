@@ -232,4 +232,15 @@ public interface WorksMapper extends BaseMapper<Works> {
         @Param("workTitle") String workTitle,
         @Param("userId") Integer userId
     );
+
+    /**
+     * 查询最后一个公开作品的 work_id（仅统计未删除且审核通过的作品）
+     * <p>
+     * 使用 MAX(work_id) 直接走主键索引，性能极佳。
+     * 仅过滤 is_delete=0 且 approval_status=10 的可见作品。
+     *
+     * @return 最大 work_id，如果不存在符合条件的作品则返回 null
+     * @author PlayerEG
+     */
+    Integer selectLastWorkId();
 }

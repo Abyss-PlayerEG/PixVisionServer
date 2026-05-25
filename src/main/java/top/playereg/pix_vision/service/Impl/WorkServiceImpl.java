@@ -52,6 +52,11 @@ public class WorkServiceImpl implements WorkService {
     private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
     private static final long CACHE_TTL_HOURS = 2; // Redis缓存TTL：2小时
 
+    /** 最后作品 ID 缓存键 */
+    private static final String LAST_WORK_ID_CACHE_KEY = "pix:work:last-id";
+    /** 最后作品 ID 缓存 TTL：1分钟 */
+    private static final long LAST_WORK_ID_CACHE_TTL_MINUTES = 5;
+
     // 允许上传的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
         "jpg", "jpeg", "png"
@@ -1302,5 +1307,34 @@ public class WorkServiceImpl implements WorkService {
         return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(
             totalCount, successCount, failedWorkIds
         );
+    }
+
+    /**
+     * 获取最后一个公开作品的 work_id（仅统计未删除且审核通过的作品）
+     * <p>
+     * 优先从 Redis 读取，缓存 TTL 为 1 分钟，减少数据库压力。
+     *
+     * @return 最大 work_id，如果不存在则返回 0
+     * @author PlayerEG
+     */
+    @Override
+    public Integer getLastWorkId() {
+        // 优先从 Redis 读取缓存
+        Object cached = redisTemplate.opsForValue().get(LAST_WORK_ID_CACHE_KEY);
+        if (cached != null) {
+            return ((Number) cached).intValue();
+        }
+
+        // 缓存未命中，查询数据库
+        Integer lastWorkId = worksMapper.selectLastWorkId();
+        int result = lastWorkId != null ? lastWorkId : 0;
+
+        // 写入 Redis 缓存，TTL 1 分钟
+        redisTemplate.opsForValue().set(
+            LAST_WORK_ID_CACHE_KEY, result,
+            LAST_WORK_ID_CACHE_TTL_MINUTES, java.util.concurrent.TimeUnit.MINUTES
+        );
+
+        return result;
     }
 }
