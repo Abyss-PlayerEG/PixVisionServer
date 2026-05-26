@@ -551,4 +551,69 @@ public class CommentServiceImpl implements CommentService {
 
         return result;
     }
+
+
+    /**
+     * 批量审核评论
+     *
+     * @param commentIds 评论ID列表
+     * @param approval   审核状态（10-正常、20-待审核、30-未过审）
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     */
+    @Override
+    public AdminBatchOperateCommentResult batchApprovalComments(List<Integer> commentIds, Integer approval) {
+        if (commentIds == null || commentIds.isEmpty()) {
+            return new AdminBatchOperateCommentResult(0, 0, new ArrayList<>());
+        }
+
+        // 收集所有一级评论的二级评论 ID（级联更新审核状态）
+        List<Integer> allCommentIds = new ArrayList<>(commentIds);
+        for (Integer commentId : commentIds) {
+            try {
+                List<Integer> childCommentIds = commentsMapper.selectChildCommentIds(commentId);
+                if (childCommentIds != null && !childCommentIds.isEmpty()) {
+                    allCommentIds.addAll(childCommentIds);
+                    log.info("一级评论 {} 有 {} 个二级评论，将一起更新审核状态", commentId, childCommentIds.size());
+                }
+            } catch (Exception e) {
+                log.warn("查询一级评论 {} 的二级评论失败: {}", commentId, e.getMessage());
+            }
+        }
+
+        int totalCount = allCommentIds.size();
+        List<Integer> failedWorkIds = new ArrayList<>();
+        int successCount = 0;
+
+        // 逐个更新评论审核状态
+        for (Integer commentId : allCommentIds) {
+            try {
+                boolean result = commentsMapper.updateCommentsStatus(
+                    java.util.Collections.singletonList(commentId),
+                    approval
+                );
+
+                if (result) {
+                    successCount++;
+                } else {
+                    failedWorkIds.add(commentId);
+                    log.warn("评论 {} 审核状态更新失败（可能已删除或不存在）", commentId);
+                }
+            } catch (Exception e) {
+                log.error("评论 {} 审核状态更新异常: {}", commentId, e.getMessage());
+                failedWorkIds.add(commentId);
+            }
+        }
+
+        String statusName = switch (approval) {
+            case 10 -> "正常";
+            case 20 -> "待审核";
+            case 30 -> "未过审";
+            default -> "未知";
+        };
+
+        log.info("批量审核评论完成 - 总数: {}, 成功: {}, 失败: {}, 目标状态: {} ({})",
+            totalCount, successCount, failedWorkIds.size(), approval, statusName);
+        return new AdminBatchOperateCommentResult(totalCount, successCount, failedWorkIds);
+    }
 }
+

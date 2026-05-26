@@ -86,4 +86,13 @@ public interface CommentsMapper extends BaseMapper<Comments> {
                                        @Param("approvalStatus") Integer approvalStatus,
                                        @Param("keyword") String keyword,
                                        @Param("orderBy") String orderBy);
+
+    /**
+     * 批量更新评论状态
+     *
+     * @param commentIds 评论ID列表
+     * @param status     状态
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     */
+    boolean updateCommentsStatus(java.util.List<Integer> commentIds, Integer status);
 }

@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
@@ -180,4 +181,118 @@ public class AdminCommentsController {
         }
     }
 
+
+    /**
+     * 批量更新评论审核状态 - 管理员
+     *
+     * @param request         HTTP 请求对象
+     * @param commentIds      目标评论 ID 列表
+     * @param approvalStatus  目标审核状态（10-正常、20-待审核、30-未过审）
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     * @author blue_sky_ks
+     */
+    @Operation(
+        summary = "批量更新评论审核状态",
+        description = """
+            # 批量更新评论审核状态（需要登录认证 + 角色权限[55, 77]）
+
+            ## 特性
+            - 需要审核员或系统管理员角色（role=55 或 77）才能访问
+            - 支持批量更新多个评论的审核状态
+            - 更新一级评论时自动级联更新其所有二级评论的审核状态
+            - 支持三种审核状态：10-正常、20-待审核、30-未过审
+            - 返回详细的操作结果统计信息
+
+            ## 参数说明：
+            - **commentIds**: **评论 ID 列表**，List<Integer> 类型，请求参数，必填，不能为空
+            - **approvalStatus**: **审核状态**，Integer 类型，请求参数，必填，可选值：
+              - 10: 正常（通过审核）
+              - 20: 待审核
+              - 30: 未过审（违规）
+
+            ## 返回说明：
+            - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息
+            - **全部失败**：返回错误提示
+            - **参数错误**：返回错误提示
+
+            ## 业务逻辑：
+            1. 验证当前用户是否为审核员或系统管理员（由拦截器自动验证）
+            2. 校验评论 ID 列表和审核状态参数的有效性
+            3. 如果是一级评论则查询其所有二级评论，一起更新审核状态
+            4. 逐个更新 tb_comments 表中对应评论的 approval_status 字段
+            5. 只更新未删除的评论（is_delete = 0）
+            6. 记录操作结果并返回统计信息
+
+            ## 注意事项：
+            - 设置为 30（未过审）后，评论将在前端不可见
+            - 设置为 10（正常）后，评论将在前端重新可见
+            - 此操作会立即生效，无需重启服务
+            - 更新一级评论时会自动级联更新所有二级评论
+            - 已删除的评论不会被更新
+            - 即使部分评论更新失败，其他评论仍会成功更新
+            """
+    )
+    @PostMapping("/update/approval-status")
+    public ResponsePojo<AdminBatchOperateCommentResult> adminUpdateCommentsApprovalStatus(
+        HttpServletRequest request,
+        @Parameter(description = "目标评论 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> commentIds,
+        @Schema(description = "审核状态：10-正常、20-待审核、30-未过审", allowableValues = {"10", "20", "30"}, example = "30") @RequestParam Integer approvalStatus
+    ) {
+        // 参数校验
+        if (commentIds == null || commentIds.isEmpty()) {
+            log.warn("评论 ID 列表为空");
+            return ResponsePojo.error(null, "评论 ID 列表不能为空");
+        }
+
+        if (approvalStatus == null) {
+            log.warn("审核状态为空");
+            return ResponsePojo.error(null, "审核状态不能为空");
+        }
+
+        // 验证审核状态的合法性
+        if (approvalStatus != 10 && approvalStatus != 20 && approvalStatus != 30) {
+            log.warn("无效的审核状态: {}", approvalStatus);
+            return ResponsePojo.error(null, "审核状态无效，可选值：10-正常、20-待审核、30-未过审");
+        }
+
+        // 从 Token 中获取操作者 ID
+        Integer userId = (Integer) request.getAttribute("userId");
+        if (userId == null) {
+            log.warn("无法获取用户 ID");
+            return ResponsePojo.error(null, "未授权访问");
+        }
+
+        try {
+            // 调用服务层批量更新评论审核状态
+            AdminBatchOperateCommentResult result = commentService.batchApprovalComments(commentIds, approvalStatus);
+
+            String statusName = getStatusName(approvalStatus);
+            if (result.getSuccessCount() > 0) {
+                log.info("批量更新评论审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {} ({}), 操作者 ID: {}",
+                    result.getTotalCount(), result.getSuccessCount(), result.getFailedWorkIds().size(), approvalStatus, statusName, userId);
+                return ResponsePojo.success(result, "批量更新评论审核状态处理完成");
+            } else {
+                log.warn("批量更新评论审核状态全部失败，评论 ID 列表: {}, 目标状态: {} ({}), 操作者 ID: {}", commentIds, approvalStatus, statusName, userId);
+                return ResponsePojo.error(result, "更新失败，请检查评论 ID 是否正确");
+            }
+        } catch (Exception e) {
+            log.error("批量更新评论审核状态异常，评论 ID 列表: {}, 目标状态: {}, 操作者 ID: {}, 错误: {}", commentIds, approvalStatus, userId, e.getMessage(), e);
+            return ResponsePojo.error(null, "更新失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取审核状态名称
+     *
+     * @param approvalStatus 审核状态代码
+     * @return 状态名称
+     */
+    private String getStatusName(Integer approvalStatus) {
+        return switch (approvalStatus) {
+            case 10 -> "正常";
+            case 20 -> "待审核";
+            case 30 -> "未过审";
+            default -> "未知";
+        };
+    }
 }

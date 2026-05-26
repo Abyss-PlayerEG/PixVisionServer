@@ -96,4 +96,13 @@ public interface CommentService {
                                     Integer workId, Integer userId,
                                     Integer commentFloor, Integer approvalStatus,
                                     String keyword, String orderBy);
+
+    /**
+     * 批量审核评论
+     *
+     * @param commentIds 评论ID列表
+     * @param approval   审核状态（10-正常、20-待审核、30-未过审）
+     * @return 批量操作结果（包含总数、成功数、失败ID列表）
+     */
+    AdminBatchOperateCommentResult batchApprovalComments(List<Integer> commentIds, Integer approval);
 }
