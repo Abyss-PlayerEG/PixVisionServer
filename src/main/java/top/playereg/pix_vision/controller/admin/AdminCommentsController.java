@@ -12,6 +12,7 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.pojo.commentsPojo.Comments;
 import top.playereg.pix_vision.service.CommentService;
+import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -69,6 +70,7 @@ public class AdminCommentsController {
             - 建议在执行前确认评论 ID 的正确性
             """
     )
+    @LogRecord(module = "评论管理", event = "批量删除评论")
     @PostMapping("/delete")
     public ResponsePojo<AdminBatchOperateCommentResult> adminDeleteComments(
         @Parameter(description = "目标评论 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> commentIds
@@ -151,6 +153,7 @@ public class AdminCommentsController {
             - 返回完整的 Comments 实体字段
             """
     )
+    @LogRecord(module = "评论管理", event = "分页查询评论")
     @GetMapping("/page/{current}/{size}")
     public ResponsePojo<IPage<Comments>> getCommentsPage(
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
@@ -232,6 +235,7 @@ public class AdminCommentsController {
             - 即使部分评论更新失败，其他评论仍会成功更新
             """
     )
+    @LogRecord(module = "评论管理", event = "批量更新评论审核状态")
     @PostMapping("/update/approval-status")
     public ResponsePojo<AdminBatchOperateCommentResult> adminUpdateCommentsApprovalStatus(
         HttpServletRequest request,
