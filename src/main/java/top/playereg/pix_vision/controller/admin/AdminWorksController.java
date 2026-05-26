@@ -12,6 +12,7 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.WorkService;
+import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -74,6 +75,7 @@ public class AdminWorksController {
             - 即使部分作品更新失败，其他作品仍会成功更新
             """
     )
+    @LogRecord(module = "作品管理", event = "批量更新作品审核状态")
     @PostMapping("/update/approval-status")
     public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateApprovalStatus(
         HttpServletRequest request,
@@ -168,6 +170,7 @@ public class AdminWorksController {
             - 建议在执行前确认作品 ID 的正确性
             """
     )
+    @LogRecord(module = "作品管理", event = "批量删除作品")
     @PostMapping("/delete")
     @RequireRole(value = {77})
     public ResponsePojo<AdminBatchOperateWorkResult> adminDeleteWorks(
@@ -261,6 +264,7 @@ public class AdminWorksController {
             - 返回完整的 Works 实体字段
             """
     )
+    @LogRecord(module = "作品管理", event = "分页查询作品")
     @GetMapping("/page/{current}/{size}")
     public ResponsePojo<IPage<Works>> getAdminWorksPage(
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
@@ -327,6 +331,7 @@ public class AdminWorksController {
             - 即使部分作品更新失败，其他作品仍会成功更新
             """
     )
+    @LogRecord(module = "作品管理", event = "批量更新作品标题")
     @PostMapping("/update/work-title")
     public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateWorkTitle(
         HttpServletRequest request,

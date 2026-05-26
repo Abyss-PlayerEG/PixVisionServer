@@ -12,4 +12,26 @@
                 #{log_event})
     </insert>
 
+    <!-- 分页查询操作日志（用户名通过 Redis/DB 二次解析，支持关键字过滤 log_event） -->
+    <select id="selectOperateLogsPage" resultType="top.playereg.pix_vision.pojo.OperateLogVO">
+        SELECT l.sys_log_id,
+               l.user_id,
+               l.log_datetime,
+               l.log_event
+        FROM tb_sys_logs l
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND l.log_event LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy == 'oldest'">
+                ORDER BY l.log_datetime ASC
+            </when>
+            <otherwise>
+                ORDER BY l.log_datetime DESC
+            </otherwise>
+        </choose>
+    </select>
+
 </mapper>

@@ -12,6 +12,7 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.UserDataChangeLockVO;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -80,6 +81,7 @@ public class AdminUserDataChangeController {
             - 权限变更通过后会清除用户角色缓存
             """
     )
+    @LogRecord(module = "用户数据变更审核", event = "批量审核用户数据变更")
     @PostMapping("/review")
     public ResponsePojo<AdminBatchOperateWorkResult> batchReview(
         HttpServletRequest request,
@@ -161,6 +163,7 @@ public class AdminUserDataChangeController {
             - 查询结果为空时返回空分页对象和成功状态
             """
     )
+    @LogRecord(module = "用户数据变更审核", event = "分页查询待审核记录")
     @GetMapping("/pending/{current}/{size}")
     public ResponsePojo<IPage<UserDataChangeLockVO>> getPendingPage(
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Long current,

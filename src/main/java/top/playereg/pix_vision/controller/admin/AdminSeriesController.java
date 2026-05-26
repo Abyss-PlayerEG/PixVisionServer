@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.SeriesService;
+import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -72,6 +73,7 @@ public class AdminSeriesController {
             - 即使部分合集更新失败，其他合集仍会成功更新
             """
     )
+    @LogRecord(module = "合集管理", event = "批量更新合集审核状态")
     @PostMapping("/update/approval-status")
     public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateApprovalStatus(
         HttpServletRequest request,
@@ -187,6 +189,7 @@ public class AdminSeriesController {
             - 即使部分合集删除失败，其他合集仍会成功删除
             """
     )
+    @LogRecord(module = "合集管理", event = "批量删除合集")
     @PostMapping("/delete")
     @RequireRole(value = {77})
     public ResponsePojo<AdminBatchOperateWorkResult> batchDeleteSeries(
@@ -275,6 +278,7 @@ public class AdminSeriesController {
             - 即使部分合集更新失败，其他合集仍会成功更新
             """
     )
+    @LogRecord(module = "合集管理", event = "批量更新合集信息")
     @PostMapping("/update/series-info")
     @RequireRole(value = {77})
     public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateSeriesInfo(

@@ -21,6 +21,7 @@ import top.playereg.pix_vision.service.EmailService;
 import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -95,6 +96,7 @@ public class AdminUserController {
             - 需要强制所有用户重新验证权限时
             """
     )
+    @LogRecord(module = "用户管理", event = "刷新权限缓存")
     @RequireRole(value = {77})
     @PostMapping("/refresh-permission-cache")
     public ResponsePojo<Integer> refreshPermissionCache() {
@@ -176,6 +178,7 @@ public class AdminUserController {
             - 重置昵称时生成的随机昵称格式为 "user_" + 10位随机字母数字组合
             """
     )
+    @LogRecord(module = "用户管理", event = "批量更新用户信息")
     @RequireRole(value = {77})
     @PostMapping("/update/user-role-status")
     public ResponsePojo<AdminBatchUpdateUserResult> batchUpdateUserInfo(
@@ -345,6 +348,7 @@ public class AdminUserController {
             - 建议谨慎使用，确保有充分的理由
             """
     )
+    @LogRecord(module = "用户管理", event = "批量删除用户")
     @RequireRole(value = {77})
     @PostMapping("/delete")
     public ResponsePojo<AdminBatchDeleteUserResult> batchDeleteUsers(
@@ -479,6 +483,7 @@ public class AdminUserController {
             - 两次输入的密码必须完全一致
             """
     )
+    @LogRecord(module = "用户管理", event = "创建新用户")
     @RequireRole(value = {77})
     @PostMapping("/create")
     public ResponsePojo<Boolean> createUser(
@@ -600,6 +605,7 @@ public class AdminUserController {
             - 如果某个用户不存在或处理失败，会跳过该用户并继续处理下一个
             """
     )
+    @LogRecord(module = "用户管理", event = "批量重置用户密码")
     @RequireRole(value = {77})
     @PostMapping("/update/password")
     public ResponsePojo<AdminResetPasswordResult> batchUpdateUserPassword(
@@ -715,6 +721,7 @@ public class AdminUserController {
             - 初始化会直接覆盖用户当前的头像和昵称
             """
     )
+    @LogRecord(module = "用户管理", event = "批量初始化用户头像昵称")
     @RequireRole(value = {77})
     @PostMapping("/init-avatar-nickname")
     public ResponsePojo<AdminBatchUpdateUserResult> batchInitAvatarAndNickname(
@@ -826,6 +833,7 @@ public class AdminUserController {
             - 所有筛选条件均为可选，不传则不过滤
             """
     )
+    @LogRecord(module = "用户管理", event = "分页查询用户")
     @PostMapping("/page-select")
     public ResponsePojo<IPage<User>> selectUserPage(
         @Parameter(description = "页码", example = "1", required = true ) @RequestParam( defaultValue = "1") Integer page,
