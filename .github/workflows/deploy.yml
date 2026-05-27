@@ -43,6 +43,7 @@ jobs:
           source: 'target/PixVisionServer.jar.gz'
           target: ${{ secrets.DEPLOY_PATH }}
           strip_components: 1
+          debug: true
 
       - name: Restart Service on Server
         uses: appleboy/ssh-action@v1.0.3
