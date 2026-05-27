@@ -237,6 +237,67 @@ public class ImageController {
     }
 
     /**
+     * 管理员查看非公开头像图片（.fail / .pend / .del）
+     *
+     * @param filePath 数据库存储的头像图片文件名（正常格式，如：uuid.png）
+     * @return 图片资源（二进制数据）
+     * @author PlayerEG
+     */
+    @Operation(summary = "管理员查看非公开头像图片", description = """
+        # 管理员查看非公开头像图片（需要登录认证 + 角色权限[55, 77]）
+
+        ## 特性
+        - Token 认证（通过拦截器自动验证）
+        - 角色权限控制（仅审核员和系统管理员）
+        - 路径安全校验（防目录遍历攻击）
+        - 文件类型白名单（JPG/JPEG/PNG）
+        - **按优先级查找非公开文件后缀**：.fail → .pend → .del → 正常
+        - 适用于审核员查看违规头像、待审核头像、已删除头像
+
+        ## 权限要求
+        - **角色代码 55**：审核员
+        - **角色代码 77**：系统管理员
+        - 其他角色访问将返回 **403 Forbidden**
+
+        ## 参数说明：
+        - filePath: **数据库存储的头像图片文件名**，字符串类型，必填，为正常格式（如 uuid.png），不含 .fail/.pend/.del 后缀
+
+        ## 返回说明：
+        - **获取成功**：直接返回图片二进制数据，Content-Type 为 image/png 或 image/jpeg
+        - **未授权**：返回 401 状态码（Token 无效或不存在）
+        - **权限不足**：返回 403 状态码（角色不符合要求）
+        - **文件不存在**：返回 404 Not Found（所有后缀均未找到）
+        - **非法路径**：返回 400 Bad Request（包含 .. 或 / 开头）
+        - **不支持的格式**：返回 400 Bad Request（非 JPG/JPEG/PNG 格式）
+        - **服务器错误**：返回 500 Internal Server Error
+
+        ## 业务逻辑：
+        1. 校验文件路径安全性（禁止 .. 和绝对路径）
+        2. 检查文件扩展名是否在白名单中（jpg/jpeg/png）
+        3. 按优先级查找实际文件：
+           - `.fail` 后缀（违规未过审头像）
+           - `.pend` 后缀（待审核头像）
+           - `.del` 后缀（已删除头像）
+           - 正常格式（审核通过头像）
+        4. 构建完整文件路径并返回图片
+
+        ## 注意事项：
+        - 该接口**需要认证**，必须在请求头中携带有效的 Token
+        - **仅角色代码 55（审核员）和 77（系统管理员）**可以访问
+        - 传入的 filePath 为数据库存储的正常格式文件名（如 uuid.png），**不需要**手动添加 .fail/.pend/.del 后缀
+        - 接口会自动按优先级查找实际存在的文件
+        - 与公开接口 `/api/image/avatar/get` 的区别：公开接口仅查找正常文件，本接口优先查找非公开后缀文件
+        - 用于审核员在管理后台查看待审核、违规或已删除的头像图片
+        """)
+    @RequireRole(value = {55, 77})
+    @GetMapping("/avatar/admin-view")
+    public ResponseEntity<Resource> adminViewAvatarImage(@Parameter(description = "数据库存储的头像图片文件名（正常格式，如：uuid.png）", required = true, example = "a1b2c3d4.png") @RequestParam String filePath) {
+        // 按管理员优先级查找文件（.fail → .pend → .del → 正常）
+        String actualFilePath = resolveAdminAvatarFilePath(filePath);
+        return getImageResource(FilePathConfig.AvatarPath, actualFilePath, "管理员查看头像");
+    }
+
+    /**
      * 获取Logo图片
      *
      * @param filePath 图像文件名（如：dark.png、light.png）
@@ -775,6 +836,24 @@ public class ImageController {
         // 公开接口仅查找正常格式文件（无后缀），待审核/未过审文件不可公开访问
         return resolveFilePathWithSuffixes(FilePathConfig.AvatarPath, filePath,
             new String[]{""});
+    }
+
+    /**
+     * 管理员视角解析头像文件路径（优先查找非公开后缀文件）
+     * <p>
+     * 与公开接口 {@link #resolveAvatarFilePath(String)} 不同，本方法优先查找非公开后缀的文件。
+     * 用于管理员在后台审核流程中查看各种状态的头像图片。
+     *
+     * @param filePath 数据库存储的文件名（正常格式）
+     * @return 实际文件路径（根据文件系统中存在的文件添加相应后缀）
+     * @author PlayerEG
+     * @see #resolveAvatarFilePath(String)
+     * @see #resolveFilePathWithSuffixes(String, String, String[])
+     */
+    private String resolveAdminAvatarFilePath(String filePath) {
+        // 管理员优先级：.fail → .pend → .del → 正常格式
+        return resolveFilePathWithSuffixes(FilePathConfig.AvatarPath, filePath,
+            new String[]{".fail", ".pend", ".del", ""});
     }
 
     /**
