@@ -664,6 +664,76 @@ public class ImageController {
     }
 
     /**
+     * 恢复初始头像
+     *
+     * @param request HTTP 请求对象（用于获取用户 ID）
+     * @return 响应结果，包含恢复后的头像路径
+     * @author PlayerEG
+     */
+    @Operation(summary = "恢复初始头像", description = """
+        # 恢复初始头像（需要登录认证）
+
+        ## 特性
+        - Token 认证（通过拦截器自动验证）
+        - 随机分配默认头像（default/1.png ~ default/21.png）
+        - 模拟注册时的随机头像分配逻辑
+        - 直接更新头像（无需人工审核）
+
+        ## 参数说明：
+        - 无需传入参数，从 Token 中自动获取当前登录用户
+
+        ## 返回说明：
+        - **恢复成功**：返回 200 状态码和成功消息，头像路径在 data 中
+        - **未授权**：返回 401 状态码（Token 无效或不存在）
+        - **服务器错误**：返回 500 状态码
+
+        ## 业务逻辑：
+        1. 从 Token 中获取当前登录用户的 ID
+        2. 随机生成 1-21 的整数，拼接默认头像路径 default/{num}.png
+        3. 直接调用 updateUserAvatar 更新用户头像（跳过审核）
+        4. 返回恢复后的头像路径
+
+        ## 注意事项：
+        - 该接口**需要认证**，必须在请求头中携带有效的 Token
+        - 头像恢复**直接生效**，无需等待人工审核
+        - 默认头像文件已预置于 ~/.pix_vision/data/avatar/default/ 目录
+        - 每次调用随机分配一个默认头像
+        - 与注册时的随机头像分配逻辑一致
+        """)
+    @PostMapping("/avatar/reset-default")
+    public ResponseEntity<ResponsePojo<String>> resetDefaultAvatar(HttpServletRequest request) {
+        try {
+            // 1. 从 request 中获取用户 ID（由 JWT 拦截器设置）
+            Integer userId = (Integer) request.getAttribute("userId");
+            if (userId == null) {
+                log.warn("未获取到用户 ID，请先登录");
+                return ResponseEntity.status(401).body(ResponsePojo.error(null, "未授权访问：请先登录"));
+            }
+
+            // 2. 随机生成默认头像路径（1.png-21.png），模拟注册逻辑
+            int randomAvatarNum = (int) (Math.random() * 21) + 1;
+            String avatarUrl = "default/" + randomAvatarNum + ".png";
+
+            log.info("为用户 {} 随机分配初始头像: {}", userId, avatarUrl);
+
+            // 3. 直接更新用户头像（跳过审核流程）
+            Boolean updateResult = userService.updateUserAvatar(userId, avatarUrl, userId);
+
+            if (!updateResult) {
+                log.error("恢复初始头像失败，用户 ID: {}", userId);
+                return ResponseEntity.status(500).body(ResponsePojo.error(null, "恢复初始头像失败"));
+            }
+
+            log.info("初始头像恢复成功，用户 ID: {}, 头像路径: {}", userId, avatarUrl);
+            return ResponseEntity.ok(ResponsePojo.success(avatarUrl, "初始头像恢复成功"));
+
+        } catch (Exception e) {
+            log.error("恢复初始头像失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(ResponsePojo.error(null, "恢复初始头像失败: " + e.getMessage()));
+        }
+    }
+
+    /**
      * 上传作品图片
      *
      * @param file       作品图片文件（JPG/JPEG/PNG 格式，最大 32MB）

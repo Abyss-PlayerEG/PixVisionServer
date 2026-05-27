@@ -38,11 +38,14 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE || '' }}
+          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.SSH_PORT || 22 }}
           source: 'target/PixVisionServer.jar.gz'
           target: ${{ secrets.DEPLOY_PATH }}
           strip_components: 1
+          timeout: 120s
+          command_timeout: 10m
+          rm: true
           debug: true
 
       - name: Restart Service on Server
@@ -51,8 +54,10 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE || '' }}
+          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.SSH_PORT || 22 }}
+          timeout: 120s
+          command_timeout: 10m
           script: |
             set -e
 
@@ -62,12 +67,15 @@ jobs:
             BACKUP_JAR="$APP_DIR/PixVisionServer.jar.bak"
             GZ_FILE="$DEPLOY_DIR/PixVisionServer.jar.gz"
 
+            # 确保目标目录存在
+            sudo mkdir -p "$APP_DIR"
+
             if [ ! -f "$GZ_FILE" ]; then
               echo "ERROR: Compressed JAR not found: $GZ_FILE"
               exit 1
             fi
 
-            echo "Found compressed JAR: $GZ_FILE"
+            echo "Found compressed JAR: $(ls -lh $GZ_FILE | awk '{print $5}')"
 
             # 解压 JAR
             echo "Decompressing JAR..."
