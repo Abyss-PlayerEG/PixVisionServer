@@ -18,4 +18,16 @@ public interface BilibiliApiService {
      * @throws RuntimeException 当 API 调用失败时抛出异常
      */
     Boolean checkAccountExists(String userId);
+
+    /**
+     * 获取 B站用户头像 URL
+     * <p>
+     * 调用 Python 辅助服务获取指定 B站用户的头像地址
+     * </p>
+     *
+     * @param userId B站用户 ID（mid）
+     * @return 用户头像 URL
+     * @throws RuntimeException 当 API 调用失败或用户不存在时抛出异常
+     */
+    String getUserFaceUrl(String userId);
 }

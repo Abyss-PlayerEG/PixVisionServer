@@ -77,6 +77,16 @@ public class PythonServerConfig {
     }
 
     /**
+     * 获取 B站用户信息接口完整 URL（带用户 ID 路径参数）
+     *
+     * @param userId B站用户 ID（mid）
+     * @return 完整的用户信息接口地址
+     */
+    public String getBilibiliUserInfoUrl(String userId) {
+        return baseUrl + bilibili.getAccountCheckPath() + "/" + userId + "/info";
+    }
+
+    /**
      * AI 文案审核服务子配置
      */
     @Data

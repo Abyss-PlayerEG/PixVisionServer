@@ -13,10 +13,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.WorkUploadResult;
+import top.playereg.pix_vision.pojo.userPojo.UserData;
+import top.playereg.pix_vision.service.BilibiliApiService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
@@ -61,6 +64,12 @@ public class ImageController {
 
     @Autowired
     private top.playereg.pix_vision.mapper.WorksMapper worksMapper;
+
+    @Autowired
+    private BilibiliApiService bilibiliApiService;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     // 允许访问的图片扩展名白名单（仅支持 JPG、JPEG、PNG）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png");
@@ -499,6 +508,158 @@ public class ImageController {
         } catch (Exception e) {
             log.error("头像上传失败: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(ResponsePojo.error(null, "头像上传失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 同步Bilibili头像
+     *
+     * @param request HTTP 请求对象（用于获取用户 ID）
+     * @return 响应结果，包含同步后的头像路径
+     * @author PlayerEG
+     */
+    @Operation(summary = "同步Bilibili头像", description = """
+        # 同步Bilibili头像（需要登录认证）
+
+        ## 特性
+        - Token 认证（通过拦截器自动验证）
+        - 自动从数据库查询已绑定的 Bilibili UID
+        - 调用 Python 辅助服务获取 Bilibili 用户头像 URL
+        - 下载头像图片保存到本地（不做压缩，保持原始尺寸）
+        - UUID 唯一文件名生成
+        - 直接更新头像（无需人工审核）
+
+        ## 参数说明：
+        - 无需传入参数，从 Token 中自动获取当前登录用户
+
+        ## 返回说明：
+        - **同步成功**：返回 200 状态码和成功消息，头像路径在 data 中
+        - **未授权**：返回 401 状态码（Token 无效或不存在）
+        - **未绑定Bilibili账号**：返回 400 状态码和"未绑定Bilibili账号"提示
+        - **获取头像信息失败**：返回 500 状态码和"获取Bilibili用户信息失败"提示
+        - **头像下载失败**：返回 500 状态码和"下载Bilibili头像失败"提示
+        - **服务器错误**：返回 500 状态码
+
+        ## 业务逻辑：
+        1. 从 Token 中获取当前登录用户的 ID
+        2. 查询用户拓展数据，获取已绑定的 Bilibili UID
+        3. 如果未绑定 Bilibili 账号，返回错误提示
+        4. 调用 Python 辅助服务获取 Bilibili 用户的头像 URL（face 字段）
+        5. 通过 RestTemplate 下载头像图片字节流
+        6. 生成唯一的文件名（UUID.png）
+        7. 保存文件到 ~/.pix_vision/data/avatar/ 目录
+        8. 直接调用 updateUserAvatar 更新用户头像（跳过审核）
+        9. 返回同步后的头像路径
+
+        ## 注意事项：
+        - 该接口**需要认证**，必须在请求头中携带有效的 Token
+        - 头像图片**不做压缩处理**，保持原始尺寸和格式
+        - 头像同步**直接生效**，无需等待人工审核
+        - 与上传头像接口不同，同步的头像不会经过人工审核流程
+        - 如果 Bilibili 头像 URL 无效或下载失败，会返回错误
+        - 每次同步都会下载最新的 Bilibili 头像并覆盖本地文件
+        """)
+    @PostMapping("/avatar/sync-bilibili")
+    public ResponseEntity<ResponsePojo<String>> syncBilibiliAvatar(HttpServletRequest request) {
+        try {
+            // 1. 从 request 中获取用户 ID（由 JWT 拦截器设置）
+            Integer userId = (Integer) request.getAttribute("userId");
+            if (userId == null) {
+                log.warn("未获取到用户 ID，请先登录");
+                return ResponseEntity.status(401).body(ResponsePojo.error(null, "未授权访问：请先登录"));
+            }
+
+            // 2. 查询用户拓展数据，获取已绑定的 Bilibili UID
+            List<UserData> userDataList = userService.getUserDataList(userId);
+            if (userDataList == null || userDataList.isEmpty()) {
+                log.warn("用户未绑定任何拓展数据，用户 ID: {}", userId);
+                return ResponseEntity.badRequest().body(ResponsePojo.error(null, "未绑定Bilibili账号"));
+            }
+
+            String bilibiliUid = null;
+            for (UserData data : userDataList) {
+                if ("Bilibili".equals(data.getUser_data_name())) {
+                    bilibiliUid = data.getUser_data();
+                    break;
+                }
+            }
+
+            if (bilibiliUid == null || bilibiliUid.isEmpty()) {
+                log.warn("用户未绑定 Bilibili 账号，用户 ID: {}", userId);
+                return ResponseEntity.badRequest().body(ResponsePojo.error(null, "未绑定Bilibili账号"));
+            }
+
+            log.info("用户 {} 已绑定 Bilibili UID: {}", userId, bilibiliUid);
+
+            // 3. 调用 Python 辅助服务获取 Bilibili 用户头像 URL
+            String faceUrl;
+            try {
+                faceUrl = bilibiliApiService.getUserFaceUrl(bilibiliUid);
+            } catch (RuntimeException e) {
+                log.error("获取 Bilibili 用户信息失败: userId={}, bilibiliUid={}, error={}", userId, bilibiliUid, e.getMessage());
+                return ResponseEntity.status(500).body(ResponsePojo.error(null, "获取Bilibili用户信息失败: " + e.getMessage()));
+            }
+
+            if (faceUrl == null || faceUrl.isEmpty()) {
+                log.error("Bilibili 用户头像 URL 为空，bilibiliUid: {}", bilibiliUid);
+                return ResponseEntity.status(500).body(ResponsePojo.error(null, "Bilibili用户头像URL为空"));
+            }
+
+            log.info("获取到 Bilibili 头像 URL: {}", faceUrl);
+
+            // 4. 下载 Bilibili 头像图片
+            byte[] avatarBytes;
+            try {
+                avatarBytes = restTemplate.getForObject(faceUrl, byte[].class);
+            } catch (Exception e) {
+                log.error("下载 Bilibili 头像失败: url={}, error={}", faceUrl, e.getMessage());
+                return ResponseEntity.status(500).body(ResponsePojo.error(null, "下载Bilibili头像失败: " + e.getMessage()));
+            }
+
+            if (avatarBytes == null || avatarBytes.length < 4) {
+                log.error("下载的 Bilibili 头像数据为空或太小，大小: {} bytes", avatarBytes != null ? avatarBytes.length : 0);
+                return ResponseEntity.status(500).body(ResponsePojo.error(null, "下载Bilibili头像失败：数据为空"));
+            }
+
+            // 5. 验证是否为有效的图片格式
+            if (!ImageUtils.isValidImage(avatarBytes)) {
+                log.error("下载的文件不是有效的图片格式，文件大小: {} bytes", avatarBytes.length);
+                return ResponseEntity.status(500).body(ResponsePojo.error(null, "下载的文件不是有效的图片格式"));
+            }
+
+            log.info("Bilibili 头像下载成功，文件大小: {} bytes", avatarBytes.length);
+
+            // 6. 生成唯一文件名并保存（不做压缩，直接保存原始图片）
+            String fileName = UUID.randomUUID().toString().replace("-", "") + ".png";
+            String savePath = Paths.get(FilePathConfig.AvatarPath, fileName).toString();
+
+            File saveFile = new File(savePath);
+            File parentDir = saveFile.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+
+            FileUtil.writeBytes(avatarBytes, saveFile);
+            log.info("Bilibili 头像文件保存成功: {}", savePath);
+
+            // 7. 直接更新用户头像（跳过审核流程）
+            Boolean updateResult = userService.updateUserAvatar(userId, fileName, userId);
+
+            if (!updateResult) {
+                log.error("更新用户头像失败，用户 ID: {}", userId);
+                // 删除已保存的头像文件
+                if (saveFile.exists()) {
+                    saveFile.delete();
+                }
+                return ResponseEntity.status(500).body(ResponsePojo.error(null, "更新用户头像失败"));
+            }
+
+            log.info("Bilibili 头像同步成功，用户 ID: {}, 头像路径: {}", userId, fileName);
+            return ResponseEntity.ok(ResponsePojo.success(fileName, "Bilibili头像同步成功"));
+
+        } catch (Exception e) {
+            log.error("Bilibili 头像同步失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(ResponsePojo.error(null, "Bilibili头像同步失败: " + e.getMessage()));
         }
     }
 

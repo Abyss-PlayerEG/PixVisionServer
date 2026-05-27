@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import top.playereg.pix_vision.config.PythonServerConfig;
 import top.playereg.pix_vision.pojo.BilibiliAccountCheckResult;
+import top.playereg.pix_vision.pojo.BilibiliUserInfoResult;
 import top.playereg.pix_vision.pojo.PythonApiResponse;
 import top.playereg.pix_vision.service.BilibiliApiService;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -76,6 +77,53 @@ public class BilibiliApiServiceImpl implements BilibiliApiService {
 
         } catch (RuntimeException e) {
             // 重新抛出业务异常
+            throw e;
+        } catch (Exception e) {
+            logger.error("调用 B站 API 异常: userId={}, error={}", userId, e.getMessage(), e);
+            throw new RuntimeException("调用 B站 API 失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 获取 B站用户头像 URL
+     *
+     * @param userId B站用户 ID（mid）
+     * @return 用户头像 URL
+     * @throws RuntimeException 当 API 调用失败或用户不存在时抛出异常
+     */
+    @Override
+    public String getUserFaceUrl(String userId) {
+        try {
+            String url = pythonServerConfig.getBilibiliUserInfoUrl(userId);
+
+            logger.info("调用 B站用户信息接口: {}", url);
+
+            PythonApiResponse<BilibiliUserInfoResult> apiResponse = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<PythonApiResponse<BilibiliUserInfoResult>>() {}
+            ).getBody();
+
+            if (apiResponse == null || !apiResponse.isSuccess()) {
+                String errorMsg = apiResponse != null ? apiResponse.getMessage() : "null";
+                logger.error("获取 B站用户信息失败: {}", errorMsg);
+                throw new RuntimeException("获取 B站用户信息失败: " + errorMsg);
+            }
+
+            BilibiliUserInfoResult result = apiResponse.getData();
+            if (result == null || result.getInfo() == null) {
+                logger.error("B站用户信息结果为空");
+                throw new RuntimeException("B站用户信息结果为空");
+            }
+
+            String faceUrl = result.getInfo().getFace();
+            String userName = result.getInfo().getName();
+            logger.info("获取 B站用户信息成功: userId={}, name={}, faceUrl={}", userId, userName, faceUrl);
+
+            return faceUrl;
+
+        } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             logger.error("调用 B站 API 异常: userId={}, error={}", userId, e.getMessage(), e);
