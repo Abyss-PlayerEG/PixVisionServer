@@ -63,6 +63,16 @@ public interface SeriesService {
     Boolean batchAddWorksToSeries(Integer seriesId, java.util.List<Integer> workIds, Integer userId);
 
     /**
+     * 批量将作品从指定合集中移除
+     *
+     * @param seriesId 合集 ID
+     * @param workIds  作品 ID 列表
+     * @param userId   当前用户 ID（用于权限验证）
+     * @return 移除结果
+     */
+    Boolean batchRemoveWorksFromSeries(Integer seriesId, java.util.List<Integer> workIds, Integer userId);
+
+    /**
      * 批量更新系列审核状态（管理员操作）
      *
      * @param seriesIds       系列 ID 列表

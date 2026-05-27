@@ -17,7 +17,9 @@ import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 系列管理控制器
@@ -512,7 +514,7 @@ public class SeriesController {
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
-            - workIds: **作品 ID 列表**，整形数组类型，必填，单次最多 100 个
+            - workIds: **作品 ID 列表**，字符串类型，必填，逗号分隔，如 "1,2,3"，单次最多 100 个
             - seriesId: **合集 ID**，Integer 类型，必填
 
             ## 返回说明：
@@ -520,6 +522,7 @@ public class SeriesController {
             - **Token 不存在**：返回 `{"data": null}` 和 "Token 不存在" 提示
             - **Token 已失效**：返回 `{"data": null}` 和 "Token 已失效" 提示
             - **作品 ID 列表为空**：返回 `{"data": false}` 和 "作品 ID 列表不能为空" 提示
+            - **作品 ID 格式错误**：返回 `{"data": false}` 和 "作品 ID 格式错误" 提示
             - **合集 ID 无效**：返回 `{"data": false}` 和 "合集 ID 无效" 提示
             - **合集不存在**：返回 `{"data": false}` 和 "合集不存在或已删除" 提示
             - **无权操作合集**：返回 `{"data": false}` 和 "无权操作该合集" 提示
@@ -529,12 +532,13 @@ public class SeriesController {
             ## 业务逻辑：
             1. 从请求中提取并验证 Token
             2. 从 Token 中解析用户 ID
-            3. 校验作品 ID 列表和合集 ID 参数有效性
-            4. 验证合集是否存在且未删除
-            5. 验证合集归属权（只能操作自己的合集）
-            6. 查询所有作品并过滤有效作品（未删除且属于当前用户）
-            7. 批量更新作品的 series_id 为指定合集 ID（SQL 层面再次验证 user_id，确保只能更新自己的作品）
-            8. 返回添加结果
+            3. 解析逗号分隔的作品 ID 字符串为列表
+            4. 校验作品 ID 列表和合集 ID 参数有效性
+            5. 验证合集是否存在且未删除
+            6. 验证合集归属权（只能操作自己的合集）
+            7. 查询所有作品并过滤有效作品（未删除且属于当前用户）
+            8. 批量更新作品的 series_id 为指定合集 ID（SQL 层面再次验证 user_id，确保只能更新自己的作品）
+            9. 返回添加结果
 
             ## 注意事项：
             - **需要携带有效的 Token 才能操作**
@@ -546,14 +550,15 @@ public class SeriesController {
             - 添加操作不会改变作品的审核状态
             - 作品原已属于其他合集时，将被移动到新合集
             - 空作品列表会报错，请确保至少有一个有效作品
+            - 作品 ID 以逗号分隔传入，如 workIds=1,2,3
             """
     )
     public ResponsePojo<Boolean> batchAddWorksToSeries(
         @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
-        @Parameter(description = "作品 ID 列表", required = true, example = "[1, 2, 3]") @RequestParam List<Integer> workIds,
+        @Parameter(description = "作品 ID 列表，逗号分隔，如 1,2,3", required = true, example = "1,2,3") @RequestParam String workIds,
         @Parameter(description = "合集 ID", required = true, example = "1") @RequestParam Integer seriesId
     ) {
-        log.debug("批量添加作品到合集 - 合集 ID: {}, 作品 ID 数量: {}", seriesId, workIds != null ? workIds.size() : 0);
+        log.debug("批量添加作品到合集 - 合集 ID: {}, 作品 ID 字符串: {}", seriesId, workIds);
 
         // 提取 Token
         String token = JWTUtils.extractTokenWithLog(request, "批量添加作品到合集接口");
@@ -577,13 +582,15 @@ public class SeriesController {
         }
 
         String username = JWTUtils.getUsernameFromToken(token);
-        int workCount = workIds != null ? workIds.size() : 0;
-        log.info("开始批量添加作品到合集，用户 ID: {}, 用户名: {}, 合集 ID: {}, 作品 ID 数量: {}", userId, username, seriesId, workCount);
+        log.info("开始批量添加作品到合集，用户 ID: {}, 用户名: {}, 合集 ID: {}, 作品 ID 字符串: {}", userId, username, seriesId, workIds);
 
-        // 校验参数
-        if (workIds == null || workIds.isEmpty()) {
-            log.warn("作品 ID 列表为空，用户 ID: {}", userId);
-            return ResponsePojo.error(false, "作品 ID 列表不能为空");
+        // 校验并解析作品 ID 列表
+        List<Integer> workIdList;
+        try {
+            workIdList = parseWorkIds(workIds);
+        } catch (IllegalArgumentException e) {
+            log.warn("作品 ID 格式错误，用户 ID: {}, 作品 ID 字符串: {}", userId, workIds);
+            return ResponsePojo.error(false, e.getMessage());
         }
 
         if (seriesId == null || seriesId <= 0) {
@@ -592,10 +599,10 @@ public class SeriesController {
         }
 
         try {
-            Boolean result = seriesService.batchAddWorksToSeries(seriesId, workIds, userId);
+            Boolean result = seriesService.batchAddWorksToSeries(seriesId, workIdList, userId);
 
             if (result) {
-                log.info("作品批量添加成功，用户 ID: {}, 用户名: {}, 合集 ID: {}, 作品数量: {}", userId, username, seriesId, workCount);
+                log.info("作品批量添加成功，用户 ID: {}, 用户名: {}, 合集 ID: {}, 作品数量: {}", userId, username, seriesId, workIdList.size());
                 return ResponsePojo.success(true, "作品批量添加成功");
             } else {
                 log.warn("作品批量添加失败，用户 ID: {}, 用户名: {}, 合集 ID: {}", userId, username, seriesId);
@@ -607,6 +614,159 @@ public class SeriesController {
         } catch (SecurityException e) {
             log.warn("批量添加作品权限错误，用户 ID: {}, 合集 ID: {}, 错误: {}", userId, seriesId, e.getMessage());
             return ResponsePojo.error(false, e.getMessage());
+        }
+    }
+
+    /**
+     * 批量从合集中移除作品
+     *
+     * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param workIds  作品 ID 列表
+     * @param seriesId 合集 ID
+     * @return 响应数据，表示作品是否批量移除成功
+     * @author PlayerEG
+     */
+    @PostMapping("/batch-remove-works")
+    @RequireRole(value = {22, 77})
+    @Operation(
+        summary = "批量从合集移除作品接口",
+        description = """
+            # 批量从合集移除作品（需要登录认证 + 角色权限[22,77]）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 支持批量将多个作品从指定合集中移除
+            - SQL 层面三重权限验证（合集归属 + 作品归属 + 系列归属）
+            - 仅移除有效作品（未删除、属于当前用户、且当前在该合集中）
+            - 不重置审核状态（仅清空 series_id）
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - workIds: **作品 ID 列表**，字符串类型，必填，逗号分隔，如 "1,2,3"，单次最多 100 个
+            - seriesId: **合集 ID**，Integer 类型，必填
+
+            ## 返回说明：
+            - **移除成功**：返回 `{"data": true}` 和 "作品批量移除成功" 提示
+            - **Token 不存在**：返回 `{"data": null}` 和 "Token 不存在" 提示
+            - **Token 已失效**：返回 `{"data": null}` 和 "Token 已失效" 提示
+            - **作品 ID 列表为空**：返回 `{"data": false}` 和 "作品 ID 列表不能为空" 提示
+            - **作品 ID 格式错误**：返回 `{"data": false}` 和 "作品 ID 格式错误" 提示
+            - **合集 ID 无效**：返回 `{"data": false}` 和 "合集 ID 无效" 提示
+            - **合集不存在**：返回 `{"data": false}` 和 "合集不存在或已删除" 提示
+            - **无权操作合集**：返回 `{"data": false}` 和 "无权操作该合集" 提示
+            - **无可操作作品**：返回 `{"data": false}` 和 "没有可操作的作品" 提示
+            - **作品不属于该合集**：返回 `{"data": false}` 和 "移除失败，作品可能不属于该合集" 提示
+            - **移除失败**：返回 `{"data": false}` 和 "作品批量移除失败" 提示
+
+            ## 业务逻辑：
+            1. 从请求中提取并验证 Token
+            2. 从 Token 中解析用户 ID
+            3. 解析逗号分隔的作品 ID 字符串为列表
+            4. 校验作品 ID 列表和合集 ID 参数有效性
+            5. 验证合集是否存在且未删除
+            6. 验证合集归属权（只能操作自己的合集）
+            7. 查询所有作品并过滤有效作品（未删除且属于当前用户）
+            8. 批量清空作品的 series_id 为 NULL（SQL 层面再次验证 user_id、series_id 和 is_delete）
+            9. 如果 SQL 未更新任何行（作品不属于该合集），抛出异常
+            10. 返回移除结果
+
+            ## 注意事项：
+            - **需要携带有效的 Token 才能操作**
+            - Token 必须在白名单中（未过期、未登出）
+            - **用户只能操作自己的合集和作品**
+            - 不属于当前用户的作品会被自动过滤（不影响有效作品的处理）
+            - 已删除的作品会被自动过滤
+            - **只有当前属于该合集的作品才会被移除**，不属于该合集的作品在 SQL 层面被自动过滤
+            - 建议单次批量移除不超过 100 个作品
+            - 移除操作不会改变作品的审核状态
+            - 移除后作品仍然存在，只是不再属于任何合集（series_id 变为 NULL）
+            - 空作品列表会报错，请确保至少有一个有效作品
+            - 作品 ID 以逗号分隔传入，如 workIds=1,2,3
+            """
+    )
+    public ResponsePojo<Boolean> batchRemoveWorksFromSeries(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "作品 ID 列表，逗号分隔，如 1,2,3", required = true, example = "1,2,3") @RequestParam String workIds,
+        @Parameter(description = "合集 ID", required = true, example = "1") @RequestParam Integer seriesId
+    ) {
+        log.debug("批量从合集移除作品 - 合集 ID: {}, 作品 ID 字符串: {}", seriesId, workIds);
+
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "批量从合集移除作品接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("批量从合集移除作品失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        log.info("开始批量从合集移除作品，用户 ID: {}, 用户名: {}, 合集 ID: {}, 作品 ID 字符串: {}", userId, username, seriesId, workIds);
+
+        // 校验并解析作品 ID 列表
+        List<Integer> workIdList;
+        try {
+            workIdList = parseWorkIds(workIds);
+        } catch (IllegalArgumentException e) {
+            log.warn("作品 ID 格式错误，用户 ID: {}, 作品 ID 字符串: {}", userId, workIds);
+            return ResponsePojo.error(false, e.getMessage());
+        }
+
+        if (seriesId == null || seriesId <= 0) {
+            log.warn("合集 ID 无效，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "合集 ID 无效");
+        }
+
+        try {
+            Boolean result = seriesService.batchRemoveWorksFromSeries(seriesId, workIdList, userId);
+
+            if (result) {
+                log.info("作品批量移除成功，用户 ID: {}, 用户名: {}, 合集 ID: {}, 作品数量: {}", userId, username, seriesId, workIdList.size());
+                return ResponsePojo.success(true, "作品批量移除成功");
+            } else {
+                log.warn("作品批量移除失败，用户 ID: {}, 用户名: {}, 合集 ID: {}", userId, username, seriesId);
+                return ResponsePojo.error(false, "作品批量移除失败");
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("批量移除作品参数错误，用户 ID: {}, 合集 ID: {}, 错误: {}", userId, seriesId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
+        } catch (SecurityException e) {
+            log.warn("批量移除作品权限错误，用户 ID: {}, 合集 ID: {}, 错误: {}", userId, seriesId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
+        }
+    }
+
+    /**
+     * 解析逗号分隔的作品 ID 字符串为 Integer 列表
+     *
+     * @param workIdsStr 逗号分隔的作品 ID 字符串，如 "1,2,3"
+     * @return 作品 ID 列表
+     * @throws IllegalArgumentException 格式无效时抛出
+     */
+    private List<Integer> parseWorkIds(String workIdsStr) {
+        if (workIdsStr == null || workIdsStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("作品 ID 列表不能为空");
+        }
+        try {
+            return Arrays.stream(workIdsStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Integer::parseInt)
+                .collect(Collectors.toList());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("作品 ID 格式错误，请使用逗号分隔的整数，如 1,2,3");
         }
     }
 }

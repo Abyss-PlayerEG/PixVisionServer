@@ -362,6 +362,75 @@ public class SeriesServiceImpl implements SeriesService {
     }
 
     /**
+     * 批量将作品从指定合集中移除
+     *
+     * @param seriesId 合集 ID
+     * @param workIds  作品 ID 列表
+     * @param userId   当前用户 ID（用于权限验证）
+     * @return 移除结果
+     */
+    @Override
+    public Boolean batchRemoveWorksFromSeries(Integer seriesId, List<Integer> workIds, Integer userId) {
+        log.info("开始批量从合集移除作品，合集 ID: {}, 用户 ID: {}, 作品数量: {}", seriesId, userId, workIds != null ? workIds.size() : 0);
+
+        // 参数校验
+        if (seriesId == null || seriesId <= 0) {
+            log.warn("合集 ID 无效: {}", seriesId);
+            throw new IllegalArgumentException("合集 ID 无效");
+        }
+        if (workIds == null || workIds.isEmpty()) {
+            log.warn("作品 ID 列表为空");
+            throw new IllegalArgumentException("作品 ID 列表不能为空");
+        }
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            throw new IllegalArgumentException("用户 ID 无效");
+        }
+
+        // 验证合集是否存在且属于当前用户
+        Series series = seriesMapper.selectSeriesById(seriesId);
+        if (series == null || series.getIs_delete()) {
+            log.warn("合集不存在或已删除，合集 ID: {}", seriesId);
+            throw new IllegalArgumentException("合集不存在或已删除");
+        }
+        if (!series.getUser_id().equals(userId)) {
+            log.warn("无权操作该合集，合集 ID: {}, 用户 ID: {}", seriesId, userId);
+            throw new SecurityException("无权操作该合集");
+        }
+
+        // 查询作品信息，验证是否存在且属于当前用户
+        List<Works> worksList = worksMapper.selectBatchIds(workIds);
+        if (worksList == null || worksList.isEmpty()) {
+            log.warn("所有作品均不存在，合集 ID: {}, 作品 ID 列表: {}", seriesId, workIds);
+            throw new IllegalArgumentException("作品不存在或已删除");
+        }
+
+        // 过滤有效作品：未删除且属于当前用户
+        List<Integer> validWorkIds = worksList.stream()
+            .filter(w -> !w.getIs_delete() && w.getUser_id().equals(userId))
+            .map(Works::getWork_id)
+            .collect(Collectors.toList());
+
+        if (validWorkIds.isEmpty()) {
+            log.warn("没有有效的作品可以移除，合集 ID: {}, 用户 ID: {}", seriesId, userId);
+            throw new IllegalArgumentException("没有可操作的作品，请确认作品存在且属于当前用户");
+        }
+
+        // 批量清空 series_id（SQL 层面验证 user_id、series_id 和 is_delete）
+        int affectedRows = worksMapper.batchClearSeriesId(validWorkIds, seriesId, userId);
+        log.info("批量从合集移除作品完成，合集 ID: {}, 用户 ID: {}, 有效作品数: {}, 实际移除行数: {}",
+            seriesId, userId, validWorkIds.size(), affectedRows);
+
+        // 如果 SQL 层面没有更新任何行，说明作品可能不属于该合集
+        if (affectedRows == 0) {
+            log.warn("移除操作未影响任何行，作品可能不属于该合集，合集 ID: {}, 用户 ID: {}", seriesId, userId);
+            throw new IllegalArgumentException("移除失败，作品可能不属于该合集");
+        }
+
+        return true;
+    }
+
+    /**
      * 重命名作品文件为 .del 后缀
      *
      * @param workIds 作品 ID 列表
