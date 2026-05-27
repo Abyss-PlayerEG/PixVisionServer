@@ -73,6 +73,10 @@ jobs:
             gunzip -c "$GZ_FILE" > "$DEPLOY_DIR/temp.jar"
             rm "$GZ_FILE"
 
+            # 先停止旧服务
+            sudo systemctl stop pix-version.service
+            echo "Stopped pix-version service"
+
             # 备份旧 JAR，便于回滚
             if [ -f "$APP_JAR" ]; then
               sudo cp "$APP_JAR" "$BACKUP_JAR"
@@ -85,19 +89,19 @@ jobs:
 
             echo "Replaced $APP_JAR"
 
-            # 使用已有的 systemd 服务重启
-            sudo systemctl restart pixvision.service
+            # 启动新服务
+            sudo systemctl start pix-version.service
 
             # 等待几秒确认启动成功
             sleep 5
 
-            if systemctl is-active --quiet pixvision.service; then
+            if systemctl is-active --quiet pix-version.service; then
               echo "Service is running"
-              sudo systemctl status pixvision.service --no-pager
+              sudo systemctl status pix-version.service --no-pager
             else
               echo "ERROR: Service failed to start! Rolling back..."
               sudo mv "$BACKUP_JAR" "$APP_JAR"
-              sudo systemctl restart pixvision.service
+              sudo systemctl start pix-version.service
               exit 1
             fi
 
