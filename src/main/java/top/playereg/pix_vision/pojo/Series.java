@@ -28,6 +28,9 @@ public class Series {
     @Schema(description = "系列描述文本，24 个中文长度")
     String about_text;
 
+    @Schema(description = "封面缩略图文件名（取自系列内最新发布的作品）")
+    String thumb_url;
+
     @Schema(description = "审核状态：10 - 正常、20 - 待审核、30 - 未过审")
     Integer approval_status;
 

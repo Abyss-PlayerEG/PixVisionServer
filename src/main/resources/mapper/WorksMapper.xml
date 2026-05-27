@@ -100,6 +100,20 @@
           AND is_delete = 0
     </update>
 
+    <!-- 批量设置作品的系列 ID（SQL 层面验证用户权限） -->
+    <update id="batchSetSeriesId">
+        UPDATE tb_works
+        SET series_id   = #{seriesId},
+            update_time = NOW(),
+            update_user = #{userId}
+        WHERE work_id IN
+        <foreach collection="workIds" item="workId" open="(" separator="," close=")">
+            #{workId}
+        </foreach>
+          AND user_id = #{userId}
+          AND is_delete = 0
+    </update>
+
     <!-- 根据系列 ID 查询所有作品 ID（用于删除系列内作品） -->
     <select id="selectWorkIdsBySeriesId" resultType="java.lang.Integer">
         SELECT work_id

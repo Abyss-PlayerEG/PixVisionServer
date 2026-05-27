@@ -17,6 +17,8 @@ import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
+import java.util.List;
+
 /**
  * 系列管理控制器
  *
@@ -173,40 +175,51 @@ public class SeriesController {
             ## 特性
             - 公开接口（无需 Token 认证）
             - 支持分页查询
+            - **支持关键词搜索**（可选，同时匹配系列标题和描述）
             - 自动过滤逻辑删除数据
             - **只返回审核通过的系列**（approval_status = 10）
-            - 按创建时间倒序排列
+            - **关键词匹配时，标题匹配优先排序**，其次按创建时间倒序
+            - 返回封面缩略图（取自系列内最新发布的审核通过作品）
 
             ## 参数说明：
             - **userId**: 用户 ID，Integer 类型，必填
             - **current**: 当前页码，Integer 类型，必填，从 1 开始
             - **size**: 每页数量，Integer 类型，必填，范围 1-500
+            - **keyword**: 搜索关键词，String 类型，可选，同时搜索系列标题和描述
 
             ## 返回说明：
-            - **查询成功**：返回 **{"data": IPage<Series>}** ，包含分页信息和系列列表
-            - **用户 ID 无效**：返回 **{"data": null}** 和“用户 ID 无效”提示
+            - **查询成功**：返回 `{"data": {IPage<Series>对象}}`，包含分页信息和系列列表，每个系列含封面缩略图（thumb_url），系列内无作品时 thumb_url 为 null
+            - **用户 ID 无效**：返回 `{"data": null}` 和 "用户 ID 无效" 提示
+            - **无匹配结果**：返回空列表 `[]`，状态码 200
 
             ## 业务逻辑：
             1. 校验用户 ID、页码和每页数量参数有效性
-            2. 调用 Service 层进行分页查询
-            3. 自动排除逻辑删除的数据（is_delete=0）
-            4. **只返回审核通过的系列**（approval_status=10）
-            5. 待审核（approval_status=20）和未过审（approval_status=30）的系列不会返回
-            6. 按创建时间倒序返回结果
+            2. 如果提供了关键词，对系列标题和描述进行模糊匹配（LIKE %keyword%）
+            3. 调用 Service 层进行分页查询
+            4. 自动排除逻辑删除的数据（is_delete=0）
+            5. **只返回审核通过的系列**（approval_status=10）
+            6. 待审核（approval_status=20）和未过审（approval_status=30）的系列不会返回
+            7. **通过子查询获取系列内最新发布作品（is_delete=0, approval_status=10）的封面缩略图**
+            8. **排序规则**：有关键词时，标题匹配的系列优先（CASE WHEN 排序）；再按创建时间倒序
 
             ## 注意事项：
             - **此接口为公开接口，无需登录即可访问**
             - 如果用户没有作品系列，返回空列表 []
             - **只能查看审核通过的系列**，待审核和未过审的系列不可见
+            - keyword 为空或不传时，返回所有系列（按创建时间倒序）
+            - 关键词同时搜索系列标题和描述，标题匹配的结果排在最前面
+            - 封面取自系列内最新发布且审核通过的作品，无作品时 thumb_url 为 null
+            - 封面缩略图访问路径：`/api/image/works?filePath={thumb_url}`
             - 建议合理设置每页数量（size），避免一次性加载过多数据
             """
     )
     public ResponsePojo<IPage<Series>> getSeriesList(
         @Parameter(description = "用户 ID", required = true, example = "1") @PathVariable Integer userId,
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Integer current,
-        @Parameter(description = "每页数量，范围 1-500", required = true, example = "10") @PathVariable Integer size
+        @Parameter(description = "每页数量，范围 1-500", required = true, example = "10") @PathVariable Integer size,
+        @Parameter(description = "搜索关键词（可选），同时匹配系列标题和描述", example = "风景") @RequestParam(required = false) String keyword
     ) {
-        log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}", userId, current, size);
+        log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}, 关键词: {}", userId, current, size, keyword);
 
         // 参数校验
         if (userId == null || userId <= 0) {
@@ -219,7 +232,7 @@ public class SeriesController {
         }
 
         // 调用服务层分页查询
-        IPage<Series> seriesPage = seriesService.getSeriesByUserId(userId, current, size);
+        IPage<Series> seriesPage = seriesService.getSeriesByUserId(userId, current, size, keyword);
 
         if (seriesPage != null) {
             log.info("分页查询成功 - 用户 ID: {}, 总记录数: {}, 当前页记录数: {}",
@@ -470,6 +483,129 @@ public class SeriesController {
             return ResponsePojo.error(false, e.getMessage());
         } catch (SecurityException e) {
             log.warn("系列信息更新权限错误，用户 ID: {}, 错误: {}", userId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
+        }
+    }
+
+    /**
+     * 批量将作品添加到指定合集
+     *
+     * @param request  HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token
+     * @param workIds  作品 ID 列表
+     * @param seriesId 合集 ID
+     * @return 响应数据，表示作品是否批量添加成功
+     * @author PlayerEG
+     */
+    @PostMapping("/batch-add-works")
+    @RequireRole(value = {22, 77})
+    @Operation(
+        summary = "批量添加作品到合集接口",
+        description = """
+            # 批量添加作品到合集（需要登录认证 + 角色权限[22,77]）
+
+            ## 特性
+            - Token 认证（支持 Header 和 URL 参数两种方式）
+            - 支持批量将多个作品添加到指定合集
+            - SQL 层面双重权限验证（合集归属 + 作品归属）
+            - 仅更新有效作品（未删除且属于当前用户）
+            - 不重置审核状态（仅修改 series_id）
+
+            ## 参数说明：
+            - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
+            - workIds: **作品 ID 列表**，整形数组类型，必填，单次最多 100 个
+            - seriesId: **合集 ID**，Integer 类型，必填
+
+            ## 返回说明：
+            - **添加成功**：返回 `{"data": true}` 和 "作品批量添加成功" 提示
+            - **Token 不存在**：返回 `{"data": null}` 和 "Token 不存在" 提示
+            - **Token 已失效**：返回 `{"data": null}` 和 "Token 已失效" 提示
+            - **作品 ID 列表为空**：返回 `{"data": false}` 和 "作品 ID 列表不能为空" 提示
+            - **合集 ID 无效**：返回 `{"data": false}` 和 "合集 ID 无效" 提示
+            - **合集不存在**：返回 `{"data": false}` 和 "合集不存在或已删除" 提示
+            - **无权操作合集**：返回 `{"data": false}` 和 "无权操作该合集" 提示
+            - **无可操作作品**：返回 `{"data": false}` 和 "没有可操作的作品" 提示
+            - **添加失败**：返回 `{"data": false}` 和 "作品批量添加失败" 提示
+
+            ## 业务逻辑：
+            1. 从请求中提取并验证 Token
+            2. 从 Token 中解析用户 ID
+            3. 校验作品 ID 列表和合集 ID 参数有效性
+            4. 验证合集是否存在且未删除
+            5. 验证合集归属权（只能操作自己的合集）
+            6. 查询所有作品并过滤有效作品（未删除且属于当前用户）
+            7. 批量更新作品的 series_id 为指定合集 ID（SQL 层面再次验证 user_id，确保只能更新自己的作品）
+            8. 返回添加结果
+
+            ## 注意事项：
+            - **需要携带有效的 Token 才能操作**
+            - Token 必须在白名单中（未过期、未登出）
+            - **用户只能操作自己的合集和作品**
+            - 不属于当前用户的作品会被自动过滤（不影响有效作品的处理）
+            - 已删除的作品会被自动过滤
+            - 建议单次批量添加不超过 100 个作品
+            - 添加操作不会改变作品的审核状态
+            - 作品原已属于其他合集时，将被移动到新合集
+            - 空作品列表会报错，请确保至少有一个有效作品
+            """
+    )
+    public ResponsePojo<Boolean> batchAddWorksToSeries(
+        @Parameter(description = "HTTP 请求对象，用于从 Header 或 URL 参数中获取 Token", required = true) HttpServletRequest request,
+        @Parameter(description = "作品 ID 列表", required = true, example = "[1, 2, 3]") @RequestParam List<Integer> workIds,
+        @Parameter(description = "合集 ID", required = true, example = "1") @RequestParam Integer seriesId
+    ) {
+        log.debug("批量添加作品到合集 - 合集 ID: {}, 作品 ID 数量: {}", seriesId, workIds != null ? workIds.size() : 0);
+
+        // 提取 Token
+        String token = JWTUtils.extractTokenWithLog(request, "批量添加作品到合集接口");
+
+        if (token == null || token.isEmpty()) {
+            log.error("批量添加作品到合集失败 - Token 不存在");
+            return ResponsePojo.error(null, "Token 不存在，请在 Header 中添加 Authorization: Bearer <token> 或在 URL 参数中添加 ?token=<token>");
+        }
+
+        // 检查 Token 是否在白名单中
+        if (!tokenWhitelistService.isInWhitelist(token)) {
+            log.warn("Token 不在白名单中，可能已过期或被移除");
+            return ResponsePojo.error(null, "Token 已失效");
+        }
+
+        // 从 Token 中获取用户 ID
+        Integer userId = JWTUtils.getUserIdFromToken(token);
+        if (userId == null) {
+            log.error("从 Token 中解析用户 ID 失败");
+            return ResponsePojo.error(null, "Token 无效");
+        }
+
+        String username = JWTUtils.getUsernameFromToken(token);
+        int workCount = workIds != null ? workIds.size() : 0;
+        log.info("开始批量添加作品到合集，用户 ID: {}, 用户名: {}, 合集 ID: {}, 作品 ID 数量: {}", userId, username, seriesId, workCount);
+
+        // 校验参数
+        if (workIds == null || workIds.isEmpty()) {
+            log.warn("作品 ID 列表为空，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "作品 ID 列表不能为空");
+        }
+
+        if (seriesId == null || seriesId <= 0) {
+            log.warn("合集 ID 无效，用户 ID: {}", userId);
+            return ResponsePojo.error(false, "合集 ID 无效");
+        }
+
+        try {
+            Boolean result = seriesService.batchAddWorksToSeries(seriesId, workIds, userId);
+
+            if (result) {
+                log.info("作品批量添加成功，用户 ID: {}, 用户名: {}, 合集 ID: {}, 作品数量: {}", userId, username, seriesId, workCount);
+                return ResponsePojo.success(true, "作品批量添加成功");
+            } else {
+                log.warn("作品批量添加失败，用户 ID: {}, 用户名: {}, 合集 ID: {}", userId, username, seriesId);
+                return ResponsePojo.error(false, "作品批量添加失败");
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("批量添加作品参数错误，用户 ID: {}, 合集 ID: {}, 错误: {}", userId, seriesId, e.getMessage());
+            return ResponsePojo.error(false, e.getMessage());
+        } catch (SecurityException e) {
+            log.warn("批量添加作品权限错误，用户 ID: {}, 合集 ID: {}, 错误: {}", userId, seriesId, e.getMessage());
             return ResponsePojo.error(false, e.getMessage());
         }
     }

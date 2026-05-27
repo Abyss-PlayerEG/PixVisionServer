@@ -186,42 +186,49 @@ public class StarController {
      * @param userId  用户 ID
      * @param current 当前页码（从 1 开始）
      * @param size    每页大小（范围 1-500）
-     * @return 响应数据，包含分页的作品列表
+     * @param orderBy 排序方式，默认 "newest"（最新收藏优先），传 "oldest" 按最早收藏优先
+     * @return 响应数据，包含分页的作品列表及封面缩略图
      * @author PlayerEG
      */
     @Operation(
         summary = "分页查询用户收藏作品",
         description = """
             # 分页查询用户收藏作品（无需登录认证）
-
+    
             ## 特性
             - 公开接口（无需 Token 认证）
             - MyBatis-Plus 分页支持
             - 只返回审核通过的作品（approval_status = 10）
-            - 按收藏时间倒序排列（最新收藏优先）
-
+            - 支持按收藏时间正序或倒序排列
+            - 返回作品封面缩略图（thumb_url）
+    
             ## 参数说明：
-            - **userId**: 用户 ID，Integer 类型，必填
-            - **current**: 当前页码，Long 类型，必填，从 1 开始
-            - **size**: 每页大小，Long 类型，必填，范围 1-500
-
+            - userId: **用户 ID**，Integer 类型，路径变量，必填
+            - current: **当前页码**，Long 类型，路径变量，必填，从 1 开始
+            - size: **每页大小**，Long 类型，路径变量，必填，范围 1-500
+            - orderBy: **排序方式**，String 类型，查询参数，可选，默认 "newest"（最新收藏优先），传 "oldest" 按最早收藏优先
+    
             ## 返回说明：
-            - **查询成功**：返回 **{"data": IPage<Works>}** ，包含分页信息和作品列表
-            - **用户 ID 无效**：返回 **{"data": null}** 和“用户 ID 无效”提示
-
+            - **查询成功**：返回 `{"data": {IPage<Works>对象}}`，包含分页信息和作品列表，每个作品含封面缩略图（thumb_url）
+            - **用户 ID 无效**：返回 `{"data": null}` 和 "用户 ID 无效" 提示
+            - **分页参数错误**：返回 `{"data": null}` 和 "页码或每页大小错误" 提示
+    
             ## 业务逻辑：
-            1. 校验用户 ID、页码和每页数量参数有效性
-            2. 调用 Service 层进行分页查询
-            3. 关联查询 tb_star 和 tb_works 表
-            4. 过滤条件：用户收藏且未删除（s.is_delete=0）、作品未删除（w.is_delete=0）、审核通过（w.approval_status=10）
-            5. 按收藏时间倒序返回结果
-
+            1. 校验用户 ID 有效性（非空且大于 0）
+            2. 校验页码和每页大小参数（current >= 1，1 <= size <= 500）
+            3. 构建 MyBatis-Plus 分页对象
+            4. 关联查询 tb_star 和 tb_works 表
+            5. 过滤条件：用户收藏且未删除（s.is_delete = 0）、作品未删除（w.is_delete = 0）、审核通过（w.approval_status = 10）
+            6. 根据 orderBy 参数排序：默认按收藏时间倒序（s.time DESC），传 "oldest" 按收藏时间正序（s.time ASC）
+            7. 返回分页结果集，每个作品包含原图（img_url）和封面缩略图（thumb_url）
+    
             ## 注意事项：
             - **此接口为公开接口，无需登录即可访问**
-            - 如果用户没有收藏过任何作品，返回空列表 []
+            - 如果用户没有收藏过任何作品，返回空的 IPage 对象（total = 0，records = []）
             - **只返回审核通过的作品**，待审核和未过审的作品不可见
             - 建议合理设置每页数量（size），避免一次性加载过多数据
-            - 图片 URL 为文件名，完整访问路径为：`/api/image/works?filePath={img_url}`
+            - 作品原图访问路径：`/api/image/works?filePath={img_url}`
+            - 封面缩略图访问路径：`/api/image/works?filePath={thumb_url}`
             - 使用 **RESTful 风格**路径参数，格式：`/user-starred/{userId}/{current}/{size}`
             """
     )

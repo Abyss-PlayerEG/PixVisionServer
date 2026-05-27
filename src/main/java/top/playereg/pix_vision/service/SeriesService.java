@@ -21,14 +21,15 @@ public interface SeriesService {
     Series addSeries(Integer userId, String seriesTitle, String aboutText);
 
     /**
-     * 根据用户 ID 分页查询所有作品系列
+     * 根据用户 ID 分页查询所有作品系列（支持关键词搜索）
      *
      * @param userId  用户 ID
      * @param current 当前页码
      * @param size    每页数量
+     * @param keyword 搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
      * @return 分页作品系列列表
      */
-    IPage<Series> getSeriesByUserId(Integer userId, Integer current, Integer size);
+    IPage<Series> getSeriesByUserId(Integer userId, Integer current, Integer size, String keyword);
 
     /**
      * 删除作品系列（支持保留或删除系列内作品）
@@ -50,6 +51,16 @@ public interface SeriesService {
      * @return 修改结果
      */
     Boolean updateSeriesInfo(Integer seriesId, Integer userId, String seriesTitle, String aboutText);
+
+    /**
+     * 批量将作品添加到指定合集
+     *
+     * @param seriesId 合集 ID
+     * @param workIds  作品 ID 列表
+     * @param userId   当前用户 ID（用于权限验证）
+     * @return 添加结果
+     */
+    Boolean batchAddWorksToSeries(Integer seriesId, java.util.List<Integer> workIds, Integer userId);
 
     /**
      * 批量更新系列审核状态（管理员操作）

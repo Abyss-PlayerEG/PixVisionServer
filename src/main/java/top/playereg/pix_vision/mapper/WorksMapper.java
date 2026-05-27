@@ -59,6 +59,16 @@ public interface WorksMapper extends BaseMapper<Works> {
     int clearSeriesIdBySeriesId(@Param("seriesId") Integer seriesId, @Param("userId") Integer userId);
 
     /**
+     * 批量设置作品的系列 ID（SQL 层面验证用户权限）
+     *
+     * @param workIds  作品 ID 列表
+     * @param seriesId 系列 ID
+     * @param userId   用户 ID（确保只能操作自己的作品）
+     * @return 影响的行数
+     */
+    int batchSetSeriesId(@Param("workIds") java.util.List<Integer> workIds, @Param("seriesId") Integer seriesId, @Param("userId") Integer userId);
+
+    /**
      * 根据系列 ID 查询所有作品 ID（用于删除系列内作品）
      *
      * @param seriesId 系列 ID

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.Series;
+import top.playereg.pix_vision.pojo.Works;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -15,6 +16,7 @@ import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 系列服务实现类
@@ -82,16 +84,17 @@ public class SeriesServiceImpl implements SeriesService {
     }
 
     /**
-     * 根据用户 ID 分页查询所有作品系列
+     * 根据用户 ID 分页查询所有作品系列（支持关键词搜索）
      *
      * @param userId  用户 ID
      * @param current 当前页码
      * @param size    每页数量
+     * @param keyword 搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
      * @return 分页作品系列列表
      */
     @Override
-    public IPage<Series> getSeriesByUserId(Integer userId, Integer current, Integer size) {
-        log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}", userId, current, size);
+    public IPage<Series> getSeriesByUserId(Integer userId, Integer current, Integer size, String keyword) {
+        log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}, 关键词: {}", userId, current, size, keyword);
 
         // 参数校验
         if (userId == null || userId <= 0) {
@@ -103,7 +106,7 @@ public class SeriesServiceImpl implements SeriesService {
         Page<Series> page = new Page<>(current != null ? current : 1, size != null ? size : 10);
 
         // 调用 Mapper 分页查询
-        IPage<Series> result = seriesMapper.selectSeriesByUserId(page, userId);
+        IPage<Series> result = seriesMapper.selectSeriesByUserId(page, userId, keyword);
 
         if (result != null) {
             log.info("分页查询成功 - 用户 ID: {}, 总记录数: {}, 当前页记录数: {}",
@@ -293,6 +296,69 @@ public class SeriesServiceImpl implements SeriesService {
             log.error("系列信息更新失败，系列 ID: {}, 用户 ID: {}", seriesId, userId);
             return Boolean.FALSE;
         }
+    }
+
+    /**
+     * 批量将作品添加到指定合集
+     *
+     * @param seriesId 合集 ID
+     * @param workIds  作品 ID 列表
+     * @param userId   当前用户 ID（用于权限验证）
+     * @return 添加结果
+     */
+    @Override
+    public Boolean batchAddWorksToSeries(Integer seriesId, List<Integer> workIds, Integer userId) {
+        log.info("开始批量添加作品到合集，合集 ID: {}, 用户 ID: {}, 作品数量: {}", seriesId, userId, workIds != null ? workIds.size() : 0);
+
+        // 参数校验
+        if (seriesId == null || seriesId <= 0) {
+            log.warn("合集 ID 无效: {}", seriesId);
+            throw new IllegalArgumentException("合集 ID 无效");
+        }
+        if (workIds == null || workIds.isEmpty()) {
+            log.warn("作品 ID 列表为空");
+            throw new IllegalArgumentException("作品 ID 列表不能为空");
+        }
+        if (userId == null || userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            throw new IllegalArgumentException("用户 ID 无效");
+        }
+
+        // 验证合集是否存在且属于当前用户
+        Series series = seriesMapper.selectSeriesById(seriesId);
+        if (series == null || series.getIs_delete()) {
+            log.warn("合集不存在或已删除，合集 ID: {}", seriesId);
+            throw new IllegalArgumentException("合集不存在或已删除");
+        }
+        if (!series.getUser_id().equals(userId)) {
+            log.warn("无权操作该合集，合集 ID: {}, 用户 ID: {}", seriesId, userId);
+            throw new SecurityException("无权操作该合集");
+        }
+
+        // 查询作品信息，验证是否存在且属于当前用户
+        List<Works> worksList = worksMapper.selectBatchIds(workIds);
+        if (worksList == null || worksList.isEmpty()) {
+            log.warn("所有作品均不存在，合集 ID: {}, 作品 ID 列表: {}", seriesId, workIds);
+            throw new IllegalArgumentException("作品不存在或已删除");
+        }
+
+        // 过滤有效作品：未删除且属于当前用户
+        List<Integer> validWorkIds = worksList.stream()
+            .filter(w -> !w.getIs_delete() && w.getUser_id().equals(userId))
+            .map(Works::getWork_id)
+            .collect(Collectors.toList());
+
+        if (validWorkIds.isEmpty()) {
+            log.warn("没有有效的作品可以添加，合集 ID: {}, 用户 ID: {}", seriesId, userId);
+            throw new IllegalArgumentException("没有可操作的作品，请确认作品存在且属于当前用户");
+        }
+
+        // 批量设置 series_id
+        int affectedRows = worksMapper.batchSetSeriesId(validWorkIds, seriesId, userId);
+        log.info("批量添加作品到合集完成，合集 ID: {}, 用户 ID: {}, 有效作品数: {}, 更新行数: {}",
+            seriesId, userId, validWorkIds.size(), affectedRows);
+
+        return affectedRows > 0;
     }
 
     /**

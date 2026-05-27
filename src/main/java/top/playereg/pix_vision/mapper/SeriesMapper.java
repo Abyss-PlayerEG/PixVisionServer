@@ -28,13 +28,14 @@ public interface SeriesMapper extends BaseMapper<Series> {
     int insertSeries(Series series);
 
     /**
-     * 根据用户 ID 分页查询所有作品系列（排除逻辑删除）
+     * 根据用户 ID 分页查询所有作品系列（排除逻辑删除，支持关键词搜索）
      *
-     * @param page   分页对象
-     * @param userId 用户 ID
+     * @param page    分页对象
+     * @param userId  用户 ID
+     * @param keyword 搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
      * @return 分页作品系列列表
      */
-    IPage<Series> selectSeriesByUserId(IPage<Series> page, @Param("userId") Integer userId);
+    IPage<Series> selectSeriesByUserId(IPage<Series> page, @Param("userId") Integer userId, @Param("keyword") String keyword);
 
     /**
      * 根据系列 ID 查询系列信息
