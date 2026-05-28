@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.controller.admin;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,10 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.pojo.Series;
 import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
+import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
@@ -324,6 +327,96 @@ public class AdminSeriesController {
         } catch (Exception e) {
             log.error("批量更新作品合集信息异常，作品合集 ID 列表: {}, 操作者 ID: {}, 错误: {}", seriesIds, userId, e.getMessage(), e);
             return ResponsePojo.error(null, "更新失败：" + e.getMessage());
+        }
+    }
+
+
+    /**
+     * 分页查询作品合集
+     *
+     * @param current 当前页码
+     * @param size    每页数量
+     * @param keyword 搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
+     * @param status  审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @param isDelete 是否删除（可选，true-已删除、false-未删除）
+     * @param userId  用户 ID（可选）
+     * @param orderBy 排序字段（可选，'oldest'-按最早创建，其他值-按最新创建）
+     * @return 分页作品合集列表
+     * @author blue_sky_ks
+     */
+    @Operation(
+        summary = "分页查询作品合集",
+        description = """
+            # 分页查询作品合集（需要登录认证 + 角色权限[55, 77]）
+
+            ## 特性
+            - 需要审核员或系统管理员角色（role=55 或 77）才能访问
+            - 支持多条件筛选：关键词、审核状态、是否删除、用户 ID
+            - 支持按最早创建或最新创建排序
+            - 搜索关键词同时匹配标题和描述，标题匹配结果优先展示
+            - 返回完整的 Series 实体字段，包含封面缩略图
+
+            ## 参数说明：
+            - **current**: **当前页码**，Long 类型，路径参数，必填，从 1 开始，范围 1-500
+            - **size**: **每页大小**，Long 类型，路径参数，必填，范围 1-500
+            - **keyword**: **搜索关键词**，String 类型，查询参数，可选
+              - 同时匹配合集标题和描述
+              - 标题匹配的合集优先排序展示
+            - **status**: **审核状态**，Integer 类型，查询参数，可选，可选值：
+              - 10: 正常
+              - 20: 待审核
+              - 30: 未过审
+            - **isDelete**: **是否删除**，Boolean 类型，查询参数，可选
+              - true: 仅查已删除
+              - false: 仅查未删除
+              - 不传: 不过滤删除状态
+            - **userId**: **用户 ID**，Integer 类型，查询参数，可选
+            - **orderBy**: **排序方式**，String 类型，查询参数，可选
+              - 'oldest': 按最早创建排列
+              - 其他值或不传: 按最新创建排列（默认）
+
+            ## 返回说明：
+            - **成功**：返回分页合集列表（含总条数、总页数等分页信息）
+            - **结果为空**：返回空分页对象和成功状态
+            - **参数错误**：返回错误提示
+
+            ## 业务逻辑：
+            1. 校验分页参数（页码必须大于 0，每页大小范围 1-500）
+            2. 构建 MyBatis-Plus 分页对象
+            3. 根据可选参数构建动态 SQL 查询
+            4. 根据排序参数动态调整 ORDER BY 子句
+            5. 返回分页结果集
+
+            ## 注意事项：
+            - 所有筛选条件均为可选，可以自由组合
+            - 搜索关键词使用模糊匹配（LIKE '%keyword%'）
+            - 查询结果包含完整的合集信息字段
+            - 不过滤任何审核状态，返回所有状态的合集
+            """
+    )
+    @LogRecord(module = "合集管理", event = "分页查询合集")
+    @GetMapping("/page/{current}/{size}")
+    public ResponsePojo<IPage<Series>> getAdminSeriesPage(
+        @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
+        @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
+        @Parameter(description = "搜索关键词（可选，同时匹配标题和描述）", required = false) @RequestParam(required = false) String keyword,
+        @Schema(description = "审核状态（可选，10-正常、20-待审核、30-未过审）", allowableValues = {"10", "20", "30"}, example = "20") @RequestParam(required = false) Integer status,
+        @Schema(description = "是否删除（可选，true-已删除、false-未删除）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isDelete,
+        @Parameter(description = "用户 ID（可选）", required = false) @RequestParam(required = false) Integer userId,
+        @Schema(description = "排序方式：'oldest' - 按最早创建，其他值或 null - 按最新创建（默认）", allowableValues = {"newest", "oldest"}, example = "newest") @RequestParam(required = false, defaultValue = "newest") String orderBy
+    ) {
+        // 参数校验
+        ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
+        if (error != null) {
+            return (ResponsePojo<IPage<Series>>) (ResponsePojo<?>) error;
+        }
+
+        try {
+            IPage<Series> result = seriesService.getAdminSeriesPage(current, size, keyword, status, isDelete, userId, orderBy);
+            return ResponsePojo.success(result, "查询成功");
+        } catch (Exception e) {
+            log.error("分页查询作品合集异常，错误: {}", e.getMessage(), e);
+            return ResponsePojo.error(null, "查询失败：" + e.getMessage());
         }
     }
 }

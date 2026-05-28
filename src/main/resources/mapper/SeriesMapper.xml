@@ -153,4 +153,52 @@
         </foreach>
     </update>
 
+    <!-- 管理员分页查询作品合集（支持多条件筛选和排序） -->
+    <select id="selectAdminSeriesPage" resultType="top.playereg.pix_vision.pojo.Series">
+        SELECT s.series_id,
+               s.user_id,
+               s.series_title,
+               s.about_text,
+               s.approval_status,
+               s.is_delete,
+               s.update_time,
+               s.update_user,
+               s.create_time,
+               s.create_user,
+               (SELECT w.thumb_url
+                FROM tb_works w
+                WHERE w.series_id = s.series_id
+                  AND w.is_delete = 0
+                  AND w.approval_status = 10
+                ORDER BY w.create_time DESC
+                LIMIT 1) AS thumb_url
+        FROM tb_series s
+        <where>
+            <if test="userId != null">
+                AND s.user_id = #{userId}
+            </if>
+            <if test="approvalStatus != null">
+                AND s.approval_status = #{approvalStatus}
+            </if>
+            <if test="isDelete != null">
+                AND s.is_delete = #{isDelete}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (s.series_title LIKE CONCAT('%', #{keyword}, '%') OR s.about_text LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY
+        <if test="keyword != null and keyword != ''">
+            CASE WHEN s.series_title LIKE CONCAT('%', #{keyword}, '%') THEN 0 ELSE 1 END,
+        </if>
+        <choose>
+            <when test="orderBy == 'oldest'">
+                s.create_time ASC
+            </when>
+            <otherwise>
+                s.create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
 </mapper>

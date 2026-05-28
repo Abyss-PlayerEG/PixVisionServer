@@ -215,18 +215,24 @@ public interface WorksMapper extends BaseMapper<Works> {
     int selectTotalViewCountByWorkId(@Param("workId") Integer workId);
 
     /**
-     * 管理员分页查询作品列表（支持多条件过滤）
+     * 管理员分页查询作品列表（支持多条件过滤和排序）
      *
-     * @param page    分页对象
-     * @param keyword 关键字（可选，模糊搜索标题）
-     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）
+     * @param page           分页对象
+     * @param keyword        关键字（可选，模糊搜索标题）
+     * @param orderBy        排序方式：'newest' - 最新、'oldest' - 最旧、'mostLikes' - 最多点赞、'mostStars' - 最多收藏、'mostViews' - 最多查看（默认 newest）
+     * @param isOriginal     是否转载（可选，true-原创、false-转载）
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @param isDelete       是否被删除（可选，true-已删除、false-未删除）
      * @return 分页结果
      * @author PlayerEG
      */
     IPage<Works> adminSelectWorks(
         Page<Works> page,
         @Param("keyword") String keyword,
-        @Param("orderBy") String orderBy
+        @Param("orderBy") String orderBy,
+        @Param("isOriginal") Boolean isOriginal,
+        @Param("approvalStatus") Integer approvalStatus,
+        @Param("isDelete") Boolean isDelete
     );
 
     /**
