@@ -2,6 +2,21 @@
 
 > 目标：将 AI 审核返回的 `reason` 和 `insult_words` 持久化到 `tb_content_audit_record` 表
 > 范围：作品、评论、系列、昵称 4 种内容类型
+> 总计：6 新建 + 12 修改 = **18 个文件**
+
+---
+
+## 执行步骤总览
+
+| Step | 阶段 | 文件数 | 内容 | 依赖 |
+|:---:|------|:---:|------|:---:|
+| 1 | 基础设施 | 3 新建 | ContentAuditRecord 实体 + Mapper + XML | 无 |
+| 2 | VO 层 | 3 新建 + 1 修改 | AdminWorkVO / AdminCommentVO / AdminSeriesVO / UserDataChangeLockVO | 无 |
+| 3 | 审核入库 | 4 修改 | 4 个 Service 在 auditContent() 后 INSERT 审核记录 | Step 1 |
+| 4 | 管理查询 | 4 修改 | 4 个 Service 管理查询改 VO 返回 + 批量填充审核信息 | Step 1,2 |
+| 5 | 接口同步 | 3 修改 | WorkService / CommentService / SeriesService 返回类型 | Step 4 |
+| 6 | Controller | 4 修改 | 4 个 Controller 适配 + Swagger + @Schema | Step 4,5 |
+| 7 | 验证 | - | 全量编译验证 | Step 1~6 |
 
 ---
 
