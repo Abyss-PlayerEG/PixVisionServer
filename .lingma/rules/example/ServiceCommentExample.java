@@ -1,7 +1,7 @@
 package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.pojo.user.User;
 
 /**
  * 用户服务接口
@@ -64,7 +64,7 @@ import top.playereg.pix_vision.pojo.userPojo.User;
  *
  * @author PlayerEG
  * @see top.playereg.pix_vision.service.Impl.UserServiceImpl 用户服务实现类
- * @see top.playereg.pix_vision.pojo.userPojo.User 用户实体类
+ * @see top.playereg.pix_vision.pojo.user.User 用户实体类
  * @since DEV-1.0.0
  */
 public interface UserService {

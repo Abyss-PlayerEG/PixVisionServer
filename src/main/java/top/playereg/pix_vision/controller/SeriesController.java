@@ -8,7 +8,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.Series;
+import top.playereg.pix_vision.pojo.dto.SeriesOperationResult;
+import top.playereg.pix_vision.pojo.entity.Series;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
@@ -62,6 +63,7 @@ public class SeriesController {
             - 系列标题长度限制（≤16 个中文字符）
             - 系列描述长度限制（≤24 个中文字符）
             - 自动关联当前登录用户
+            - AI 内容安全审核（标题和描述）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -69,12 +71,15 @@ public class SeriesController {
             - aboutText: 系列描述文本，字符串类型，可选，长度不超过 24 个中文字符
 
             ## 返回说明：
-            - **成功**：返回 **{"data": Series 对象}** 和提示信息
+            - **审核通过**：返回 **{"data": true}** 和"系列新增成功"提示
+            - **AI 审核不通过（违规）**：返回 **{"data": false}** 和"违规内容：{原因}"提示
+            - **AI 审核存疑（待审核）**：返回 **{"data": true}** 和"系列新增成功，等待人工审核"提示
             - **Token 失效**：返回 **{"data": null}** 和 "Token 已失效" 提示
             - **标题为空**：返回 **{"data": false}** 和 "系列标题不能为空" 提示
             - **标题过长**：返回 **{"data": false}** 和 "系列标题长度不能超过 16 个字符" 提示
             - **描述过长**：返回 **{"data": false}** 和 "系列描述长度不能超过 24 个字符" 提示
             - **标题重复**：返回 **{"data": false}** 和 "系列标题已存在，请使用其他标题" 提示
+            - **新增失败**：返回 **{"data": false}** 和 "系列新增失败" 提示
 
             ## 业务逻辑：
             1. 从请求中提取并验证 Token
@@ -82,15 +87,20 @@ public class SeriesController {
             3. 从 Token 中解析用户 ID
             4. 校验系列标题和描述的长度
             5. **检查系列标题是否已存在（同一用户下不能重复）**
-            6. 创建系列对象并设置用户 ID、时间戳等信息
-            7. 插入数据库并返回结果
+            6. 调用 AI 审核服务对系列标题和描述进行内容安全审核
+            7. 根据审核结果设置审核状态（通过-10/待审核-20/违规-30）
+            8. 创建系列对象并插入数据库
+            9. 根据审核状态返回差异化的响应消息
 
             ## 注意事项：
             - 系列标题**必填**，长度不超过 16 个字符
             - 系列描述**可选**，长度不超过 24 个字符
             - **同一用户下系列标题不能重复**
             - 系统自动记录创建者 ID 和创建时间
-            - 返回的 Series 对象包含自动生成的 series_id
+            - 系列新增后会自动调用 AI 审核服务进行内容安全审核（标题+描述）
+            - AI 审核不通过（违规）时直接拦截，data 返回 false
+            - AI 审核存疑时标记为待审核，系列需要人工审核后才会公开显示
+            - AI 审核服务不可用时自动降级为待审核状态
             """
     )
     public ResponsePojo<Boolean> addSeries(
@@ -143,15 +153,33 @@ public class SeriesController {
 
         // 调用服务层新增系列
         try {
-            Series series = seriesService.addSeries(userId, seriesTitle, aboutText);
+            SeriesOperationResult result = seriesService.addSeries(userId, seriesTitle, aboutText);
 
-            if (series != null) {
-                log.info("系列新增成功，系列 ID: {}, 用户 ID: {}", series.getSeries_id(), userId);
-                return ResponsePojo.success(true, "系列新增成功");
-            } else {
+            if (result.getSuccess() == null || !result.getSuccess()) {
                 log.error("系列新增失败，用户 ID: {}", userId);
                 return ResponsePojo.error(false, "系列新增失败");
             }
+
+            Integer approvalStatus = result.getApprovalStatus();
+            String auditReason = result.getAuditReason();
+
+            // 根据审核状态返回差异化响应
+            if (approvalStatus != null && approvalStatus == 30) {
+                // 违规内容
+                String message = auditReason != null ? auditReason : "未知原因";
+                log.warn("系列审核不通过（违规），用户 ID: {}, 原因: {}", userId, message);
+                return ResponsePojo.error(false, "违规内容：" + message);
+            }
+
+            if (approvalStatus != null && approvalStatus == 20) {
+                // 待审核
+                log.info("系列新增成功，待人工审核，用户 ID: {}", userId);
+                return ResponsePojo.success(true, "系列新增成功，等待人工审核");
+            }
+
+            // 审核通过（10）
+            log.info("系列新增成功，用户 ID: {}", userId);
+            return ResponsePojo.success(true, "系列新增成功");
         } catch (IllegalArgumentException e) {
             log.warn("系列新增参数错误，用户 ID: {}, 错误: {}", userId, e.getMessage());
             return ResponsePojo.error(false, e.getMessage());
@@ -386,6 +414,7 @@ public class SeriesController {
             - 动态更新非空字段
             - 完整的参数校验
             - 标题唯一性检查（同一用户下不能重复）
+            - AI 内容安全审核（修改标题或描述时触发）
 
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
@@ -394,16 +423,19 @@ public class SeriesController {
             - aboutText: **系列描述**，String 类型，可选，最多 24 个中文字符
 
             ## 返回说明：
-            - **修改成功**：返回 **{"data": true}** 和“系列信息更新成功”提示
-            - **Token 不存在**：返回 **{"data": null}** 和“Token 不存在”提示
-            - **Token 已失效**：返回 **{"data": null}** 和“Token 已失效”提示
-            - **系列 ID 无效**：返回 **{"data": false}** 和“系列 ID 无效”提示
-            - **无修改内容**：返回 **{"data": false}** 和“无修改内容”提示
-            - **系列不存在**：返回 **{"data": false}** 和“系列不存在或已删除”提示
-            - **无权修改**：返回 **{"data": false}** 和“无权修改该系列”提示
-            - **标题过长**：返回 **{"data": false}** 和“系列标题长度不能超过 16 个字符”提示
-            - **描述过长**：返回 **{"data": false}** 和“系列描述长度不能超过 24 个字符”提示
-            - **标题重复**：返回 **{"data": false}** 和“系列标题已存在，请使用其他标题”提示
+            - **审核通过**：返回 **{"data": true}** 和"系列信息更新成功"提示
+            - **AI 审核不通过（违规）**：返回 **{"data": false}** 和"违规内容：{原因}"提示
+            - **AI 审核存疑（待审核）**：返回 **{"data": true}** 和"系列信息更新成功，等待人工审核"提示
+            - **Token 不存在**：返回 **{"data": null}** 和"Token 不存在"提示
+            - **Token 已失效**：返回 **{"data": null}** 和"Token 已失效"提示
+            - **系列 ID 无效**：返回 **{"data": false}** 和"系列 ID 无效"提示
+            - **无修改内容**：返回 **{"data": false}** 和"无修改内容"提示
+            - **系列不存在**：返回 **{"data": false}** 和"系列不存在或已删除"提示
+            - **无权修改**：返回 **{"data": false}** 和"无权修改该系列"提示
+            - **标题过长**：返回 **{"data": false}** 和"系列标题长度不能超过 16 个字符"提示
+            - **描述过长**：返回 **{"data": false}** 和"系列描述长度不能超过 24 个字符"提示
+            - **标题重复**：返回 **{"data": false}** 和"系列标题已存在，请使用其他标题"提示
+            - **更新失败**：返回 **{"data": false}** 和"系列信息更新失败"提示
 
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
@@ -414,21 +446,27 @@ public class SeriesController {
             6. 查询系列信息并验证所有权（只能修改自己的系列）
             7. 如果提供了新标题，验证长度并检查是否与当前标题不同且未被其他系列使用
             8. 如果提供了新描述，验证长度并检查是否与当前描述不同
-            9. 执行动态更新（只更新非空且发生变化的字段）
-            10. 自动更新 update_time 和 update_user
-            11. 返回修改结果
+            9. 调用 AI 审核服务对更新后的系列内容进行安全审核
+            10. 根据审核结果设置审核状态（通过-10/待审核-20/违规-30）
+            11. 执行动态更新（只更新非空且发生变化的字段）
+            12. 自动更新 update_time 和 update_user
+            13. 根据审核状态返回差异化的响应消息
 
             ## 注意事项：
             - **需要携带有效的 Token 才能修改系列**
             - Token 必须在白名单中（未过期、未登出）
             - **用户只能修改自己的系列**，无法修改他人的系列
             - 所有参数都是可选的，可以只修改部分字段
-            - **如果所有参数都为空或与当前值相同，将返回“无修改内容”**
+            - **如果所有参数都为空或与当前值相同，将返回"无修改内容"**
             - 系列标题限制：**最多 16 个字符**
             - 系列描述限制：**最多 24 个字符**
             - **同一用户下系列标题不能重复**（修改时也会检查）
             - 采用动态更新机制，只提供要修改的字段即可
             - 修改成功后，update_time 和 update_user 会自动更新
+            - 系列更新后会自动调用 AI 审核服务进行内容安全审核
+            - AI 审核不通过（违规）时直接拦截，data 返回 false
+            - AI 审核存疑时标记为待审核，系列需要人工审核后才会公开显示
+            - AI 审核服务不可用时自动降级为待审核状态
             """
     )
     public ResponsePojo<Boolean> updateSeriesInfo(
@@ -471,15 +509,33 @@ public class SeriesController {
 
         // 调用服务层更新系列信息
         try {
-            Boolean result = seriesService.updateSeriesInfo(seriesId, userId, seriesTitle, aboutText);
+            SeriesOperationResult result = seriesService.updateSeriesInfo(seriesId, userId, seriesTitle, aboutText);
 
-            if (result) {
-                log.info("系列信息更新成功，用户 ID: {}, 用户名: {}, 系列 ID: {}", userId, username, seriesId);
-                return ResponsePojo.success(true, "系列信息更新成功");
-            } else {
+            if (result.getSuccess() == null || !result.getSuccess()) {
                 log.error("系列信息更新失败，用户 ID: {}, 用户名: {}, 系列 ID: {}", userId, username, seriesId);
                 return ResponsePojo.error(false, "系列信息更新失败");
             }
+
+            Integer approvalStatus = result.getApprovalStatus();
+            String auditReason = result.getAuditReason();
+
+            // 根据审核状态返回差异化响应
+            if (approvalStatus != null && approvalStatus == 30) {
+                // 违规内容
+                String message = auditReason != null ? auditReason : "未知原因";
+                log.warn("系列更新审核不通过（违规），用户 ID: {}, 原因: {}", userId, message);
+                return ResponsePojo.error(false, "违规内容：" + message);
+            }
+
+            if (approvalStatus != null && approvalStatus == 20) {
+                // 待审核
+                log.info("系列信息更新成功，待人工审核，用户 ID: {}, 系列 ID: {}", userId, seriesId);
+                return ResponsePojo.success(true, "系列信息更新成功，等待人工审核");
+            }
+
+            // 审核通过（10）
+            log.info("系列信息更新成功，用户 ID: {}, 用户名: {}, 系列 ID: {}", userId, username, seriesId);
+            return ResponsePojo.success(true, "系列信息更新成功");
         } catch (IllegalArgumentException e) {
             log.warn("系列信息更新参数错误，用户 ID: {}, 错误: {}", userId, e.getMessage());
             return ResponsePojo.error(false, e.getMessage());

@@ -3,7 +3,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.UserDataMapper">
 
     <!-- 新增用户拓展数据 -->
-    <insert id="insertUserData" parameterType="top.playereg.pix_vision.pojo.userPojo.UserData">
+    <insert id="insertUserData" parameterType="top.playereg.pix_vision.pojo.entity.user.UserData">
         INSERT INTO tb_user_data (user_id,
                                   user_data_name,
                                   user_data,
@@ -19,7 +19,7 @@
     </insert>
 
     <!-- 根据用户 ID 查询所有拓展数据（排除逻辑删除） -->
-    <select id="selectUserDataByUserId" resultType="top.playereg.pix_vision.pojo.userPojo.UserData">
+    <select id="selectUserDataByUserId" resultType="top.playereg.pix_vision.pojo.entity.user.UserData">
         SELECT data_id,
                user_id,
                user_data_name,

@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.mapper.LikesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
-import top.playereg.pix_vision.pojo.Like;
-import top.playereg.pix_vision.pojo.Works;
+import top.playereg.pix_vision.pojo.entity.Like;
+import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.service.LikeService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 

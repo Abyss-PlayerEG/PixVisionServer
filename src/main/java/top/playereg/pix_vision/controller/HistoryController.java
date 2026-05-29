@@ -8,8 +8,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import top.playereg.pix_vision.pojo.History;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.pojo.entity.History;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.JWTUtils;
@@ -120,7 +120,7 @@ public class HistoryController {
         log.info("开始查询个人历史记录，用户 ID: {}, 用户名: {}, 页码: {}, 每页: {}", userId, username, current, size);
 
         // 构建分页对象
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<top.playereg.pix_vision.pojo.History> page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(current, size);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<History> page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(current, size);
 
         // 调用服务层查询历史记录
         IPage<History> historyPage = workService.getUserHistory(page, userId);

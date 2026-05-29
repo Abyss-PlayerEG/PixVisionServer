@@ -1,10 +1,10 @@
 package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
-import top.playereg.pix_vision.pojo.commentsPojo.CommentAddResult;
-import top.playereg.pix_vision.pojo.commentsPojo.Comments;
-import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
+import top.playereg.pix_vision.pojo.VO.comment.PrimaryComment;
+import top.playereg.pix_vision.pojo.admin.AdminBatchOperateCommentResult;
+import top.playereg.pix_vision.pojo.dto.CommentAddResult;
+import top.playereg.pix_vision.pojo.entity.Comments;
 
 import java.util.List;
 

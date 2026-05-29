@@ -3,7 +3,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.StarsMapper">
 
     <!-- 查询用户是否已收藏某作品 -->
-    <select id="selectByUserAndWork" resultType="top.playereg.pix_vision.pojo.Star">
+    <select id="selectByUserAndWork" resultType="top.playereg.pix_vision.pojo.entity.Star">
         SELECT user_id, work_id, is_delete, time
         FROM tb_star
         WHERE user_id = #{userId}
@@ -35,7 +35,7 @@
     </select>
 
     <!-- 分页查询用户收藏过的作品列表（只返回审核通过的作品） -->
-    <select id="selectUserStarredWorks" resultType="top.playereg.pix_vision.pojo.Works">
+    <select id="selectUserStarredWorks" resultType="top.playereg.pix_vision.pojo.entity.Works">
         SELECT w.work_id,
                w.user_id,
                w.work_title,

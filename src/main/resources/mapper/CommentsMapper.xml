@@ -3,7 +3,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.CommentsMapper">
 
     <!-- 定义结果映射 -->
-    <resultMap id="BaseResultMap" type="top.playereg.pix_vision.pojo.commentsPojo.Comments">
+    <resultMap id="BaseResultMap" type="top.playereg.pix_vision.pojo.entity.Comments">
         <id column="comment_id" property="comment_id"/>
         <result column="user_id" property="user_id"/>
         <result column="work_id" property="work_id"/>
@@ -22,7 +22,7 @@
     </sql>
 
     <!-- 新增评论 -->
-    <insert id="insertComment" parameterType="top.playereg.pix_vision.pojo.commentsPojo.Comments"
+    <insert id="insertComment" parameterType="top.playereg.pix_vision.pojo.entity.Comments"
             useGeneratedKeys="true" keyProperty="comment_id">
         INSERT INTO tb_comments (user_id, work_id, parent_comment_id, in_comment_id, comment_floor, comment_text,
                                  approval_status, is_delete, time)

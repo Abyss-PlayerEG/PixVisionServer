@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.mapper.StarsMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
-import top.playereg.pix_vision.pojo.Star;
-import top.playereg.pix_vision.pojo.Works;
+import top.playereg.pix_vision.pojo.entity.Star;
+import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.service.StarService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -176,16 +176,16 @@ public class StarServiceImpl implements StarService {
             log.warn("用户 ID 无效: {}", userId);
             return new Page<>(page.getCurrent(), page.getSize());
         }
-    
+
         log.info("开始查询用户收藏作品，用户 ID: {}, 页码: {}, 每页大小: {}, 排序: {}",
             userId, page.getCurrent(), page.getSize(), orderBy);
-    
+
         // 调用 Mapper 层查询
         IPage<Works> result = starsMapper.selectUserStarredWorks(page, userId, orderBy);
-    
+
         log.info("查询用户收藏作品完成，用户 ID: {}, 总数: {}, 当前页: {}",
             userId, result.getTotal(), result.getCurrent());
-    
+
         return result;
     }
 }

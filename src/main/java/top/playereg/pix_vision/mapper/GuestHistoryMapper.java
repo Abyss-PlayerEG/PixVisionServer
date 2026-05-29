@@ -3,7 +3,7 @@ package top.playereg.pix_vision.mapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
-import top.playereg.pix_vision.pojo.GuestHistory;
+import top.playereg.pix_vision.pojo.entity.GuestHistory;
 
 /**
  * 游客历史记录 Mapper 接口

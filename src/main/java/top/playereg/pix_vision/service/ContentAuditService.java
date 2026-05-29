@@ -1,6 +1,6 @@
 package top.playereg.pix_vision.service;
 
-import top.playereg.pix_vision.pojo.ContentAuditResult;
+import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
 
 /**
  * AI 文案审核服务接口

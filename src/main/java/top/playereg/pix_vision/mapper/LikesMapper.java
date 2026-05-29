@@ -5,8 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
-import top.playereg.pix_vision.pojo.Like;
-import top.playereg.pix_vision.pojo.Works;
+import top.playereg.pix_vision.pojo.entity.Like;
+import top.playereg.pix_vision.pojo.entity.Works;
 
 /**
  * 点赞 Mapper 接口

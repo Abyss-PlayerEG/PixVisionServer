@@ -1,0 +1,50 @@
+package top.playereg.pix_vision.pojo.entity.user;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
+import java.sql.Timestamp;
+
+/**
+ * 用户数据变更锁定实体
+ * <p>对应 tb_user_data_change_lock 表，用于存放待审核的用户信息变更记录</p>
+ *
+ * @author PlayerEG
+ */
+@Data
+@TableName("tb_user_data_change_lock")
+public class UserDataChangeLock {
+
+    /** 主键 ID */
+    @TableId(type = IdType.AUTO)
+    private Integer lock_id;
+
+    /** 待审核用户 ID */
+    private Integer user_id;
+
+    /** 修改类型：100-昵称、200-权限、300-头像 */
+    private Integer type;
+
+    /** 待审核昵称 */
+    private String nickname;
+
+    /** 修改的用户角色 */
+    private Integer user_role;
+
+    /** 更改的用户头像路径 */
+    private String avatar_url;
+
+    /** 旧数据，用于回滚 */
+    private String old_data;
+
+    /** 审核状态：10-通过、20-待审核、30-未过审 */
+    private Integer approval_status;
+
+    /** 软删除标记（false-正常 / true-已删除） */
+    private Boolean is_delete;
+
+    /** 数据条目创建时间戳 */
+    private Timestamp create_time;
+}

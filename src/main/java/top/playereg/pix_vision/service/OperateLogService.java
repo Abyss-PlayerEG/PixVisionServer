@@ -1,8 +1,8 @@
 package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import top.playereg.pix_vision.pojo.OperateLog;
-import top.playereg.pix_vision.pojo.OperateLogVO;
+import top.playereg.pix_vision.pojo.VO.OperateLogVO;
+import top.playereg.pix_vision.pojo.entity.OperateLog;
 
 /**
  * 系统操作日志服务接口

@@ -3,7 +3,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.OperateLogMapper">
 
     <!-- 插入操作日志记录 -->
-    <insert id="insertOperateLog" parameterType="top.playereg.pix_vision.pojo.OperateLog">
+    <insert id="insertOperateLog" parameterType="top.playereg.pix_vision.pojo.entity.OperateLog">
         INSERT INTO tb_sys_logs (user_id,
                                  log_datetime,
                                  log_event)
@@ -13,7 +13,7 @@
     </insert>
 
     <!-- 分页查询操作日志（用户名通过 Redis/DB 二次解析，支持关键字过滤 log_event） -->
-    <select id="selectOperateLogsPage" resultType="top.playereg.pix_vision.pojo.OperateLogVO">
+    <select id="selectOperateLogsPage" resultType="top.playereg.pix_vision.pojo.VO.OperateLogVO">
         SELECT l.sys_log_id,
                l.user_id,
                l.log_datetime,

@@ -17,8 +17,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.WorkUploadResult;
-import top.playereg.pix_vision.pojo.userPojo.UserData;
+import top.playereg.pix_vision.pojo.dto.WorkUploadResult;
+import top.playereg.pix_vision.pojo.entity.user.UserData;
 import top.playereg.pix_vision.service.BilibiliApiService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.service.WorkService;
@@ -862,7 +862,7 @@ public class ImageController {
             Integer finalSeriesId = (seriesId != null && seriesId > 0) ? seriesId : null;
             WorkUploadResult uploadResult = workService.uploadWork(userId, imageBytes, originalFilename, file.getSize(), workTitle, finalSeriesId, isOriginal, outUrl);
 
-            Integer workId = uploadResult.getWorkId();
+            Integer workId = uploadResult.getWork_id();
             Integer approvalStatus = uploadResult.getApprovalStatus();
             String auditReason = uploadResult.getAuditReason();
 
