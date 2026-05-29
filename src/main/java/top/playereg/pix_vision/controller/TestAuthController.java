@@ -3,6 +3,7 @@ package top.playereg.pix_vision.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,11 +13,14 @@ import top.playereg.pix_vision.util.PixVisionLogger;
 
 /**
  * 测试 JWT 鉴权的示例接口
+ * <p>
+ * 仅在 {@code app.test-controller.enabled=true} 时激活，生产环境默认关闭
  *
  * @author PlayerEG
  */
 @RestController
 @RequestMapping("/7e212056")
+@ConditionalOnProperty(name = "app.test-controller.enabled", havingValue = "true")
 @Tag(name = "JWT 鉴权测试接口", description = "提供 JWT Token 生成和验证的测试功能")
 public class TestAuthController {
 

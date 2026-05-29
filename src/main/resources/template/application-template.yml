@@ -1,9 +1,14 @@
 ### MuYing服务配置文件
-
+#
 #### 服务端口
 #server:
 #  port: 9090
-
+#
+#### 测试控制器
+#app:
+#  test-controller:
+#    enabled: false
+#
 #### CORS 跨域配置
 #cors:
 #  # 允许的跨域源地址（多个地址用逗号分隔）
@@ -18,7 +23,7 @@
 #    https://yourdomain.com,
 #    https://www.yourdomain.com
 #  "
-
+#
 #### 数据库配置
 #spring:
 #  datasource: # 数据库连接信息
@@ -44,11 +49,11 @@
 #    default-encoding: UTF-8         # 编码
 #    ssl-devMode: false               # 不直接建立 SSL 连接
 #    starttls-devMode: false          # 启用 STARTTLS 升级
-
+#
 #### SpringDoc文档配置项
 #springdoc:
 #  enabled: off # 启用 API 文档（生产环境设为 off，开发环境设为 on）
-
+#
 #### SpringBoot日志配置项
 #logging:
 #  level:
@@ -63,15 +68,15 @@
 #      max-file-size: 10MB
 #      max-history: 30
 #      total-size-cap: 1GB  # 日志总大小上限
-
+#
 #### 控制台日志输出(日志将保存到 ~/.pix_vision/log/ 目录下)
 #console-output:
 #  enabled: false  # 是否启用控制台输出(true-启用，false-禁用)
-
+#
 #### MuYing日志设置
 #mu-ying-logging:
 #  open-highlight-color: false # 是否启用颜色(true-启用，false-禁用)
-
+#
 #### 加密选项
 #mu-ying-secure: # 加密选项
 #  jwt-secret: 1c8b7d76b91a4f7ade75943be4c6b36a8be73191d3fef702f2838323c4928d28 # JWT 密钥可使用 open-ssl 生成

@@ -18,3 +18,8 @@ spring:
   application:
     name: PixVision  # 服务名称
     version: DEV-2.0.0
+
+# 测试控制器
+app:
+  test-controller:
+    enabled: false
