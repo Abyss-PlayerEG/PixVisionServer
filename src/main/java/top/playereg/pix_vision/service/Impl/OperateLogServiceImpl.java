@@ -7,9 +7,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.OperateLogMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
-import top.playereg.pix_vision.pojo.OperateLog;
-import top.playereg.pix_vision.pojo.OperateLogVO;
-import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.pojo.VO.OperateLogVO;
+import top.playereg.pix_vision.pojo.entity.OperateLog;
+import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.OperateLogService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 

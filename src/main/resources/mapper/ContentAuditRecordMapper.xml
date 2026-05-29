@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.playereg.pix_vision.mapper.ContentAuditRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="top.playereg.pix_vision.pojo.entity.ContentAuditRecord">
+        <id column="record_id" property="record_id"/>
+        <result column="content_type" property="content_type"/>
+        <result column="content_id" property="content_id"/>
+        <result column="approval_status" property="approval_status"/>
+        <result column="audit_reason" property="audit_reason"/>
+        <result column="insult_words" property="insult_words"/>
+        <result column="original_content" property="original_content"/>
+        <result column="create_time" property="create_time"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        record_id, content_type, content_id, approval_status, audit_reason, insult_words, original_content, create_time
+    </sql>
+
+    <!-- 插入审核记录 -->
+    <insert id="insertRecord" useGeneratedKeys="true" keyProperty="record_id">
+        INSERT INTO tb_content_audit_record (content_type,
+                                              content_id,
+                                              approval_status,
+                                              audit_reason,
+                                              insult_words,
+                                              original_content,
+                                              create_time)
+        VALUES (#{record.content_type},
+                #{record.content_id},
+                #{record.approval_status},
+                #{record.audit_reason},
+                #{record.insult_words},
+                #{record.original_content},
+                NOW())
+    </insert>
+
+    <!-- 批量查询指定内容的最新审核记录（每个 contentId 取最新一条） -->
+    <select id="selectLatestByContentIds" resultMap="BaseResultMap">
+        SELECT r.record_id,
+               r.content_type,
+               r.content_id,
+               r.approval_status,
+               r.audit_reason,
+               r.insult_words,
+               r.original_content,
+               r.create_time
+        FROM tb_content_audit_record r
+        INNER JOIN (
+            SELECT content_id, MAX(create_time) AS max_time
+            FROM tb_content_audit_record
+            WHERE content_type = #{contentType}
+            <if test="contentIds != null and contentIds.size() > 0">
+                AND content_id IN
+                <foreach collection="contentIds" item="contentId" open="(" separator="," close=")">
+                    #{contentId}
+                </foreach>
+            </if>
+            GROUP BY content_id
+        ) latest ON r.content_id = latest.content_id AND r.create_time = latest.max_time
+        WHERE r.content_type = #{contentType}
+    </select>
+
+    <!-- 分页查询审核记录 -->
+    <select id="selectAuditRecordsPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tb_content_audit_record
+        WHERE 1=1
+        <if test="contentType != null">AND content_type = #{contentType}</if>
+        <if test="approvalStatus != null">AND approval_status = #{approvalStatus}</if>
+        <if test="keyword != null and keyword != ''">
+            AND audit_reason LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY create_time ${sortOrder}
+    </select>
+
+</mapper>

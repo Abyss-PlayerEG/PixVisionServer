@@ -6,9 +6,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import top.playereg.pix_vision.config.PythonServerConfig;
-import top.playereg.pix_vision.pojo.BilibiliAccountCheckResult;
-import top.playereg.pix_vision.pojo.BilibiliUserInfoResult;
-import top.playereg.pix_vision.pojo.PythonApiResponse;
+import top.playereg.pix_vision.pojo.external.BilibiliAccountCheckResult;
+import top.playereg.pix_vision.pojo.external.BilibiliUserInfoResult;
+import top.playereg.pix_vision.pojo.external.PythonApiResponse;
 import top.playereg.pix_vision.service.BilibiliApiService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 

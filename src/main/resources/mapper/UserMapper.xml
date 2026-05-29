@@ -5,7 +5,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.UserMapper">
     <!-- 添加用户 -->
     <insert id="insertUser"
-            parameterType="top.playereg.pix_vision.pojo.userPojo.User"
+            parameterType="top.playereg.pix_vision.pojo.entity.user.User"
             useGeneratedKeys="true"
             keyProperty="user_id"
     >
@@ -26,8 +26,8 @@
     </insert>
 
     <!-- 通过用户名查询用户 -->
-    <select id="selectAllUserInfoByUsername" parameterType="top.playereg.pix_vision.pojo.userPojo.User"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+    <select id="selectAllUserInfoByUsername" parameterType="top.playereg.pix_vision.pojo.entity.user.User"
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT user_id,
                user_uuid,
                username,
@@ -44,8 +44,8 @@
 
     <!-- 通过邮箱查询用户 -->
     <select id="selectAllUserInfoByEmail"
-            parameterType="top.playereg.pix_vision.pojo.userPojo.User"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+            parameterType="top.playereg.pix_vision.pojo.entity.user.User"
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT user_id,
                user_uuid,
                username,
@@ -63,7 +63,7 @@
     <!-- 通过用户 ID 查询用户 -->
     <select id="selectAllUserInfoById"
             parameterType="java.lang.Integer"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT user_id,
                user_uuid,
                username,
@@ -80,7 +80,7 @@
 
     <!-- 通过 UUID 查询用户 - 全字段查询 -->
     <select id="selectAllUserInfoByUuid"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT user_id,
                user_uuid,
                username,
@@ -98,7 +98,7 @@
     <!-- 通过用户 ID 查询用户角色（用于权限验证，仅查询必要字段） -->
     <select id="selectUserRoleById"
             parameterType="java.lang.Integer"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT user_id,
                username,
                user_role
@@ -109,7 +109,7 @@
 
     <!-- 分页查询用户 - 通过邮箱、uuid、用户名查询 -->
     <select id="selectPageUserInfo"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT nickname,
         user_id,
         avatar_url,
@@ -134,7 +134,7 @@
 
     <!-- 分页查询所有用户（无筛选条件） -->
     <select id="selectAllUsers"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT nickname,
                user_id,
                avatar_url,
@@ -150,7 +150,7 @@
 
     <!-- 按角色列表分页查询用户（支持多个角色，OR 关系） -->
     <select id="selectUsersByRoles"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT nickname,
         user_id,
         avatar_url,
@@ -172,7 +172,7 @@
 
     <!-- 管理员分页查询用户列表（支持多条件过滤） -->
     <select id="adminSelectUsers"
-            resultType="top.playereg.pix_vision.pojo.userPojo.User">
+            resultType="top.playereg.pix_vision.pojo.entity.user.User">
         SELECT user_id,
                user_uuid,
                username,

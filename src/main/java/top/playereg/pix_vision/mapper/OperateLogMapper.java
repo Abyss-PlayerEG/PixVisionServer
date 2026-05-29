@@ -5,8 +5,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
-import top.playereg.pix_vision.pojo.OperateLog;
-import top.playereg.pix_vision.pojo.OperateLogVO;
+import top.playereg.pix_vision.pojo.VO.OperateLogVO;
+import top.playereg.pix_vision.pojo.entity.OperateLog;
 
 /**
  * 系统操作日志 Mapper 接口

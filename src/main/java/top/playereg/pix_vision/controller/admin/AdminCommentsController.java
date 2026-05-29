@@ -9,8 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
-import top.playereg.pix_vision.pojo.commentsPojo.Comments;
+import top.playereg.pix_vision.pojo.VO.admin.AdminCommentVO;
+import top.playereg.pix_vision.pojo.admin.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
@@ -136,7 +136,7 @@ public class AdminCommentsController {
               - 其他值或 null: 按最新发布排列（默认）
 
             ## 返回说明：
-            - **成功**：返回 IPage<Comments> 对象，包含评论列表和分页信息
+            - **成功**：返回 IPage<AdminCommentVO> 对象，包含评论列表、分页信息及最新的 AI 审核记录（audit_reason、insult_words 字段）
             - **无数据**：返回空的分页结果（total=0, records=[]）
 
             ## 业务逻辑：
@@ -155,7 +155,7 @@ public class AdminCommentsController {
     )
     @LogRecord(module = "评论管理", event = "分页查询评论")
     @GetMapping("/page/{current}/{size}")
-    public ResponsePojo<IPage<Comments>> getCommentsPage(
+    public ResponsePojo<IPage<AdminCommentVO>> getCommentsPage(
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
         @Parameter(description = "作品ID（可选）", required = false) @RequestParam(required = false) Integer workId,
@@ -172,11 +172,11 @@ public class AdminCommentsController {
         // 参数校验
         ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
         if (error != null) {
-            return (ResponsePojo<IPage<Comments>>) (ResponsePojo<?>) error;
+            return (ResponsePojo<IPage<AdminCommentVO>>) (ResponsePojo<?>) error;
         }
 
         try {
-            IPage<Comments> result = commentService.getCommentsPage(current, size, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
+            IPage<AdminCommentVO> result = commentService.getCommentsPage(current, size, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
             return ResponsePojo.success(result, "查询成功");
         } catch (Exception e) {
             log.error("分页查询评论异常，错误: {}", e.getMessage(), e);

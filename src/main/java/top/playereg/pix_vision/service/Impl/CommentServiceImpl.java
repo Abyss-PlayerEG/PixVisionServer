@@ -1,23 +1,29 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.mapper.CommentsMapper;
+import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
-import top.playereg.pix_vision.pojo.ContentAuditResult;
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
-import top.playereg.pix_vision.pojo.commentsPojo.CommentAddResult;
-import top.playereg.pix_vision.pojo.commentsPojo.Comments;
-import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
-import top.playereg.pix_vision.pojo.commentsPojo.VO.SecondaryComment;
-import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.pojo.VO.admin.AdminCommentVO;
+import top.playereg.pix_vision.pojo.VO.comment.PrimaryComment;
+import top.playereg.pix_vision.pojo.VO.comment.SecondaryComment;
+import top.playereg.pix_vision.pojo.admin.AdminBatchOperateCommentResult;
+import top.playereg.pix_vision.pojo.dto.CommentAddResult;
+import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
+import top.playereg.pix_vision.pojo.entity.Comments;
+import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
+import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +48,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private ContentAuditService contentAuditService;
+
+    @Autowired
+    private ContentAuditRecordMapper contentAuditRecordMapper;
 
     /**
      * 新增评论
@@ -168,6 +177,22 @@ public class CommentServiceImpl implements CommentService {
                     log.info("二级评论新增成功 - 用户ID: {}, 作品ID: {}, 评论ID: {}, 所属一级评论ID: {}",
                         userId, workId, comment.getComment_id(), comment.getIn_comment_id());
                 }
+
+                // 将 AI 审核结果写入审核记录表
+                if (auditResult != null) {
+                    ContentAuditRecord auditRecord = new ContentAuditRecord();
+                    auditRecord.setContent_type(200);
+                    auditRecord.setContent_id(comment.getComment_id());
+                    auditRecord.setApproval_status(approvalStatus);
+                    auditRecord.setAudit_reason(auditResult.getReason());
+                    auditRecord.setInsult_words(auditResult.getInsult_words() != null
+                        ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+                    auditRecord.setOriginal_content(comment.getComment_text());
+                    auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
+                    contentAuditRecordMapper.insertRecord(auditRecord);
+                    log.info("评论审核记录已保存 - 评论ID: {}, 审核状态: {}", comment.getComment_id(), approvalStatus);
+                }
+
                 return new CommentAddResult(true, approvalStatus, auditReason);
             } else {
                 log.warn("评论新增失败 - 用户ID: {}, 作品ID: {}", userId, workId);
@@ -529,7 +554,7 @@ public class CommentServiceImpl implements CommentService {
      * @author PlayerEG
      */
     @Override
-    public IPage<Comments> getCommentsPage(Long current, Long size,
+    public IPage<AdminCommentVO> getCommentsPage(Long current, Long size,
                                            Integer workId, Integer userId,
                                            Integer commentFloor, Integer approvalStatus,
                                            String keyword, String orderBy) {
@@ -546,10 +571,43 @@ public class CommentServiceImpl implements CommentService {
         // 调用 Mapper 层查询
         IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
 
+        // 批量查询审核记录
+        final Map<Integer, ContentAuditRecord> auditMap;
+        if (result != null && !result.getRecords().isEmpty()) {
+            List<Integer> commentIds = result.getRecords().stream()
+                .map(Comments::getComment_id)
+                .collect(Collectors.toList());
+            List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
+                .selectLatestByContentIds(200, commentIds);
+            if (auditRecords != null) {
+                auditMap = auditRecords.stream().collect(Collectors.toMap(
+                    ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+            } else {
+                auditMap = new HashMap<>();
+            }
+        } else {
+            auditMap = new HashMap<>();
+        }
+
+        // 转换 Comments → AdminCommentVO
+        List<AdminCommentVO> voList = result.getRecords().stream().map(comment -> {
+            AdminCommentVO vo = new AdminCommentVO();
+            BeanUtils.copyProperties(comment, vo);
+            ContentAuditRecord audit = auditMap.get(comment.getComment_id());
+            if (audit != null) {
+                vo.setAudit_reason(audit.getAudit_reason());
+                vo.setInsult_words(audit.getInsult_words());
+            }
+            return vo;
+        }).collect(Collectors.toList());
+
+        IPage<AdminCommentVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(voList);
+
         log.info("分页查询评论完成，总数: {}, 当前页: {}, 每页大小: {}",
             result.getTotal(), result.getCurrent(), result.getSize());
 
-        return result;
+        return voPage;
     }
 
 

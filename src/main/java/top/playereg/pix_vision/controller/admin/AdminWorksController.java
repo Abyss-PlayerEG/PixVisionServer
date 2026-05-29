@@ -9,8 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.Works;
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
+import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
+import top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
@@ -263,7 +263,7 @@ public class AdminWorksController {
               - 不传: 默认只查未删除
 
             ## 返回说明：
-            - **成功**：返回 IPage<Works> 对象，包含作品列表和分页信息
+            - **成功**：返回 IPage<AdminWorkVO> 对象，包含作品列表、分页信息及最新的 AI 审核记录（audit_reason、insult_words 字段）
             - **无数据**：返回空的分页结果（total=0, records=[]）
 
             ## 业务逻辑：
@@ -283,7 +283,7 @@ public class AdminWorksController {
     )
     @LogRecord(module = "作品管理", event = "分页查询作品")
     @GetMapping("/page/{current}/{size}")
-    public ResponsePojo<IPage<Works>> getAdminWorksPage(
+    public ResponsePojo<IPage<AdminWorkVO>> getAdminWorksPage(
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
         @Parameter(description = "关键字（可选，模糊搜索标题）", required = false) @RequestParam(required = false) String keyword,
@@ -295,11 +295,11 @@ public class AdminWorksController {
         // 参数校验
         ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
         if (error != null) {
-            return (ResponsePojo<IPage<Works>>) (ResponsePojo<?>) error;
+            return (ResponsePojo<IPage<AdminWorkVO>>) (ResponsePojo<?>) error;
         }
 
         try {
-            IPage<Works> result = workService.getAdminWorksPage(current, size, keyword, orderBy,
+            IPage<AdminWorkVO> result = workService.getAdminWorksPage(current, size, keyword, orderBy,
                 isOriginal, approvalStatus, isDelete);
             return ResponsePojo.success(result, "查询成功");
         } catch (Exception e) {

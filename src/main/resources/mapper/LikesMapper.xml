@@ -3,7 +3,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.LikesMapper">
 
     <!-- 查询用户是否已点赞某作品 -->
-    <select id="selectByUserAndWork" resultType="top.playereg.pix_vision.pojo.Like">
+    <select id="selectByUserAndWork" resultType="top.playereg.pix_vision.pojo.entity.Like">
         SELECT user_id, work_id, is_delete, time
         FROM tb_like
         WHERE user_id = #{userId}
@@ -35,7 +35,7 @@
     </select>
 
     <!-- 分页查询用户点赞过的作品列表（只返回审核通过的作品） -->
-    <select id="selectUserLikedWorks" resultType="top.playereg.pix_vision.pojo.Works">
+    <select id="selectUserLikedWorks" resultType="top.playereg.pix_vision.pojo.entity.Works">
         SELECT w.work_id,
                w.user_id,
                w.work_title,

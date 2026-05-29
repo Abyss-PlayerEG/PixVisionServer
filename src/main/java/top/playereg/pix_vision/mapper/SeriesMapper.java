@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import top.playereg.pix_vision.pojo.Series;
+import top.playereg.pix_vision.pojo.entity.Series;
 
 import java.util.List;
 
@@ -76,7 +76,8 @@ public interface SeriesMapper extends BaseMapper<Series> {
         @Param("seriesId") Integer seriesId,
         @Param("userId") Integer userId,
         @Param("seriesTitle") String seriesTitle,
-        @Param("aboutText") String aboutText
+        @Param("aboutText") String aboutText,
+        @Param("approvalStatus") Integer approvalStatus
     );
 
     /**

@@ -9,8 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import top.playereg.pix_vision.config.PythonServerConfig;
-import top.playereg.pix_vision.pojo.ContentAuditResult;
-import top.playereg.pix_vision.pojo.PythonApiResponse;
+import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
+import top.playereg.pix_vision.pojo.external.PythonApiResponse;
 import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 

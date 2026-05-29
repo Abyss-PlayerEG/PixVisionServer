@@ -4,7 +4,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.UserDataChangeLockMapper">
 
     <!-- 插入锁定记录 -->
-    <insert id="insertLock" parameterType="top.playereg.pix_vision.pojo.UserDataChangeLock"
+    <insert id="insertLock" parameterType="top.playereg.pix_vision.pojo.entity.user.UserDataChangeLock"
             useGeneratedKeys="true" keyProperty="lock_id">
         INSERT INTO tb_user_data_change_lock
         (user_id, type, nickname, user_role, avatar_url, old_data, approval_status, is_delete, create_time)
@@ -13,7 +13,7 @@
     </insert>
 
     <!-- 查询有效待审核记录 -->
-    <select id="selectPendingByUserAndType" resultType="top.playereg.pix_vision.pojo.UserDataChangeLock">
+    <select id="selectPendingByUserAndType" resultType="top.playereg.pix_vision.pojo.entity.user.UserDataChangeLock">
         SELECT * FROM tb_user_data_change_lock
         WHERE user_id = #{user_id}
           AND type = #{type}
@@ -32,7 +32,7 @@
     </update>
 
     <!-- 分页查询待审核记录（含用户名关联） -->
-    <select id="selectPendingPage" resultType="top.playereg.pix_vision.pojo.UserDataChangeLockVO">
+    <select id="selectPendingPage" resultType="top.playereg.pix_vision.pojo.VO.UserDataChangeLockVO">
         SELECT l.lock_id AS lock_id, l.user_id AS user_id, l.type,
                l.nickname, l.user_role AS user_role, l.avatar_url AS avatar_url,
                l.old_data AS old_data, l.create_time AS create_time,
@@ -48,7 +48,7 @@
     </select>
 
     <!-- 根据 ID 列表批量查询锁定记录 -->
-    <select id="selectLockByIds" resultType="top.playereg.pix_vision.pojo.UserDataChangeLock">
+    <select id="selectLockByIds" resultType="top.playereg.pix_vision.pojo.entity.user.UserDataChangeLock">
         SELECT * FROM tb_user_data_change_lock
         WHERE lock_id IN
         <foreach collection="lockIds" item="id" open="(" separator="," close=")">

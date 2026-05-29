@@ -1,10 +1,11 @@
 package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateCommentResult;
-import top.playereg.pix_vision.pojo.commentsPojo.CommentAddResult;
-import top.playereg.pix_vision.pojo.commentsPojo.Comments;
-import top.playereg.pix_vision.pojo.commentsPojo.VO.PrimaryComment;
+import top.playereg.pix_vision.pojo.VO.admin.AdminCommentVO;
+import top.playereg.pix_vision.pojo.VO.comment.PrimaryComment;
+import top.playereg.pix_vision.pojo.admin.AdminBatchOperateCommentResult;
+import top.playereg.pix_vision.pojo.dto.CommentAddResult;
+import top.playereg.pix_vision.pojo.entity.Comments;
 
 import java.util.List;
 
@@ -92,7 +93,7 @@ public interface CommentService {
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Comments> getCommentsPage(Long current, Long size,
+    IPage<AdminCommentVO> getCommentsPage(Long current, Long size,
                                     Integer workId, Integer userId,
                                     Integer commentFloor, Integer approvalStatus,
                                     String keyword, String orderBy);

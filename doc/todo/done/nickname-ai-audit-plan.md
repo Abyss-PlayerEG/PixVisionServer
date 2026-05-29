@@ -194,7 +194,7 @@ package top.playereg.pix_vision.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
-import top.playereg.pix_vision.pojo.UserDataChangeLock;
+import top.playereg.pix_vision.pojo.entity.user.UserDataChangeLock;
 
 /**
  * 用户数据变更锁定 Mapper
@@ -205,13 +205,13 @@ import top.playereg.pix_vision.pojo.UserDataChangeLock;
 @Repository
 public interface UserDataChangeLockMapper extends BaseMapper<UserDataChangeLock> {
 
-    /**
-     * 插入一条变更锁定记录
-     *
-     * @param lock 锁定记录实体
-     * @return 影响行数
-     */
-    int insertLock(UserDataChangeLock lock);
+  /**
+   * 插入一条变更锁定记录
+   *
+   * @param lock 锁定记录实体
+   * @return 影响行数
+   */
+  int insertLock(UserDataChangeLock lock);
 }
 ```
 
@@ -220,16 +220,16 @@ public interface UserDataChangeLockMapper extends BaseMapper<UserDataChangeLock>
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="top.playereg.pix_vision.mapper.UserDataChangeLockMapper">
 
-    <!-- 插入锁定记录 -->
-    <insert id="insertLock" parameterType="top.playereg.pix_vision.pojo.UserDataChangeLock">
-        INSERT INTO tb_user_data_change_lock
-        (user_id, type, nickname, old_data, approval_status)
-        VALUES
-        (#{userId}, #{type}, #{nickname}, #{oldData}, #{approvalStatus})
-    </insert>
+  <!-- 插入锁定记录 -->
+  <insert id="insertLock" parameterType="top.playereg.pix_vision.pojo.entity.user.UserDataChangeLock">
+    INSERT INTO tb_user_data_change_lock
+    (user_id, type, nickname, old_data, approval_status)
+    VALUES
+    (#{userId}, #{type}, #{nickname}, #{oldData}, #{approvalStatus})
+  </insert>
 
 </mapper>
 ```
@@ -446,7 +446,7 @@ return ResponsePojo.success(true, "昵称修改成功");
 同时需要在 Controller 文件头部新增 import：
 
 ```java
-import top.playereg.pix_vision.pojo.NicknameChangeResult;
+
 ```
 
 ### 6.4 `UserProfileController` - Swagger 文档更新

@@ -1,21 +1,31 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
-import top.playereg.pix_vision.pojo.Series;
-import top.playereg.pix_vision.pojo.Works;
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
+import top.playereg.pix_vision.pojo.VO.admin.AdminSeriesVO;
+import top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult;
+import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
+import top.playereg.pix_vision.pojo.dto.SeriesOperationResult;
+import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
+import top.playereg.pix_vision.pojo.entity.Series;
+import top.playereg.pix_vision.pojo.entity.Works;
+import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +43,12 @@ public class SeriesServiceImpl implements SeriesService {
     @Autowired
     private WorksMapper worksMapper;
 
+    @Autowired
+    private ContentAuditService contentAuditService;
+
+    @Autowired
+    private ContentAuditRecordMapper contentAuditRecordMapper;
+
     public SeriesServiceImpl(SeriesMapper seriesMapper) {
         this.seriesMapper = seriesMapper;
     }
@@ -43,24 +59,24 @@ public class SeriesServiceImpl implements SeriesService {
      * @param userId      用户 ID（从 Token 中获取）
      * @param seriesTitle 系列标题
      * @param aboutText   系列描述文本
-     * @return 新增的系列对象
+     * @return 系列操作结果，包含操作是否成功、AI审核状态和审核原因
      */
     @Override
-    public Series addSeries(Integer userId, String seriesTitle, String aboutText) {
+    public SeriesOperationResult addSeries(Integer userId, String seriesTitle, String aboutText) {
         log.info("开始新增系列，用户 ID: {}, 系列标题: {}", userId, seriesTitle);
 
-        // 检查系列标题是否已存在
-        int count = seriesMapper.countSeriesByTitle(userId, seriesTitle);
-        if (count > 0) {
-            log.warn("系列标题已存在，用户 ID: {}, 系列标题: {}", userId, seriesTitle);
-            throw new IllegalArgumentException("系列标题已存在，请使用其他标题");
-        }
+        // 调用 AI 审核服务对系列标题和描述进行内容安全审核
+        String auditText = buildSeriesAuditText(seriesTitle, aboutText);
+        ContentAuditResult auditResult = contentAuditService.auditContent(auditText);
+        Integer approvalStatus = resolveApprovalStatus(auditResult);
+        String auditReason = auditResult != null ? auditResult.getReason() : null;
 
         // 创建系列对象
         Series series = new Series();
         series.setUser_id(userId);
         series.setSeries_title(seriesTitle);
         series.setAbout_text(aboutText);
+        series.setApproval_status(approvalStatus);
         series.setIs_delete(Boolean.FALSE);
 
         // 设置时间戳和操作者
@@ -75,11 +91,31 @@ public class SeriesServiceImpl implements SeriesService {
 
         if (result > 0) {
             // useGeneratedKeys 会自动将生成的 series_id 回填到 series 对象中
-            log.info("系列新增成功，系列 ID: {}, 用户 ID: {}", series.getSeries_id(), userId);
-            return series;
+            log.info("系列新增成功，系列 ID: {}, 用户 ID: {}, 审核状态: {}", series.getSeries_id(), userId, approvalStatus);
+
+            // 将 AI 审核结果写入审核记录表
+            if (auditResult != null) {
+                ContentAuditRecord auditRecord = new ContentAuditRecord();
+                auditRecord.setContent_type(300);
+                auditRecord.setContent_id(series.getSeries_id());
+                auditRecord.setApproval_status(approvalStatus);
+                auditRecord.setAudit_reason(auditResult.getReason());
+                auditRecord.setInsult_words(auditResult.getInsult_words() != null
+                    ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+                String seriesOriginalContent = seriesTitle;
+                if (aboutText != null && !aboutText.trim().isEmpty()) {
+                    seriesOriginalContent += "|" + aboutText.trim();
+                }
+                auditRecord.setOriginal_content(seriesOriginalContent);
+                auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
+                contentAuditRecordMapper.insertRecord(auditRecord);
+                log.info("系列审核记录已保存 - 系列ID: {}, 审核状态: {}", series.getSeries_id(), approvalStatus);
+            }
+
+            return new SeriesOperationResult(true, approvalStatus, auditReason);
         } else {
             log.error("系列新增失败，用户 ID: {}", userId);
-            return null;
+            return new SeriesOperationResult(false, null, null);
         }
     }
 
@@ -202,21 +238,21 @@ public class SeriesServiceImpl implements SeriesService {
      * @param userId      当前用户 ID（用于权限验证）
      * @param seriesTitle 系列标题（可选，最多 16 个中文字符）
      * @param aboutText   系列描述（可选，最多 24 个中文字符）
-     * @return 修改结果
+     * @return 系列操作结果，包含操作是否成功、AI审核状态和审核原因
      */
     @Override
-    public Boolean updateSeriesInfo(Integer seriesId, Integer userId, String seriesTitle, String aboutText) {
+    public SeriesOperationResult updateSeriesInfo(Integer seriesId, Integer userId, String seriesTitle, String aboutText) {
         log.info("开始更新系列信息，系列 ID: {}, 用户 ID: {}", seriesId, userId);
 
         // 参数校验
         if (seriesId == null || seriesId <= 0) {
             log.warn("系列 ID 无效: {}", seriesId);
-            return Boolean.FALSE;
+            return new SeriesOperationResult(false, null, null);
         }
 
         if (userId == null || userId <= 0) {
             log.warn("用户 ID 无效: {}", userId);
-            return Boolean.FALSE;
+            return new SeriesOperationResult(false, null, null);
         }
 
         // 检查是否所有参数都为空
@@ -253,12 +289,6 @@ public class SeriesServiceImpl implements SeriesService {
 
             // 检查标题是否与当前标题不同
             if (!trimmedTitle.equals(series.getSeries_title())) {
-                // 检查新标题是否已被其他系列使用
-                int count = seriesMapper.countSeriesByTitle(userId, trimmedTitle);
-                if (count > 0) {
-                    log.warn("系列标题已存在，用户 ID: {}, 新标题: {}", userId, trimmedTitle);
-                    throw new IllegalArgumentException("系列标题已存在，请使用其他标题");
-                }
                 finalSeriesTitle = trimmedTitle;
             }
         }
@@ -286,15 +316,45 @@ public class SeriesServiceImpl implements SeriesService {
             throw new IllegalArgumentException("无修改内容");
         }
 
+        // 调用 AI 审核服务对更新后的系列内容进行审核
+        String auditText = buildSeriesAuditText(
+            finalSeriesTitle != null ? finalSeriesTitle : series.getSeries_title(),
+            finalAboutText != null ? finalAboutText : series.getAbout_text()
+        );
+        ContentAuditResult auditResult = contentAuditService.auditContent(auditText);
+        Integer approvalStatus = resolveApprovalStatus(auditResult);
+        String auditReason = auditResult != null ? auditResult.getReason() : null;
+
         // 执行更新
-        int affectedRows = seriesMapper.updateSeriesInfo(seriesId, userId, finalSeriesTitle, finalAboutText);
+        int affectedRows = seriesMapper.updateSeriesInfo(seriesId, userId, finalSeriesTitle, finalAboutText, approvalStatus);
 
         if (affectedRows > 0) {
-            log.info("系列信息更新成功，系列 ID: {}, 用户 ID: {}", seriesId, userId);
-            return Boolean.TRUE;
+            log.info("系列信息更新成功，系列 ID: {}, 用户 ID: {}, 审核状态: {}", seriesId, userId, approvalStatus);
+
+            // 将 AI 审核结果写入审核记录表
+            if (auditResult != null) {
+                ContentAuditRecord auditRecord = new ContentAuditRecord();
+                auditRecord.setContent_type(300);
+                auditRecord.setContent_id(seriesId);
+                auditRecord.setApproval_status(approvalStatus);
+                auditRecord.setAudit_reason(auditResult.getReason());
+                auditRecord.setInsult_words(auditResult.getInsult_words() != null
+                    ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+                String seriesOriginalContent = finalSeriesTitle != null ? finalSeriesTitle : series.getSeries_title();
+                String effectiveAbout = finalAboutText != null ? finalAboutText : series.getAbout_text();
+                if (effectiveAbout != null && !effectiveAbout.trim().isEmpty()) {
+                    seriesOriginalContent += "|" + effectiveAbout.trim();
+                }
+                auditRecord.setOriginal_content(seriesOriginalContent);
+                auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
+                contentAuditRecordMapper.insertRecord(auditRecord);
+                log.info("系列审核记录已保存 - 系列ID: {}, 审核状态: {}", seriesId, approvalStatus);
+            }
+
+            return new SeriesOperationResult(true, approvalStatus, auditReason);
         } else {
             log.error("系列信息更新失败，系列 ID: {}, 用户 ID: {}", seriesId, userId);
-            return Boolean.FALSE;
+            return new SeriesOperationResult(false, null, null);
         }
     }
 
@@ -431,6 +491,67 @@ public class SeriesServiceImpl implements SeriesService {
     }
 
     /**
+     * 构建系列审核文本
+     * <p>
+     * 将标题和描述拼接为 AI 审核所需的文本格式
+     * </p>
+     *
+     * @param seriesTitle 系列标题
+     * @param aboutText   系列描述
+     * @return 审核文本
+     */
+    private String buildSeriesAuditText(String seriesTitle, String aboutText) {
+        StringBuilder sb = new StringBuilder();
+        if (seriesTitle != null && !seriesTitle.trim().isEmpty()) {
+            sb.append("标题：").append(seriesTitle.trim());
+        }
+        if (aboutText != null && !aboutText.trim().isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append("\n");
+            }
+            sb.append("描述：").append(aboutText.trim());
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 根据 AI 审核结果解析审核状态
+     * <p>
+     * 审核结果映射规则：
+     * <ul>
+     *   <li>{@code normal} - 正常内容，对应审核状态 10（通过）</li>
+     *   <li>{@code neutral} - 中立/存疑，对应审核状态 20（待审核）</li>
+     *   <li>{@code violation} - 违规内容，对应审核状态 30（未过审）</li>
+     * </ul>
+     * </p>
+     *
+     * @param auditResult AI 审核结果
+     * @return 审核状态码（10、20 或 30）
+     */
+    private Integer resolveApprovalStatus(ContentAuditResult auditResult) {
+        Integer approvalStatus = 20; // 默认待审核
+        if (auditResult != null) {
+            switch (auditResult.getStatus()) {
+                case "normal":
+                    approvalStatus = 10;
+                    break;
+                case "violation":
+                    approvalStatus = 30;
+                    break;
+                case "neutral":
+                default:
+                    approvalStatus = 20;
+                    break;
+            }
+            log.info("AI 系列审核结果 - 状态: {}, 原因: {}, 命中敏感词: {}, 最终审核状态: {}",
+                auditResult.getStatus(), auditResult.getReason(), auditResult.getInsult_words(), approvalStatus);
+        } else {
+            log.warn("AI 审核服务不可用，系列降级为待审核");
+        }
+        return approvalStatus;
+    }
+
+    /**
      * 重命名作品文件为 .del 后缀
      *
      * @param workIds 作品 ID 列表
@@ -442,13 +563,13 @@ public class SeriesServiceImpl implements SeriesService {
         }
 
         // 查询作品信息获取文件名
-        List<top.playereg.pix_vision.pojo.Works> worksList = worksMapper.selectBatchIds(workIds);
+        List<Works> worksList = worksMapper.selectBatchIds(workIds);
         if (worksList == null || worksList.isEmpty()) {
             return 0;
         }
 
         int renamedCount = 0;
-        for (top.playereg.pix_vision.pojo.Works work : worksList) {
+        for (Works work : worksList) {
             String imgFileName = work.getImg_url();
             if (imgFileName != null && !imgFileName.isEmpty()) {
                 File originalFile = new File(top.playereg.pix_vision.config.FilePathConfig.WorksPath, imgFileName);
@@ -490,7 +611,7 @@ public class SeriesServiceImpl implements SeriesService {
 
         // 1. 先查询所有系列信息，验证是否存在且未删除
         List<Series> seriesList = seriesMapper.selectBatchIds(seriesIds);
-        
+
         // 构建查询到的系列ID集合
         java.util.Set<Integer> foundSeriesIds = new java.util.HashSet<>();
         if (seriesList != null && !seriesList.isEmpty()) {
@@ -498,7 +619,7 @@ public class SeriesServiceImpl implements SeriesService {
                 foundSeriesIds.add(series.getSeries_id());
             }
         }
-        
+
         // 2. 找出未找到的系列ID（不存在的系列）
         List<Integer> notFoundSeriesIds = new ArrayList<>();
         for (Integer seriesId : seriesIds) {
@@ -506,12 +627,12 @@ public class SeriesServiceImpl implements SeriesService {
                 notFoundSeriesIds.add(seriesId);
             }
         }
-        
+
         // 3. 过滤出未删除的系列
         List<Series> validSeries = seriesList != null ? seriesList.stream()
             .filter(series -> !series.getIs_delete())
             .toList() : new ArrayList<>();
-        
+
         // 4. 找出已删除的系列ID
         List<Integer> deletedSeriesIds = new ArrayList<>();
         if (seriesList != null) {
@@ -521,7 +642,7 @@ public class SeriesServiceImpl implements SeriesService {
                 }
             }
         }
-        
+
         // 合并所有失败的ID（不存在的 + 已删除的）
         List<Integer> failedSeriesIds = new ArrayList<>();
         failedSeriesIds.addAll(notFoundSeriesIds);
@@ -539,7 +660,7 @@ public class SeriesServiceImpl implements SeriesService {
         int affectedRows = seriesMapper.adminBatchUpdateApprovalStatus(validSeriesIds, approvalStatus, userId);
 
         int successCount = affectedRows > 0 ? affectedRows : 0;
-        
+
         // 如果数据库更新的影响行数小于有效系列数量，说明有部分更新失败
         if (affectedRows < validSeriesIds.size()) {
             // 简化处理：将所有有效系列ID都标记为失败（因为无法精确知道哪些失败了）
@@ -550,7 +671,7 @@ public class SeriesServiceImpl implements SeriesService {
         String statusName = getStatusName(approvalStatus);
         log.info("批量更新系列审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {} ({}), 操作者 ID: {}",
             totalCount, successCount, failedSeriesIds.size(), approvalStatus, statusName, userId);
-        
+
         if (!notFoundSeriesIds.isEmpty()) {
             log.warn("以下系列ID不存在: {}", notFoundSeriesIds);
         }
@@ -601,7 +722,7 @@ public class SeriesServiceImpl implements SeriesService {
 
         // 1. 先查询所有系列信息，验证是否存在且未删除
         List<Series> seriesList = seriesMapper.selectBatchIds(seriesIds);
-        
+
         // 构建查询到的系列ID集合
         java.util.Set<Integer> foundSeriesIds = new java.util.HashSet<>();
         if (seriesList != null && !seriesList.isEmpty()) {
@@ -609,7 +730,7 @@ public class SeriesServiceImpl implements SeriesService {
                 foundSeriesIds.add(series.getSeries_id());
             }
         }
-        
+
         // 2. 找出未找到的系列ID（不存在的系列）
         List<Integer> notFoundSeriesIds = new ArrayList<>();
         for (Integer seriesId : seriesIds) {
@@ -617,12 +738,12 @@ public class SeriesServiceImpl implements SeriesService {
                 notFoundSeriesIds.add(seriesId);
             }
         }
-        
+
         // 3. 过滤出未删除的系列
         List<Series> validSeries = seriesList != null ? seriesList.stream()
             .filter(series -> !series.getIs_delete())
             .toList() : new ArrayList<>();
-        
+
         // 4. 找出已删除的系列ID
         List<Integer> deletedSeriesIds = new ArrayList<>();
         if (seriesList != null) {
@@ -632,7 +753,7 @@ public class SeriesServiceImpl implements SeriesService {
                 }
             }
         }
-        
+
         // 合并所有失败的ID（不存在的 + 已删除的）
         List<Integer> failedSeriesIds = new ArrayList<>();
         failedSeriesIds.addAll(notFoundSeriesIds);
@@ -648,7 +769,7 @@ public class SeriesServiceImpl implements SeriesService {
         for (Series series : validSeries) {
             Integer seriesId = series.getSeries_id();
             Integer workOwnerId = series.getUser_id();
-            
+
             try {
                 // 处理系列内的作品
                 if (deleteWorks) {
@@ -691,7 +812,7 @@ public class SeriesServiceImpl implements SeriesService {
 
         log.info("批量删除系列完成 - 总数: {}, 成功: {}, 失败: {}, 操作者 ID: {}",
             totalCount, successCount, failedSeriesIds.size(), userId);
-        
+
         if (!notFoundSeriesIds.isEmpty()) {
             log.warn("以下系列ID不存在: {}", notFoundSeriesIds);
         }
@@ -755,7 +876,7 @@ public class SeriesServiceImpl implements SeriesService {
 
         // 1. 先查询所有系列信息，验证是否存在且未删除
         List<Series> seriesList = seriesMapper.selectBatchIds(seriesIds);
-        
+
         // 构建查询到的系列ID集合
         java.util.Set<Integer> foundSeriesIds = new java.util.HashSet<>();
         if (seriesList != null && !seriesList.isEmpty()) {
@@ -763,7 +884,7 @@ public class SeriesServiceImpl implements SeriesService {
                 foundSeriesIds.add(series.getSeries_id());
             }
         }
-        
+
         // 2. 找出未找到的系列ID（不存在的系列）
         List<Integer> notFoundSeriesIds = new ArrayList<>();
         for (Integer seriesId : seriesIds) {
@@ -771,12 +892,12 @@ public class SeriesServiceImpl implements SeriesService {
                 notFoundSeriesIds.add(seriesId);
             }
         }
-        
+
         // 3. 过滤出未删除的系列
         List<Series> validSeries = seriesList != null ? seriesList.stream()
             .filter(series -> !series.getIs_delete())
             .toList() : new ArrayList<>();
-        
+
         // 4. 找出已删除的系列ID
         List<Integer> deletedSeriesIds = new ArrayList<>();
         if (seriesList != null) {
@@ -786,7 +907,7 @@ public class SeriesServiceImpl implements SeriesService {
                 }
             }
         }
-        
+
         // 合并所有失败的ID（不存在的 + 已删除的）
         List<Integer> failedSeriesIds = new ArrayList<>();
         failedSeriesIds.addAll(notFoundSeriesIds);
@@ -804,7 +925,7 @@ public class SeriesServiceImpl implements SeriesService {
         int affectedRows = seriesMapper.adminBatchUpdateSeriesInfo(validSeriesIds, finalTitle, finalDescription, userId);
 
         int successCount = affectedRows > 0 ? affectedRows : 0;
-        
+
         // 如果数据库更新的影响行数小于有效系列数量，说明有部分更新失败
         if (affectedRows < validSeriesIds.size()) {
             // 简化处理：将所有有效系列ID都标记为失败（因为无法精确知道哪些失败了）
@@ -814,7 +935,7 @@ public class SeriesServiceImpl implements SeriesService {
 
         log.info("批量更新系列信息完成 - 总数: {}, 成功: {}, 失败: {}, 操作者 ID: {}",
             totalCount, successCount, failedSeriesIds.size(), userId);
-        
+
         if (!notFoundSeriesIds.isEmpty()) {
             log.warn("以下系列ID不存在: {}", notFoundSeriesIds);
         }
@@ -841,7 +962,7 @@ public class SeriesServiceImpl implements SeriesService {
      * @author blue_sky_ks
      */
     @Override
-    public IPage<Series> getAdminSeriesPage(Long current, Long size, String keyword, Integer approvalStatus, Boolean isDelete, Integer userId, String orderBy) {
+    public IPage<AdminSeriesVO> getAdminSeriesPage(Long current, Long size, String keyword, Integer approvalStatus, Boolean isDelete, Integer userId, String orderBy) {
         log.debug("管理员分页查询作品合集 - 页码: {}, 每页: {}, 关键词: {}, 审核状态: {}, 是否删除: {}, 用户ID: {}, 排序: {}",
             current, size, keyword, approvalStatus, isDelete, userId, orderBy);
 
@@ -854,6 +975,39 @@ public class SeriesServiceImpl implements SeriesService {
         // 调用 Mapper 分页查询
         IPage<Series> result = seriesMapper.selectAdminSeriesPage(page, keyword, approvalStatus, isDelete, userId, orderBy);
 
+        // 批量查询审核记录
+        final Map<Integer, ContentAuditRecord> auditMap;
+        if (result != null && !result.getRecords().isEmpty()) {
+            List<Integer> seriesIds = result.getRecords().stream()
+                .map(Series::getSeries_id)
+                .collect(Collectors.toList());
+            List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
+                .selectLatestByContentIds(300, seriesIds);
+            if (auditRecords != null) {
+                auditMap = auditRecords.stream().collect(Collectors.toMap(
+                    ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+            } else {
+                auditMap = new HashMap<>();
+            }
+        } else {
+            auditMap = new HashMap<>();
+        }
+
+        // 转换 Series → AdminSeriesVO
+        List<AdminSeriesVO> voList = result.getRecords().stream().map(series -> {
+            AdminSeriesVO vo = new AdminSeriesVO();
+            BeanUtils.copyProperties(series, vo);
+            ContentAuditRecord audit = auditMap.get(series.getSeries_id());
+            if (audit != null) {
+                vo.setAudit_reason(audit.getAudit_reason());
+                vo.setInsult_words(audit.getInsult_words());
+            }
+            return vo;
+        }).collect(Collectors.toList());
+
+        IPage<AdminSeriesVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(voList);
+
         if (result != null) {
             log.info("管理员分页查询成功 - 总记录数: {}, 当前页记录数: {}",
                 result.getTotal(), result.getRecords().size());
@@ -861,6 +1015,6 @@ public class SeriesServiceImpl implements SeriesService {
             log.warn("管理员分页查询返回空结果");
         }
 
-        return result;
+        return voPage;
     }
 }

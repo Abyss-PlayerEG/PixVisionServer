@@ -1,5 +1,7 @@
 package top.playereg.pix_vision.util.Annotation;
 
+import top.playereg.pix_vision.pojo.entity.OperateLog;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -71,7 +73,7 @@ import java.lang.annotation.Target;
  *
  * @author blue_sky_ks, PlayerEG
  * @see top.playereg.pix_vision.util.Annotation.LogRecord 日志记录切面实现
- * @see top.playereg.pix_vision.pojo.OperateLog 操作日志实体类
+ * @see OperateLog 操作日志实体类
  * @since DEV-2.0.0
  */
 @Target(ElementType.METHOD)

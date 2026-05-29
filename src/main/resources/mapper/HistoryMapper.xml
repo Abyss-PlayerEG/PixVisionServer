@@ -9,7 +9,7 @@
     </insert>
 
     <!-- 查询用户的访问历史记录（关联作品表） -->
-    <select id="selectUserHistory" resultType="top.playereg.pix_vision.pojo.History">
+    <select id="selectUserHistory" resultType="top.playereg.pix_vision.pojo.entity.History">
         SELECT w.work_id,
                w.user_id AS work_user_id,
                w.work_title,

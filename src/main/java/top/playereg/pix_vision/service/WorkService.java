@@ -3,9 +3,10 @@ package top.playereg.pix_vision.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.multipart.MultipartFile;
-import top.playereg.pix_vision.pojo.History;
-import top.playereg.pix_vision.pojo.WorkUploadResult;
-import top.playereg.pix_vision.pojo.Works;
+import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
+import top.playereg.pix_vision.pojo.dto.WorkUploadResult;
+import top.playereg.pix_vision.pojo.entity.History;
+import top.playereg.pix_vision.pojo.entity.Works;
 
 import java.util.List;
 
@@ -180,7 +181,7 @@ public interface WorkService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * @author PlayerEG
      */
-    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
+    top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
         List<Integer> workIds,
         Integer approvalStatus,
         Integer userId
@@ -193,7 +194,7 @@ public interface WorkService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * @author PlayerEG
      */
-    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult adminBatchDeleteWorks(
+    top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult adminBatchDeleteWorks(
         List<Integer> workIds
     );
 
@@ -225,7 +226,7 @@ public interface WorkService {
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Works> getAdminWorksPage(
+    IPage<AdminWorkVO> getAdminWorksPage(
         Long current,
         Long size,
         String keyword,
@@ -253,7 +254,7 @@ public interface WorkService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * @author blue_sky_ks
      */
-    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateWorkTitle(
+    top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateWorkTitle(
         List<Integer> workIds,
         String workTitle,
         Integer userId

@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.userPojo.UserData;
+import top.playereg.pix_vision.pojo.entity.user.UserData;
 import top.playereg.pix_vision.service.BilibiliApiService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;

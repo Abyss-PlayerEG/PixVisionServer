@@ -1,0 +1,30 @@
+package top.playereg.pix_vision.pojo.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Schema(description = "历史记录实体")
+public class History extends Works {
+
+    @TableId(type = IdType.INPUT)
+    @Schema(description = "用户 ID（作为逻辑主键）")
+    Integer user_id;
+
+    @Schema(description = "作品 ID")
+    Integer work_id;
+
+    @TableLogic
+    @Schema(description = "删除标签：0 - 未删除、1 - 已删除")
+    Boolean is_delete;
+
+    @Schema(description = "操作时间戳（ISO 8601格式）")
+    String time;
+}

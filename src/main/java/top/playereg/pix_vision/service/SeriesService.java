@@ -1,7 +1,9 @@
 package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import top.playereg.pix_vision.pojo.Series;
+import top.playereg.pix_vision.pojo.VO.admin.AdminSeriesVO;
+import top.playereg.pix_vision.pojo.dto.SeriesOperationResult;
+import top.playereg.pix_vision.pojo.entity.Series;
 
 /**
  * 系列服务接口
@@ -16,9 +18,9 @@ public interface SeriesService {
      * @param userId      用户 ID（从 Token 中获取）
      * @param seriesTitle 系列标题
      * @param aboutText   系列描述文本
-     * @return 新增的系列对象
+     * @return 系列操作结果，包含操作是否成功、AI审核状态和审核原因
      */
-    Series addSeries(Integer userId, String seriesTitle, String aboutText);
+    SeriesOperationResult addSeries(Integer userId, String seriesTitle, String aboutText);
 
     /**
      * 根据用户 ID 分页查询所有作品系列（支持关键词搜索）
@@ -48,9 +50,9 @@ public interface SeriesService {
      * @param userId      当前用户 ID（用于权限验证）
      * @param seriesTitle 系列标题（可选，最多 16 个中文字符）
      * @param aboutText   系列描述（可选，最多 24 个中文字符）
-     * @return 修改结果
+     * @return 系列操作结果，包含操作是否成功、AI审核状态和审核原因
      */
-    Boolean updateSeriesInfo(Integer seriesId, Integer userId, String seriesTitle, String aboutText);
+    SeriesOperationResult updateSeriesInfo(Integer seriesId, Integer userId, String seriesTitle, String aboutText);
 
     /**
      * 批量将作品添加到指定合集
@@ -80,7 +82,7 @@ public interface SeriesService {
      * @param userId          操作者 ID
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      */
-    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
+    top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
         java.util.List<Integer> seriesIds,
         Integer approvalStatus,
         Integer userId
@@ -94,7 +96,7 @@ public interface SeriesService {
      * @param userId      操作者 ID
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      */
-    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchDeleteSeries(
+    top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchDeleteSeries(
         java.util.List<Integer> seriesIds,
         Boolean deleteWorks,
         Integer userId
@@ -110,7 +112,7 @@ public interface SeriesService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * @author blue_sky_ks
      */
-    top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateSeriesInfo(
+    top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateSeriesInfo(
         java.util.List<Integer> seriesIds,
         String seriesTitle,
         String aboutText,
@@ -130,7 +132,7 @@ public interface SeriesService {
      * @return 分页作品合集列表
      * @author blue_sky_ks
      */
-    IPage<Series> getAdminSeriesPage(
+    IPage<AdminSeriesVO> getAdminSeriesPage(
         Long current,
         Long size,
         String keyword,

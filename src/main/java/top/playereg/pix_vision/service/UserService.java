@@ -2,10 +2,11 @@ package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.servlet.http.HttpServletRequest;
-import top.playereg.pix_vision.pojo.UserDataChangeLockVO;
-import top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult;
-import top.playereg.pix_vision.pojo.userPojo.User;
-import top.playereg.pix_vision.pojo.userPojo.UserData;
+import top.playereg.pix_vision.pojo.VO.UserDataChangeLockVO;
+import top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult;
+import top.playereg.pix_vision.pojo.entity.user.User;
+import top.playereg.pix_vision.pojo.entity.user.UserData;
+import top.playereg.pix_vision.pojo.external.NicknameChangeResult;
 
 import java.util.List;
 
@@ -199,7 +200,7 @@ public interface UserService {
      * @author PlayerEG
      * @see #updateUserNickname(Integer, String, Integer)
      */
-    top.playereg.pix_vision.pojo.NicknameChangeResult updateNicknameWithAudit(Integer userId, String nickname, Integer adminId);
+    NicknameChangeResult updateNicknameWithAudit(Integer userId, String nickname, Integer adminId);
 
     /**
      * 更新用户头像（带人工审核锁定）

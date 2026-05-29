@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import top.playereg.pix_vision.pojo.ResponsePojo;
-import top.playereg.pix_vision.pojo.Works;
+import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.PublicAccess;
@@ -56,13 +56,13 @@ public class WorkController {
             - SQL 层面权限验证（只能删除自己的作品）
             - 逻辑删除（数据不真正从数据库移除）
             - 原图和封面文件同步重命名（将 .png/.jpg 改为 .del）
-            
+
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
             - workIds: 要删除的作品 ID 列表，整形数组类型，必填
               * 单条删除：传入 [1]
               * 批量删除：传入 [1, 2, 3]
-            
+
             ## 返回说明：
             - **删除成功**：返回 **{"data": true}** 和"作品删除成功"提示
             - **Token 不存在**：返回 **{"data": null}** 和"Token 不存在"提示
@@ -70,7 +70,7 @@ public class WorkController {
             - **作品 ID 列表为空**：返回 **{"data": false}** 和"作品 ID 列表不能为空"提示
             - **无权删除**：返回 **{"data": false}** 和"部分或全部作品无权删除"提示（作品不属于当前用户）
             - **删除失败**：返回 **{"data": false}** 和"作品删除失败"提示
-            
+
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
             2. 验证 Token 是否在白名单中
@@ -82,7 +82,7 @@ public class WorkController {
             8. 同步将封面文件后缀名改为 .del（如 123_thumb.jpg → 123_thumb.jpg.del，封面不存在时静默跳过）
             9. 执行批量逻辑删除（SQL 层面验证 user_id，确保只能删除自己的作品）
             10. 返回删除结果
-            
+
             ## 注意事项：
             - **需要携带有效的 Token 才能删除作品**
             - Token 必须在白名单中（未过期、未登出）
@@ -360,7 +360,7 @@ public class WorkController {
             - 自动删除旧图片文件和旧封面文件
             - 自动生成新封面缩略图
             - **修改后自动重置为待审核状态**
-            
+
             ## 参数说明：
             - Authorization: Header 中的 Token，格式为 `Bearer <token>`，或通过 URL 参数 `?token=<token>` 传递
             - workId: **作品 ID**，Integer 类型，必填
@@ -369,7 +369,7 @@ public class WorkController {
             - seriesId: **系列 ID**，Integer 类型，可选，传入 0 表示不属于任何系列（清空系列），传入正整数表示关联到对应系列
             - isOriginal: **是否原创**，Boolean 类型，可选，下拉框选择（true=原创，false=转载）
             - outUrl: **外部转载链接**，String 类型，可选，isOriginal=false 时必填
-            
+
             ## 返回说明：
             - **修改成功**：返回 **{"data": true}** 和"作品修改成功"提示
             - **无修改内容**：返回 **{"data": null}** 和"无修改内容"提示（所有参数均为空）
@@ -384,7 +384,7 @@ public class WorkController {
             - **原创作品填写链接**：返回 **{"data": false}** 和"原创作品不能填写外部链接"提示
             - **转载缺少链接**：返回 **{"data": false}** 和"转载作品必须提供外部链接"提示
             - **URL 格式错误**：返回 **{"data": false}** 和"外部链接格式不正确"提示
-            
+
             ## 业务逻辑：
             1. 从请求头或 URL 参数中提取 Token（支持 Bearer 前缀）
             2. 验证 Token 是否在白名单中
@@ -421,7 +421,7 @@ public class WorkController {
             11. 执行动态更新（只更新非空字段）
             12. **自动将作品审核状态重置为待审核（approval_status = 20）**
             13. 返回修改结果
-            
+
             ## 注意事项：
             - **需要携带有效的 Token 才能修改作品**
             - Token 必须在白名单中（未过期、未登出）

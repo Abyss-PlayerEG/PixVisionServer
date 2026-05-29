@@ -1,16 +1,21 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.FilePathConfig;
-import top.playereg.pix_vision.mapper.GuestHistoryMapper;
-import top.playereg.pix_vision.mapper.HistoryMapper;
-import top.playereg.pix_vision.mapper.SeriesMapper;
-import top.playereg.pix_vision.mapper.WorksMapper;
-import top.playereg.pix_vision.pojo.*;
+import top.playereg.pix_vision.mapper.*;
+import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
+import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
+import top.playereg.pix_vision.pojo.dto.WorkUploadResult;
+import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
+import top.playereg.pix_vision.pojo.entity.History;
+import top.playereg.pix_vision.pojo.entity.Series;
+import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.service.ContentAuditService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.ImageUtils;
@@ -21,9 +26,8 @@ import top.playereg.pix_vision.util.RegexUtils;
 import java.io.File;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 作品服务实现类
@@ -48,6 +52,9 @@ public class WorkServiceImpl implements WorkService {
 
     @Autowired
     private ContentAuditService contentAuditService;
+
+    @Autowired
+    private ContentAuditRecordMapper contentAuditRecordMapper;
 
     private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
     private static final long CACHE_TTL_HOURS = 2; // Redis缓存TTL：2小时
@@ -192,7 +199,7 @@ public class WorkServiceImpl implements WorkService {
      */
     @Override
     public WorkUploadResult uploadWork(Integer userId, byte[] fileBytes, String fileName, long fileSize,
-                              String workTitle, Integer seriesId, Boolean isOriginal, String outUrl) {
+                                       String workTitle, Integer seriesId, Boolean isOriginal, String outUrl) {
         // 1. 验证文件格式
         String extension = getFileExtension(fileName);
         if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
@@ -317,7 +324,7 @@ public class WorkServiceImpl implements WorkService {
         String thumbName = thumbFileName(uniqueFileName);
         String thumbSavePath = Paths.get(FilePathConfig.WorksPath, thumbName + fileSuffix).toString();
         try {
-            byte[] thumbBytes = ImageUtils.generateThumbnail(fileBytes, 512);
+            byte[] thumbBytes = ImageUtils.generateThumbnail(fileBytes, 256);
             cn.hutool.core.io.FileUtil.writeBytes(thumbBytes, new File(thumbSavePath));
             log.info("封面缩略图保存成功（审核状态: {}）: {}", approvalStatus, thumbSavePath);
         } catch (Exception e) {
@@ -353,6 +360,22 @@ public class WorkServiceImpl implements WorkService {
         }
 
         log.info("作品发布成功，用户 ID: {}, 作品 ID: {}, 文件路径: {}", userId, works.getWork_id(), uniqueFileName);
+
+        // 将 AI 审核结果写入审核记录表
+        if (auditResult != null) {
+            ContentAuditRecord auditRecord = new ContentAuditRecord();
+            auditRecord.setContent_type(100);
+            auditRecord.setContent_id(works.getWork_id());
+            auditRecord.setApproval_status(approvalStatus);
+            auditRecord.setAudit_reason(auditResult.getReason());
+            auditRecord.setInsult_words(auditResult.getInsult_words() != null
+                ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+            auditRecord.setOriginal_content(workTitle.trim());
+            auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
+            contentAuditRecordMapper.insertRecord(auditRecord);
+            log.info("作品审核记录已保存 - 作品ID: {}, 审核状态: {}", works.getWork_id(), approvalStatus);
+        }
+
         return new WorkUploadResult(works.getWork_id(), approvalStatus, auditReason);
     }
 
@@ -674,7 +697,7 @@ public class WorkServiceImpl implements WorkService {
             String thumbName = thumbFileName(uniqueFileName);
             String thumbSavePath = Paths.get(FilePathConfig.WorksPath, thumbName + ".pend").toString();
             try {
-                byte[] thumbBytes = ImageUtils.generateThumbnail(fileBytes, 400);
+                byte[] thumbBytes = ImageUtils.generateThumbnail(fileBytes, 256);
                 cn.hutool.core.io.FileUtil.writeBytes(thumbBytes, new File(thumbSavePath));
                 newThumbUrl = thumbName;
                 log.info("新封面缩略图保存成功: {}", thumbSavePath);
@@ -859,13 +882,13 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
-    public top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
+    public top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
         List<Integer> workIds,
         Integer approvalStatus,
         Integer userId
     ) {
         if (workIds == null || workIds.isEmpty()) {
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
         }
 
         int totalCount = workIds.size();
@@ -874,7 +897,7 @@ public class WorkServiceImpl implements WorkService {
         List<Works> worksList = worksMapper.selectBatchIds(workIds);
         if (worksList == null || worksList.isEmpty()) {
             log.warn("未找到对应的作品，作品 ID 列表: {}", workIds);
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(totalCount, 0, workIds);
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(totalCount, 0, workIds);
         }
 
         // 2. 过滤出未删除的作品
@@ -884,7 +907,7 @@ public class WorkServiceImpl implements WorkService {
 
         if (validWorks.isEmpty()) {
             log.warn("没有可更新的作品（可能已全部删除），作品 ID 列表: {}", workIds);
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(totalCount, 0, workIds);
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(totalCount, 0, workIds);
         }
 
         // 3. 根据新的审核状态重命名原图和封面文件
@@ -927,7 +950,7 @@ public class WorkServiceImpl implements WorkService {
         log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {}, 文件重命名: {}, 操作者 ID: {}",
             totalCount, successCount, failedWorkIds.size(), approvalStatus, renamedCount, userId);
 
-        return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(
+        return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(
             totalCount, successCount, failedWorkIds
         );
     }
@@ -1027,18 +1050,18 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
-    public top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult adminBatchDeleteWorks(
+    public top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult adminBatchDeleteWorks(
         List<Integer> workIds
     ) {
         if (workIds == null || workIds.isEmpty()) {
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
         }
 
         // 1. 先查询所有作品信息，获取文件名
         List<Works> worksList = worksMapper.selectBatchIds(workIds);
         if (worksList == null || worksList.isEmpty()) {
             log.warn("未找到对应的作品，作品 ID 列表: {}", workIds);
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
         }
 
         // 2. 过滤出未删除的作品
@@ -1048,7 +1071,7 @@ public class WorkServiceImpl implements WorkService {
 
         if (validWorks.isEmpty()) {
             log.warn("没有可删除的作品（可能已全部删除），作品 ID 列表: {}", workIds);
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
         }
 
         // 3. 将原图和封面文件后缀名改为 .del（处理各种状态的文件）
@@ -1091,7 +1114,7 @@ public class WorkServiceImpl implements WorkService {
         log.info("批量删除作品完成 - 总数: {}, 成功: {}, 失败: {}, 文件重命名: {}",
             workIds.size(), successCount, failedWorkIds.size(), renamedCount);
 
-        return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(
+        return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(
             workIds.size(), successCount, failedWorkIds
         );
     }
@@ -1137,7 +1160,7 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> getAdminWorksPage(Long current, Long size, String keyword, String orderBy,
+    public IPage<AdminWorkVO> getAdminWorksPage(Long current, Long size, String keyword, String orderBy,
                                            Boolean isOriginal, Integer approvalStatus, Boolean isDelete) {
         // 参数校验与默认值处理
         current = PageUtils.getValidCurrent(current);
@@ -1173,10 +1196,43 @@ public class WorkServiceImpl implements WorkService {
             }
         }
 
+        // 批量查询审核记录
+        final Map<Integer, ContentAuditRecord> auditMap;
+        if (result != null && !result.getRecords().isEmpty()) {
+            List<Integer> workIds = result.getRecords().stream()
+                .map(Works::getWork_id)
+                .collect(Collectors.toList());
+            List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
+                .selectLatestByContentIds(100, workIds);
+            if (auditRecords != null) {
+                auditMap = auditRecords.stream().collect(Collectors.toMap(
+                    ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+            } else {
+                auditMap = new HashMap<>();
+            }
+        } else {
+            auditMap = new HashMap<>();
+        }
+
+        // 转换 Works → AdminWorkVO
+        List<AdminWorkVO> voList = result.getRecords().stream().map(work -> {
+            AdminWorkVO vo = new AdminWorkVO();
+            BeanUtils.copyProperties(work, vo);
+            ContentAuditRecord audit = auditMap.get(work.getWork_id());
+            if (audit != null) {
+                vo.setAudit_reason(audit.getAudit_reason());
+                vo.setInsult_words(audit.getInsult_words());
+            }
+            return vo;
+        }).collect(Collectors.toList());
+
+        IPage<AdminWorkVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(voList);
+
         log.info("管理员分页查询作品完成，总数: {}, 当前页: {}, 每页大小: {}",
             result.getTotal(), result.getCurrent(), result.getSize());
 
-        return result;
+        return voPage;
     }
 
     /**
@@ -1248,25 +1304,25 @@ public class WorkServiceImpl implements WorkService {
      * @author blue_sky_ks
      */
     @Override
-    public top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult batchUpdateWorkTitle(
+    public top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateWorkTitle(
         List<Integer> workIds,
         String workTitle,
         Integer userId
     ) {
         if (workIds == null || workIds.isEmpty()) {
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
         }
 
         if (workTitle == null || workTitle.trim().isEmpty()) {
             log.warn("作品标题为空");
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
         }
 
         // 验证标题长度（最多 16 个中文字符）
         String trimmedTitle = workTitle.trim();
         if (trimmedTitle.length() > 16) {
             log.warn("作品标题长度不符合要求，标题长度: {}", trimmedTitle.length());
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(workIds.size(), 0, workIds);
         }
 
         int totalCount = workIds.size();
@@ -1312,7 +1368,7 @@ public class WorkServiceImpl implements WorkService {
 
         if (validWorks.isEmpty()) {
             log.warn("没有可更新的作品（可能全部不存在或已删除），作品 ID 列表: {}", workIds);
-            return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(totalCount, 0, failedWorkIds);
+            return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(totalCount, 0, failedWorkIds);
         }
 
         // 5. 使用自定义 SQL 批量更新作品标题
@@ -1340,7 +1396,7 @@ public class WorkServiceImpl implements WorkService {
             log.warn("以下作品ID已删除: {}", deletedWorkIds);
         }
 
-        return new top.playereg.pix_vision.pojo.adminPojo.AdminBatchOperateWorkResult(
+        return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(
             totalCount, successCount, failedWorkIds
         );
     }

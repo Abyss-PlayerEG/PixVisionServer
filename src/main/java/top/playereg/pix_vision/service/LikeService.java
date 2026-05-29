@@ -2,7 +2,7 @@ package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.playereg.pix_vision.pojo.Works;
+import top.playereg.pix_vision.pojo.entity.Works;
 
 /**
  * 点赞服务接口

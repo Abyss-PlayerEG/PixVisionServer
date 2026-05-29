@@ -5,7 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.pojo.entity.user.User;
+import top.playereg.pix_vision.pojo.entity.user.UserData;
 import top.playereg.pix_vision.service.UserService;
 
 @SpringBootTest
@@ -46,10 +47,10 @@ class UserServiceImplTest {
     @Test
     void getUserDataList() {
         // 测试查询用户拓展数据（公开接口，直接传入 userId）
-        java.util.List<top.playereg.pix_vision.pojo.userPojo.UserData> dataList = userService.getUserDataList(1);
+        java.util.List<UserData> dataList = userService.getUserDataList(1);
         if (dataList != null) {
             log.info("查询到 {} 条拓展数据", dataList.size());
-            for (top.playereg.pix_vision.pojo.userPojo.UserData data : dataList) {
+            for (UserData data : dataList) {
                 log.info("数据 ID: {}, 数据名称: {}, 数据内容: {}",
                     data.getData_id(), data.getUser_data_name(), data.getUser_data());
             }

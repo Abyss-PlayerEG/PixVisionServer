@@ -6,8 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
-import top.playereg.pix_vision.pojo.UserDataChangeLock;
-import top.playereg.pix_vision.pojo.UserDataChangeLockVO;
+import top.playereg.pix_vision.pojo.VO.UserDataChangeLockVO;
+import top.playereg.pix_vision.pojo.entity.user.UserDataChangeLock;
 
 import java.util.List;
 

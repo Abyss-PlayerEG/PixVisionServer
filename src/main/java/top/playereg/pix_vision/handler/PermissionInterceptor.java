@@ -7,7 +7,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
-import top.playereg.pix_vision.pojo.userPojo.User;
+import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.PixVisionLogger;

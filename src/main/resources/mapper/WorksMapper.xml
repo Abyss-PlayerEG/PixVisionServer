@@ -3,7 +3,7 @@
 <mapper namespace="top.playereg.pix_vision.mapper.WorksMapper">
 
     <!-- 通用查询映射结果 -->
-    <resultMap id="BaseResultMap" type="top.playereg.pix_vision.pojo.Works">
+    <resultMap id="BaseResultMap" type="top.playereg.pix_vision.pojo.entity.Works">
         <id column="work_id" property="work_id"/>
         <result column="user_id" property="user_id"/>
         <result column="work_title" property="work_title"/>

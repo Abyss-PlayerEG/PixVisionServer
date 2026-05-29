@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>top.playereg</groupId>
     <artifactId>PixVisionServer</artifactId>
-    <version>DevBeta-3.3.2</version>
+    <version>DevBeta-3.4</version>
     <packaging>jar</packaging>
     <name>PixVision</name>
     <description>PixVision</description>
@@ -90,6 +90,13 @@
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
             <version>5.8.38</version>
+        </dependency>
+
+        <!--Fastjson2-->
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>2.0.53</version>
         </dependency>
 
         <!-- Bouncy Castle (Spring Boot 3.x 兼容) -->
