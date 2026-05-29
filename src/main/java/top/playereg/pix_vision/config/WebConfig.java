@@ -30,6 +30,13 @@ public class WebConfig implements WebMvcConfigurer {
     private PermissionInterceptor permissionInterceptor;
 
     /**
+     * 是否启用测试控制器路由拦截
+     * 与 {@code app.test-controller.enabled} 联动
+     */
+    @Value("#{'${app.test-controller.enabled:false}' == 'true' ? '/7e212056/**' : ''}")
+    private String testControllerPath;
+
+    /**
      * 从配置文件读取允许的跨域源地址
      * 如果配置文件中没有定义，使用默认的开发环境地址
      */
@@ -85,12 +92,18 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 第1层：JWT 认证拦截器（验证 Token）
         // 使用 @PublicAccess 注解标记公开接口，无需在此处配置白名单
-        registry.addInterceptor(jwtAuthenticationInterceptor)
-            .addPathPatterns("/api/**", "/7e212056/**");  // 拦截所有 API 请求
+        var jwtRegistry = registry.addInterceptor(jwtAuthenticationInterceptor)
+            .addPathPatterns("/api/**");
+        if (!testControllerPath.isEmpty()) {
+            jwtRegistry.addPathPatterns(testControllerPath);
+        }
 
         // 第2层：权限验证拦截器（验证角色权限）
         // 对所有已认证的 API 请求生效，但只处理带有 @RequireRole 注解的接口
-        registry.addInterceptor(permissionInterceptor)
-            .addPathPatterns("/api/**", "/7e212056/**");
+        var permRegistry = registry.addInterceptor(permissionInterceptor)
+            .addPathPatterns("/api/**");
+        if (!testControllerPath.isEmpty()) {
+            permRegistry.addPathPatterns(testControllerPath);
+        }
     }
 }
