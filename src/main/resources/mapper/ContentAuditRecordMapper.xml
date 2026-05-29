@@ -10,12 +10,13 @@
         <result column="approval_status" property="approval_status"/>
         <result column="audit_reason" property="audit_reason"/>
         <result column="insult_words" property="insult_words"/>
+        <result column="original_content" property="original_content"/>
         <result column="create_time" property="create_time"/>
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        record_id, content_type, content_id, approval_status, audit_reason, insult_words, create_time
+        record_id, content_type, content_id, approval_status, audit_reason, insult_words, original_content, create_time
     </sql>
 
     <!-- 插入审核记录 -->
@@ -25,12 +26,14 @@
                                               approval_status,
                                               audit_reason,
                                               insult_words,
+                                              original_content,
                                               create_time)
         VALUES (#{record.content_type},
                 #{record.content_id},
                 #{record.approval_status},
                 #{record.audit_reason},
                 #{record.insult_words},
+                #{record.original_content},
                 NOW())
     </insert>
 
@@ -42,6 +45,7 @@
                r.approval_status,
                r.audit_reason,
                r.insult_words,
+               r.original_content,
                r.create_time
         FROM tb_content_audit_record r
         INNER JOIN (

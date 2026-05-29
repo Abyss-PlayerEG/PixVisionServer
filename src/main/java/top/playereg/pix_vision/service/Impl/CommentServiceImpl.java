@@ -187,6 +187,7 @@ public class CommentServiceImpl implements CommentService {
                     auditRecord.setAudit_reason(auditResult.getReason());
                     auditRecord.setInsult_words(auditResult.getInsult_words() != null
                         ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+                    auditRecord.setOriginal_content(comment.getComment_text());
                     auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
                     contentAuditRecordMapper.insertRecord(auditRecord);
                     log.info("评论审核记录已保存 - 评论ID: {}, 审核状态: {}", comment.getComment_id(), approvalStatus);

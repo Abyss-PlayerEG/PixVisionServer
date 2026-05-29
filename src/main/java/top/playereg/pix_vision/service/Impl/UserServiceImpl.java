@@ -532,6 +532,7 @@ public class UserServiceImpl implements UserService {
             auditRecord.setAudit_reason(auditResult.getReason());
             auditRecord.setInsult_words(auditResult.getInsult_words() != null
                 ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+            auditRecord.setOriginal_content(nickname);
             auditRecord.setCreate_time(new java.sql.Timestamp(System.currentTimeMillis()));
             contentAuditRecordMapper.insertRecord(auditRecord);
             log.info("昵称审核记录已保存 - lockId: {}, 审核状态: {}", lock.getLock_id(), approvalStatus);

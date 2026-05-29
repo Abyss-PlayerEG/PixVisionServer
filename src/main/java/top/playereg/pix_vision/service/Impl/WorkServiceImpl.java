@@ -370,6 +370,7 @@ public class WorkServiceImpl implements WorkService {
             auditRecord.setAudit_reason(auditResult.getReason());
             auditRecord.setInsult_words(auditResult.getInsult_words() != null
                 ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+            auditRecord.setOriginal_content(workTitle.trim());
             auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
             contentAuditRecordMapper.insertRecord(auditRecord);
             log.info("作品审核记录已保存 - 作品ID: {}, 审核状态: {}", works.getWork_id(), approvalStatus);

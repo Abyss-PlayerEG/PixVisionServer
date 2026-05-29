@@ -35,6 +35,9 @@ public class ContentAuditRecord {
     @Schema(description = "命中敏感词，JSON数组字符串")
     String insult_words;
 
+    @Schema(description = "审核的原始内容")
+    String original_content;
+
     @Schema(description = "审核时间")
     Timestamp create_time;
 }

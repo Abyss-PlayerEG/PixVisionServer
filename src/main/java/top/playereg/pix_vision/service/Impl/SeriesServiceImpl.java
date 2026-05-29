@@ -102,6 +102,11 @@ public class SeriesServiceImpl implements SeriesService {
                 auditRecord.setAudit_reason(auditResult.getReason());
                 auditRecord.setInsult_words(auditResult.getInsult_words() != null
                     ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+                String seriesOriginalContent = seriesTitle;
+                if (aboutText != null && !aboutText.trim().isEmpty()) {
+                    seriesOriginalContent += "|" + aboutText.trim();
+                }
+                auditRecord.setOriginal_content(seriesOriginalContent);
                 auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
                 contentAuditRecordMapper.insertRecord(auditRecord);
                 log.info("系列审核记录已保存 - 系列ID: {}, 审核状态: {}", series.getSeries_id(), approvalStatus);
@@ -335,6 +340,12 @@ public class SeriesServiceImpl implements SeriesService {
                 auditRecord.setAudit_reason(auditResult.getReason());
                 auditRecord.setInsult_words(auditResult.getInsult_words() != null
                     ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+                String seriesOriginalContent = finalSeriesTitle != null ? finalSeriesTitle : series.getSeries_title();
+                String effectiveAbout = finalAboutText != null ? finalAboutText : series.getAbout_text();
+                if (effectiveAbout != null && !effectiveAbout.trim().isEmpty()) {
+                    seriesOriginalContent += "|" + effectiveAbout.trim();
+                }
+                auditRecord.setOriginal_content(seriesOriginalContent);
                 auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
                 contentAuditRecordMapper.insertRecord(auditRecord);
                 log.info("系列审核记录已保存 - 系列ID: {}, 审核状态: {}", seriesId, approvalStatus);
