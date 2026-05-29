@@ -155,7 +155,7 @@ public class AdminUserDataChangeController {
               - 300: 头像修改
 
             ## 返回说明：
-            - **成功**：返回分页结果，每条记录包含 lockId、userId、username、type、新数据、旧数据等
+            - **成功**：返回分页结果，每条记录包含 lockId、userId、username、type、新数据、旧数据、AI 审核记录（audit_reason、insult_words）等
             - **结果为空**：返回空分页对象和成功状态
 
             ## 注意事项：

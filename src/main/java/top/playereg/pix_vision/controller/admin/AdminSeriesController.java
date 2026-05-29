@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
+import top.playereg.pix_vision.pojo.VO.admin.AdminSeriesVO;
 import top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult;
-import top.playereg.pix_vision.pojo.entity.Series;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
@@ -376,7 +376,7 @@ public class AdminSeriesController {
               - 其他值或不传: 按最新创建排列（默认）
 
             ## 返回说明：
-            - **成功**：返回分页合集列表（含总条数、总页数等分页信息）
+            - **成功**：返回分页合集列表（含总条数、总页数等分页信息），包含最新的 AI 审核记录（audit_reason、insult_words 字段）
             - **结果为空**：返回空分页对象和成功状态
             - **参数错误**：返回错误提示
 
@@ -396,7 +396,7 @@ public class AdminSeriesController {
     )
     @LogRecord(module = "合集管理", event = "分页查询合集")
     @GetMapping("/page/{current}/{size}")
-    public ResponsePojo<IPage<Series>> getAdminSeriesPage(
+    public ResponsePojo<IPage<AdminSeriesVO>> getAdminSeriesPage(
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
         @Parameter(description = "搜索关键词（可选，同时匹配标题和描述）", required = false) @RequestParam(required = false) String keyword,
@@ -408,11 +408,11 @@ public class AdminSeriesController {
         // 参数校验
         ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
         if (error != null) {
-            return (ResponsePojo<IPage<Series>>) (ResponsePojo<?>) error;
+            return (ResponsePojo<IPage<AdminSeriesVO>>) (ResponsePojo<?>) error;
         }
 
         try {
-            IPage<Series> result = seriesService.getAdminSeriesPage(current, size, keyword, status, isDelete, userId, orderBy);
+            IPage<AdminSeriesVO> result = seriesService.getAdminSeriesPage(current, size, keyword, status, isDelete, userId, orderBy);
             return ResponsePojo.success(result, "查询成功");
         } catch (Exception e) {
             log.error("分页查询作品合集异常，错误: {}", e.getMessage(), e);

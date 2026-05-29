@@ -42,4 +42,10 @@ public class UserDataChangeLockVO {
 
     /** 提交时间 */
     private Timestamp create_time;
+
+    /** AI 审核判断依据 */
+    private String audit_reason;
+
+    /** 命中敏感词，JSON数组字符串 */
+    private String insult_words;
 }

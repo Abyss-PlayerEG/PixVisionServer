@@ -1,17 +1,18 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import top.playereg.pix_vision.config.FilePathConfig;
-import top.playereg.pix_vision.mapper.GuestHistoryMapper;
-import top.playereg.pix_vision.mapper.HistoryMapper;
-import top.playereg.pix_vision.mapper.SeriesMapper;
-import top.playereg.pix_vision.mapper.WorksMapper;
+import top.playereg.pix_vision.mapper.*;
+import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
 import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
 import top.playereg.pix_vision.pojo.dto.WorkUploadResult;
+import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
 import top.playereg.pix_vision.pojo.entity.History;
 import top.playereg.pix_vision.pojo.entity.Series;
 import top.playereg.pix_vision.pojo.entity.Works;
@@ -25,9 +26,8 @@ import top.playereg.pix_vision.util.RegexUtils;
 import java.io.File;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 作品服务实现类
@@ -52,6 +52,9 @@ public class WorkServiceImpl implements WorkService {
 
     @Autowired
     private ContentAuditService contentAuditService;
+
+    @Autowired
+    private ContentAuditRecordMapper contentAuditRecordMapper;
 
     private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
     private static final long CACHE_TTL_HOURS = 2; // Redis缓存TTL：2小时
@@ -357,6 +360,21 @@ public class WorkServiceImpl implements WorkService {
         }
 
         log.info("作品发布成功，用户 ID: {}, 作品 ID: {}, 文件路径: {}", userId, works.getWork_id(), uniqueFileName);
+
+        // 将 AI 审核结果写入审核记录表
+        if (auditResult != null) {
+            ContentAuditRecord auditRecord = new ContentAuditRecord();
+            auditRecord.setContent_type(100);
+            auditRecord.setContent_id(works.getWork_id());
+            auditRecord.setApproval_status(approvalStatus);
+            auditRecord.setAudit_reason(auditResult.getReason());
+            auditRecord.setInsult_words(auditResult.getInsult_words() != null
+                ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+            auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
+            contentAuditRecordMapper.insertRecord(auditRecord);
+            log.info("作品审核记录已保存 - 作品ID: {}, 审核状态: {}", works.getWork_id(), approvalStatus);
+        }
+
         return new WorkUploadResult(works.getWork_id(), approvalStatus, auditReason);
     }
 
@@ -1141,7 +1159,7 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> getAdminWorksPage(Long current, Long size, String keyword, String orderBy,
+    public IPage<AdminWorkVO> getAdminWorksPage(Long current, Long size, String keyword, String orderBy,
                                            Boolean isOriginal, Integer approvalStatus, Boolean isDelete) {
         // 参数校验与默认值处理
         current = PageUtils.getValidCurrent(current);
@@ -1177,10 +1195,43 @@ public class WorkServiceImpl implements WorkService {
             }
         }
 
+        // 批量查询审核记录
+        final Map<Integer, ContentAuditRecord> auditMap;
+        if (result != null && !result.getRecords().isEmpty()) {
+            List<Integer> workIds = result.getRecords().stream()
+                .map(Works::getWork_id)
+                .collect(Collectors.toList());
+            List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
+                .selectLatestByContentIds(100, workIds);
+            if (auditRecords != null) {
+                auditMap = auditRecords.stream().collect(Collectors.toMap(
+                    ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+            } else {
+                auditMap = new HashMap<>();
+            }
+        } else {
+            auditMap = new HashMap<>();
+        }
+
+        // 转换 Works → AdminWorkVO
+        List<AdminWorkVO> voList = result.getRecords().stream().map(work -> {
+            AdminWorkVO vo = new AdminWorkVO();
+            BeanUtils.copyProperties(work, vo);
+            ContentAuditRecord audit = auditMap.get(work.getWork_id());
+            if (audit != null) {
+                vo.setAudit_reason(audit.getAudit_reason());
+                vo.setInsult_words(audit.getInsult_words());
+            }
+            return vo;
+        }).collect(Collectors.toList());
+
+        IPage<AdminWorkVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(voList);
+
         log.info("管理员分页查询作品完成，总数: {}, 当前页: {}, 每页大小: {}",
             result.getTotal(), result.getCurrent(), result.getSize());
 
-        return result;
+        return voPage;
     }
 
     /**

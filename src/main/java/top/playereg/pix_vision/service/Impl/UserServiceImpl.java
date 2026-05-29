@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,12 +9,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.config.FilePathConfig;
+import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.UserDataChangeLockMapper;
 import top.playereg.pix_vision.mapper.UserDataMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
 import top.playereg.pix_vision.pojo.VO.UserDataChangeLockVO;
 import top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult;
 import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
+import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
 import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.pojo.entity.user.UserData;
 import top.playereg.pix_vision.pojo.entity.user.UserDataChangeLock;
@@ -55,6 +58,9 @@ public class UserServiceImpl implements UserService {
     private ContentAuditService contentAuditService;
     @Autowired
     private UserDataChangeLockMapper userDataChangeLockMapper;
+
+    @Autowired
+    private ContentAuditRecordMapper contentAuditRecordMapper;
 
     /**
      * 注册用户
@@ -516,6 +522,20 @@ public class UserServiceImpl implements UserService {
 
         log.info("昵称修改锁定记录已插入 - 用户ID: {}, 审核状态: {}, lockId: {}",
             userId, approvalStatus, lock.getLock_id());
+
+        // 将 AI 审核结果写入审核记录表
+        if (auditResult != null) {
+            ContentAuditRecord auditRecord = new ContentAuditRecord();
+            auditRecord.setContent_type(400);
+            auditRecord.setContent_id(lock.getLock_id());
+            auditRecord.setApproval_status(approvalStatus);
+            auditRecord.setAudit_reason(auditResult.getReason());
+            auditRecord.setInsult_words(auditResult.getInsult_words() != null
+                ? JSON.toJSONString(auditResult.getInsult_words()) : null);
+            auditRecord.setCreate_time(new java.sql.Timestamp(System.currentTimeMillis()));
+            contentAuditRecordMapper.insertRecord(auditRecord);
+            log.info("昵称审核记录已保存 - lockId: {}, 审核状态: {}", lock.getLock_id(), approvalStatus);
+        }
 
         return new NicknameChangeResult(true, approvalStatus, auditReason);
     }
@@ -1589,7 +1609,30 @@ public class UserServiceImpl implements UserService {
     @Override
     public IPage<UserDataChangeLockVO> getPendingLockPage(Long current, Long size, Integer type) {
         Page<UserDataChangeLockVO> page = new Page<>(current, size);
-        return userDataChangeLockMapper.selectPendingPage(page, type);
+        IPage<UserDataChangeLockVO> result = userDataChangeLockMapper.selectPendingPage(page, type);
+
+        // 批量查询昵称审核记录（仅 type=100 时有意义，但也统一查一下避免遗漏）
+        if (result != null && !result.getRecords().isEmpty()) {
+            List<Integer> lockIds = result.getRecords().stream()
+                .map(UserDataChangeLockVO::getLock_id)
+                .collect(java.util.stream.Collectors.toList());
+            List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
+                .selectLatestByContentIds(400, lockIds);
+            if (auditRecords != null && !auditRecords.isEmpty()) {
+                java.util.Map<Integer, ContentAuditRecord> auditMap = auditRecords.stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                        ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+                for (UserDataChangeLockVO vo : result.getRecords()) {
+                    ContentAuditRecord audit = auditMap.get(vo.getLock_id());
+                    if (audit != null) {
+                        vo.setAudit_reason(audit.getAudit_reason());
+                        vo.setInsult_words(audit.getInsult_words());
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     /**

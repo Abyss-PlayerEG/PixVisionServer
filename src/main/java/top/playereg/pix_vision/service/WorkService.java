@@ -3,6 +3,7 @@ package top.playereg.pix_vision.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.multipart.MultipartFile;
+import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
 import top.playereg.pix_vision.pojo.dto.WorkUploadResult;
 import top.playereg.pix_vision.pojo.entity.History;
 import top.playereg.pix_vision.pojo.entity.Works;
@@ -225,7 +226,7 @@ public interface WorkService {
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Works> getAdminWorksPage(
+    IPage<AdminWorkVO> getAdminWorksPage(
         Long current,
         Long size,
         String keyword,

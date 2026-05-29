@@ -1,6 +1,7 @@
 package top.playereg.pix_vision.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import top.playereg.pix_vision.pojo.VO.admin.AdminSeriesVO;
 import top.playereg.pix_vision.pojo.dto.SeriesOperationResult;
 import top.playereg.pix_vision.pojo.entity.Series;
 
@@ -131,7 +132,7 @@ public interface SeriesService {
      * @return 分页作品合集列表
      * @author blue_sky_ks
      */
-    IPage<Series> getAdminSeriesPage(
+    IPage<AdminSeriesVO> getAdminSeriesPage(
         Long current,
         Long size,
         String keyword,
