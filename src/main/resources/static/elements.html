@@ -1,156 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
-  <title>像素视觉 API 文档 - Elements</title>
-  <link href="./logo/logo.png" rel="shortcut icon">
-  <script src="./elements/web-components.min.js"></script>
+  <meta charset="UTF-8">
+  <title>API 文档 - Stoplight Elements</title>
+  <!-- 引入 Stoplight Elements 的样式 -->
   <link href="./elements/styles.min.css" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { height: 100vh; display: flex; flex-direction: column; }
-
-    /* 顶部工具栏 */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 10px 20px;
-      background: #1a1b23;
-      border-bottom: 1px solid #2d2e3a;
-      z-index: 100;
-      flex-shrink: 0;
-    }
-    .toolbar .brand {
-      font-size: 16px;
-      font-weight: 600;
-      color: #e4e4e7;
-      white-space: nowrap;
-    }
-    .toolbar .brand span {
-      color: #7c3aed;
-    }
-    .toolbar .group-select {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-    }
-    .toolbar label {
-      font-size: 13px;
-      color: #a1a1aa;
-      white-space: nowrap;
-    }
-    .toolbar select {
-      padding: 6px 28px 6px 12px;
-      font-size: 13px;
-      border: 1px solid #3f3f46;
-      border-radius: 6px;
-      background: #27272a;
-      color: #e4e4e7;
-      cursor: pointer;
-      outline: none;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a1a1aa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 8px center;
-      transition: border-color 0.2s;
-    }
-    .toolbar select:hover { border-color: #7c3aed; }
-    .toolbar select:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,0.2); }
-
-    /* 加载状态 */
-    .loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: #a1a1aa;
-      font-size: 14px;
-    }
-
-    /* Elements 容器 */
-    #elements-container {
-      flex: 1;
-      overflow: hidden;
-    }
-    #elements-container elements-api {
-      height: 100%;
-    }
-  </style>
+  <!-- 引入 Stoplight Elements 的 Web Components 脚本 -->
+  <script src="./elements/web-components.min.js"></script>
 </head>
-<body>
-  <div class="toolbar">
-    <div class="brand">PixVision <span>API</span></div>
-    <div class="group-select">
-      <label for="group-switcher">接口分组：</label>
-      <select id="group-switcher">
-        <option value="">加载中...</option>
-      </select>
-    </div>
-  </div>
-  <div id="elements-container">
-    <div class="loading">加载 API 文档中...</div>
-  </div>
-
-  <script>
-    (function() {
-      const container = document.getElementById('elements-container');
-      const switcher = document.getElementById('group-switcher');
-      let groups = [];
-
-      // 渲染 Elements 组件
-      function renderElements(url) {
-        container.innerHTML = '';
-        const el = document.createElement('elements-api');
-        el.setAttribute('apiDescriptionUrl', url);
-        el.setAttribute('router', 'hash');
-        el.setAttribute('layout', 'sidebar');
-        container.appendChild(el);
-      }
-
-      // 分组切换
-      switcher.addEventListener('change', function() {
-        const selected = groups.find(g => g.url === this.value);
-        if (selected) {
-          renderElements(selected.url);
-        }
-      });
-
-      // 加载分组配置
-      fetch('/v3/api-docs/swagger-config')
-        .then(res => res.json())
-        .then(config => {
-          groups = config.urls || [];
-          switcher.innerHTML = '';
-
-          if (groups.length === 0) {
-            // 无分组时直接加载默认端点
-            switcher.innerHTML = '<option value="/v3/api-docs">默认</option>';
-            renderElements('/v3/api-docs');
-            return;
-          }
-
-          groups.forEach((g, i) => {
-            const opt = document.createElement('option');
-            opt.value = g.url;
-            opt.textContent = g.name;
-            if (i === 0) opt.selected = true;
-            switcher.appendChild(opt);
-          });
-
-          // 默认加载第一个分组（RootApi，覆盖所有接口）
-          const defaultGroup = groups.find(g => g.name.includes('RootApi')) || groups[0];
-          switcher.value = defaultGroup.url;
-          renderElements(defaultGroup.url);
-        })
-        .catch(err => {
-          console.error('加载分组配置失败：', err);
-          switcher.innerHTML = '<option value="/v3/api-docs">默认</option>';
-          renderElements('/v3/api-docs');
-        });
-    })();
-  </script>
+<body style="height: 100vh; margin: 0;">
+<elements-api
+  apiDescriptionUrl="/v3/api-docs"
+  layout="sidebar"
+  router="hash"
+/>
 </body>
 </html>
