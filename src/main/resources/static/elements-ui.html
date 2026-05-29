@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>API 文档 - Stoplight Elements</title>
+  <!-- 引入 Stoplight Elements 的样式 -->
+  <link href="./elements/styles.min.css" rel="stylesheet">
+  <!-- 引入 Stoplight Elements 的 Web Components 脚本 -->
+  <script src="./elements/web-components.min.js"></script>
+  <style>
+    /* 可选：微调 body 背景，确保全屏 */
+    body {
+      margin: 0;
+      height: 100vh;
+      background: var(--color-canvas-dialog); /* 确保背景色一致 */
+    }
+  </style>
+</head>
+<body style="height: 100vh; margin: 0;">
+<elements-api
+  apiDescriptionUrl="/v3/api-docs"
+  layout="sidebar"
+  router="hash"
+  hideSchemas="false"
+  hideTryIt="false"
+  logo="./logo/logo.png"
+/>
+</body>
+</html>

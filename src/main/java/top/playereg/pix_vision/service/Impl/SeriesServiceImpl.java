@@ -826,4 +826,41 @@ public class SeriesServiceImpl implements SeriesService {
             totalCount, successCount, failedSeriesIds
         );
     }
+
+    /**
+     * 管理员分页查询作品合集（支持多条件筛选和排序）
+     *
+     * @param current        当前页码
+     * @param size           每页数量
+     * @param keyword        搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @param isDelete       是否删除（可选，true-已删除、false-未删除）
+     * @param userId         用户 ID（可选）
+     * @param orderBy        排序方式（可选，'oldest'-按最早创建，其他值-按最新创建）
+     * @return 分页作品合集列表
+     * @author blue_sky_ks
+     */
+    @Override
+    public IPage<Series> getAdminSeriesPage(Long current, Long size, String keyword, Integer approvalStatus, Boolean isDelete, Integer userId, String orderBy) {
+        log.debug("管理员分页查询作品合集 - 页码: {}, 每页: {}, 关键词: {}, 审核状态: {}, 是否删除: {}, 用户ID: {}, 排序: {}",
+            current, size, keyword, approvalStatus, isDelete, userId, orderBy);
+
+        // 创建分页对象
+        Page<Series> page = new Page<>(
+            current != null ? current : 1,
+            size != null ? size : 10
+        );
+
+        // 调用 Mapper 分页查询
+        IPage<Series> result = seriesMapper.selectAdminSeriesPage(page, keyword, approvalStatus, isDelete, userId, orderBy);
+
+        if (result != null) {
+            log.info("管理员分页查询成功 - 总记录数: {}, 当前页记录数: {}",
+                result.getTotal(), result.getRecords().size());
+        } else {
+            log.warn("管理员分页查询返回空结果");
+        }
+
+        return result;
+    }
 }

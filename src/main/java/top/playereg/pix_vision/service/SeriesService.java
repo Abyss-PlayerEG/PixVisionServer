@@ -116,4 +116,27 @@ public interface SeriesService {
         String aboutText,
         Integer userId
     );
+
+    /**
+     * 管理员分页查询作品合集（支持多条件筛选和排序）
+     *
+     * @param current        当前页码
+     * @param size           每页数量
+     * @param keyword        搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @param isDelete       是否删除（可选，true-已删除、false-未删除）
+     * @param userId         用户 ID（可选）
+     * @param orderBy        排序方式（可选，'oldest'-按最早创建，其他值-按最新创建）
+     * @return 分页作品合集列表
+     * @author blue_sky_ks
+     */
+    IPage<Series> getAdminSeriesPage(
+        Long current,
+        Long size,
+        String keyword,
+        Integer approvalStatus,
+        Boolean isDelete,
+        Integer userId,
+        String orderBy
+    );
 }

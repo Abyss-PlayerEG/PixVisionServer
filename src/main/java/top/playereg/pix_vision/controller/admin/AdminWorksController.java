@@ -218,10 +218,13 @@ public class AdminWorksController {
     /**
      * 分页查询作品列表 - 管理员
      *
-     * @param current 当前页码
-     * @param size    每页大小
-     * @param keyword 关键字（可选）
-     * @param orderBy 排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）
+     * @param current        当前页码
+     * @param size           每页大小
+     * @param keyword        关键字（可选）
+     * @param orderBy        排序方式：'newest' - 最新、'oldest' - 最旧、'mostLikes' - 最多点赞、'mostStars' - 最多收藏、'mostViews' - 最多查看（默认 newest）
+     * @param isOriginal     是否转载（可选，true-原创、false-转载）
+     * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @param isDelete       是否被删除（可选，true-已删除、false-未删除）
      * @return 分页结果
      * @author PlayerEG
      */
@@ -233,8 +236,8 @@ public class AdminWorksController {
             ## 特性
             - 需要审核员或系统管理员角色（role=55 或 77）才能访问
             - MyBatis-Plus 分页支持
-            - 支持关键字过滤（标题模糊搜索）
-            - 支持一级评论按时间排序（最新/最早）
+            - 支持多条件筛选：关键字、是否转载、审核状态、是否删除
+            - 支持多种排序：最新、最旧、最多点赞、最多收藏、最多查看
             - 自动填充最新的浏览量数据
 
             ## 参数说明：
@@ -242,8 +245,22 @@ public class AdminWorksController {
             - **size**: **每页大小**，Long 类型，必填，范围 1-500
             - **keyword**: **关键字**，String 类型，可选，模糊搜索作品标题
             - **orderBy**: **排序方式**，String 类型，可选
-              - 'oldest': 按最早发布排列
-              - 其他值或 null: 按最新发布排列（默认）
+              - 'newest': 按最新发布排列（默认）
+              - 'oldest': 按最旧发布排列
+              - 'mostLikes': 按最多点赞排列（从高到低）
+              - 'mostStars': 按最多收藏排列（从高到低）
+              - 'mostViews': 按最多查看排列（从高到低）
+            - **isOriginal**: **是否转载**，Boolean 类型，可选
+              - true: 仅查原创作品
+              - false: 仅查转载作品
+            - **approvalStatus**: **审核状态**，Integer 类型，可选，可选值：
+              - 10: 正常
+              - 20: 待审核
+              - 30: 未过审
+            - **isDelete**: **是否被删除**，Boolean 类型，可选
+              - true: 仅查已删除
+              - false: 仅查未删除
+              - 不传: 默认只查未删除
 
             ## 返回说明：
             - **成功**：返回 IPage<Works> 对象，包含作品列表和分页信息
@@ -252,15 +269,15 @@ public class AdminWorksController {
             ## 业务逻辑：
             1. 校验分页参数（current>=1, 1<=size<=500）
             2. 构建 MyBatis-Plus 分页对象
-            3. 根据关键字参数构建动态 SQL 查询
+            3. 根据可选参数构建动态 SQL 查询
             4. 根据排序参数动态调整 ORDER BY 子句
             5. 为每个作品填充最新的浏览量数据
             6. 返回分页结果集
 
             ## 注意事项：
+            - 所有筛选条件均为可选，可以自由组合
             - 关键字搜索使用模糊匹配（LIKE '%keyword%'）
-            - 只查询未删除的作品（is_delete = 0）
-            - 不过滤审核状态，返回所有状态的作品
+            - 不传 isDelete 时默认只查询未删除的作品
             - 返回完整的 Works 实体字段
             """
     )
@@ -270,7 +287,10 @@ public class AdminWorksController {
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
         @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
         @Parameter(description = "关键字（可选，模糊搜索标题）", required = false) @RequestParam(required = false) String keyword,
-        @Schema(description = "排序方式：'oldest' - 按最早发布，其他值或 null - 按最新发布（默认）", allowableValues = {"newest", "oldest"}, example = "newest") @RequestParam(required = false, defaultValue = "newest") String orderBy
+        @Schema(description = "排序方式：'newest' - 最新、'oldest' - 最旧、'mostLikes' - 最多点赞、'mostStars' - 最多收藏、'mostViews' - 最多查看（默认 newest）", allowableValues = {"newest", "oldest", "mostLikes", "mostStars", "mostViews"}, example = "newest") @RequestParam(required = false, defaultValue = "newest") String orderBy,
+        @Schema(description = "是否转载（可选，true-原创、false-转载）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isOriginal,
+        @Schema(description = "审核状态（可选，10-正常、20-待审核、30-未过审）", allowableValues = {"10", "20", "30"}, example = "20") @RequestParam(required = false) Integer approvalStatus,
+        @Schema(description = "是否被删除（可选，true-已删除、false-未删除）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isDelete
     ) {
         // 参数校验
         ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
@@ -279,7 +299,8 @@ public class AdminWorksController {
         }
 
         try {
-            IPage<Works> result = workService.getAdminWorksPage(current, size, keyword, orderBy);
+            IPage<Works> result = workService.getAdminWorksPage(current, size, keyword, orderBy,
+                isOriginal, approvalStatus, isDelete);
             return ResponsePojo.success(result, "查询成功");
         } catch (Exception e) {
             log.error("分页查询作品异常，错误: {}", e.getMessage(), e);

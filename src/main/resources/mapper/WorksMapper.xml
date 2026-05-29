@@ -302,19 +302,43 @@
         ) g
     </select>
 
-    <!-- 管理员分页查询作品列表（支持多条件过滤，不过滤审核状态） -->
+    <!-- 管理员分页查询作品列表（支持多条件过滤和排序） -->
     <select id="adminSelectWorks" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM tb_works
-        WHERE is_delete = 0
-        <if test="keyword != null and keyword != ''">
-            AND work_title LIKE CONCAT('%', #{keyword}, '%')
-        </if>
+        <where>
+            <choose>
+                <when test="isDelete != null">
+                    AND is_delete = #{isDelete}
+                </when>
+                <otherwise>
+                    AND is_delete = 0
+                </otherwise>
+            </choose>
+            <if test="keyword != null and keyword != ''">
+                AND work_title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="isOriginal != null">
+                AND is_original_work = #{isOriginal}
+            </if>
+            <if test="approvalStatus != null">
+                AND approval_status = #{approvalStatus}
+            </if>
+        </where>
         ORDER BY
         <choose>
             <when test="orderBy == 'oldest'">
                 create_time ASC
+            </when>
+            <when test="orderBy == 'mostLikes'">
+                like_count DESC, create_time DESC
+            </when>
+            <when test="orderBy == 'mostStars'">
+                star_count DESC, create_time DESC
+            </when>
+            <when test="orderBy == 'mostViews'">
+                view_count DESC, create_time DESC
             </when>
             <otherwise>
                 create_time DESC

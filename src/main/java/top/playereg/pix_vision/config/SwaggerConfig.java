@@ -19,8 +19,8 @@ public class SwaggerConfig {
     public OpenAPI createRestApi() {
         return new OpenAPI().info(
             new Info()
-                .title("像素视觉")
-                .description("像素视觉后端服务器")
+                .title("像素视觉 - 主服务")
+                .description("像素视觉SpringBoot后端服务器")
                 .version(AppVersion)
         );
     }
