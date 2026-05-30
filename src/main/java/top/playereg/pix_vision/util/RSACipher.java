@@ -72,10 +72,14 @@ import java.nio.file.Paths;
  *
  * @author PlayerEG, blue_sky_ks
  * @see cn.hutool.crypto.asymmetric.RSA Hutool RSA 实现
+ *
+ * @author PlayerEG
  * @since DEV-2.0.0
+ * @deprecated 未实装密钥加密
  */
 @SuppressWarnings("all")
 @Component
+@Deprecated
 public class RSACipher {
     private static final PixVisionLogger log = PixVisionLogger.create(RSACipher.class);
 
