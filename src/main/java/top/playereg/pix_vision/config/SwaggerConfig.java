@@ -44,9 +44,18 @@ public class SwaggerConfig {
     }
 
     @Bean
+    public GroupedOpenApi userApi() {
+        return GroupedOpenApi.builder()
+            .group("3_UserApi")
+            .pathsToMatch("/api/**")
+            .pathsToExclude("/api/admin/**")
+            .packagesToScan("top.playereg.pix_vision.controller")
+            .build();
+    }
+    @Bean
     public GroupedOpenApi adminApi() {
         return GroupedOpenApi.builder()
-            .group("3_AdminApi")
+            .group("4_AdminApi")
             .pathsToMatch("/api/admin/**")
             .packagesToScan("top.playereg.pix_vision.controller")
             .build();
