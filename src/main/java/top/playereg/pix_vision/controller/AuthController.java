@@ -76,7 +76,7 @@ public class AuthController {
             - vCode: 邮箱验证码，6 位大写字母或数字，字符串类型，必填
 
             ## 返回说明：
-            - **注册成功**：返回 **{"data": {User 对象}}** 和“注册成功”提示
+            - **注册成功**：返回 **{"data": {User 对象}}** 和"注册成功"提示（不包含密码字段）
             - **用户名格式错误**：返回 **{"data": null}** 和“用户名格式错误”提示
             - **邮箱格式错误**：返回 **{"data": null}** 和“邮箱格式错误”提示
             - **验证码格式错误**：返回 **{"data": null}** 和“验证码格式错误”提示
@@ -157,6 +157,9 @@ public class AuthController {
         if (user == null) {
             return ResponsePojo.error(null, "注册失败：该用户名或邮箱已注册");
         }
+
+        // 不返回密码给前端
+        user.setPassword(null);
 
         return ResponsePojo.success(user, "注册成功");
     }
