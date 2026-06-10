@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.VO.UserDataChangeLockVO;
 import top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult;
+import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
+import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -29,10 +31,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "系统管理员接口 - 用户数据变更审核", description = "提供用户数据变更审核的后台接口，包括批量审核和分页查询待审核记录等操作")
 @RequireRole(value = {55, 77})
-public class AdminUserDataChangeController {
-    private static final PixVisionLogger log = PixVisionLogger.create(AdminUserDataChangeController.class);
+public class AdminUserDataChangeController extends AdminBaseController {
 
     private final UserService userService;
+    private final TokenWhitelistService tokenWhitelistService;
 
     /**
      * 批量审核用户数据变更
@@ -104,11 +106,10 @@ public class AdminUserDataChangeController {
         }
 
         try {
-            // 从 request 中获取当前管理员 ID
-            Integer adminId = (Integer) request.getAttribute("userId");
+            // 统一Token验证
+            Integer adminId = validateToken(request, "批量审核用户数据变更", tokenWhitelistService);
             if (adminId == null) {
-                log.error("无法获取管理员 ID");
-                return ResponsePojo.error(null, "认证失败，请重新登录");
+                return ResponsePojo.error(null, "Token无效或已失效，请重新登录");
             }
 
             AdminBatchOperateWorkResult result = userService.batchReviewUserDataChange(

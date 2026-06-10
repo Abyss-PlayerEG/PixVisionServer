@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.mapper.CommentsMapper;
 import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
@@ -436,6 +437,7 @@ public class CommentServiceImpl implements CommentService {
      * @param commentIds 评论ID列表
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      */
+    @Transactional(rollbackFor = Exception.class)
     public AdminBatchOperateCommentResult batchDeleteComments(List<Integer> commentIds) {
 
         if (commentIds == null || commentIds.isEmpty()) {

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
@@ -602,6 +603,7 @@ public class SeriesServiceImpl implements SeriesService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AdminBatchOperateWorkResult batchUpdateApprovalStatus(List<Integer> seriesIds, Integer approvalStatus, Integer userId) {
         if (seriesIds == null || seriesIds.isEmpty()) {
             return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
@@ -708,6 +710,7 @@ public class SeriesServiceImpl implements SeriesService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AdminBatchOperateWorkResult batchDeleteSeries(List<Integer> seriesIds, Boolean deleteWorks, Integer userId) {
         if (seriesIds == null || seriesIds.isEmpty()) {
             return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());

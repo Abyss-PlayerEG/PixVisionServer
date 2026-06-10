@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
 import top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult;
+import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
+import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -24,10 +26,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "系统管理员接口 - 作品管理", description = "提供作品管理的后台接口，包括批量更新审核状态、删除作品等操作")
 @RequireRole(value = {55, 77})
-public class AdminWorksController {
-    private static final PixVisionLogger log = PixVisionLogger.create(AdminWorksController.class);
+public class AdminWorksController extends AdminBaseController {
 
     private final WorkService workService;
+    private final TokenWhitelistService tokenWhitelistService;
 
 
     /**
@@ -99,11 +101,10 @@ public class AdminWorksController {
             return ResponsePojo.error(null, "审核状态无效，可选值：10-正常、20-待审核、30-未过审");
         }
 
-        // 从 Token 中获取操作者 ID
-        Integer userId = (Integer) request.getAttribute("userId");
+        // 统一Token验证
+        Integer userId = validateToken(request, "批量更新作品审核状态", tokenWhitelistService);
         if (userId == null) {
-            log.warn("无法获取用户 ID");
-            return ResponsePojo.error(null, "未授权访问");
+            return ResponsePojo.error(null, "Token无效或已失效，请重新登录");
         }
 
         try {
@@ -198,21 +199,6 @@ public class AdminWorksController {
             log.error("批量删除作品异常，作品 ID 列表: {}, 错误: {}", workIds, e.getMessage(), e);
             return ResponsePojo.error(null, "删除失败：" + e.getMessage());
         }
-    }
-
-    /**
-     * 获取审核状态名称
-     *
-     * @param approvalStatus 审核状态代码
-     * @return 状态名称
-     */
-    private String getStatusName(Integer approvalStatus) {
-        return switch (approvalStatus) {
-            case 10 -> "正常";
-            case 20 -> "待审核";
-            case 30 -> "未过审";
-            default -> "未知";
-        };
     }
 
     /**
@@ -377,11 +363,10 @@ public class AdminWorksController {
             return ResponsePojo.error(null, "作品标题长度不能超过 16 个字符");
         }
 
-        // 从 Token 中获取操作者 ID
-        Integer userId = (Integer) request.getAttribute("userId");
+        // 统一Token验证
+        Integer userId = validateToken(request, "批量更新作品标题", tokenWhitelistService);
         if (userId == null) {
-            log.warn("无法获取用户 ID");
-            return ResponsePojo.error(null, "未授权访问");
+            return ResponsePojo.error(null, "Token无效或已失效，请重新登录");
         }
 
         try {

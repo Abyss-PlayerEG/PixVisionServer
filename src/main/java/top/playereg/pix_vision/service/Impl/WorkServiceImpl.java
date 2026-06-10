@@ -7,6 +7,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.config.FilePathConfig;
 import top.playereg.pix_vision.mapper.*;
 import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
@@ -882,6 +883,7 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
         List<Integer> workIds,
         Integer approvalStatus,
@@ -1050,6 +1052,7 @@ public class WorkServiceImpl implements WorkService {
      * @author PlayerEG
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult adminBatchDeleteWorks(
         List<Integer> workIds
     ) {

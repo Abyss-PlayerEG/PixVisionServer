@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,6 +22,7 @@ import top.playereg.pix_vision.service.EmailService;
 import top.playereg.pix_vision.service.EmailTemplateService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.service.UserService;
+import top.playereg.pix_vision.util.Annotation.PublicAccess;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.JWTUtils;
@@ -45,8 +47,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Tag(name = "系统管理员接口 - 用户管理", description = "提供用户管理的后台接口，包括批量更新、删除、创建用户等操作")
 @RequireRole(value = {55, 77})
-public class AdminUserController {
-    private static final PixVisionLogger log = PixVisionLogger.create(AdminUserController.class);
+public class AdminUserController extends AdminBaseController {
 
     private final UserService userService;
     private final TokenWhitelistService tokenWhitelistService;
@@ -219,17 +220,10 @@ public class AdminUserController {
         }
 
         try {
-            // 从 Token 中获取当前管理员 ID
-            String token = JWTUtils.extractTokenWithLog(request, "批量更新用户信息");
-            if (token == null || token.isEmpty()) {
-                log.error("Token 不存在");
-                return ResponsePojo.error(null, "未授权访问");
-            }
-
-            Integer adminId = JWTUtils.getUserIdFromToken(token);
+            // 统一Token验证
+            Integer adminId = validateToken(request, "批量更新用户信息", tokenWhitelistService);
             if (adminId == null) {
-                log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(null, "Token 无效");
+                return ResponsePojo.error(null, "Token无效或已失效，请重新登录");
             }
 
             int totalCount = userIds.size();
@@ -364,17 +358,10 @@ public class AdminUserController {
         }
 
         try {
-            // 从 Token 中获取当前管理员 ID
-            String token = JWTUtils.extractTokenWithLog(request, "批量删除用户账户");
-            if (token == null || token.isEmpty()) {
-                log.error("Token 不存在");
-                return ResponsePojo.error(null, "未授权访问");
-            }
-
-            Integer adminId = JWTUtils.getUserIdFromToken(token);
+            // 统一Token验证
+            Integer adminId = validateToken(request, "批量删除用户账户", tokenWhitelistService);
             if (adminId == null) {
-                log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(null, "Token 无效");
+                return ResponsePojo.error(null, "Token无效或已失效，请重新登录");
             }
 
             int totalCount = userIds.size();
@@ -524,17 +511,10 @@ public class AdminUserController {
                 return ResponsePojo.error(false, "两次输入的密码不一致");
             }
 
-            // 从 Token 中获取当前管理员 ID
-            String token = JWTUtils.extractTokenWithLog(request, "创建新用户");
-            if (token == null || token.isEmpty()) {
-                log.error("Token 不存在");
-                return ResponsePojo.error(false, "未授权访问");
-            }
-
-            Integer adminId = JWTUtils.getUserIdFromToken(token);
+            // 统一Token验证
+            Integer adminId = validateToken(request, "创建新用户", tokenWhitelistService);
             if (adminId == null) {
-                log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(false, "Token 无效");
+                return ResponsePojo.error(false, "Token无效或已失效，请重新登录");
             }
 
             log.info("当前管理员 ID: {}", adminId);
@@ -737,17 +717,10 @@ public class AdminUserController {
         }
 
         try {
-            // 从 Token 中获取当前管理员 ID
-            String token = JWTUtils.extractTokenWithLog(request, "批量初始化用户头像和昵称");
-            if (token == null || token.isEmpty()) {
-                log.error("Token 不存在");
-                return ResponsePojo.error(null, "未授权访问");
-            }
-
-            Integer adminId = JWTUtils.getUserIdFromToken(token);
+            // 统一Token验证
+            Integer adminId = validateToken(request, "批量初始化用户头像和昵称", tokenWhitelistService);
             if (adminId == null) {
-                log.error("无法从 Token 中获取管理员 ID");
-                return ResponsePojo.error(null, "Token 无效");
+                return ResponsePojo.error(null, "Token无效或已失效，请重新登录");
             }
 
             // 调用 Service 层批量初始化
@@ -787,13 +760,14 @@ public class AdminUserController {
             # 分页查询用户信息（需要登录认证 + 角色权限[55, 77]）
 
             ## 特性
-            - 支持分页查询用户完整信息
+            - 支持分页查询用户信息
             - 支持按用户角色筛选（可选）
             - 支持按用户状态筛选（可选）
             - 支持按删除标记筛选（可选）
             - 支持按昵称关键字模糊查询（可选）
             - 支持排序方式（可选）
             - 审核员和系统管理员均可调用
+            - 自动隐藏敏感字段（密码、UUID、邮箱）
 
             ## 参数说明：
             - **page**: 页码（可选，默认 1）
@@ -817,7 +791,7 @@ public class AdminUserController {
               - 其他值或不传: 按最新注册排列（默认）
 
             ## 返回说明：
-            - **成功**：返回分页用户列表（含总条数、总页数等分页信息）
+            - **成功**：返回分页用户列表（含总条数、总页数等分页信息），敏感字段已隐藏
             - **结果为空**：返回空分页对象和成功状态
             - **失败**：返回错误提示
 
@@ -825,10 +799,10 @@ public class AdminUserController {
             1. 构建分页对象（Page）
             2. 将筛选条件传入 Service 层
             3. 数据库执行动态 SQL 分页查询
-            4. 返回分页结果
+            4. 隐藏敏感字段后返回分页结果
 
             ## 注意事项：
-            - 返回的用户信息包含密码字段，请谨慎处理
+            - 返回的用户信息已隐藏敏感字段（密码、UUID、邮箱）
             - 查询结果为空时返回空分页对象和成功状态
             - 所有筛选条件均为可选，不传则不过滤
             """
@@ -863,6 +837,13 @@ public class AdminUserController {
 
         try {
             IPage<User> result = userService.getAdminUserPage(page, size, user_role, status, is_delete, nickname, orderBy);
+
+            // 隐藏敏感字段
+            for (User user : result.getRecords()) {
+                user.setPassword(null);
+                user.setUser_uuid(null);
+                user.setString_user_uuid(null);
+            }
 
             log.info("分页查询用户信息完成 - 总条数: {}, 当前页条数: {}", result.getTotal(), result.getRecords().size());
             return ResponsePojo.success(result, "查询成功，共 " + result.getTotal() + " 条记录");
