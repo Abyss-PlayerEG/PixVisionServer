@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.VO.admin.AdminSeriesVO;
@@ -16,9 +15,7 @@ import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
-import top.playereg.pix_vision.util.JWTUtils;
 import top.playereg.pix_vision.util.PageUtils;
-import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
 
