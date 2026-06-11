@@ -2,6 +2,7 @@ package top.playereg.pix_vision.pojo.VO.comment;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import top.playereg.pix_vision.pojo.entity.BaseComment;
 
@@ -13,6 +14,7 @@ import top.playereg.pix_vision.pojo.entity.BaseComment;
  * @author PlayerEG
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Schema(description = "评论基础 VO")
 public class BaseCommentVO extends BaseComment {

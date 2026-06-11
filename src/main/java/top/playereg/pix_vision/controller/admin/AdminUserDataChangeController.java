@@ -175,7 +175,9 @@ public class AdminUserDataChangeController extends AdminBaseController {
         // 分页参数校验
         ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
         if (error != null) {
-            return (ResponsePojo<IPage<UserDataChangeLockVO>>) (ResponsePojo<?>) error;
+            @SuppressWarnings("unchecked")
+            ResponsePojo<IPage<UserDataChangeLockVO>> typedError = (ResponsePojo<IPage<UserDataChangeLockVO>>) (ResponsePojo<?>) error;
+            return typedError;
         }
 
         try {
