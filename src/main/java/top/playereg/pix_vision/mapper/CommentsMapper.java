@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.playereg.pix_vision.pojo.entity.Comments;
+import top.playereg.pix_vision.pojo.VO.admin.AdminCommentVO;
 
 /**
  * 评论数据访问层
@@ -79,13 +80,13 @@ public interface CommentsMapper extends BaseMapper<Comments> {
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Comments> selectCommentsPage(Page<Comments> page,
-                                       @Param("workId") Integer workId,
-                                       @Param("userId") Integer userId,
-                                       @Param("commentFloor") Integer commentFloor,
-                                       @Param("approvalStatus") Integer approvalStatus,
-                                       @Param("keyword") String keyword,
-                                       @Param("orderBy") String orderBy);
+    IPage<AdminCommentVO> selectCommentsPage(Page<AdminCommentVO> page,
+                                            @Param("workId") Integer workId,
+                                            @Param("userId") Integer userId,
+                                            @Param("commentFloor") Integer commentFloor,
+                                            @Param("approvalStatus") Integer approvalStatus,
+                                            @Param("keyword") String keyword,
+                                            @Param("orderBy") String orderBy);
 
     /**
      * 批量更新评论状态

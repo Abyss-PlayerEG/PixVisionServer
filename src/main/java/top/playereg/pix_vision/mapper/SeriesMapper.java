@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import top.playereg.pix_vision.pojo.entity.Series;
+import top.playereg.pix_vision.pojo.VO.admin.AdminSeriesVO;
 
 import java.util.List;
 
@@ -123,8 +124,8 @@ public interface SeriesMapper extends BaseMapper<Series> {
      * @return 分页作品系列列表
      * @author blue_sky_ks
      */
-    IPage<Series> selectAdminSeriesPage(
-        IPage<Series> page,
+    IPage<AdminSeriesVO> selectAdminSeriesPage(
+        IPage<AdminSeriesVO> page,
         @Param("keyword") String keyword,
         @Param("approvalStatus") Integer approvalStatus,
         @Param("isDelete") Boolean isDelete,

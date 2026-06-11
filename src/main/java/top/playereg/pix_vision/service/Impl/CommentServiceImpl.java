@@ -568,48 +568,35 @@ public class CommentServiceImpl implements CommentService {
             current, size, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
 
         // 创建分页对象
-        Page<Comments> page = new Page<>(current, size);
+        Page<AdminCommentVO> page = new Page<>(current, size);
 
-        // 调用 Mapper 层查询
-        IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
+        // 调用 Mapper 层查询（已联表查work_title）
+        IPage<AdminCommentVO> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
 
         // 批量查询审核记录
-        final Map<Integer, ContentAuditRecord> auditMap;
         if (result != null && !result.getRecords().isEmpty()) {
             List<Integer> commentIds = result.getRecords().stream()
-                .map(Comments::getComment_id)
+                .map(AdminCommentVO::getComment_id)
                 .collect(Collectors.toList());
             List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
                 .selectLatestByContentIds(200, commentIds);
             if (auditRecords != null) {
-                auditMap = auditRecords.stream().collect(Collectors.toMap(
-                    ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
-            } else {
-                auditMap = new HashMap<>();
+                Map<Integer, ContentAuditRecord> auditMap = auditRecords.stream()
+                    .collect(Collectors.toMap(ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+                result.getRecords().forEach(vo -> {
+                    ContentAuditRecord audit = auditMap.get(vo.getComment_id());
+                    if (audit != null) {
+                        vo.setAudit_reason(audit.getAudit_reason());
+                        vo.setInsult_words(audit.getInsult_words());
+                    }
+                });
             }
-        } else {
-            auditMap = new HashMap<>();
         }
-
-        // 转换 Comments → AdminCommentVO
-        List<AdminCommentVO> voList = result.getRecords().stream().map(comment -> {
-            AdminCommentVO vo = new AdminCommentVO();
-            BeanUtils.copyProperties(comment, vo);
-            ContentAuditRecord audit = auditMap.get(comment.getComment_id());
-            if (audit != null) {
-                vo.setAudit_reason(audit.getAudit_reason());
-                vo.setInsult_words(audit.getInsult_words());
-            }
-            return vo;
-        }).collect(Collectors.toList());
-
-        IPage<AdminCommentVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(voList);
 
         log.info("分页查询评论完成，总数: {}, 当前页: {}, 每页大小: {}",
             result.getTotal(), result.getCurrent(), result.getSize());
 
-        return voPage;
+        return result;
     }
 
 

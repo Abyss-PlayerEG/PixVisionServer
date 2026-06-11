@@ -970,46 +970,33 @@ public class SeriesServiceImpl implements SeriesService {
             current, size, keyword, approvalStatus, isDelete, userId, orderBy);
 
         // 创建分页对象
-        Page<Series> page = new Page<>(
+        Page<AdminSeriesVO> page = new Page<>(
             current != null ? current : 1,
             size != null ? size : 10
         );
 
-        // 调用 Mapper 分页查询
-        IPage<Series> result = seriesMapper.selectAdminSeriesPage(page, keyword, approvalStatus, isDelete, userId, orderBy);
+        // 调用 Mapper 分页查询（已联表查username）
+        IPage<AdminSeriesVO> result = seriesMapper.selectAdminSeriesPage(page, keyword, approvalStatus, isDelete, userId, orderBy);
 
         // 批量查询审核记录
-        final Map<Integer, ContentAuditRecord> auditMap;
         if (result != null && !result.getRecords().isEmpty()) {
             List<Integer> seriesIds = result.getRecords().stream()
-                .map(Series::getSeries_id)
+                .map(AdminSeriesVO::getSeries_id)
                 .collect(Collectors.toList());
             List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
                 .selectLatestByContentIds(300, seriesIds);
             if (auditRecords != null) {
-                auditMap = auditRecords.stream().collect(Collectors.toMap(
-                    ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
-            } else {
-                auditMap = new HashMap<>();
+                Map<Integer, ContentAuditRecord> auditMap = auditRecords.stream()
+                    .collect(Collectors.toMap(ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+                result.getRecords().forEach(vo -> {
+                    ContentAuditRecord audit = auditMap.get(vo.getSeries_id());
+                    if (audit != null) {
+                        vo.setAudit_reason(audit.getAudit_reason());
+                        vo.setInsult_words(audit.getInsult_words());
+                    }
+                });
             }
-        } else {
-            auditMap = new HashMap<>();
         }
-
-        // 转换 Series → AdminSeriesVO
-        List<AdminSeriesVO> voList = result.getRecords().stream().map(series -> {
-            AdminSeriesVO vo = new AdminSeriesVO();
-            BeanUtils.copyProperties(series, vo);
-            ContentAuditRecord audit = auditMap.get(series.getSeries_id());
-            if (audit != null) {
-                vo.setAudit_reason(audit.getAudit_reason());
-                vo.setInsult_words(audit.getInsult_words());
-            }
-            return vo;
-        }).collect(Collectors.toList());
-
-        IPage<AdminSeriesVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(voList);
 
         if (result != null) {
             log.info("管理员分页查询成功 - 总记录数: {}, 当前页记录数: {}",
@@ -1018,6 +1005,6 @@ public class SeriesServiceImpl implements SeriesService {
             log.warn("管理员分页查询返回空结果");
         }
 
-        return voPage;
+        return result;
     }
 }

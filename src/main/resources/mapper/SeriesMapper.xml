@@ -170,7 +170,7 @@
     </update>
 
     <!-- 管理员分页查询作品合集（支持多条件筛选和排序） -->
-    <select id="selectAdminSeriesPage" resultType="top.playereg.pix_vision.pojo.entity.Series">
+    <select id="selectAdminSeriesPage" resultType="top.playereg.pix_vision.pojo.VO.admin.AdminSeriesVO">
         SELECT s.series_id,
                s.user_id,
                s.series_title,
@@ -181,6 +181,7 @@
                s.update_user,
                s.create_time,
                s.create_user,
+               u.username,
                (SELECT w.thumb_url
                 FROM tb_works w
                 WHERE w.series_id = s.series_id
@@ -189,6 +190,7 @@
                 ORDER BY w.create_time DESC
                 LIMIT 1) AS thumb_url
         FROM tb_series s
+        LEFT JOIN tb_user u ON s.user_id = u.user_id
         <where>
             <if test="userId != null">
                 AND s.user_id = #{userId}
