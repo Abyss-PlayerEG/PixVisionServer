@@ -3,10 +3,10 @@ package top.playereg.pix_vision.service.Impl;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
@@ -18,13 +18,13 @@ import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
 import top.playereg.pix_vision.pojo.entity.Series;
 import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.service.ContentAuditService;
+import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,6 +49,9 @@ public class SeriesServiceImpl implements SeriesService {
 
     @Autowired
     private ContentAuditRecordMapper contentAuditRecordMapper;
+
+    @Autowired
+    private MessageService messageService;
 
     public SeriesServiceImpl(SeriesMapper seriesMapper) {
         this.seriesMapper = seriesMapper;
@@ -679,6 +682,26 @@ public class SeriesServiceImpl implements SeriesService {
         }
         if (!deletedSeriesIds.isEmpty()) {
             log.warn("以下系列ID已删除: {}", deletedSeriesIds);
+        }
+
+        // 发送管理员审核通知
+        if (successCount > 0 && (approvalStatus == 10 || approvalStatus == 30)) {
+            for (Series series : validSeries) {
+                try {
+                    String statusText = approvalStatus == 10 ? "通过" : "未通过";
+                    String content = "你的合集《" + series.getSeries_title() + "》审核" + statusText;
+                    messageService.sendSystemNotice(
+                        0,
+                        series.getUser_id(),
+                        content,
+                        MessageProject.SERIES_AUDIT,
+                        series.getSeries_id()
+                    );
+                } catch (Exception e) {
+                    log.warn("发送合集审核通知失败 - 合集ID: {}, 错误: {}", series.getSeries_id(), e.getMessage());
+                }
+            }
+            log.info("管理员合集审核通知已发送 - 成功数: {}, 审核状态: {}", successCount, approvalStatus);
         }
 
         return new AdminBatchOperateWorkResult(

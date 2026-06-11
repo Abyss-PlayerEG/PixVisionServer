@@ -200,6 +200,7 @@ CREATE TABLE `tb_messages` (
   `project` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_german2_ci DEFAULT NULL COMMENT '消息主题',
   `from_user_id` int DEFAULT NULL COMMENT '发送者用户ID（系统消息为NULL）',
   `message_type` varchar(32) COLLATE utf8mb4_german2_ci NOT NULL DEFAULT 'system' COMMENT '消息类型：system-系统通知、private-私信',
+  `ref_id` int DEFAULT NULL COMMENT '关联实体ID（如作品ID、评论ID等）',
   `to` int DEFAULT NULL COMMENT '接收者',
   `is_read` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已读，0 - 未读、1 - 已读',
   `is_delete` tinyint(1) NOT NULL DEFAULT '0' COMMENT '数据条目删除标签，0 - 未删除、1 - 已删除',
@@ -208,6 +209,7 @@ CREATE TABLE `tb_messages` (
   KEY `tb_messages_tb_user_FK` (`to`),
   KEY `idx_from_user_id` (`from_user_id`),
   KEY `idx_message_type` (`message_type`),
+  KEY `idx_ref_id` (`ref_id`),
   KEY `idx_create_time` (`create_time`),
   KEY `idx_conversation` (`from_user_id`,`to`,`message_type`),
   CONSTRAINT `tb_messages_tb_user_FK` FOREIGN KEY (`to`) REFERENCES `tb_user` (`user_id`)

@@ -9,6 +9,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.config.FilePathConfig;
+import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.*;
 import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
 import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
@@ -18,6 +19,7 @@ import top.playereg.pix_vision.pojo.entity.History;
 import top.playereg.pix_vision.pojo.entity.Series;
 import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.service.ContentAuditService;
+import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.service.WorkService;
 import top.playereg.pix_vision.util.ImageUtils;
 import top.playereg.pix_vision.util.PageUtils;
@@ -56,6 +58,9 @@ public class WorkServiceImpl implements WorkService {
 
     @Autowired
     private ContentAuditRecordMapper contentAuditRecordMapper;
+
+    @Autowired
+    private MessageService messageService;
 
     private static final String VIEW_COUNT_KEY_PREFIX = "pix:work:view:";
     private static final long CACHE_TTL_HOURS = 2; // Redis缓存TTL：2小时
@@ -375,6 +380,23 @@ public class WorkServiceImpl implements WorkService {
             auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
             contentAuditRecordMapper.insertRecord(auditRecord);
             log.info("作品审核记录已保存 - 作品ID: {}, 审核状态: {}", works.getWork_id(), approvalStatus);
+        }
+
+        // 12. 发送作品审核结果通知（AI 审核违规时立即通知）
+        if (approvalStatus == 30) {
+            try {
+                String content = "你上传的作品《" + workTitle.trim() + "》未通过内容审核，原因：" + (auditReason != null ? auditReason : "内容违规");
+                messageService.sendSystemNotice(
+                    0,
+                    userId,
+                    content,
+                    MessageProject.WORK_AUDIT,
+                    works.getWork_id()
+                );
+                log.info("作品审核违规通知已发送 - 作品ID: {}", works.getWork_id());
+            } catch (Exception e) {
+                log.warn("发送作品审核通知失败: {}", e.getMessage());
+            }
         }
 
         return new WorkUploadResult(works.getWork_id(), approvalStatus, auditReason);
@@ -951,6 +973,26 @@ public class WorkServiceImpl implements WorkService {
 
         log.info("批量更新作品审核状态完成 - 总数: {}, 成功: {}, 失败: {}, 新状态: {}, 文件重命名: {}, 操作者 ID: {}",
             totalCount, successCount, failedWorkIds.size(), approvalStatus, renamedCount, userId);
+
+        // 6. 发送管理员审核通知
+        if (successCount > 0 && (approvalStatus == 10 || approvalStatus == 30)) {
+            for (Works work : validWorks) {
+                try {
+                    String statusText = approvalStatus == 10 ? "通过" : "未通过";
+                    String content = "你的作品《" + work.getWork_title() + "》审核" + statusText;
+                    messageService.sendSystemNotice(
+                        0,
+                        work.getUser_id(),
+                        content,
+                        MessageProject.WORK_AUDIT,
+                        work.getWork_id()
+                    );
+                } catch (Exception e) {
+                    log.warn("发送作品审核通知失败 - 作品ID: {}, 错误: {}", work.getWork_id(), e.getMessage());
+                }
+            }
+            log.info("管理员审核通知已发送 - 成功数: {}, 审核状态: {}", successCount, approvalStatus);
+        }
 
         return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(
             totalCount, successCount, failedWorkIds

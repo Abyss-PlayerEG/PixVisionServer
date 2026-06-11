@@ -3,10 +3,10 @@ package top.playereg.pix_vision.service.Impl;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.CommentsMapper;
 import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
@@ -21,6 +21,7 @@ import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
 import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.service.ContentAuditService;
+import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -52,6 +53,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private ContentAuditRecordMapper contentAuditRecordMapper;
+
+    @Autowired
+    private MessageService messageService;
 
     /**
      * 新增评论
@@ -660,6 +664,33 @@ public class CommentServiceImpl implements CommentService {
 
         log.info("批量审核评论完成 - 总数: {}, 成功: {}, 失败: {}, 目标状态: {} ({})",
             totalCount, successCount, failedWorkIds.size(), approval, statusName);
+
+        // 发送评论审核通知
+        if (successCount > 0 && (approval == 10 || approval == 30)) {
+            for (Integer commentId : allCommentIds) {
+                try {
+                    Comments comment = commentsMapper.selectCommentById(commentId);
+                    if (comment != null && !comment.getIs_delete()) {
+                        String statusText = approval == 10 ? "通过" : "未通过";
+                        String content = "你的评论审核" + statusText + "，评论内容：" +
+                            (comment.getComment_text().length() > 20 ?
+                                comment.getComment_text().substring(0, 20) + "..." :
+                                comment.getComment_text());
+                        messageService.sendSystemNotice(
+                            0,
+                            comment.getUser_id(),
+                            content,
+                            MessageProject.COMMENT_AUDIT,
+                            commentId
+                        );
+                    }
+                } catch (Exception e) {
+                    log.warn("发送评论审核通知失败 - 评论ID: {}, 错误: {}", commentId, e.getMessage());
+                }
+            }
+            log.info("评论审核通知已发送 - 成功数: {}, 审核状态: {}", successCount, approval);
+        }
+
         return new AdminBatchOperateCommentResult(totalCount, successCount, failedWorkIds);
     }
 }
