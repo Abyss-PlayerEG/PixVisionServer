@@ -1128,20 +1128,21 @@ public class WorkServiceImpl implements WorkService {
      * @param page           分页对象
      * @param userId         用户 ID
      * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @param keyword        关键字（可选，模糊搜索标题）
      * @return 分页结果
      * @author PlayerEG
      */
     @Override
-    public IPage<Works> getMyWorks(Page<Works> page, Integer userId, Integer approvalStatus) {
+    public IPage<Works> getMyWorks(Page<Works> page, Integer userId, Integer approvalStatus, String keyword) {
         if (userId == null || userId <= 0) {
             log.warn("用户 ID 无效: {}", userId);
             return new Page<>();
         }
 
-        log.info("开始查询用户作品，用户 ID: {}, 审核状态: {}", userId, approvalStatus);
+        log.info("开始查询用户作品，用户 ID: {}, 审核状态: {}, 关键字: {}", userId, approvalStatus, keyword);
 
         // 调用 Mapper 层查询
-        IPage<Works> result = worksMapper.selectMyWorks(page, userId, approvalStatus);
+        IPage<Works> result = worksMapper.selectMyWorks(page, userId, approvalStatus, keyword);
 
         log.info("查询用户作品完成，用户 ID: {}, 总数: {}, 当前页: {}",
             userId, result.getTotal(), result.getCurrent());

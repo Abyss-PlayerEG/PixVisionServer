@@ -204,13 +204,15 @@ public interface WorkService {
      * @param page           分页对象
      * @param userId         用户 ID
      * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
+     * @param keyword        关键字（可选，模糊搜索标题）
      * @return 分页结果
      * @author PlayerEG
      */
     IPage<Works> getMyWorks(
         Page<Works> page,
         Integer userId,
-        Integer approvalStatus
+        Integer approvalStatus,
+        String keyword
     );
 
     /**
