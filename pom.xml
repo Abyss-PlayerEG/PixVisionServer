@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>top.playereg</groupId>
     <artifactId>PixVisionServer</artifactId>
-    <version>DevBeta-3.4</version>
+    <version>DevBeta-4.0</version>
     <packaging>jar</packaging>
     <name>PixVision</name>
     <description>PixVision</description>
