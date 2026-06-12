@@ -41,7 +41,8 @@ public class MessageController {
     /**
      * 获取未读消息数量
      *
-     * @param request HTTP 请求对象
+     * @param request      HTTP 请求对象
+     * @param otherUserId  对方用户ID（可选，不传则返回所有未读统计）
      * @return 未读消息数量统计
      */
     @Operation(
@@ -50,18 +51,25 @@ public class MessageController {
             # 获取未读消息数量（需要登录认证）
 
             ## 特性
-            - 返回未读消息的分类统计
-            - 包含总数、私信数、系统通知数
+            - 不传 otherUserId 时：返回所有未读消息的分类统计（总数、私信数、系统通知数）
+            - 传 otherUserId 时：返回与该用户的会话未读数
+
+            ## 参数说明：
+            - otherUserId: 对方用户ID（可选）
 
             ## 返回说明：
-            - **total**: 总未读数
-            - **private**: 未读私信数
-            - **system**: 未读系统通知数
+            - 不传 otherUserId 时返回：
+              - **total**: 总未读数
+              - **private**: 未读私信数
+              - **system**: 未读系统通知数
+            - 传 otherUserId 时返回：
+              - **conversation_unread**: 与该用户的会话未读数
             """
     )
     @GetMapping("/unread-count")
     public ResponsePojo<Map<String, Integer>> getUnreadCount(
-        @Parameter(description = "HTTP 请求对象", required = true) HttpServletRequest request
+        @Parameter(description = "HTTP 请求对象", required = true) HttpServletRequest request,
+        @Parameter(description = "对方用户ID（可选）") @RequestParam(required = false) Integer otherUserId
     ) {
         // 提取 Token
         String token = JWTUtils.extractTokenWithLog(request, "获取未读消息数量接口");
@@ -78,7 +86,14 @@ public class MessageController {
             return ResponsePojo.error(null, "Token 无效");
         }
 
-        Map<String, Integer> unreadCount = messageService.getUnreadCount(userId);
+        Map<String, Integer> unreadCount;
+        if (otherUserId != null && otherUserId > 0) {
+            // 查询特定会话的未读数
+            unreadCount = messageService.getConversationUnreadCount(userId, otherUserId);
+        } else {
+            // 查询所有未读统计
+            unreadCount = messageService.getUnreadCount(userId);
+        }
         return ResponsePojo.success(unreadCount, "查询成功");
     }
 
@@ -88,6 +103,7 @@ public class MessageController {
      * @param request HTTP 请求对象
      * @param current 当前页码（从 1 开始）
      * @param size    每页大小（范围 1-500）
+     * @param isRead  已读状态筛选（可选，false-只返回有未读消息的会话）
      * @return 会话列表
      */
     @Operation(
@@ -99,10 +115,12 @@ public class MessageController {
             - 查询用户的私信会话列表
             - 按最后消息时间倒序排列
             - 包含对方用户信息和未读数量
+            - 支持按未读状态筛选
 
             ## 参数说明：
             - current: 当前页码，从 1 开始
             - size: 每页大小，范围 1-500
+            - isRead: 已读状态筛选（可选），false-只返回有未读消息的会话
 
             ## 返回说明：
             - **other_user_id**: 对方用户ID
@@ -118,7 +136,8 @@ public class MessageController {
     public ResponsePojo<IPage<ConversationVO>> getConversationList(
         @Parameter(description = "HTTP 请求对象", required = true) HttpServletRequest request,
         @Parameter(description = "当前页码（从 1 开始）", required = true, example = "1") @PathVariable Long current,
-        @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size
+        @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
+        @Parameter(description = "已读状态筛选（可选，false-只返回有未读消息的会话）") @RequestParam(required = false) Boolean isRead
     ) {
         // 提取 Token
         String token = JWTUtils.extractTokenWithLog(request, "查询会话列表接口");
@@ -141,7 +160,7 @@ public class MessageController {
             return (ResponsePojo<IPage<ConversationVO>>) (ResponsePojo<?>) validateResult;
         }
         Page<Message> page = new Page<>(PageUtils.getValidCurrent(current), PageUtils.getValidSize(size));
-        IPage<ConversationVO> result = messageService.getConversationList(page, userId);
+        IPage<ConversationVO> result = messageService.getConversationList(page, userId, isRead);
         return ResponsePojo.success(result, "查询成功");
     }
 
@@ -410,32 +429,38 @@ public class MessageController {
     }
 
     /**
-     * 删除消息
+     * 撤销消息
      *
      * @param request   HTTP 请求对象
      * @param messageId 消息ID
      * @return 是否成功
      */
     @Operation(
-        summary = "删除消息",
+        summary = "撤销消息",
         description = """
-            # 删除消息（需要登录认证）
+            # 撤销消息（需要登录认证）
 
             ## 特性
-            - 软删除消息（仅对自己可见）
-            - 只能删除自己收到的消息
+            - 只能撤销自己发送的消息
+            - 撤销时间限制：消息发送后 2 分钟内
+            - 撤销后双方都不可见（同时标记两个删除标签）
 
             ## 参数说明：
             - messageId: 消息ID
+
+            ## 注意事项：
+            - 超过 2 分钟的消息无法撤销
+            - 只能撤销自己发送的消息
+            - 撤销操作不可逆
             """
     )
-    @PostMapping("/delete/{messageId}")
-    public ResponsePojo<Boolean> deleteMessage(
+    @PostMapping("/recall/{messageId}")
+    public ResponsePojo<Boolean> recallMessage(
         @Parameter(description = "HTTP 请求对象", required = true) HttpServletRequest request,
         @Parameter(description = "消息ID", required = true, example = "1") @PathVariable Integer messageId
     ) {
         // 提取 Token
-        String token = JWTUtils.extractTokenWithLog(request, "删除消息接口");
+        String token = JWTUtils.extractTokenWithLog(request, "撤销消息接口");
         if (token == null || token.isEmpty()) {
             return ResponsePojo.error(null, "Token 不存在");
         }
@@ -449,8 +474,8 @@ public class MessageController {
             return ResponsePojo.error(null, "Token 无效");
         }
 
-        boolean success = messageService.deleteMessage(userId, messageId);
-        return success ? ResponsePojo.success(true, "删除成功") : ResponsePojo.error(false, "删除失败");
+        boolean success = messageService.recallMessage(userId, messageId);
+        return success ? ResponsePojo.success(true, "撤销成功") : ResponsePojo.error(false, "撤销失败：只能撤销自己发送 2 分钟内的消息");
     }
 
     /**
@@ -467,7 +492,7 @@ public class MessageController {
 
             ## 特性
             - 批量软删除消息（仅对自己可见）
-            - 只能删除自己收到的消息
+            - 不区分消息是自己发送还是接收，都可以删除
 
             ## 参数说明：
             - messageIds: 消息ID列表

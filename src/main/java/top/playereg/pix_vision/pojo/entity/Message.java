@@ -1,6 +1,9 @@
 package top.playereg.pix_vision.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -91,11 +94,16 @@ public class Message {
     private Boolean is_read;
 
     /**
-     * 软删除标签：0-未删除、1-已删除
+     * 发送者删除标记：0-未删除、1-已删除
      */
-    @TableLogic
-    @Schema(description = "软删除：0-未删除、1-已删除", example = "false")
-    private Boolean is_delete;
+    @Schema(description = "发送者删除标记：0-未删除、1-已删除", example = "false")
+    private Boolean is_delete_by_sender;
+
+    /**
+     * 接收者删除标记：0-未删除、1-已删除
+     */
+    @Schema(description = "接收者删除标记：0-未删除、1-已删除", example = "false")
+    private Boolean is_delete_by_receiver;
 
     /**
      * 创建时间

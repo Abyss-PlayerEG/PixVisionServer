@@ -32,7 +32,13 @@ interface ResponsePojo<T> {
 GET /api/message/unread-count
 ```
 
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| otherUserId | Integer | 否 | 对方用户ID，不传则返回所有未读统计 |
+
 **响应 `data` 结构**
+
+不传 `otherUserId` 时：
 ```typescript
 {
   total: number;      // 总未读数
@@ -41,8 +47,16 @@ GET /api/message/unread-count
 }
 ```
 
+传 `otherUserId` 时：
+```typescript
+{
+  conversation_unread: number;  // 与该用户的会话未读数
+}
+```
+
 **使用场景**
-- 导航栏消息图标红点/数字显示
+- 导航栏消息图标红点/数字显示（不传参数）
+- 会话详情页显示特定会话未读数（传 otherUserId）
 - 登录后初始化消息计数
 
 ---
@@ -54,10 +68,11 @@ GET /api/message/unread-count
 GET /api/message/conversations/{current}/{size}
 ```
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| current | Long | 页码，从 1 开始 |
-| size | Long | 每页大小，1-500 |
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| current | Long | 是 | 页码，从 1 开始 |
+| size | Long | 是 | 每页大小，1-500 |
+| isRead | Boolean | 否 | 已读状态筛选，false-只返回有未读消息的会话 |
 
 **响应 `data` 结构（分页）**
 ```typescript
@@ -82,6 +97,8 @@ interface ConversationVO {
 
 **使用场景**
 - 私信页面的会话列表
+- 首页消息下拉面板只显示未读会话（传 `isRead=false`）
+- 未读消息列表页面
 - 按最后消息时间倒序排列
 
 ---
@@ -110,7 +127,8 @@ interface MessageVO {
   ref_id: number | null;        // 关联实体ID
   to: number;                   // 接收者ID
   is_read: boolean;             // 是否已读
-  is_delete: boolean;           // 是否删除
+  is_delete_by_sender: boolean;   // 发送者是否删除
+  is_delete_by_receiver: boolean; // 接收者是否删除
   create_time: string;          // 创建时间（ISO 8601）
   from_username: string;        // 发送者用户名
   from_nickname: string;        // 发送者昵称
@@ -227,11 +245,11 @@ true  // 标记成功
 
 ---
 
-### 3.8 删除消息
+### 3.8 撤销消息
 
 **请求**
 ```
-POST /api/message/delete/{messageId}
+POST /api/message/recall/{messageId}
 ```
 
 | 参数 | 类型 | 说明 |
@@ -240,12 +258,18 @@ POST /api/message/delete/{messageId}
 
 **响应 `data`**
 ```typescript
-true  // 删除成功
+true  // 撤销成功
 ```
 
 **业务规则**
-- 软删除，仅对自己可见
-- 只能删除自己收到的消息
+- 只能撤销自己发送的消息
+- 撤销时间限制：消息发送后 2 分钟内
+- 撤销后双方都不可见（同时标记两个删除标签）
+- 超过 2 分钟的消息无法撤销
+
+**使用场景**
+- 聊天页面中的消息撤回功能
+- 类似微信的消息撤回体验
 
 ---
 
@@ -266,6 +290,11 @@ Content-Type: application/json
 ```typescript
 true  // 删除成功
 ```
+
+**业务规则**
+- 不区分消息是自己发送还是接收，都可以删除
+- 软删除，仅对自己可见
+- 只有双方都删除后消息才真正不可见
 
 ---
 
@@ -314,6 +343,32 @@ ws.onerror = (error) => {
 
 ### 4.3 心跳机制
 
+系统采用 **双向心跳检测** 机制，确保连接的可靠性：
+
+#### 4.3.1 心跳流程
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      心跳检测流程                           │
+├─────────────────────────────────────────────────────────────┤
+│  客户端                          服务端                     │
+│    │                                │                       │
+│    │  ──── 每 30 秒发送 PING ────→  │                       │
+│    │                                │                       │
+│    │  ←──── 回复 PONG ────────────  │                       │
+│    │                                │                       │
+│    │                                │  每 30 秒定时检测      │
+│    │  ←──── 发送 WebSocket Ping ──  │                       │
+│    │                                │                       │
+│    │  ──── 自动回复 Pong ────────→  │                       │
+│    │                                │                       │
+│    │          如果发送失败           │                       │
+│    │                                │  移除僵尸连接          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 4.3.2 客户端心跳实现
+
 ```javascript
 // 每 30 秒发送一次心跳
 function startHeartbeat() {
@@ -334,7 +389,55 @@ ws.onmessage = (event) => {
 };
 ```
 
+#### 4.3.3 服务端心跳检测
+
+服务端每 30 秒自动执行心跳检测：
+
+1. 遍历所有在线连接，发送 WebSocket Ping 帧
+2. 如果发送失败（IOException），说明连接已断开
+3. 自动移除僵尸连接，释放资源
+4. 记录日志：`心跳检测完成，清理僵尸连接 X 个，当前在线：Y`
+
+**检测场景**：
+- 网络异常断开（WiFi 切换、网络中断）
+- 客户端崩溃（浏览器关闭、App 被杀）
+- 防火墙/NAT 超时断开
+
+#### 4.3.4 重连机制建议
+
+```javascript
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_INTERVAL = 3000; // 3 秒
+
+function reconnect() {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.error('WebSocket 重连失败，已达到最大重试次数');
+    return;
+  }
+
+  reconnectAttempts++;
+  console.log(`WebSocket 第 ${reconnectAttempts} 次重连...`);
+
+  setTimeout(() => {
+    connectWebSocket(); // 重新连接
+  }, RECONNECT_INTERVAL);
+}
+
+ws.onclose = () => {
+  reconnect();
+};
+
+ws.onopen = () => {
+  reconnectAttempts = 0; // 连接成功，重置计数
+};
+```
+
 ### 4.4 推送消息格式
+
+WebSocket 推送包含三种类型：
+
+#### 4.4.1 新消息通知
 
 ```typescript
 interface WebSocketNotification {
@@ -356,13 +459,101 @@ interface WebSocketNotification {
     "ref_id": 456,
     "to": 1001,
     "is_read": false,
-    "is_delete": false,
+    "is_delete_by_sender": false,
+    "is_delete_by_receiver": false,
     "create_time": "2026-06-11T10:30:00",
     "from_username": "zhang_san",
     "from_nickname": "张三",
     "from_avatar_url": "/avatar/xxx.png"
   }
 }
+```
+
+#### 4.4.2 消息撤销通知
+
+当对方撤销消息时，实时推送撤销通知。
+
+```typescript
+interface WebSocketRecall {
+  type: 'message_recall';
+  data: {
+    message_id: number;    // 被撤销的消息ID
+    from_user_id: number;  // 撤销者用户ID
+  };
+}
+```
+
+**示例**
+```json
+{
+  "type": "message_recall",
+  "data": {
+    "message_id": 123,
+    "from_user_id": 1001
+  }
+}
+```
+
+**前端处理建议**
+- 收到 `message_recall` 后，在聊天记录中找到对应的 `message_id`
+- 将该消息替换为「对方撤回了一条消息」的系统提示
+- 或直接从消息列表中移除该消息
+- 更新会话列表中的最后一条消息内容
+
+#### 4.4.3 已读回执通知
+
+当对方查看消息（标记已读）时，实时推送已读回执。
+
+```typescript
+interface WebSocketReadReceipt {
+  type: 'messages_read';
+  data: {
+    reader_id: number;  // 已读者用户ID
+  };
+}
+```
+
+**示例**
+```json
+{
+  "type": "messages_read",
+  "data": {
+    "reader_id": 1002
+  }
+}
+```
+
+**触发场景**
+- 调用 `POST /api/message/read/conversation/{otherUserId}` 标记会话已读
+- 调用 `POST /api/message/read-all` 全部标记已读
+
+**前端处理建议**
+- 收到 `messages_read` 后，更新聊天界面中消息的已读状态
+- 显示「已读」标记（如微信的双勾变蓝）
+- 更新会话列表中的未读计数
+
+#### 4.4.4 消息类型判断
+
+```javascript
+ws.onmessage = (event) => {
+  if (event.data === 'PONG') return;
+
+  const data = JSON.parse(event.data);
+  switch (data.type) {
+    case 'notification':
+      // 新消息通知
+      handleNewMessage(data.data);
+      break;
+    case 'message_recall':
+      // 消息撤销通知
+      handleMessageRecall(data.data.message_id, data.data.from_user_id);
+      break;
+    case 'messages_read':
+      // 已读回执通知
+      handleMessagesRead(data.data.reader_id);
+      break;
+  }
+};
 ```
 
 ---

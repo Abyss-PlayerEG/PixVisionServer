@@ -96,7 +96,8 @@ public class MessageServiceImpl implements MessageService {
         message.setMessage_type(type.getCode());
         message.setProject(project.getCode());
         message.setIs_read(false);
-        message.setIs_delete(false);
+        message.setIs_delete_by_sender(false);
+        message.setIs_delete_by_receiver(false);
         message.setCreate_time(LocalDateTime.now());
 
         // 写入数据库
@@ -182,7 +183,8 @@ public class MessageServiceImpl implements MessageService {
         message.setProject(project.getCode());
         message.setRef_id(refId);
         message.setIs_read(false);
-        message.setIs_delete(false);
+        message.setIs_delete_by_sender(false);
+        message.setIs_delete_by_receiver(false);
         message.setCreate_time(LocalDateTime.now());
 
         // 写入数据库
@@ -225,15 +227,30 @@ public class MessageServiceImpl implements MessageService {
     }
 
     /**
+     * 获取与指定用户的会话未读数
+     *
+     * @param userId      当前用户ID
+     * @param otherUserId 对方用户ID
+     * @return 会话未读数统计
+     */
+    @Override
+    public Map<String, Integer> getConversationUnreadCount(Integer userId, Integer otherUserId) {
+        Map<String, Integer> result = new HashMap<>();
+        result.put("conversation_unread", messageMapper.selectConversationUnreadCount(userId, otherUserId));
+        return result;
+    }
+
+    /**
      * 分页查询会话列表
      *
      * @param page   分页参数
      * @param userId 用户ID
+     * @param isRead 已读状态筛选（可选，false-只返回有未读消息的会话）
      * @return 会话列表
      */
     @Override
-    public IPage<ConversationVO> getConversationList(Page<Message> page, Integer userId) {
-        IPage<ConversationVO> result = messageMapper.selectConversationList(page, userId);
+    public IPage<ConversationVO> getConversationList(Page<Message> page, Integer userId, Boolean isRead) {
+        IPage<ConversationVO> result = messageMapper.selectConversationList(page, userId, isRead);
 
         // 填充对方用户信息
         if (result != null && !result.getRecords().isEmpty()) {
@@ -290,6 +307,12 @@ public class MessageServiceImpl implements MessageService {
         try {
             int count = messageMapper.markConversationAsRead(userId, otherUserId);
             log.debug("标记会话已读，用户：{}，对方：{}，影响行数：{}", userId, otherUserId, count);
+
+            // 有实际标记操作时，通知对方消息已被读取
+            if (count > 0) {
+                sendReadReceiptNotification(userId, otherUserId);
+            }
+
             return true;
         } catch (Exception e) {
             log.error("标记会话已读失败，用户：{}，对方：{}，错误：{}", userId, otherUserId, e.getMessage());
@@ -329,8 +352,19 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public boolean markAllAsRead(Integer userId, String messageType) {
         try {
+            // 先查询所有有未读消息的发送者
+            List<Integer> senderIds = messageMapper.selectUnreadMessageSenders(userId, messageType);
+
             int count = messageMapper.markAllAsRead(userId, messageType);
             log.debug("全部标记已读，用户：{}，类型：{}，影响行数：{}", userId, messageType, count);
+
+            // 有实际标记操作时，通知所有相关发送者
+            if (count > 0 && senderIds != null && !senderIds.isEmpty()) {
+                for (Integer senderId : senderIds) {
+                    sendReadReceiptNotification(userId, senderId);
+                }
+            }
+
             return true;
         } catch (Exception e) {
             log.error("全部标记已读失败，用户：{}，错误：{}", userId, e.getMessage());
@@ -339,36 +373,78 @@ public class MessageServiceImpl implements MessageService {
     }
 
     /**
-     * 删除消息（软删除）
+     * 撤销消息
+     * <p>
+     * 只能撤销自己发送 2 分钟内的消息，撤销后双方都不可见。
+     * </p>
      *
      * @param userId    用户ID
      * @param messageId 消息ID
      * @return 是否成功
      */
     @Override
-    public boolean deleteMessage(Integer userId, Integer messageId) {
+    public boolean recallMessage(Integer userId, Integer messageId) {
         try {
             Message message = messageMapper.selectById(messageId);
             if (message == null) {
                 log.warn("消息不存在，消息ID：{}", messageId);
                 return false;
             }
-            // 只能删除自己收到的消息
-            if (!message.getTo().equals(userId)) {
-                log.warn("无权删除消息，用户：{}，消息ID：{}", userId, messageId);
+
+            // 只能撤销自己发送的消息
+            if (!message.getFrom_user_id().equals(userId)) {
+                log.warn("无权撤销消息，不是消息发送者，用户：{}，消息ID：{}", userId, messageId);
                 return false;
             }
-            messageMapper.deleteById(messageId);
-            log.debug("删除消息成功，用户：{}，消息ID：{}", userId, messageId);
-            return true;
+
+            // 检查是否在 2 分钟内
+            if (message.getCreate_time() == null) {
+                log.warn("消息创建时间为空，消息ID：{}", messageId);
+                return false;
+            }
+
+            long messageTime = message.getCreate_time().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            long now = System.currentTimeMillis();
+            long twoMinutesMillis = 2 * 60 * 1000L;
+
+            if (now - messageTime > twoMinutesMillis) {
+                log.warn("消息已超过 2 分钟，无法撤销，用户：{}，消息ID：{}，消息时间：{}", userId, messageId, message.getCreate_time());
+                return false;
+            }
+
+            // 同时标记两个删除标签，双方都不可见
+            int count = messageMapper.recallMessage(messageId, userId);
+            if (count > 0) {
+                log.debug("撤销消息成功，用户：{}，消息ID：{}", userId, messageId);
+
+                // WebSocket 实时通知对方消息已被撤销
+                Integer toUserId = message.getTo();
+                if (sessionManager.isOnline(toUserId)) {
+                    Map<String, Object> pushData = new HashMap<>();
+                    pushData.put("type", "message_recall");
+
+                    Map<String, Object> recallData = new HashMap<>();
+                    recallData.put("message_id", messageId);
+                    recallData.put("from_user_id", userId);
+                    pushData.put("data", recallData);
+
+                    sessionManager.sendMessage(toUserId, JSON.toJSONString(pushData));
+                    log.debug("撤销通知已推送给用户 {}，消息ID：{}", toUserId, messageId);
+                }
+                return true;
+            }
+            return false;
         } catch (Exception e) {
-            log.error("删除消息失败，用户：{}，消息ID：{}，错误：{}", userId, messageId, e.getMessage());
+            log.error("撤销消息失败，用户：{}，消息ID：{}，错误：{}", userId, messageId, e.getMessage());
             return false;
         }
     }
 
     /**
      * 批量删除消息（软删除）
+     * <p>
+     * 不区分消息是自己发送还是接收，都可以删除。
+     * </p>
      *
      * @param userId     用户ID
      * @param messageIds 消息ID列表
@@ -380,9 +456,31 @@ public class MessageServiceImpl implements MessageService {
             return true;
         }
         try {
-            int count = messageMapper.batchSoftDelete(userId, messageIds);
-            log.debug("批量删除消息成功，用户：{}，消息数量：{}，影响行数：{}", userId, messageIds.size(), count);
-            return true;
+            // 根据用户身份设置对应的删除标记
+            int successCount = 0;
+            for (Integer messageId : messageIds) {
+                try {
+                    Message message = messageMapper.selectById(messageId);
+                    if (message == null) {
+                        continue;
+                    }
+
+                    boolean isSender = message.getFrom_user_id().equals(userId);
+                    boolean isReceiver = message.getTo().equals(userId);
+
+                    // 不区分发送者/接收者，都可以删除
+                    if (isSender || isReceiver) {
+                        int count = messageMapper.deleteMessageByUser(messageId, userId, isSender, isReceiver);
+                        if (count > 0) {
+                            successCount++;
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("删除单条消息失败，消息ID：{}，错误：{}", messageId, e.getMessage());
+                }
+            }
+            log.debug("批量删除消息成功，用户：{}，消息数量：{}，成功数量：{}", userId, messageIds.size(), successCount);
+            return successCount > 0;
         } catch (Exception e) {
             log.error("批量删除消息失败，用户：{}，错误：{}", userId, e.getMessage());
             return false;
@@ -405,7 +503,8 @@ public class MessageServiceImpl implements MessageService {
         vo.setRef_id(message.getRef_id());
         vo.setTo(message.getTo());
         vo.setIs_read(message.getIs_read());
-        vo.setIs_delete(message.getIs_delete());
+        vo.setIs_delete_by_sender(message.getIs_delete_by_sender());
+        vo.setIs_delete_by_receiver(message.getIs_delete_by_receiver());
         vo.setCreate_time(message.getCreate_time());
 
         // 系统消息特殊处理
@@ -424,5 +523,32 @@ public class MessageServiceImpl implements MessageService {
         }
 
         return vo;
+    }
+
+    /**
+     * 发送已读回执通知
+     * <p>
+     * 当用户标记会话已读时，通过 WebSocket 通知对方消息已被读取。
+     * </p>
+     *
+     * @param readerId    已读者用户ID（当前用户）
+     * @param senderId    发送者用户ID（对方）
+     */
+    private void sendReadReceiptNotification(Integer readerId, Integer senderId) {
+        try {
+            if (sessionManager.isOnline(senderId)) {
+                Map<String, Object> pushData = new HashMap<>();
+                pushData.put("type", "messages_read");
+
+                Map<String, Object> readData = new HashMap<>();
+                readData.put("reader_id", readerId);
+                pushData.put("data", readData);
+
+                sessionManager.sendMessage(senderId, JSON.toJSONString(pushData));
+                log.debug("已读回执通知已推送给用户 {}，读者：{}", senderId, readerId);
+            }
+        } catch (Exception e) {
+            log.warn("发送已读回执通知失败，读者：{}，发送者：{}，错误：{}", readerId, senderId, e.getMessage());
+        }
     }
 }

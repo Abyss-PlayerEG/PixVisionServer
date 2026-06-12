@@ -7,9 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.StarsMapper;
+import top.playereg.pix_vision.mapper.UserMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.entity.Star;
 import top.playereg.pix_vision.pojo.entity.Works;
+import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.service.StarService;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -31,6 +33,9 @@ public class StarServiceImpl implements StarService {
 
     @Autowired
     private WorksMapper worksMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Autowired
     private MessageService messageService;
@@ -100,7 +105,9 @@ public class StarServiceImpl implements StarService {
             try {
                 Works work = worksMapper.selectById(workId);
                 if (work != null && !work.getUser_id().equals(userId)) {
-                    String content = "收藏了你的作品《" + work.getWork_title() + "》";
+                    User starrer = userMapper.selectAllUserInfoById(userId);
+                    String nickname = (starrer != null && starrer.getNickname() != null) ? starrer.getNickname() : "用户";
+                    String content = nickname + " 收藏了你的作品《" + work.getWork_title() + "》";
                     messageService.sendSystemNotice(
                         userId,
                         work.getUser_id(),

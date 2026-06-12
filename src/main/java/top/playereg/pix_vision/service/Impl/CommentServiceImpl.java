@@ -10,6 +10,7 @@ import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.CommentsMapper;
 import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
+import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.VO.admin.AdminCommentVO;
 import top.playereg.pix_vision.pojo.VO.comment.PrimaryComment;
 import top.playereg.pix_vision.pojo.VO.comment.SecondaryComment;
@@ -18,6 +19,7 @@ import top.playereg.pix_vision.pojo.dto.CommentAddResult;
 import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
 import top.playereg.pix_vision.pojo.entity.Comments;
 import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
+import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.service.ContentAuditService;
@@ -56,6 +58,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private MessageService messageService;
+
+    @Autowired
+    private WorksMapper worksMapper;
 
     /**
      * 新增评论
@@ -196,6 +201,15 @@ public class CommentServiceImpl implements CommentService {
                     auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
                     contentAuditRecordMapper.insertRecord(auditRecord);
                     log.info("评论审核记录已保存 - 评论ID: {}, 审核状态: {}", comment.getComment_id(), approvalStatus);
+                }
+
+                // 审核通过时发送评论通知
+                if (approvalStatus == 10) {
+                    try {
+                        sendCommentNotification(userId, workId, commentFloor, parentComment, commentText);
+                    } catch (Exception e) {
+                        log.warn("发送评论通知失败 - 评论ID: {}, 错误: {}", comment.getComment_id(), e.getMessage());
+                    }
                 }
 
                 return new CommentAddResult(true, approvalStatus, auditReason);
@@ -692,6 +706,56 @@ public class CommentServiceImpl implements CommentService {
         }
 
         return new AdminBatchOperateCommentResult(totalCount, successCount, failedWorkIds);
+    }
+
+    /**
+     * 发送评论通知
+     * <p>
+     * 一级评论通知作品作者，二级评论通知父评论作者。
+     * 排除自评论的情况（自己评论自己不通知）。
+     * </p>
+     *
+     * @param userId        评论者用户ID
+     * @param workId        作品ID
+     * @param commentFloor  评论层级
+     * @param parentComment 父评论（二级评论时有值）
+     * @param commentText   评论内容
+     */
+    private void sendCommentNotification(Integer userId, Integer workId, Integer commentFloor,
+                                         Comments parentComment, String commentText) {
+        Integer toUserId = null;
+        String content = null;
+        Integer refId = workId;
+
+        // 获取评论者昵称
+        User commenter = userMapper.selectAllUserInfoById(userId);
+        String nickname = (commenter != null && commenter.getNickname() != null) ? commenter.getNickname() : "用户";
+
+        // 截取评论内容（保留更长的预览）
+        String shortText = commentText.length() > 30 ? commentText.substring(0, 30) + "..." : commentText;
+
+        if (commentFloor == 1) {
+            // 一级评论：通知作品作者
+            Works work = worksMapper.selectById(workId);
+            if (work == null) {
+                return;
+            }
+            toUserId = work.getUser_id();
+            content = nickname + " 评论了你的作品《" + work.getWork_title() + "》| 评论内容：" + shortText;
+        } else if (commentFloor == 2 && parentComment != null) {
+            // 二级评论：通知父评论作者
+            toUserId = parentComment.getUser_id();
+            content = nickname + " 回复了你的评论：" + shortText;
+            refId = parentComment.getComment_id();
+        }
+
+        // 排除自评论通知
+        if (toUserId == null || toUserId.equals(userId)) {
+            return;
+        }
+
+        messageService.sendSystemNotice(userId, toUserId, content, MessageProject.COMMENT, refId);
+        log.debug("评论通知已发送 - 评论者：{}，接收者：{}，层级：{}", userId, toUserId, commentFloor);
     }
 }
 

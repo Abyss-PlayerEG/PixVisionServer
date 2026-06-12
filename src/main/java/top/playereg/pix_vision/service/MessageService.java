@@ -99,13 +99,27 @@ public interface MessageService {
     Map<String, Integer> getUnreadCount(Integer userId);
 
     /**
+     * 获取与指定用户的会话未读数
+     * <p>
+     * 返回 Map 结构：
+     * - conversation_unread: 与该用户的会话未读数
+     * </p>
+     *
+     * @param userId      当前用户ID
+     * @param otherUserId 对方用户ID
+     * @return 会话未读数统计
+     */
+    Map<String, Integer> getConversationUnreadCount(Integer userId, Integer otherUserId);
+
+    /**
      * 分页查询会话列表
      *
      * @param page   分页参数
      * @param userId 用户ID
+     * @param isRead 已读状态筛选（可选，false-只返回有未读消息的会话）
      * @return 会话列表
      */
-    IPage<ConversationVO> getConversationList(Page<Message> page, Integer userId);
+    IPage<ConversationVO> getConversationList(Page<Message> page, Integer userId, Boolean isRead);
 
     /**
      * 分页查询聊天记录
@@ -157,16 +171,22 @@ public interface MessageService {
     boolean markAllAsRead(Integer userId, String messageType);
 
     /**
-     * 删除消息（软删除）
+     * 撤销消息
+     * <p>
+     * 只能撤销自己发送 2 分钟内的消息，撤销后双方都不可见。
+     * </p>
      *
      * @param userId    用户ID
      * @param messageId 消息ID
      * @return 是否成功
      */
-    boolean deleteMessage(Integer userId, Integer messageId);
+    boolean recallMessage(Integer userId, Integer messageId);
 
     /**
      * 批量删除消息（软删除）
+     * <p>
+     * 不区分消息是自己发送还是接收，都可以删除。
+     * </p>
      *
      * @param userId     用户ID
      * @param messageIds 消息ID列表

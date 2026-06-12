@@ -7,9 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.LikesMapper;
+import top.playereg.pix_vision.mapper.UserMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.entity.Like;
 import top.playereg.pix_vision.pojo.entity.Works;
+import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.LikeService;
 import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.util.PixVisionLogger;
@@ -31,6 +33,9 @@ public class LikeServiceImpl implements LikeService {
 
     @Autowired
     private WorksMapper worksMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Autowired
     private MessageService messageService;
@@ -100,7 +105,9 @@ public class LikeServiceImpl implements LikeService {
             try {
                 Works work = worksMapper.selectById(workId);
                 if (work != null && !work.getUser_id().equals(userId)) {
-                    String content = "赞了你的作品《" + work.getWork_title() + "》";
+                    User liker = userMapper.selectAllUserInfoById(userId);
+                    String nickname = (liker != null && liker.getNickname() != null) ? liker.getNickname() : "用户";
+                    String content = nickname + " 赞了你的作品《" + work.getWork_title() + "》";
                     messageService.sendSystemNotice(
                         userId,
                         work.getUser_id(),

@@ -1,11 +1,16 @@
 package top.playereg.pix_vision.manager;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.PingMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -131,5 +136,43 @@ public class WebSocketSessionManager {
      */
     public int getOnlineCount() {
         return sessions.size();
+    }
+
+    /**
+     * 心跳检测：定时清理僵尸连接
+     * <p>
+     * 每 30 秒执行一次，向所有连接发送 PING 消息。
+     * 如果发送失败，说明连接已断开，自动移除该会话。
+     * </p>
+     */
+    @Scheduled(fixedRate = 30000)
+    public void heartbeatCheck() {
+        if (sessions.isEmpty()) {
+            return;
+        }
+
+        List<Integer> deadSessions = new ArrayList<>();
+        PingMessage pingMessage = new PingMessage(ByteBuffer.wrap(new byte[0]));
+
+        sessions.forEach((userId, session) -> {
+            try {
+                if (session.isOpen()) {
+                    session.sendMessage(pingMessage);
+                } else {
+                    deadSessions.add(userId);
+                }
+            } catch (IOException e) {
+                log.debug("心跳检测发现僵尸连接，用户 ID: {}，错误：{}", userId, e.getMessage());
+                deadSessions.add(userId);
+            }
+        });
+
+        // 批量移除僵尸连接
+        if (!deadSessions.isEmpty()) {
+            deadSessions.forEach(this::removeSession);
+            log.info("心跳检测完成，清理僵尸连接 {} 个，当前在线：{}", deadSessions.size(), sessions.size());
+        } else {
+            log.debug("心跳检测完成，当前在线：{}", sessions.size());
+        }
     }
 }
