@@ -54,34 +54,31 @@ public class ViewCountSyncScheduler {
 
             List<Map<String, Object>> updateList = new ArrayList<>();
 
-            Cursor<byte[]> cursor = redisTemplate.getConnectionFactory()
-                .getConnection()
-                .scan(options);
+            try (Cursor<String> cursor = redisTemplate.scan(options)) {
+                while (cursor.hasNext()) {
+                    String key = cursor.next();
+                    // 提取 workId
+                    String workIdStr = key.substring(VIEW_COUNT_KEY_PREFIX.length());
+                    try {
+                        Integer workId = Integer.parseInt(workIdStr);
+                        Object countObj = redisTemplate.opsForValue().get(key);
 
-            while (cursor.hasNext()) {
-                String key = new String(cursor.next());
-                // 提取 workId
-                String workIdStr = key.substring(VIEW_COUNT_KEY_PREFIX.length());
-                try {
-                    Integer workId = Integer.parseInt(workIdStr);
-                    Object countObj = redisTemplate.opsForValue().get(key);
+                        if (countObj != null) {
+                            // 安全地将 Number 类型转换为 Long
+                            Long count = ((Number) countObj).longValue();
 
-                    if (countObj != null) {
-                        // 安全地将 Number 类型转换为 Long
-                        Long count = ((Number) countObj).longValue();
-
-                        if (count > 0) {
-                            Map<String, Object> record = new HashMap<>();
-                            record.put("work_id", workId);
-                            record.put("count", count);
-                            updateList.add(record);
+                            if (count > 0) {
+                                Map<String, Object> record = new HashMap<>();
+                                record.put("work_id", workId);
+                                record.put("count", count);
+                                updateList.add(record);
+                            }
                         }
+                    } catch (NumberFormatException e) {
+                        log.warn("无效的 workId 格式: {}", workIdStr);
                     }
-                } catch (NumberFormatException e) {
-                    log.warn("无效的 workId 格式: {}", workIdStr);
                 }
             }
-            cursor.close();
 
             // 2. 批量更新数据库
             if (!updateList.isEmpty()) {

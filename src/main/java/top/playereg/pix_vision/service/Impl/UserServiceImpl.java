@@ -1355,6 +1355,7 @@ public class UserServiceImpl implements UserService {
      * @return 是否成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean deleteUserAccountByAdmin(Integer targetUserId, Integer adminId) {
         log.info("管理员开始删除用户账户 - 目标用户 ID: {}, 管理员 ID: {}", targetUserId, adminId);
 
@@ -1543,6 +1544,7 @@ public class UserServiceImpl implements UserService {
      * @return 重置结果列表，每个元素包含 user_id, email, username, plainPassword
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public java.util.List<java.util.Map<String, Object>> batchResetUserPasswords(java.util.List<Integer> userIds) {
         log.info("开始批量重置用户密码 - 用户数量: {}", userIds != null ? userIds.size() : 0);
 
@@ -1749,6 +1751,7 @@ public class UserServiceImpl implements UserService {
      * @return 批量操作结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AdminBatchOperateWorkResult batchInitAvatarAndNickname(List<Integer> userIds, Integer adminId) {
         log.info("批量初始化用户头像和昵称 - 用户数量: {}, 管理员ID: {}", userIds.size(), adminId);
 

@@ -98,33 +98,43 @@
     </update>
 
     <!-- 分页查询评论列表（支持多条件过滤） -->
-    <select id="selectCommentsPage" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
-        FROM tb_comments
-        WHERE is_delete = 0
+    <select id="selectCommentsPage" resultType="top.playereg.pix_vision.pojo.VO.admin.AdminCommentVO">
+        SELECT c.comment_id,
+               c.user_id,
+               c.work_id,
+               c.parent_comment_id,
+               c.in_comment_id,
+               c.comment_floor,
+               c.comment_text,
+               c.approval_status,
+               c.is_delete,
+               c.time,
+               w.work_title
+        FROM tb_comments c
+        LEFT JOIN tb_works w ON c.work_id = w.work_id
+        WHERE c.is_delete = 0
         <if test="workId != null">
-            AND work_id = #{workId}
+            AND c.work_id = #{workId}
         </if>
         <if test="userId != null">
-            AND user_id = #{userId}
+            AND c.user_id = #{userId}
         </if>
         <if test="commentFloor != null">
-            AND comment_floor = #{commentFloor}
+            AND c.comment_floor = #{commentFloor}
         </if>
         <if test="approvalStatus != null">
-            AND approval_status = #{approvalStatus}
+            AND c.approval_status = #{approvalStatus}
         </if>
         <if test="keyword != null and keyword != ''">
-            AND comment_text LIKE CONCAT('%', #{keyword}, '%')
+            AND c.comment_text LIKE CONCAT('%', #{keyword}, '%')
         </if>
         ORDER BY
         <choose>
             <when test="orderBy == 'oldest'">
-                time ASC
+                c.time ASC
             </when>
             <otherwise>
-                time DESC
+                c.time DESC
             </otherwise>
         </choose>
     </select>

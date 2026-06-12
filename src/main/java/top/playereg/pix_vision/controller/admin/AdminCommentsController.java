@@ -12,10 +12,10 @@ import top.playereg.pix_vision.pojo.ResponsePojo;
 import top.playereg.pix_vision.pojo.VO.admin.AdminCommentVO;
 import top.playereg.pix_vision.pojo.admin.AdminBatchOperateCommentResult;
 import top.playereg.pix_vision.service.CommentService;
+import top.playereg.pix_vision.service.TokenWhitelistService;
 import top.playereg.pix_vision.util.Annotation.LogRecord;
 import top.playereg.pix_vision.util.Annotation.RequireRole;
 import top.playereg.pix_vision.util.PageUtils;
-import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.util.List;
 
@@ -24,10 +24,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "系统管理员接口 - 评论管理", description = "提供评论管理的后台接口，包括批量删除等操作")
 @RequireRole(value = {55, 77})
-public class AdminCommentsController {
-    private static final PixVisionLogger log = PixVisionLogger.create(AdminCommentsController.class);
+public class AdminCommentsController extends AdminBaseController {
 
     private final CommentService commentService;
+    private final TokenWhitelistService tokenWhitelistService;
 
     /**
      * 批量删除评论 - 管理员
@@ -259,11 +259,10 @@ public class AdminCommentsController {
             return ResponsePojo.error(null, "审核状态无效，可选值：10-正常、20-待审核、30-未过审");
         }
 
-        // 从 Token 中获取操作者 ID
-        Integer userId = (Integer) request.getAttribute("userId");
+        // 统一Token验证
+        Integer userId = validateToken(request, "批量更新评论审核状态", tokenWhitelistService);
         if (userId == null) {
-            log.warn("无法获取用户 ID");
-            return ResponsePojo.error(null, "未授权访问");
+            return ResponsePojo.error(null, "Token无效或已失效，请重新登录");
         }
 
         try {
@@ -283,20 +282,5 @@ public class AdminCommentsController {
             log.error("批量更新评论审核状态异常，评论 ID 列表: {}, 目标状态: {}, 操作者 ID: {}, 错误: {}", commentIds, approvalStatus, userId, e.getMessage(), e);
             return ResponsePojo.error(null, "更新失败：" + e.getMessage());
         }
-    }
-
-    /**
-     * 获取审核状态名称
-     *
-     * @param approvalStatus 审核状态代码
-     * @return 状态名称
-     */
-    private String getStatusName(Integer approvalStatus) {
-        return switch (approvalStatus) {
-            case 10 -> "正常";
-            case 20 -> "待审核";
-            case 30 -> "未过审";
-            default -> "未知";
-        };
     }
 }

@@ -3,12 +3,14 @@ package top.playereg.pix_vision.service.Impl;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.CommentsMapper;
 import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.UserMapper;
+import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.VO.admin.AdminCommentVO;
 import top.playereg.pix_vision.pojo.VO.comment.PrimaryComment;
 import top.playereg.pix_vision.pojo.VO.comment.SecondaryComment;
@@ -17,9 +19,11 @@ import top.playereg.pix_vision.pojo.dto.CommentAddResult;
 import top.playereg.pix_vision.pojo.dto.ContentAuditResult;
 import top.playereg.pix_vision.pojo.entity.Comments;
 import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
+import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.CommentService;
 import top.playereg.pix_vision.service.ContentAuditService;
+import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.util.PageUtils;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -51,6 +55,12 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private ContentAuditRecordMapper contentAuditRecordMapper;
+
+    @Autowired
+    private MessageService messageService;
+
+    @Autowired
+    private WorksMapper worksMapper;
 
     /**
      * 新增评论
@@ -191,6 +201,15 @@ public class CommentServiceImpl implements CommentService {
                     auditRecord.setCreate_time(new Timestamp(System.currentTimeMillis()));
                     contentAuditRecordMapper.insertRecord(auditRecord);
                     log.info("评论审核记录已保存 - 评论ID: {}, 审核状态: {}", comment.getComment_id(), approvalStatus);
+                }
+
+                // 审核通过时发送评论通知
+                if (approvalStatus == 10) {
+                    try {
+                        sendCommentNotification(userId, workId, commentFloor, parentComment, commentText);
+                    } catch (Exception e) {
+                        log.warn("发送评论通知失败 - 评论ID: {}, 错误: {}", comment.getComment_id(), e.getMessage());
+                    }
                 }
 
                 return new CommentAddResult(true, approvalStatus, auditReason);
@@ -436,6 +455,7 @@ public class CommentServiceImpl implements CommentService {
      * @param commentIds 评论ID列表
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      */
+    @Transactional(rollbackFor = Exception.class)
     public AdminBatchOperateCommentResult batchDeleteComments(List<Integer> commentIds) {
 
         if (commentIds == null || commentIds.isEmpty()) {
@@ -566,48 +586,35 @@ public class CommentServiceImpl implements CommentService {
             current, size, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
 
         // 创建分页对象
-        Page<Comments> page = new Page<>(current, size);
+        Page<AdminCommentVO> page = new Page<>(current, size);
 
-        // 调用 Mapper 层查询
-        IPage<Comments> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
+        // 调用 Mapper 层查询（已联表查work_title）
+        IPage<AdminCommentVO> result = commentsMapper.selectCommentsPage(page, workId, userId, commentFloor, approvalStatus, keyword, orderBy);
 
         // 批量查询审核记录
-        final Map<Integer, ContentAuditRecord> auditMap;
         if (result != null && !result.getRecords().isEmpty()) {
             List<Integer> commentIds = result.getRecords().stream()
-                .map(Comments::getComment_id)
+                .map(AdminCommentVO::getComment_id)
                 .collect(Collectors.toList());
             List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
                 .selectLatestByContentIds(200, commentIds);
             if (auditRecords != null) {
-                auditMap = auditRecords.stream().collect(Collectors.toMap(
-                    ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
-            } else {
-                auditMap = new HashMap<>();
+                Map<Integer, ContentAuditRecord> auditMap = auditRecords.stream()
+                    .collect(Collectors.toMap(ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+                result.getRecords().forEach(vo -> {
+                    ContentAuditRecord audit = auditMap.get(vo.getComment_id());
+                    if (audit != null) {
+                        vo.setAudit_reason(audit.getAudit_reason());
+                        vo.setInsult_words(audit.getInsult_words());
+                    }
+                });
             }
-        } else {
-            auditMap = new HashMap<>();
         }
-
-        // 转换 Comments → AdminCommentVO
-        List<AdminCommentVO> voList = result.getRecords().stream().map(comment -> {
-            AdminCommentVO vo = new AdminCommentVO();
-            BeanUtils.copyProperties(comment, vo);
-            ContentAuditRecord audit = auditMap.get(comment.getComment_id());
-            if (audit != null) {
-                vo.setAudit_reason(audit.getAudit_reason());
-                vo.setInsult_words(audit.getInsult_words());
-            }
-            return vo;
-        }).collect(Collectors.toList());
-
-        IPage<AdminCommentVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(voList);
 
         log.info("分页查询评论完成，总数: {}, 当前页: {}, 每页大小: {}",
             result.getTotal(), result.getCurrent(), result.getSize());
 
-        return voPage;
+        return result;
     }
 
 
@@ -671,7 +678,84 @@ public class CommentServiceImpl implements CommentService {
 
         log.info("批量审核评论完成 - 总数: {}, 成功: {}, 失败: {}, 目标状态: {} ({})",
             totalCount, successCount, failedWorkIds.size(), approval, statusName);
+
+        // 发送评论审核通知
+        if (successCount > 0 && (approval == 10 || approval == 30)) {
+            for (Integer commentId : allCommentIds) {
+                try {
+                    Comments comment = commentsMapper.selectCommentById(commentId);
+                    if (comment != null && !comment.getIs_delete()) {
+                        String statusText = approval == 10 ? "通过" : "未通过";
+                        String content = "你的评论审核" + statusText + "，评论内容：" +
+                            (comment.getComment_text().length() > 20 ?
+                                comment.getComment_text().substring(0, 20) + "..." :
+                                comment.getComment_text());
+                        messageService.sendSystemNotice(
+                            0,
+                            comment.getUser_id(),
+                            content,
+                            MessageProject.COMMENT_AUDIT,
+                            commentId
+                        );
+                    }
+                } catch (Exception e) {
+                    log.warn("发送评论审核通知失败 - 评论ID: {}, 错误: {}", commentId, e.getMessage());
+                }
+            }
+            log.info("评论审核通知已发送 - 成功数: {}, 审核状态: {}", successCount, approval);
+        }
+
         return new AdminBatchOperateCommentResult(totalCount, successCount, failedWorkIds);
+    }
+
+    /**
+     * 发送评论通知
+     * <p>
+     * 一级评论通知作品作者，二级评论通知父评论作者。
+     * 排除自评论的情况（自己评论自己不通知）。
+     * </p>
+     *
+     * @param userId        评论者用户ID
+     * @param workId        作品ID
+     * @param commentFloor  评论层级
+     * @param parentComment 父评论（二级评论时有值）
+     * @param commentText   评论内容
+     */
+    private void sendCommentNotification(Integer userId, Integer workId, Integer commentFloor,
+                                         Comments parentComment, String commentText) {
+        Integer toUserId = null;
+        String content = null;
+        Integer refId = workId;
+
+        // 获取评论者昵称
+        User commenter = userMapper.selectAllUserInfoById(userId);
+        String nickname = (commenter != null && commenter.getNickname() != null) ? commenter.getNickname() : "用户";
+
+        // 截取评论内容（保留更长的预览）
+        String shortText = commentText.length() > 30 ? commentText.substring(0, 30) + "..." : commentText;
+
+        if (commentFloor == 1) {
+            // 一级评论：通知作品作者
+            Works work = worksMapper.selectById(workId);
+            if (work == null) {
+                return;
+            }
+            toUserId = work.getUser_id();
+            content = nickname + " 评论了你的作品《" + work.getWork_title() + "》| 评论内容：" + shortText;
+        } else if (commentFloor == 2 && parentComment != null) {
+            // 二级评论：通知父评论作者
+            toUserId = parentComment.getUser_id();
+            content = nickname + " 回复了你的评论：" + shortText;
+            refId = parentComment.getComment_id();
+        }
+
+        // 排除自评论通知
+        if (toUserId == null || toUserId.equals(userId)) {
+            return;
+        }
+
+        messageService.sendSystemNotice(userId, toUserId, content, MessageProject.COMMENT, refId);
+        log.debug("评论通知已发送 - 评论者：{}，接收者：{}，层级：{}", userId, toUserId, commentFloor);
     }
 }
 

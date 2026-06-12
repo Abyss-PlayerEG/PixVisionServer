@@ -553,6 +553,7 @@ public class WorkController {
               * 20: 待审核
               * 30: 未过审
               * null: 不限制，返回所有状态
+            - keyword: **关键字**（可选），String 类型，支持模糊查询作品标题
 
             ## 返回说明：
             - **查询成功**：返回 **{"data": {IPage<Works>对象}}** ，包含作品列表和分页信息
@@ -569,8 +570,9 @@ public class WorkController {
             5. 构建 MyBatis-Plus 分页对象
             6. 查询当前用户的作品列表（WHERE user_id = ? AND is_delete = 0）
             7. 如果提供了 approvalStatus 参数，添加审核状态过滤条件
-            8. 按创建时间倒序排列（create_time DESC）
-            9. 返回分页结果集（IPage<Works>）
+            8. 如果提供了 keyword 参数，添加标题模糊查询条件（LIKE '%keyword%'）
+            9. 按创建时间倒序排列（create_time DESC）
+            10. 返回分页结果集（IPage<Works>）
 
             ## 注意事项：
             - **必须携带有效的 Token 才能查询**
@@ -579,6 +581,7 @@ public class WorkController {
             - **返回所有审核状态的作品**，包括待审核和未过审的作品
             - 这是与普通查询接口的主要区别：普通接口只返回 approval_status = 10
             - 可以通过 approvalStatus 参数筛选特定状态的作品
+            - 支持通过 keyword 参数模糊查询作品标题
             - 已自动过滤逻辑删除的作品（is_delete=0）
             - 默认返回完整 Works 实体字段，包含 approval_status
             - 每页大小限制：**1-500**
@@ -595,7 +598,8 @@ public class WorkController {
             description = "审核状态（可选，10-正常、20-待审核、30-未过审）",
             allowableValues = {"10", "20", "30"},
             example = "20"
-        ) @RequestParam(required = false) Integer approvalStatus
+        ) @RequestParam(required = false) Integer approvalStatus,
+        @Parameter(description = "关键字（可选，模糊搜索标题）") @RequestParam(required = false) String keyword
     ) {
         log.debug("查询用户自己的作品 - 页码: {}, 每页大小: {}", current, size);
 
@@ -635,7 +639,7 @@ public class WorkController {
             Page<Works> page = new Page<>(current, size);
 
             // 调用服务层查询
-            IPage<Works> result = workService.getMyWorks(page, userId, approvalStatus);
+            IPage<Works> result = workService.getMyWorks(page, userId, approvalStatus, keyword);
 
             if (result != null && result.getRecords() != null) {
                 log.info("查询用户作品成功，用户 ID: {}, 用户名: {}, 总数: {}, 当前页: {}",

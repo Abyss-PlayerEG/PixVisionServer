@@ -3,9 +3,10 @@ package top.playereg.pix_vision.service.Impl;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.ContentAuditRecordMapper;
 import top.playereg.pix_vision.mapper.SeriesMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
@@ -17,13 +18,13 @@ import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
 import top.playereg.pix_vision.pojo.entity.Series;
 import top.playereg.pix_vision.pojo.entity.Works;
 import top.playereg.pix_vision.service.ContentAuditService;
+import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.service.SeriesService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -48,6 +49,9 @@ public class SeriesServiceImpl implements SeriesService {
 
     @Autowired
     private ContentAuditRecordMapper contentAuditRecordMapper;
+
+    @Autowired
+    private MessageService messageService;
 
     public SeriesServiceImpl(SeriesMapper seriesMapper) {
         this.seriesMapper = seriesMapper;
@@ -602,6 +606,7 @@ public class SeriesServiceImpl implements SeriesService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AdminBatchOperateWorkResult batchUpdateApprovalStatus(List<Integer> seriesIds, Integer approvalStatus, Integer userId) {
         if (seriesIds == null || seriesIds.isEmpty()) {
             return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
@@ -679,6 +684,26 @@ public class SeriesServiceImpl implements SeriesService {
             log.warn("以下系列ID已删除: {}", deletedSeriesIds);
         }
 
+        // 发送管理员审核通知
+        if (successCount > 0 && (approvalStatus == 10 || approvalStatus == 30)) {
+            for (Series series : validSeries) {
+                try {
+                    String statusText = approvalStatus == 10 ? "通过" : "未通过";
+                    String content = "你的合集《" + series.getSeries_title() + "》审核" + statusText;
+                    messageService.sendSystemNotice(
+                        0,
+                        series.getUser_id(),
+                        content,
+                        MessageProject.SERIES_AUDIT,
+                        series.getSeries_id()
+                    );
+                } catch (Exception e) {
+                    log.warn("发送合集审核通知失败 - 合集ID: {}, 错误: {}", series.getSeries_id(), e.getMessage());
+                }
+            }
+            log.info("管理员合集审核通知已发送 - 成功数: {}, 审核状态: {}", successCount, approvalStatus);
+        }
+
         return new AdminBatchOperateWorkResult(
             totalCount, successCount, failedSeriesIds
         );
@@ -708,6 +733,7 @@ public class SeriesServiceImpl implements SeriesService {
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AdminBatchOperateWorkResult batchDeleteSeries(List<Integer> seriesIds, Boolean deleteWorks, Integer userId) {
         if (seriesIds == null || seriesIds.isEmpty()) {
             return new AdminBatchOperateWorkResult(0, 0, new ArrayList<>());
@@ -967,46 +993,33 @@ public class SeriesServiceImpl implements SeriesService {
             current, size, keyword, approvalStatus, isDelete, userId, orderBy);
 
         // 创建分页对象
-        Page<Series> page = new Page<>(
+        Page<AdminSeriesVO> page = new Page<>(
             current != null ? current : 1,
             size != null ? size : 10
         );
 
-        // 调用 Mapper 分页查询
-        IPage<Series> result = seriesMapper.selectAdminSeriesPage(page, keyword, approvalStatus, isDelete, userId, orderBy);
+        // 调用 Mapper 分页查询（已联表查username）
+        IPage<AdminSeriesVO> result = seriesMapper.selectAdminSeriesPage(page, keyword, approvalStatus, isDelete, userId, orderBy);
 
         // 批量查询审核记录
-        final Map<Integer, ContentAuditRecord> auditMap;
         if (result != null && !result.getRecords().isEmpty()) {
             List<Integer> seriesIds = result.getRecords().stream()
-                .map(Series::getSeries_id)
+                .map(AdminSeriesVO::getSeries_id)
                 .collect(Collectors.toList());
             List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
                 .selectLatestByContentIds(300, seriesIds);
             if (auditRecords != null) {
-                auditMap = auditRecords.stream().collect(Collectors.toMap(
-                    ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
-            } else {
-                auditMap = new HashMap<>();
+                Map<Integer, ContentAuditRecord> auditMap = auditRecords.stream()
+                    .collect(Collectors.toMap(ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
+                result.getRecords().forEach(vo -> {
+                    ContentAuditRecord audit = auditMap.get(vo.getSeries_id());
+                    if (audit != null) {
+                        vo.setAudit_reason(audit.getAudit_reason());
+                        vo.setInsult_words(audit.getInsult_words());
+                    }
+                });
             }
-        } else {
-            auditMap = new HashMap<>();
         }
-
-        // 转换 Series → AdminSeriesVO
-        List<AdminSeriesVO> voList = result.getRecords().stream().map(series -> {
-            AdminSeriesVO vo = new AdminSeriesVO();
-            BeanUtils.copyProperties(series, vo);
-            ContentAuditRecord audit = auditMap.get(series.getSeries_id());
-            if (audit != null) {
-                vo.setAudit_reason(audit.getAudit_reason());
-                vo.setInsult_words(audit.getInsult_words());
-            }
-            return vo;
-        }).collect(Collectors.toList());
-
-        IPage<AdminSeriesVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(voList);
 
         if (result != null) {
             log.info("管理员分页查询成功 - 总记录数: {}, 当前页记录数: {}",
@@ -1015,6 +1028,6 @@ public class SeriesServiceImpl implements SeriesService {
             log.warn("管理员分页查询返回空结果");
         }
 
-        return voPage;
+        return result;
     }
 }

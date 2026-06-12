@@ -214,7 +214,7 @@
         </foreach>
     </update>
 
-    <!-- 分页查询用户自己的作品列表（只过滤已删除，不过滤审核状态） -->
+    <!-- 分页查询用户自己的作品列表（只过滤已删除，不过滤审核状态，支持关键字模糊查询） -->
     <select id="selectMyWorks" resultMap="BaseResultMap">
         SELECT w.work_id,
         w.user_id,
@@ -237,6 +237,9 @@
         AND w.is_delete = 0
         <if test="approvalStatus != null">
             AND w.approval_status = #{approvalStatus}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND w.work_title LIKE CONCAT('%', #{keyword}, '%')
         </if>
         ORDER BY w.create_time DESC
     </select>

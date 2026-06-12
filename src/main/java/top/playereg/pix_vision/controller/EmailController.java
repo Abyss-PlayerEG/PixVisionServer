@@ -48,8 +48,6 @@ public class EmailController {
      * @return 响应数据，表示邮件是否发送成功
      * @author PlayerEG
      */
-    @PostMapping("/send-register-code")
-    @PublicAccess("发送注册验证码，无需认证")
     @Operation(
         summary = "发送注册验证码邮件",
         description = """
@@ -90,6 +88,8 @@ public class EmailController {
             - **如果邮箱已有未过期的验证码，将拒绝发送新的验证码**
             """
     )
+    @PostMapping("/send-register-code")
+    @PublicAccess("发送注册验证码，无需认证")
     public ResponsePojo<Boolean> sendRegisterCode(
         @Parameter(description = "收件人邮箱地址", required = true, example = "test@example.com") @RequestParam String email,
         @Parameter(description = "用户昵称", required = true, example = "dev_user") @RequestParam String username

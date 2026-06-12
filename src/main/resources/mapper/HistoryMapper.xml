@@ -14,6 +14,7 @@
                w.user_id AS work_user_id,
                w.work_title,
                w.img_url,
+               w.thumb_url,
                w.series_id,
                w.like_count,
                w.star_count,

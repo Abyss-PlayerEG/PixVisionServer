@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.playereg.pix_vision.enums.MessageProject;
 import top.playereg.pix_vision.mapper.StarsMapper;
+import top.playereg.pix_vision.mapper.UserMapper;
 import top.playereg.pix_vision.mapper.WorksMapper;
 import top.playereg.pix_vision.pojo.entity.Star;
 import top.playereg.pix_vision.pojo.entity.Works;
+import top.playereg.pix_vision.pojo.entity.user.User;
+import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.service.StarService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 
@@ -29,6 +33,12 @@ public class StarServiceImpl implements StarService {
 
     @Autowired
     private WorksMapper worksMapper;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private MessageService messageService;
 
     /**
      * 切换收藏状态（收藏或取消收藏）
@@ -90,6 +100,26 @@ public class StarServiceImpl implements StarService {
             // 5. 更新作品收藏数 +1
             updateWorkStarCount(workId, 1);
             log.info("用户 {} 收藏了作品 {}", userId, workId);
+
+            // 6. 发送收藏通知（排除自收藏）
+            try {
+                Works work = worksMapper.selectById(workId);
+                if (work != null && !work.getUser_id().equals(userId)) {
+                    User starrer = userMapper.selectAllUserInfoById(userId);
+                    String nickname = (starrer != null && starrer.getNickname() != null) ? starrer.getNickname() : "用户";
+                    String content = nickname + " 收藏了你的作品《" + work.getWork_title() + "》";
+                    messageService.sendSystemNotice(
+                        userId,
+                        work.getUser_id(),
+                        content,
+                        MessageProject.STAR,
+                        workId
+                    );
+                }
+            } catch (Exception e) {
+                log.warn("发送收藏通知失败: {}", e.getMessage());
+            }
+
             return true;
         }
     }

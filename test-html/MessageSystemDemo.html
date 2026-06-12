@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>消息系统 Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 24px;
+            font-size: 24px;
+        }
+
+        /* Token 输入区 */
+        .token-area {
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffc107;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .token-area label {
+            font-size: 13px;
+            color: #856404;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .token-area input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .token-area input:focus {
+            outline: none;
+            border-color: #ff9800;
+            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+        }
+
+        /* 功能区 */
+        .section {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e4e7ed;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #409eff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #66b1ff;
+        }
+
+        .btn-success {
+            background: #67c23a;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #85ce61;
+        }
+
+        .btn-warning {
+            background: #e6a23c;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #ebb563;
+        }
+
+        .btn-danger {
+            background: #f56c6c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #f78989;
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* 输入框组 */
+        .input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            color: #666;
+            min-width: 80px;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #409eff;
+        }
+
+        /* 未读消息统计 */
+        .unread-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .unread-stat-item {
+            padding: 12px 16px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e4e7ed;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .unread-stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #409eff;
+        }
+
+        .unread-stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* 会话列表 */
+        .conversation-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e4e7ed;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .conversation-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .conversation-item:hover {
+            background: #f5f7fa;
+        }
+
+        .conversation-item:last-child {
+            border-bottom: none;
+        }
+
+        .conversation-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e4e7ed;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #999;
+        }
+
+        .conversation-info {
+            flex: 1;
+        }
+
+        .conversation-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .conversation-last-msg {
+            font-size: 12px;
+            color: #999;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .conversation-meta {
+            text-align: right;
+        }
+
+        .conversation-time {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .conversation-unread {
+            background: #f56c6c;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        /* 消息列表 */
+        .message-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e4e7ed;
+            border-radius: 4px;
+            background: white;
+            padding: 12px;
+        }
+
+        .message-item {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-item.sent {
+            align-items: flex-end;
+        }
+
+        .message-item.received {
+            align-items: flex-start;
+        }
+
+        .message-sender {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message-item.sent .message-bubble {
+            background: #409eff;
+            color: white;
+        }
+
+        .message-item.received .message-bubble {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* 系统通知列表 */
+        .notification-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e4e7ed;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .notification-item {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item.unread {
+            background: #fff9e6;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .notification-project {
+            font-size: 12px;
+            color: #409eff;
+            background: #ecf5ff;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+
+        .notification-time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .notification-content {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        /* 结果显示 */
+        .result-area {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* 错误提示 */
+        .error {
+            padding: 12px;
+            background: #fef0f0;
+            color: #f56c6c;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .success {
+            padding: 12px;
+            background: #f0f9eb;
+            color: #67c23a;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        /* WebSocket 状态 */
+        .ws-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .ws-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #909399;
+        }
+
+        .ws-dot.connected {
+            background: #67c23a;
+        }
+
+        .ws-dot.disconnected {
+            background: #f56c6c;
+        }
+
+        .ws-dot.connecting {
+            background: #e6a23c;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 空状态 */
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 消息系统 Demo</h1>
+
+        <!-- Token 输入 -->
+        <div class="token-area">
+            <label>Token:</label>
+            <input id="auth-token" onchange="updateToken()" placeholder="请输入 JWT Token" type="text">
+        </div>
+
+        <!-- 错误/成功提示 -->
+        <div class="error" id="error-message"></div>
+        <div class="success" id="success-message"></div>
+
+        <!-- 未读消息统计 -->
+        <div class="section">
+            <div class="section-title">📊 未读消息统计</div>
+            <div class="section-actions">
+                <button class="btn btn-primary" onclick="loadUnreadCount()">刷新统计</button>
+            </div>
+            <div class="unread-stats" id="unread-stats">
+                <div class="unread-stat-item">
+                    <div class="unread-stat-value" id="unread-total">-</div>
+                    <div class="unread-stat-label">总未读</div>
+                </div>
+                <div class="unread-stat-item">
+                    <div class="unread-stat-value" id="unread-private">-</div>
+                    <div class="unread-stat-label">未读私信</div>
+                </div>
+                <div class="unread-stat-item">
+                    <div class="unread-stat-value" id="unread-system">-</div>
+                    <div class="unread-stat-label">未读通知</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 会话列表 -->
+        <div class="section">
+            <div class="section-title">💬 私信会话列表</div>
+            <div class="section-actions">
+                <button class="btn btn-primary" onclick="loadConversations()">加载会话</button>
+                <button class="btn btn-success" onclick="markAllAsRead()">全部已读</button>
+            </div>
+            <div class="conversation-list" id="conversation-list">
+                <div class="empty">暂无会话</div>
+            </div>
+        </div>
+
+        <!-- 聊天记录 -->
+        <div class="section">
+            <div class="section-title">🗨️ 聊天记录</div>
+            <div class="input-group">
+                <label>对方用户ID:</label>
+                <input id="chat-user-id" placeholder="输入对方用户ID" type="number">
+                <button class="btn btn-primary" onclick="loadChatHistory()">加载聊天</button>
+            </div>
+            <div class="message-list" id="message-list">
+                <div class="empty">请输入用户ID后加载</div>
+            </div>
+        </div>
+
+        <!-- 发送私信 -->
+        <div class="section">
+            <div class="section-title">✉️ 发送私信</div>
+            <div class="input-group">
+                <label>接收者ID:</label>
+                <input id="send-to-user" placeholder="输入接收者用户ID" type="number">
+            </div>
+            <div class="input-group">
+                <label>消息内容:</label>
+                <textarea id="send-content" placeholder="输入消息内容" rows="3"></textarea>
+            </div>
+            <div class="section-actions">
+                <button class="btn btn-success" onclick="sendPrivateMessage()">发送</button>
+            </div>
+        </div>
+
+        <!-- 系统通知 -->
+        <div class="section">
+            <div class="section-title">🔔 系统通知</div>
+            <div class="section-actions">
+                <button class="btn btn-primary" onclick="loadSystemMessages()">加载通知</button>
+                <select id="notification-type" onchange="loadSystemMessages()">
+                    <option value="">全部类型</option>
+                    <option value="work_audit">作品审核</option>
+                    <option value="like">点赞通知</option>
+                    <option value="star">收藏通知</option>
+                    <option value="comment">评论通知</option>
+                </select>
+            </div>
+            <div class="notification-list" id="notification-list">
+                <div class="empty">暂无通知</div>
+            </div>
+        </div>
+
+        <!-- WebSocket 连接 -->
+        <div class="section">
+            <div class="section-title">🔌 WebSocket 连接测试</div>
+            <div class="ws-status">
+                <span class="ws-dot" id="ws-dot"></span>
+                <span id="ws-status-text">未连接</span>
+            </div>
+            <div class="section-actions">
+                <button class="btn btn-success" onclick="connectWebSocket()">连接</button>
+                <button class="btn btn-danger" onclick="disconnectWebSocket()">断开</button>
+                <button class="btn btn-warning" onclick="sendPing()">发送心跳</button>
+            </div>
+            <div class="result-area" id="ws-log">WebSocket 日志...</div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const API_BASE_URL = 'http://localhost:9090';
+        let authToken = '';
+        let wsConnection = null;
+        let wsLog = [];
+
+        // 更新 Token
+        function updateToken() {
+            authToken = document.getElementById('auth-token').value.trim();
+            if (authToken) {
+                localStorage.setItem('pixvision_token', authToken);
+                showSuccess('Token 已更新');
+            }
+        }
+
+        // 显示错误
+        function showError(message) {
+            const el = document.getElementById('error-message');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        // 显示成功
+        function showSuccess(message) {
+            const el = document.getElementById('success-message');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        // 格式化时间
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            const date = new Date(timeStr);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        // 加载未读消息数量
+        async function loadUnreadCount() {
+            if (!authToken) {
+                showError('请先输入 Token');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/message/unread-count`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const result = await response.json();
+                if (result.recode === 200 && result.data) {
+                    document.getElementById('unread-total').textContent = result.data.total || 0;
+                    document.getElementById('unread-private').textContent = result.data.private || 0;
+                    document.getElementById('unread-system').textContent = result.data.system || 0;
+                } else {
+                    showError(result.message || '获取失败');
+                }
+            } catch (error) {
+                showError('网络错误: ' + error.message);
+            }
+        }
+
+        // 加载会话列表
+        async function loadConversations() {
+            if (!authToken) {
+                showError('请先输入 Token');
+                return;
+            }
+
+            const container = document.getElementById('conversation-list');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/message/conversations/1/20`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const result = await response.json();
+                if (result.recode === 200 && result.data) {
+                    const records = result.data.records || [];
+                    if (records.length === 0) {
+                        container.innerHTML = '<div class="empty">暂无会话</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    records.forEach(conv => {
+                        const initial = (conv.other_nickname || '?').charAt(0).toUpperCase();
+                        html += `
+                            <div class="conversation-item" onclick="openConversation(${conv.other_user_id})">
+                                <div class="conversation-avatar">${initial}</div>
+                                <div class="conversation-info">
+                                    <div class="conversation-name">${escapeHtml(conv.other_nickname || '未知用户')}</div>
+                                    <div class="conversation-last-msg">${escapeHtml(conv.last_message || '')}</div>
+                                </div>
+                                <div class="conversation-meta">
+                                    <div class="conversation-time">${formatTime(conv.last_message_time)}</div>
+                                    ${conv.unread_count > 0 ? `<span class="conversation-unread">${conv.unread_count}</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<div class="empty">${result.message || '加载失败'}</div>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="empty">网络错误: ${error.message}</div>`;
+            }
+        }
+
+        // 打开会话（加载聊天记录）
+        function openConversation(userId) {
+            document.getElementById('chat-user-id').value = userId;
+            loadChatHistory();
+        }
+
+        // 加载聊天记录
+        async function loadChatHistory() {
+            const userId = document.getElementById('chat-user-id').value;
+            if (!userId) {
+                showError('请输入对方用户ID');
+                return;
+            }
+
+            if (!authToken) {
+                showError('请先输入 Token');
+                return;
+            }
+
+            const container = document.getElementById('message-list');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+
+            // 标记会话已读
+            await markConversationAsRead(userId);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/message/chat/${userId}/1/50`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const result = await response.json();
+                if (result.recode === 200 && result.data) {
+                    const records = result.data.records || [];
+                    if (records.length === 0) {
+                        container.innerHTML = '<div class="empty">暂无聊天记录</div>';
+                        return;
+                    }
+
+                    // 获取当前用户ID（从Token解析或从API获取）
+                    const currentUserId = getCurrentUserId();
+
+                    let html = '';
+                    records.reverse().forEach(msg => {
+                        const isSent = msg.from_user_id === currentUserId;
+                        const senderName = isSent ? '我' : (msg.from_nickname || '用户');
+                        html += `
+                            <div class="message-item ${isSent ? 'sent' : 'received'}">
+                                <div class="message-sender">${escapeHtml(senderName)}</div>
+                                <div class="message-bubble">${escapeHtml(msg.message)}</div>
+                                <div class="message-time">${formatTime(msg.create_time)}</div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = `<div class="empty">${result.message || '加载失败'}</div>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="empty">网络错误: ${error.message}</div>`;
+            }
+        }
+
+        // 标记会话已读
+        async function markConversationAsRead(userId) {
+            try {
+                await fetch(`${API_BASE_URL}/api/message/read/conversation/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+            } catch (error) {
+                console.error('标记已读失败:', error);
+            }
+        }
+
+        // 全部标记已读
+        async function markAllAsRead() {
+            if (!authToken) {
+                showError('请先输入 Token');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/message/read-all`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const result = await response.json();
+                if (result.recode === 200) {
+                    showSuccess('全部标记已读成功');
+                    loadUnreadCount();
+                    loadConversations();
+                } else {
+                    showError(result.message || '操作失败');
+                }
+            } catch (error) {
+                showError('网络错误: ' + error.message);
+            }
+        }
+
+        // 发送私信
+        async function sendPrivateMessage() {
+            const toUserId = document.getElementById('send-to-user').value;
+            const content = document.getElementById('send-content').value.trim();
+
+            if (!toUserId) {
+                showError('请输入接收者ID');
+                return;
+            }
+
+            if (!content) {
+                showError('请输入消息内容');
+                return;
+            }
+
+            if (!authToken) {
+                showError('请先输入 Token');
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({
+                    toUserId: toUserId,
+                    content: content
+                });
+
+                const response = await fetch(`${API_BASE_URL}/api/message/send?${params.toString()}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const result = await response.json();
+                if (result.recode === 200) {
+                    showSuccess('发送成功');
+                    document.getElementById('send-content').value = '';
+                    // 如果正在查看该用户的聊天记录，刷新
+                    if (document.getElementById('chat-user-id').value === toUserId) {
+                        loadChatHistory();
+                    }
+                } else {
+                    showError(result.message || '发送失败');
+                }
+            } catch (error) {
+                showError('网络错误: ' + error.message);
+            }
+        }
+
+        // 加载系统通知
+        async function loadSystemMessages() {
+            if (!authToken) {
+                showError('请先输入 Token');
+                return;
+            }
+
+            const container = document.getElementById('notification-list');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+
+            const project = document.getElementById('notification-type').value;
+            let url = `${API_BASE_URL}/api/message/system/1/20`;
+            if (project) {
+                url += `?project=${project}`;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const result = await response.json();
+                if (result.recode === 200 && result.data) {
+                    const records = result.data.records || [];
+                    if (records.length === 0) {
+                        container.innerHTML = '<div class="empty">暂无通知</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    records.forEach(msg => {
+                        html += `
+                            <div class="notification-item ${msg.is_read ? '' : 'unread'}">
+                                <div class="notification-header">
+                                    <span class="notification-project">${escapeHtml(msg.project || 'system')}</span>
+                                    <span class="notification-time">${formatTime(msg.create_time)}</span>
+                                </div>
+                                <div class="notification-content">${escapeHtml(msg.message)}</div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<div class="empty">${result.message || '加载失败'}</div>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="empty">网络错误: ${error.message}</div>`;
+            }
+        }
+
+        // WebSocket 连接
+        function connectWebSocket() {
+            if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+                appendWsLog('已连接，无需重复连接');
+                return;
+            }
+
+            if (!authToken) {
+                showError('请先输入 Token');
+                return;
+            }
+
+            const wsUrl = `ws://localhost:9090/api/ws/notification?token=${encodeURIComponent(authToken)}`;
+            updateWsStatus('connecting', '连接中...');
+
+            try {
+                wsConnection = new WebSocket(wsUrl);
+
+                wsConnection.onopen = () => {
+                    updateWsStatus('connected', '已连接');
+                    appendWsLog('WebSocket 连接成功');
+                };
+
+                wsConnection.onmessage = (event) => {
+                    appendWsLog('收到消息: ' + event.data);
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'PING') {
+                            wsConnection.send(JSON.stringify({ type: 'PONG' }));
+                            appendWsLog('回复 PONG 心跳');
+                        } else {
+                            // 新消息通知，刷新统计
+                            loadUnreadCount();
+                        }
+                    } catch (e) {
+                        appendWsLog('消息解析失败: ' + e.message);
+                    }
+                };
+
+                wsConnection.onclose = () => {
+                    updateWsStatus('disconnected', '已断开');
+                    appendWsLog('WebSocket 连接关闭');
+                };
+
+                wsConnection.onerror = (error) => {
+                    updateWsStatus('disconnected', '连接错误');
+                    appendWsLog('WebSocket 错误: ' + error);
+                };
+            } catch (error) {
+                updateWsStatus('disconnected', '连接失败');
+                appendWsLog('连接失败: ' + error.message);
+            }
+        }
+
+        // 断开 WebSocket
+        function disconnectWebSocket() {
+            if (wsConnection) {
+                wsConnection.close();
+                wsConnection = null;
+            }
+            updateWsStatus('disconnected', '已断开');
+        }
+
+        // 发送心跳
+        function sendPing() {
+            if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+                wsConnection.send(JSON.stringify({ type: 'PING' }));
+                appendWsLog('发送 PING 心跳');
+            } else {
+                showError('WebSocket 未连接');
+            }
+        }
+
+        // 更新 WebSocket 状态
+        function updateWsStatus(status, text) {
+            const dot = document.getElementById('ws-dot');
+            const statusText = document.getElementById('ws-status-text');
+            dot.className = 'ws-dot ' + status;
+            statusText.textContent = text;
+        }
+
+        // 添加 WebSocket 日志
+        function appendWsLog(message) {
+            const time = new Date().toLocaleTimeString('zh-CN');
+            wsLog.unshift(`[${time}] ${message}`);
+            if (wsLog.length > 50) wsLog.pop();
+            document.getElementById('ws-log').textContent = wsLog.join('\n');
+        }
+
+        // 获取当前用户ID（简单实现，实际应从Token解析）
+        function getCurrentUserId() {
+            // 这里简化处理，实际应解析JWT获取userId
+            // 可以通过调用接口获取当前用户信息
+            return null;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 从 localStorage 加载 Token
+            const savedToken = localStorage.getItem('pixvision_token');
+            if (savedToken) {
+                document.getElementById('auth-token').value = savedToken;
+                authToken = savedToken;
+            }
+
+            // 加载未读数量
+            loadUnreadCount();
+        });
+    </script>
+</body>
+</html>

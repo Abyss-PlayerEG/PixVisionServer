@@ -51,7 +51,7 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
      * @param email 邮箱
      * @param vCode 验证码
      * @implNote 将邮箱和验证码以键值对缓存到redis
-     * @author blue_sky_ks
+     * @author PlayerEG, blue_sky_ks
      */
     public void setRedisVCode(String email, String vCode) {
         String hashVCode = SecureUtil.sha256(vCode);
@@ -71,8 +71,10 @@ public class VerificationCodeServicesImpl implements VerificationCodeServices {
      *
      * @param email 邮箱
      * @implNote 删除邮箱对应的验证码缓存
+     * @deprecated
      * @author PlayerEG
      */
+    @Deprecated
     public void deleteRedisVCode(String email) {
         String key = StrUtil.format("userEmailCode:{}", email); // 用户邮箱
         redisTemplate.delete(key);
