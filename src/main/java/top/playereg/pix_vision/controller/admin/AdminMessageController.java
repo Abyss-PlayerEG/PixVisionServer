@@ -26,7 +26,7 @@ import java.util.Map;
  * @author PlayerEG
  * @since V4.0
  */
-@Tag(name = "系统管理员 - 消息管理", description = "消息相关的管理功能，包括密钥更换等敏感操作")
+@Tag(name = "系统管理员接口 - 消息管理", description = "消息相关的管理功能，包括密钥更换等敏感操作")
 @RestController
 @RequestMapping("/api/admin/message")
 public class AdminMessageController extends AdminBaseController {
