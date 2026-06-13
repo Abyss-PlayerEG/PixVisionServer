@@ -193,4 +193,66 @@ public interface MessageService {
      * @return 是否成功
      */
     boolean batchDeleteMessages(Integer userId, List<Integer> messageIds);
+
+    /**
+     * 更换消息加密密钥
+     * <p>
+     * 更换RSA密钥对，并批量更新所有私信的加密内容。
+     * 此操作需要管理员权限，且执行时间较长。
+     * </p>
+     *
+     * @return 操作结果，包含成功数量、失败数量等统计信息
+     */
+    Map<String, Object> rotateEncryptionKeys();
+
+    /**
+     * 管理员分页查询私信记录（支持多条件筛选）
+     * <p>
+     * 查询所有私信消息，支持按用户ID、时间范围筛选。
+     * 不过滤删除状态，管理员可查看所有私信。
+     * 私信内容会自动解密显示。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>管理员监管用户私信内容</li>
+     *   <li>审核私信消息</li>
+     *   <li>按时间范围查询私信记录</li>
+     * </ol>
+     *
+     * <h3>使用示例</h3>
+     * <pre>{@code
+     * // 查询用户ID为1001的所有私信
+     * Page<Message> page = new Page<>(1, 10);
+     * IPage<MessageVO> result = messageService.getAdminMessages(
+     *     page, 1001, null, null, null, null
+     * );
+     *
+     * // 查询所有私信，按时间正序
+     * IPage<MessageVO> result = messageService.getAdminMessages(
+     *     page, null, null, null, null, "oldest"
+     * );
+     * }</pre>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>所有筛选条件均为可选，可以自由组合</li>
+     *   <li>查询结果包含完整的消息信息字段</li>
+     *   <li>不过滤任何删除状态，管理员可查看所有私信</li>
+     *   <li>私信内容会自动解密显示</li>
+     * </ul>
+     *
+     * @param page        分页参数
+     * @param username    用户名（可选，查询该用户作为发送者或接收者的消息）
+     * @param participants 参与者用户名（可选，查看指定用户之间的对话，格式：'user1,user2'）
+     * @param keyword     关键字（可选，模糊搜索消息内容）
+     * @param startTime   开始时间（可选，格式：yyyy-MM-dd HH:mm:ss）
+     * @param endTime     结束时间（可选，格式：yyyy-MM-dd HH:mm:ss）
+     * @param orderBy     排序方式（可选，'oldest'-最早, 其他值-最新）
+     * @return 私信记录列表
+     * @author PlayerEG
+     * @see top.playereg.pix_vision.service.Impl.MessageServiceImpl#getAdminMessages
+     */
+    IPage<MessageVO> getAdminMessages(Page<Message> page, String username, String participants,
+                                       String keyword, String startTime, String endTime, String orderBy);
 }

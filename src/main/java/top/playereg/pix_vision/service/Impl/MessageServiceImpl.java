@@ -16,8 +16,10 @@ import top.playereg.pix_vision.pojo.entity.Message;
 import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.util.PixVisionLogger;
+import top.playereg.pix_vision.util.RSACipher;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +64,9 @@ public class MessageServiceImpl implements MessageService {
     @Autowired
     private WebSocketSessionManager sessionManager;
 
+    @Autowired
+    private RSACipher rsaCipher;
+
     /**
      * 发送消息（通用方法）
      *
@@ -92,7 +97,19 @@ public class MessageServiceImpl implements MessageService {
         Message message = new Message();
         message.setFrom_user_id(fromUserId != null ? fromUserId : 0);
         message.setTo(toUserId);
-        message.setMessage(content);
+        
+        // 私信内容加密存储
+        String storedContent = content;
+        if (type == MessageType.PRIVATE) {
+            try {
+                storedContent = RSACipher.encryptToBase64(content);
+                log.debug("私信内容已加密，消息长度：{} -> {}", content.length(), storedContent.length());
+            } catch (Exception e) {
+                log.error("私信内容加密失败，发送者：{}，接收者：{}，错误：{}", fromUserId, toUserId, e.getMessage());
+                return;
+            }
+        }
+        message.setMessage(storedContent);
         message.setMessage_type(type.getCode());
         message.setProject(project.getCode());
         message.setIs_read(false);
@@ -252,7 +269,7 @@ public class MessageServiceImpl implements MessageService {
     public IPage<ConversationVO> getConversationList(Page<Message> page, Integer userId, Boolean isRead) {
         IPage<ConversationVO> result = messageMapper.selectConversationList(page, userId, isRead);
 
-        // 填充对方用户信息
+        // 填充对方用户信息并解密最后消息
         if (result != null && !result.getRecords().isEmpty()) {
             for (ConversationVO vo : result.getRecords()) {
                 User user = userMapper.selectAllUserInfoById(vo.getOther_user_id());
@@ -260,6 +277,20 @@ public class MessageServiceImpl implements MessageService {
                     vo.setOther_username(user.getUsername());
                     vo.setOther_nickname(user.getNickname());
                     vo.setOther_avatar_url(user.getAvatar_url());
+                }
+                
+                // 解密最后一条消息内容
+                if (vo.getLast_message() != null && !vo.getLast_message().isEmpty()) {
+                    try {
+                        String decrypted = RSACipher.decryptToString(vo.getLast_message());
+                        if (decrypted != null) {
+                            vo.setLast_message(decrypted);
+                        } else {
+                            log.warn("会话列表最后消息解密返回null，对方用户ID：{}", vo.getOther_user_id());
+                        }
+                    } catch (Exception e) {
+                        log.warn("会话列表最后消息解密失败，对方用户ID：{}，错误：{}", vo.getOther_user_id(), e.getMessage());
+                    }
                 }
             }
         }
@@ -277,7 +308,27 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public IPage<MessageVO> getChatHistory(Page<Message> page, Integer userId, Integer otherUserId) {
-        return messageMapper.selectChatHistory(page, userId, otherUserId);
+        IPage<MessageVO> result = messageMapper.selectChatHistory(page, userId, otherUserId);
+        
+        // 解密私信内容
+        if (result != null && !result.getRecords().isEmpty()) {
+            for (MessageVO vo : result.getRecords()) {
+                if (vo.getMessage_type() != null && vo.getMessage_type().equals(MessageType.PRIVATE.getCode())) {
+                    try {
+                        String decrypted = RSACipher.decryptToString(vo.getMessage());
+                        if (decrypted != null) {
+                            vo.setMessage(decrypted);
+                        } else {
+                            log.warn("聊天记录解密返回null，消息ID：{}", vo.getMessage_id());
+                        }
+                    } catch (Exception e) {
+                        log.warn("聊天记录解密失败，消息ID：{}，错误：{}", vo.getMessage_id(), e.getMessage());
+                    }
+                }
+            }
+        }
+        
+        return result;
     }
 
     /**
@@ -496,7 +547,23 @@ public class MessageServiceImpl implements MessageService {
     private MessageVO buildMessageVO(Message message) {
         MessageVO vo = new MessageVO();
         vo.setMessage_id(message.getMessage_id());
-        vo.setMessage(message.getMessage());
+        
+        // 私信内容解密
+        String displayContent = message.getMessage();
+        if (message.getMessage_type() != null && message.getMessage_type().equals(MessageType.PRIVATE.getCode())) {
+            try {
+                String decrypted = RSACipher.decryptToString(message.getMessage());
+                if (decrypted != null) {
+                    displayContent = decrypted;
+                } else {
+                    log.warn("私信内容解密返回null，消息ID：{}", message.getMessage_id());
+                }
+            } catch (Exception e) {
+                log.warn("私信内容解密失败，消息ID：{}，错误：{}", message.getMessage_id(), e.getMessage());
+                // 解密失败时保留加密内容，避免显示异常
+            }
+        }
+        vo.setMessage(displayContent);
         vo.setProject(message.getProject());
         vo.setFrom_user_id(message.getFrom_user_id());
         vo.setMessage_type(message.getMessage_type());
@@ -550,5 +617,203 @@ public class MessageServiceImpl implements MessageService {
         } catch (Exception e) {
             log.warn("发送已读回执通知失败，读者：{}，发送者：{}，错误：{}", readerId, senderId, e.getMessage());
         }
+    }
+
+    /**
+     * 更换消息加密密钥
+     * <p>
+     * 更换RSA密钥对，并批量更新所有私信的加密内容。
+     * 此操作需要管理员权限，且执行时间较长。
+     * </p>
+     *
+     * @return 操作结果，包含成功数量、失败数量等统计信息
+     */
+    @Override
+    public Map<String, Object> rotateEncryptionKeys() {
+        log.warn("开始更换消息加密密钥...");
+        
+        // 统计信息
+        int totalProcessed = 0;
+        int successCount = 0;
+        int failCount = 0;
+        int skipCount = 0;
+        
+        // 1. 保存旧私钥（用于解密旧数据）
+        String oldPrivateKey = RSACipher.getPrivateKey();
+        if (oldPrivateKey == null || oldPrivateKey.isEmpty()) {
+            throw new RuntimeException("无法获取旧私钥，密钥更换失败");
+        }
+        
+        // 2. 生成新密钥对
+        try {
+            log.warn("正在生成新密钥对...");
+            // 调用实例方法生成新密钥对
+            String[] newKeys = rsaCipher.regenerateKeys();
+            log.warn("新密钥对已生成");
+        } catch (Exception e) {
+            log.error("生成新密钥对失败", e);
+            throw new RuntimeException("生成新密钥对失败", e);
+        }
+        
+        // 3. 分批查询所有私信
+        int batchSize = 1000;
+        Integer lastMessageId = 0;
+        boolean hasMore = true;
+        
+        while (hasMore) {
+            try {
+                // 查询一批私信
+                List<Message> messages = messageMapper.selectAllPrivateMessages(lastMessageId, batchSize);
+                
+                if (messages == null || messages.isEmpty()) {
+                    hasMore = false;
+                    break;
+                }
+                
+                totalProcessed += messages.size();
+                
+                // 准备批量更新数据
+                List<Integer> messageIds = new ArrayList<>();
+                List<String> newContents = new ArrayList<>();
+                
+                for (Message message : messages) {
+                    try {
+                        // 用旧私钥解密
+                        String decrypted = RSACipher.decryptToStringWithKey(message.getMessage(), oldPrivateKey);
+                        if (decrypted == null) {
+                            log.warn("解密失败，跳过消息ID：{}", message.getMessage_id());
+                            skipCount++;
+                            continue;
+                        }
+                        
+                        // 用新公钥加密
+                        String encrypted = RSACipher.encryptToBase64(decrypted);
+                        
+                        messageIds.add(message.getMessage_id());
+                        newContents.add(encrypted);
+                        successCount++;
+                        
+                    } catch (Exception e) {
+                        log.warn("处理消息失败，消息ID：{}，错误：{}", message.getMessage_id(), e.getMessage());
+                        failCount++;
+                    }
+                }
+                
+                // 批量更新数据库
+                if (!messageIds.isEmpty()) {
+                    try {
+                        int updateCount = messageMapper.batchUpdateMessageContent(messageIds, newContents);
+                        log.debug("批量更新成功，更新数量：{}", updateCount);
+                    } catch (Exception e) {
+                        log.error("批量更新失败", e);
+                        failCount += messageIds.size();
+                        successCount -= messageIds.size();
+                    }
+                }
+                
+                // 更新游标
+                lastMessageId = messages.get(messages.size() - 1).getMessage_id();
+                
+                // 如果这批数量小于batchSize，说明已经处理完所有数据
+                if (messages.size() < batchSize) {
+                    hasMore = false;
+                }
+                
+            } catch (Exception e) {
+                log.error("查询私信失败", e);
+                throw new RuntimeException("查询私信失败", e);
+            }
+        }
+        
+        // 4. 返回结果
+        Map<String, Object> result = new HashMap<>();
+        result.put("total_processed", totalProcessed);
+        result.put("success_count", successCount);
+        result.put("fail_count", failCount);
+        result.put("skip_count", skipCount);
+        
+        log.warn("密钥更换完成，总处理：{}，成功：{}，失败：{}，跳过：{}", 
+                totalProcessed, successCount, failCount, skipCount);
+        
+        return result;
+    }
+
+    /**
+     * 管理员分页查询私信记录（支持多条件筛选）
+     * <p>
+     * 查询所有私信消息，支持按用户ID、时间范围筛选。
+     * 不过滤删除状态，管理员可查看所有私信。
+     * 私信内容会自动解密显示。
+     * </p>
+     *
+     * <h3>使用场景</h3>
+     * <ol>
+     *   <li>管理员监管用户私信内容</li>
+     *   <li>审核私信消息</li>
+     *   <li>按时间范围查询私信记录</li>
+     * </ol>
+     *
+     * <h3>使用示例</h3>
+     * <pre>{@code
+     * // 查询用户ID为1001的所有私信
+     * Page<Message> page = new Page<>(1, 10);
+     * IPage<MessageVO> result = messageService.getAdminMessages(
+     *     page, 1001, null, null, null, null
+     * );
+     *
+     * // 查询所有私信，按时间正序
+     * IPage<MessageVO> result = messageService.getAdminMessages(
+     *     page, null, null, null, null, "oldest"
+     * );
+     * }</pre>
+     *
+     * <h3>注意事项</h3>
+     * <ul>
+     *   <li>所有筛选条件均为可选，可以自由组合</li>
+     *   <li>查询结果包含完整的消息信息字段</li>
+     *   <li>不过滤任何删除状态，管理员可查看所有私信</li>
+     *   <li>私信内容会自动解密显示</li>
+     * </ul>
+     *
+     * @param page        分页参数
+     * @param username    用户名（可选，查询该用户作为发送者或接收者的消息）
+     * @param participants 参与者用户名（可选，查看指定用户之间的对话，格式：'user1,user2'）
+     * @param keyword     关键字（可选，模糊搜索消息内容）
+     * @param startTime   开始时间（可选，格式：yyyy-MM-dd HH:mm:ss）
+     * @param endTime     结束时间（可选，格式：yyyy-MM-dd HH:mm:ss）
+     * @param orderBy     排序方式（可选，'oldest'-最早, 其他值-最新）
+     * @return 私信记录列表
+     * @author PlayerEG
+     * @see MessageMapper#adminSelectMessages(IPage, String, String, String, String, String, String)
+     */
+    @Override
+    public IPage<MessageVO> getAdminMessages(Page<Message> page, String username, String participants,
+                                              String keyword, String startTime, String endTime, String orderBy) {
+        log.info("管理员查询私信记录 - 用户名: {}, 参与者: {}, 关键字: {}, 时间范围: {} - {}, 排序: {}",
+            username, participants, keyword, startTime, endTime, orderBy);
+
+        // 查询私信消息
+        IPage<MessageVO> result = messageMapper.adminSelectMessages(page, username, participants, keyword, startTime, endTime, orderBy);
+
+        // 解密私信内容
+        if (result != null && !result.getRecords().isEmpty()) {
+            for (MessageVO vo : result.getRecords()) {
+                if (vo.getMessage_type() != null && vo.getMessage_type().equals(MessageType.PRIVATE.getCode())) {
+                    try {
+                        String decrypted = RSACipher.decryptToString(vo.getMessage());
+                        if (decrypted != null) {
+                            vo.setMessage(decrypted);
+                        } else {
+                            log.warn("管理员查询聊天记录解密返回null，消息ID：{}", vo.getMessage_id());
+                        }
+                    } catch (Exception e) {
+                        log.warn("管理员查询聊天记录解密失败，消息ID：{}，错误：{}", vo.getMessage_id(), e.getMessage());
+                    }
+                }
+            }
+        }
+
+        log.info("管理员查询聊天记录完成 - 总数: {}, 当前页: {}", result.getTotal(), result.getCurrent());
+        return result;
     }
 }
