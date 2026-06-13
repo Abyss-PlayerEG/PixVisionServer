@@ -250,4 +250,78 @@
           AND is_delete_by_receiver = 0
     </update>
 
+    <!-- 分批查询所有私信消息（用于密钥更换） -->
+    <select id="selectAllPrivateMessages" resultType="top.playereg.pix_vision.pojo.entity.Message">
+        SELECT message_id, message, from_user_id, `to`, message_type, project, ref_id,
+               is_read, is_delete_by_sender, is_delete_by_receiver, create_time
+        FROM tb_messages
+        WHERE message_type = 'private'
+          AND message_id > #{lastMessageId}
+        ORDER BY message_id ASC
+        LIMIT #{batchSize}
+    </select>
+
+    <!-- 批量更新消息内容（用于密钥更换） -->
+    <update id="batchUpdateMessageContent">
+        UPDATE tb_messages
+        SET message = CASE message_id
+            <foreach collection="messageIds" item="id" index="index">
+                WHEN #{id} THEN #{contents[${index}]}
+            </foreach>
+            END
+        WHERE message_id IN
+        <foreach collection="messageIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 管理员分页查询聊天记录（支持多条件筛选） -->
+    <select id="adminSelectMessages" resultType="top.playereg.pix_vision.pojo.VO.MessageVO">
+        SELECT m.message_id,
+               m.message,
+               m.project,
+               m.from_user_id,
+               m.message_type,
+               m.ref_id,
+               m.`to`,
+               m.is_read,
+               m.create_time,
+               CASE WHEN m.from_user_id = 0 THEN 'system' ELSE u1.username END AS from_username,
+               CASE WHEN m.from_user_id = 0 THEN '系统通知' ELSE u1.nickname END AS from_nickname,
+               CASE WHEN m.from_user_id = 0 THEN NULL ELSE u1.avatar_url END AS from_avatar_url,
+               u2.username AS to_username,
+               u2.nickname AS to_nickname
+        FROM tb_messages m
+        LEFT JOIN tb_user u1 ON m.from_user_id = u1.user_id AND m.from_user_id > 0
+        LEFT JOIN tb_user u2 ON m.`to` = u2.user_id
+        WHERE m.message_type = 'private'
+          <if test="username != null and username != ''">
+              AND (m.from_user_id = (SELECT user_id FROM tb_user WHERE username = #{username} LIMIT 1) OR m.`to` = (SELECT user_id FROM tb_user WHERE username = #{username} LIMIT 1))
+          </if>
+          <if test="participants != null and participants != ''">
+              AND (
+                  (m.from_user_id = (SELECT user_id FROM tb_user WHERE username = SUBSTRING_INDEX(#{participants}, ',', 1) LIMIT 1) AND m.`to` = (SELECT user_id FROM tb_user WHERE username = SUBSTRING_INDEX(#{participants}, ',', -1) LIMIT 1))
+                  OR
+                  (m.from_user_id = (SELECT user_id FROM tb_user WHERE username = SUBSTRING_INDEX(#{participants}, ',', -1) LIMIT 1) AND m.`to` = (SELECT user_id FROM tb_user WHERE username = SUBSTRING_INDEX(#{participants}, ',', 1) LIMIT 1))
+              )
+          </if>
+          <if test="keyword != null and keyword != ''">
+              AND m.message LIKE CONCAT('%', #{keyword}, '%')
+          </if>
+          <if test="startTime != null and startTime != ''">
+              AND m.create_time &gt;= #{startTime}
+          </if>
+          <if test="endTime != null and endTime != ''">
+              AND m.create_time &lt;= #{endTime}
+          </if>
+        <choose>
+            <when test="orderBy == 'oldest'">
+                ORDER BY m.create_time ASC
+            </when>
+            <otherwise>
+                ORDER BY m.create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
 </mapper>

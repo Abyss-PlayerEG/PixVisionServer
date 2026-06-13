@@ -75,11 +75,9 @@ import java.nio.file.Paths;
  *
  * @author PlayerEG
  * @since DEV-2.0.0
- * @deprecated 未实装密钥加密
  */
 @SuppressWarnings("all")
 @Component
-@Deprecated
 public class RSACipher {
     private static final PixVisionLogger log = PixVisionLogger.create(RSACipher.class);
 
@@ -243,6 +241,29 @@ public class RSACipher {
     }
 
     /**
+     * 使用指定私钥解密字符串
+     * <p>
+     * 用于密钥更换时使用旧私钥解密历史数据。
+     * </p>
+     *
+     * @param encryptedBase64 Base64 编码的密文
+     * @param privateKeyBase64 Base64 编码的私钥
+     * @return 解密后的明文字符串
+     */
+    public static String decryptToStringWithKey(String encryptedBase64, String privateKeyBase64) {
+        if (StrUtil.isBlank(encryptedBase64)) {
+            return null;
+        }
+
+        byte[] decrypted = decryptToBytesWithKey(encryptedBase64, privateKeyBase64);
+        if (decrypted == null) {
+            return null;
+        }
+
+        return new String(decrypted, StandardCharsets.UTF_8);
+    }
+
+    /**
      * 私钥解密为字节数组（支持任意二进制数据）
      * <p>
      * 自动识别加密策略：
@@ -268,6 +289,42 @@ public class RSACipher {
             } else if (encryptedBase64.contains(HYBRID_SEPARATOR)) {
                 // 混合加密
                 return hybridDecrypt(encryptedBase64);
+            } else {
+                // 兼容旧格式（无标识符的纯 RSA 加密）
+                RSA rsa = new RSA(privateKeyBase64, null);
+                return rsa.decrypt(Base64.decode(encryptedBase64), KeyType.PrivateKey);
+            }
+        } catch (Exception e) {
+            log.error("RSA 解密失败", e);
+            throw new RuntimeException("RSA 解密失败", e);
+        }
+    }
+
+    /**
+     * 使用指定私钥解密为字节数组
+     * <p>
+     * 用于密钥更换时使用旧私钥解密历史数据。
+     * </p>
+     *
+     * @param encryptedBase64 Base64 编码的密文
+     * @param privateKeyBase64 Base64 编码的私钥
+     * @return 解密后的字节数组
+     */
+    public static byte[] decryptToBytesWithKey(String encryptedBase64, String privateKeyBase64) {
+        if (StrUtil.isBlank(encryptedBase64)) {
+            return null;
+        }
+
+        try {
+            // 判断加密策略
+            if (encryptedBase64.startsWith("RSA:")) {
+                // 纯 RSA 加密
+                String actualEncrypted = encryptedBase64.substring(4);
+                RSA rsa = new RSA(privateKeyBase64, null);
+                return rsa.decrypt(Base64.decode(actualEncrypted), KeyType.PrivateKey);
+            } else if (encryptedBase64.contains(HYBRID_SEPARATOR)) {
+                // 混合加密
+                return hybridDecryptWithKey(encryptedBase64, privateKeyBase64);
             } else {
                 // 兼容旧格式（无标识符的纯 RSA 加密）
                 RSA rsa = new RSA(privateKeyBase64, null);
@@ -325,6 +382,45 @@ public class RSACipher {
      * @author blue_sky_ks
      */
     private static byte[] hybridDecrypt(String encryptedBase64) {
+        try {
+            // 移除前缀
+            String actualEncrypted = encryptedBase64.startsWith("HYBRID:")
+                ? encryptedBase64.substring(7)
+                : encryptedBase64;
+
+            // 1. 分离两部分
+            String[] parts = actualEncrypted.split(HYBRID_SEPARATOR, 2);
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("混合加密数据格式错误");
+            }
+
+            byte[] encryptedAesKey = Base64.decode(parts[0]);
+            byte[] encryptedData = Base64.decode(parts[1]);
+
+            // 2. 用 RSA 私钥解密 AES 密钥
+            RSA rsa = new RSA(privateKeyBase64, null);
+            byte[] aesKey = rsa.decrypt(encryptedAesKey, KeyType.PrivateKey);
+
+            // 3. 用 AES 密钥解密数据
+            AES aes = new AES(aesKey);
+            return aes.decrypt(encryptedData);
+        } catch (Exception e) {
+            log.error("混合解密失败", e);
+            throw new RuntimeException("混合解密失败", e);
+        }
+    }
+
+    /**
+     * 使用指定私钥进行混合解密
+     * <p>
+     * 用于密钥更换时使用旧私钥解密历史数据。
+     * </p>
+     *
+     * @param encryptedBase64 混合加密的字符串
+     * @param privateKeyBase64 Base64 编码的私钥
+     * @return 解密后的原始数据
+     */
+    private static byte[] hybridDecryptWithKey(String encryptedBase64, String privateKeyBase64) {
         try {
             // 移除前缀
             String actualEncrypted = encryptedBase64.startsWith("HYBRID:")
