@@ -17,6 +17,7 @@ import top.playereg.pix_vision.pojo.entity.user.User;
 import top.playereg.pix_vision.service.MessageService;
 import top.playereg.pix_vision.util.PixVisionLogger;
 import top.playereg.pix_vision.util.RSACipher;
+import top.playereg.pix_vision.util.StrSwitchUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -343,7 +344,32 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public IPage<MessageVO> getSystemMessages(Page<Message> page, Integer userId,
                                               String project, Boolean isRead) {
-        return messageMapper.selectSystemMessages(page, userId, project, isRead);
+        IPage<MessageVO> result = messageMapper.selectSystemMessages(page, userId, project, isRead);
+        
+        // 对系统消息进行 Markdown 转 HTML
+        if (result != null && !result.getRecords().isEmpty()) {
+            for (MessageVO vo : result.getRecords()) {
+                convertSystemMessageMarkdownToHtml(vo);
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 将系统消息的 Markdown 内容转换为 HTML
+     *
+     * @param vo 消息VO对象
+     */
+    private void convertSystemMessageMarkdownToHtml(MessageVO vo) {
+        if (vo.getMessage_type() != null && vo.getMessage_type().equals(MessageType.SYSTEM.getCode()) && vo.getMessage() != null) {
+            try {
+                String htmlContent = StrSwitchUtils.markdownToHtml(vo.getMessage());
+                vo.setMessage(htmlContent);
+            } catch (Exception e) {
+                log.warn("系统消息Markdown转HTML失败，消息ID：{}，错误：{}", vo.getMessage_id(), e.getMessage());
+            }
+        }
     }
 
     /**
@@ -574,8 +600,17 @@ public class MessageServiceImpl implements MessageService {
         vo.setIs_delete_by_receiver(message.getIs_delete_by_receiver());
         vo.setCreate_time(message.getCreate_time());
 
-        // 系统消息特殊处理
-        if (message.getFrom_user_id() != null && message.getFrom_user_id() == 0) {
+        // 系统消息特殊处理（根据 message_type 判断）
+        if (message.getMessage_type() != null && message.getMessage_type().equals(MessageType.SYSTEM.getCode())) {
+            // 系统消息：Markdown 转 HTML
+            try {
+                String htmlContent = StrSwitchUtils.markdownToHtml(displayContent);
+                vo.setMessage(htmlContent);
+                log.debug("系统消息Markdown转HTML成功，消息ID：{}", message.getMessage_id());
+            } catch (Exception e) {
+                log.warn("系统消息Markdown转HTML失败，消息ID：{}，错误：{}", message.getMessage_id(), e.getMessage());
+                // 失败时保留原始内容
+            }
             vo.setFrom_username("system");
             vo.setFrom_nickname("系统通知");
             vo.setFrom_avatar_url(null);

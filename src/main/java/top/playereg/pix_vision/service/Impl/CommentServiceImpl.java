@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -686,10 +687,19 @@ public class CommentServiceImpl implements CommentService {
                     Comments comment = commentsMapper.selectCommentById(commentId);
                     if (comment != null && !comment.getIs_delete()) {
                         String statusText = approval == 10 ? "通过" : "未通过";
-                        String content = "你的评论审核" + statusText + "，评论内容：" +
-                            (comment.getComment_text().length() > 20 ?
-                                comment.getComment_text().substring(0, 20) + "..." :
-                                comment.getComment_text());
+                        String shortText = comment.getComment_text().length() > 20 ?
+                            comment.getComment_text().substring(0, 20) + "..." :
+                            comment.getComment_text();
+                        // 使用 Markdown 格式构建消息
+                        String content = StrUtil.format("""
+                            # 评论审核{}
+                            
+                            ---
+                            
+                            ## 你的评论已审核{}
+                            
+                            **评论内容** : {}
+                            """, statusText, statusText, shortText);
                         messageService.sendSystemNotice(
                             0,
                             comment.getUser_id(),
@@ -741,11 +751,31 @@ public class CommentServiceImpl implements CommentService {
                 return;
             }
             toUserId = work.getUser_id();
-            content = nickname + " 评论了你的作品《" + work.getWork_title() + "》| 评论内容：" + shortText;
+            // 使用 Markdown 格式构建消息
+            content = StrUtil.format("""
+                # 评论提醒
+                
+                ---
+                
+                ## **{}** 评论了你的作品
+                
+                **作品** : {}
+                
+                **评论** : {}
+                """, nickname, work.getWork_title(), shortText);
         } else if (commentFloor == 2 && parentComment != null) {
             // 二级评论：通知父评论作者
             toUserId = parentComment.getUser_id();
-            content = nickname + " 回复了你的评论：" + shortText;
+            // 使用 Markdown 格式构建消息
+            content = StrUtil.format("""
+                # 回复提醒
+                
+                ---
+                
+                ## **{}** 回复了你的评论
+                
+                **回复内容** : {}
+                """, nickname, shortText);
             refId = parentComment.getComment_id();
         }
 

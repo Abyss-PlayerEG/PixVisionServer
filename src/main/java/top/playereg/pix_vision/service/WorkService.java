@@ -178,13 +178,15 @@ public interface WorkService {
      * @param workIds        作品 ID 列表
      * @param approvalStatus 审核状态：10 - 正常、20 - 待审核、30 - 未过审
      * @param userId         操作者 ID
+     * @param auditReason    审核原因（仅状态为30时生效，可选）
      * @return 批量操作结果（包含总数、成功数、失败ID列表）
      * @author PlayerEG
      */
     top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
         List<Integer> workIds,
         Integer approvalStatus,
-        Integer userId
+        Integer userId,
+        String auditReason
     );
 
     /**

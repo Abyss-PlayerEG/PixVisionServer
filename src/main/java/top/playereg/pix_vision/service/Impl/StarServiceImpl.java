@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,7 +108,16 @@ public class StarServiceImpl implements StarService {
                 if (work != null && !work.getUser_id().equals(userId)) {
                     User starrer = userMapper.selectAllUserInfoById(userId);
                     String nickname = (starrer != null && starrer.getNickname() != null) ? starrer.getNickname() : "用户";
-                    String content = nickname + " 收藏了你的作品《" + work.getWork_title() + "》";
+                    // 使用 Markdown 格式构建消息
+                    String content = StrUtil.format("""
+                        # 收藏提醒
+                        
+                        ---
+                        
+                        ## **{}** 收藏了你的作品
+                        
+                        **作品** : {}
+                        """, nickname, work.getWork_title());
                     messageService.sendSystemNotice(
                         userId,
                         work.getUser_id(),
