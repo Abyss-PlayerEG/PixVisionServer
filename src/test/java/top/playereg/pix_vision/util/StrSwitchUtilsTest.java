@@ -51,7 +51,7 @@ class StrSwitchUtilsTest {
     }
 
     @Test
-    void markdownToHtml() {
+    void markdownToHtmlPage() {
         String markdown = """
                 # 一级标题
                 ---
@@ -76,9 +76,9 @@ class StrSwitchUtilsTest {
                 print("代码块")
                 ```
                 """;
-        String html = StrSwitchUtils.markdownToHtml(markdown, "utf-8", "md2html","");
+        String html = StrSwitchUtils.markdownToHtmlPage(markdown, "utf-8", "md2html","");
         System.out.println(html);
-        FileUtil.writeUtf8String(html, System.getProperty("user.home") + "/Desktop/md2html.html");
+        FileUtil.writeUtf8String(html, System.getProperty("user.home") + "/Desktop/MD2HtmlPage.html");
     }
 
     @Test

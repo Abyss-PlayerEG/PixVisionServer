@@ -109,6 +109,7 @@
                c.approval_status,
                c.is_delete,
                c.time,
+               u.username,
                u.nickname,
                w.work_title
         FROM tb_comments c

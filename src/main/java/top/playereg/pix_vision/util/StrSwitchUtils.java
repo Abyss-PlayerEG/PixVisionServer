@@ -42,7 +42,7 @@ import java.util.UUID;
  * String randomPassword = StrSwitchUtils.generateRandomPassword();
  *
  * // 示例5：Markdown 转 HTML
- * String html = StrSwitchUtils.markdownToHtml(markdown, "UTF-8", "标题", cssStyle);
+ * String html = StrSwitchUtils.markdownToHtmlPage(markdown, "UTF-8", "标题", cssStyle);
  * }</pre>
  *
  * <h3>注意事项</h3>
@@ -296,7 +296,7 @@ public class StrSwitchUtils {
     }
 
     /**
-     * 将 Markdown 转换为 HTML
+     * 将 Markdown 转换为 HTML 页面
      *
      * @param markdown Markdown 内容
      * @param charset  编码格式
@@ -305,7 +305,7 @@ public class StrSwitchUtils {
      * @return String HTML 内容
      * @author PlayerEG
      */
-    public static String markdownToHtml(
+    public static String markdownToHtmlPage(
         String markdown,
         String charset,
         String title,
@@ -326,11 +326,22 @@ public class StrSwitchUtils {
             </body>
             </html>
             """;
+        String html = markdownToHtml(markdown);
+        return StrUtil.format(htmlTemplate, charset, title, cssStyle, html);
+    }
+
+    /**
+     * 将 Markdown 转换为 HTML
+     *
+     * @param markdown Markdown 内容
+     * @return String HTML 内容
+     * @author PlayerEG
+     */
+    public static String markdownToHtml(String markdown) {
         Parser parser = Parser.builder().build();
         Node document = parser.parse(markdown);
         HtmlRenderer renderer = HtmlRenderer.builder().build();
-        String html = renderer.render(document);
-        return StrUtil.format(htmlTemplate, charset, title, cssStyle, html);
+        return renderer.render(document);
     }
 
     /**

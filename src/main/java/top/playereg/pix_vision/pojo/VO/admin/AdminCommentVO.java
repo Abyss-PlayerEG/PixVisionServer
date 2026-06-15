@@ -14,6 +14,10 @@ import top.playereg.pix_vision.pojo.entity.BaseComment;
 public class AdminCommentVO extends BaseComment {
 
     @TableField(exist = false)
+    @Schema(description = "评论者用户名")
+    private String username;
+
+    @TableField(exist = false)
     @Schema(description = "评论者昵称")
     private String nickname;
 

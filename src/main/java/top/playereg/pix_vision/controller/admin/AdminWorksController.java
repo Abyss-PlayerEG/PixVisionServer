@@ -55,6 +55,7 @@ public class AdminWorksController extends AdminBaseController {
               - 10: 正常（解封）
               - 20: 待审核
               - 30: 未过审（封禁）
+            - **auditReason**: **审核原因**，String 类型，请求参数，可选，仅当审核状态为 30（未过审）时生效，用于通知用户作品未通过的原因
 
             ## 返回说明：
             - **成功**：返回包含总数、成功数、失败 ID 列表的统计信息
@@ -65,11 +66,14 @@ public class AdminWorksController extends AdminBaseController {
             1. 验证当前用户是否为审核员或系统管理员（由拦截器自动验证）
             2. 校验作品 ID 列表和审核状态参数的有效性
             3. 批量更新 tb_works 表中对应作品的 approval_status 字段
-            4. 记录操作结果并返回统计信息
+            4. 若审核状态为 30 且提供了 auditReason，将原因写入审核记录表并包含在通知消息中
+            5. 记录操作结果并返回统计信息
 
             ## 注意事项：
             - 设置为 30（未过审）后，作品将在前端不可见
             - 设置为 10（正常）后，作品将在前端重新可见
+            - 审核原因（auditReason）仅在状态为 30 时生效，其他状态会忽略此参数
+            - 审核原因会通过系统通知发送给作品作者
             - 此操作会立即生效，无需重启服务
             - 建议谨慎使用，操作前请确认作品 ID 和状态的正确性
             - 即使部分作品更新失败，其他作品仍会成功更新
@@ -80,7 +84,8 @@ public class AdminWorksController extends AdminBaseController {
     public ResponsePojo<AdminBatchOperateWorkResult> batchUpdateApprovalStatus(
         HttpServletRequest request,
         @Parameter(description = "目标作品 ID 列表", required = true, example = "1,2,3") @RequestParam List<Integer> workIds,
-        @Schema(description = "审核状态：10-正常、20-待审核、30-未过审", allowableValues = {"10", "20", "30"}, example = "30") @RequestParam Integer approvalStatus
+        @Schema(description = "审核状态：10-正常、20-待审核、30-未过审", allowableValues = {"10", "20", "30"}, example = "30") @RequestParam Integer approvalStatus,
+        @Parameter(description = "审核原因（仅状态为30时生效）", example = "作品包含违规内容") @RequestParam(required = false) String auditReason
     ) {
         // 参数校验
         if (workIds == null || workIds.isEmpty()) {
@@ -107,7 +112,7 @@ public class AdminWorksController extends AdminBaseController {
 
         try {
             // 调用服务层批量更新作品审核状态
-            AdminBatchOperateWorkResult result = workService.batchUpdateApprovalStatus(workIds, approvalStatus, userId);
+            AdminBatchOperateWorkResult result = workService.batchUpdateApprovalStatus(workIds, approvalStatus, userId, auditReason);
 
             String statusName = getStatusName(approvalStatus);
             if (result.getSuccessCount() > 0) {

@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -385,7 +386,19 @@ public class WorkServiceImpl implements WorkService {
         // 12. 发送作品审核结果通知（AI 审核违规时立即通知）
         if (approvalStatus == 30) {
             try {
-                String content = "你上传的作品《" + workTitle.trim() + "》未通过内容审核，原因：" + (auditReason != null ? auditReason : "内容违规");
+                // 使用 Markdown 格式构建消息
+                String reason = auditReason != null ? auditReason : "内容违规";
+                String content = StrUtil.format("""
+                    # 审核未通过
+                    
+                    ---
+                    
+                    ## 你上传的作品未通过内容审核
+                    
+                    **作品** : {}
+                    
+                    **原因** : {}
+                    """, workTitle.trim(), reason);
                 messageService.sendSystemNotice(
                     0,
                     userId,
@@ -909,7 +922,8 @@ public class WorkServiceImpl implements WorkService {
     public top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult batchUpdateApprovalStatus(
         List<Integer> workIds,
         Integer approvalStatus,
-        Integer userId
+        Integer userId,
+        String auditReason
     ) {
         if (workIds == null || workIds.isEmpty()) {
             return new top.playereg.pix_vision.pojo.admin.AdminBatchOperateWorkResult(0, 0, new java.util.ArrayList<>());
@@ -979,7 +993,32 @@ public class WorkServiceImpl implements WorkService {
             for (Works work : validWorks) {
                 try {
                     String statusText = approvalStatus == 10 ? "通过" : "未通过";
-                    String content = "你的作品《" + work.getWork_title() + "》审核" + statusText;
+                    // 使用 Markdown 格式构建消息
+                    String content;
+                    if (approvalStatus == 30) {
+                        String reason = (auditReason != null && !auditReason.isBlank()) ? auditReason : "作品内容不符合站点规定";
+                        content = StrUtil.format("""
+                            # 审核未通过
+                            
+                            ---
+                            
+                            ## 你的作品已审核未通过
+                            
+                            **作品** : {}
+                            
+                            **原因** : {}
+                            """, work.getWork_title(), reason);
+                    } else {
+                        content = StrUtil.format("""
+                            # 审核{}
+                            
+                            ---
+                            
+                            ## 你的作品已审核{}
+                            
+                            **作品** : {}
+                            """, statusText, statusText, work.getWork_title());
+                    }
                     messageService.sendSystemNotice(
                         0,
                         work.getUser_id(),

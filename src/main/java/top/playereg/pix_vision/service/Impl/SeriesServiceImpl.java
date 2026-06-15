@@ -1,5 +1,6 @@
 package top.playereg.pix_vision.service.Impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -689,7 +690,16 @@ public class SeriesServiceImpl implements SeriesService {
             for (Series series : validSeries) {
                 try {
                     String statusText = approvalStatus == 10 ? "通过" : "未通过";
-                    String content = "你的合集《" + series.getSeries_title() + "》审核" + statusText;
+                    // 使用 Markdown 格式构建消息
+                    String content = StrUtil.format("""
+                        # 合集审核{}
+                        
+                        ---
+                        
+                        ## 你的合集已审核{}
+                        
+                        **合集** : {}
+                        """, statusText, statusText, series.getSeries_title());
                     messageService.sendSystemNotice(
                         0,
                         series.getUser_id(),

@@ -325,6 +325,7 @@
             w.update_user,
             w.create_time,
             w.create_user,
+            u.username,
             u.nickname
         FROM tb_works w
         LEFT JOIN tb_user u ON w.user_id = u.user_id
