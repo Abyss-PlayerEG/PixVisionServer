@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
+import top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO;
 import top.playereg.pix_vision.pojo.entity.Works;
 
 /**
@@ -228,8 +229,8 @@ public interface WorksMapper extends BaseMapper<Works> {
      * @return 分页结果
      * @author PlayerEG
      */
-    IPage<Works> adminSelectWorks(
-        Page<Works> page,
+    IPage<AdminWorkVO> adminSelectWorks(
+        Page<AdminWorkVO> page,
         @Param("keyword") String keyword,
         @Param("orderBy") String orderBy,
         @Param("isOriginal") Boolean isOriginal,

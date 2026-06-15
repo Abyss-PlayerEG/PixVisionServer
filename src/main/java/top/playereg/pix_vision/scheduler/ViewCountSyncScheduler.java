@@ -45,7 +45,7 @@ public class ViewCountSyncScheduler {
         log.info("开始同步浏览量数据到数据库...");
         long startTime = System.currentTimeMillis();
 
-        try {
+         try {
             // 1. 使用 SCAN 命令遍历所有浏览量 key（避免阻塞）
             ScanOptions options = ScanOptions.scanOptions()
                 .match(VIEW_COUNT_KEY_PREFIX + "*")

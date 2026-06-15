@@ -1442,9 +1442,10 @@ public class UserServiceImpl implements UserService {
             return null;
         }
 
+        // 如果昵称为空，自动生成随机昵称
         if (nickname == null || nickname.isEmpty()) {
-            log.error("昵称不能为空");
-            return null;
+            nickname = StrSwitchUtils.generateRandomUserDefaultNickName("user");
+            log.info("昵称为空，自动生成随机昵称: {}", nickname);
         }
 
         if (email == null || email.isEmpty()) {

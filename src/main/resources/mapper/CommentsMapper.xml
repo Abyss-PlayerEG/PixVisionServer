@@ -109,9 +109,11 @@
                c.approval_status,
                c.is_delete,
                c.time,
+               u.nickname,
                w.work_title
         FROM tb_comments c
         LEFT JOIN tb_works w ON c.work_id = w.work_id
+        LEFT JOIN tb_user u ON c.user_id = u.user_id
         WHERE c.is_delete = 0
         <if test="workId != null">
             AND c.work_id = #{workId}

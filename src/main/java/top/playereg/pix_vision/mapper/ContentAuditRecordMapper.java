@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Param;
+import top.playereg.pix_vision.pojo.VO.admin.AdminAuditRecordVO;
 import top.playereg.pix_vision.pojo.entity.ContentAuditRecord;
 
 import java.util.List;
@@ -51,8 +52,8 @@ public interface ContentAuditRecordMapper extends BaseMapper<ContentAuditRecord>
      * @param sortOrder      排序方向（DESC/ASC）
      * @return 分页审核记录列表
      */
-    IPage<ContentAuditRecord> selectAuditRecordsPage(
-        Page<ContentAuditRecord> page,
+    IPage<AdminAuditRecordVO> selectAuditRecordsPage(
+        Page<AdminAuditRecordVO> page,
         @Param("contentType") Integer contentType,
         @Param("approvalStatus") Integer approvalStatus,
         @Param("keyword") String keyword,

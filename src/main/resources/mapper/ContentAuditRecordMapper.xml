@@ -64,16 +64,33 @@
     </select>
 
     <!-- 分页查询审核记录 -->
-    <select id="selectAuditRecordsPage" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM tb_content_audit_record
+    <select id="selectAuditRecordsPage" resultType="top.playereg.pix_vision.pojo.VO.admin.AdminAuditRecordVO">
+        SELECT r.record_id,
+               r.content_type,
+               r.content_id,
+               r.approval_status,
+               r.audit_reason,
+               r.insult_words,
+               r.original_content,
+               r.create_time,
+               u.user_id,
+               u.nickname
+        FROM tb_content_audit_record r
+        LEFT JOIN (
+            SELECT work_id AS content_id, user_id, 100 AS ctype FROM tb_works
+            UNION ALL
+            SELECT comment_id, user_id, 200 FROM tb_comments
+            UNION ALL
+            SELECT series_id, user_id, 300 FROM tb_series
+        ) c ON r.content_id = c.content_id AND r.content_type = c.ctype
+        LEFT JOIN tb_user u ON c.user_id = u.user_id
         WHERE 1=1
-        <if test="contentType != null">AND content_type = #{contentType}</if>
-        <if test="approvalStatus != null">AND approval_status = #{approvalStatus}</if>
+        <if test="contentType != null">AND r.content_type = #{contentType}</if>
+        <if test="approvalStatus != null">AND r.approval_status = #{approvalStatus}</if>
         <if test="keyword != null and keyword != ''">
-            AND audit_reason LIKE CONCAT('%', #{keyword}, '%')
+            AND r.audit_reason LIKE CONCAT('%', #{keyword}, '%')
         </if>
-        ORDER BY create_time ${sortOrder}
+        ORDER BY r.create_time ${sortOrder}
     </select>
 
 </mapper>
