@@ -1255,69 +1255,54 @@ public class WorkServiceImpl implements WorkService {
             current, size, keyword, orderBy, isOriginal, approvalStatus, isDelete);
 
         // 创建分页对象
-        Page<Works> page = new Page<>(current, size);
+        Page<AdminWorkVO> page = new Page<>(current, size);
 
-        // 调用 Mapper 层查询
-        IPage<Works> result = worksMapper.adminSelectWorks(page, keyword, orderBy,
+        // 调用 Mapper 层查询（已联表查 nickname）
+        IPage<AdminWorkVO> result = worksMapper.adminSelectWorks(page, keyword, orderBy,
             isOriginal, approvalStatus, isDelete);
 
         // 为列表中的每个作品填充最新的浏览量（优先 Redis，其次回源）
         if (result != null && !result.getRecords().isEmpty()) {
-            for (Works work : result.getRecords()) {
+            for (AdminWorkVO vo : result.getRecords()) {
                 try {
-                    String key = VIEW_COUNT_KEY_PREFIX + work.getWork_id();
+                    String key = VIEW_COUNT_KEY_PREFIX + vo.getWork_id();
                     Object viewCountObj = redisTemplate.opsForValue().get(key);
                     if (viewCountObj != null) {
-                        work.setView_count(((Number) viewCountObj).intValue());
+                        vo.setView_count(((Number) viewCountObj).intValue());
                     } else {
                         // Redis 缺失，触发回源并缓存
-                        int dbCount = worksMapper.selectTotalViewCountByWorkId(work.getWork_id());
-                        work.setView_count(dbCount);
+                        int dbCount = worksMapper.selectTotalViewCountByWorkId(vo.getWork_id());
+                        vo.setView_count(dbCount);
                         redisTemplate.opsForValue().set(key, dbCount, 5, java.util.concurrent.TimeUnit.MINUTES);
                     }
                 } catch (Exception e) {
-                    log.warn("管理员分页查询时填充浏览量失败，作品 ID: {}", work.getWork_id());
+                    log.warn("管理员分页查询时填充浏览量失败，作品 ID: {}", vo.getWork_id());
                 }
             }
-        }
 
-        // 批量查询审核记录
-        final Map<Integer, ContentAuditRecord> auditMap;
-        if (result != null && !result.getRecords().isEmpty()) {
+            // 批量查询审核记录
             List<Integer> workIds = result.getRecords().stream()
-                .map(Works::getWork_id)
+                .map(AdminWorkVO::getWork_id)
                 .collect(Collectors.toList());
             List<ContentAuditRecord> auditRecords = contentAuditRecordMapper
                 .selectLatestByContentIds(100, workIds);
             if (auditRecords != null) {
-                auditMap = auditRecords.stream().collect(Collectors.toMap(
+                Map<Integer, ContentAuditRecord> auditMap = auditRecords.stream().collect(Collectors.toMap(
                     ContentAuditRecord::getContent_id, r -> r, (a, b) -> a));
-            } else {
-                auditMap = new HashMap<>();
+                result.getRecords().forEach(vo -> {
+                    ContentAuditRecord audit = auditMap.get(vo.getWork_id());
+                    if (audit != null) {
+                        vo.setAudit_reason(audit.getAudit_reason());
+                        vo.setInsult_words(audit.getInsult_words());
+                    }
+                });
             }
-        } else {
-            auditMap = new HashMap<>();
         }
-
-        // 转换 Works → AdminWorkVO
-        List<AdminWorkVO> voList = result.getRecords().stream().map(work -> {
-            AdminWorkVO vo = new AdminWorkVO();
-            BeanUtils.copyProperties(work, vo);
-            ContentAuditRecord audit = auditMap.get(work.getWork_id());
-            if (audit != null) {
-                vo.setAudit_reason(audit.getAudit_reason());
-                vo.setInsult_words(audit.getInsult_words());
-            }
-            return vo;
-        }).collect(Collectors.toList());
-
-        IPage<AdminWorkVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(voList);
 
         log.info("管理员分页查询作品完成，总数: {}, 当前页: {}, 每页大小: {}",
             result.getTotal(), result.getCurrent(), result.getSize());
 
-        return voPage;
+        return result;
     }
 
     /**

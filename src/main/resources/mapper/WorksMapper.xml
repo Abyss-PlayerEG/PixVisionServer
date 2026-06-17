@@ -306,45 +306,64 @@
     </select>
 
     <!-- 管理员分页查询作品列表（支持多条件过滤和排序） -->
-    <select id="adminSelectWorks" resultMap="BaseResultMap">
+    <select id="adminSelectWorks" resultType="top.playereg.pix_vision.pojo.VO.admin.AdminWorkVO">
         SELECT
-        <include refid="Base_Column_List"/>
-        FROM tb_works
+            w.work_id,
+            w.user_id,
+            w.work_title,
+            w.img_url,
+            w.thumb_url,
+            w.series_id,
+            w.like_count,
+            w.star_count,
+            w.view_count,
+            w.is_original_work,
+            w.out_url,
+            w.approval_status,
+            w.is_delete,
+            w.update_time,
+            w.update_user,
+            w.create_time,
+            w.create_user,
+            u.username,
+            u.nickname
+        FROM tb_works w
+        LEFT JOIN tb_user u ON w.user_id = u.user_id
         <where>
             <choose>
                 <when test="isDelete != null">
-                    AND is_delete = #{isDelete}
+                    AND w.is_delete = #{isDelete}
                 </when>
                 <otherwise>
-                    AND is_delete = 0
+                    AND w.is_delete = 0
                 </otherwise>
             </choose>
             <if test="keyword != null and keyword != ''">
-                AND work_title LIKE CONCAT('%', #{keyword}, '%')
+                AND w.work_title LIKE CONCAT('%', #{keyword}, '%')
             </if>
             <if test="isOriginal != null">
-                AND is_original_work = #{isOriginal}
+                AND w.is_original_work = #{isOriginal}
             </if>
             <if test="approvalStatus != null">
-                AND approval_status = #{approvalStatus}
+                AND w.approval_status = #{approvalStatus}
             </if>
         </where>
         ORDER BY
         <choose>
             <when test="orderBy == 'oldest'">
-                create_time ASC
+                w.create_time ASC
             </when>
             <when test="orderBy == 'mostLikes'">
-                like_count DESC, create_time DESC
+                w.like_count DESC, w.create_time DESC
             </when>
             <when test="orderBy == 'mostStars'">
-                star_count DESC, create_time DESC
+                w.star_count DESC, w.create_time DESC
             </when>
             <when test="orderBy == 'mostViews'">
-                view_count DESC, create_time DESC
+                w.view_count DESC, w.create_time DESC
             </when>
             <otherwise>
-                create_time DESC
+                w.create_time DESC
             </otherwise>
         </choose>
     </select>

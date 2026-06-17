@@ -14,6 +14,14 @@ import top.playereg.pix_vision.pojo.entity.Works;
 public class AdminWorkVO extends Works {
 
     @TableField(exist = false)
+    @Schema(description = "作者用户名")
+    private String username;
+
+    @TableField(exist = false)
+    @Schema(description = "作者昵称")
+    private String nickname;
+
+    @TableField(exist = false)
     @Schema(description = "AI 审核判断依据")
     private String audit_reason;
 

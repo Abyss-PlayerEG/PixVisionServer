@@ -474,7 +474,7 @@ public class AdminUserController extends AdminBaseController {
         @Parameter(description = "用户名（必填，唯一）", required = true, example = "new_user") @RequestParam String username,
         @Parameter(description = "密码（必填，明文，将自动加密）", required = true, example = "123456") @RequestParam String password,
         @Parameter(description = "确认密码（必填，必须与密码一致）", required = true, example = "123456") @RequestParam String confirmPassword,
-        @Parameter(description = "昵称（必填）", required = true, example = "新用户") @RequestParam String nickname,
+        @Parameter(description = "昵称（可选，留空自动生成）", required = false, example = "新用户") @RequestParam(required = false) String nickname,
         @Parameter(description = "邮箱（必填，唯一）", required = true, example = "newuser@example.com") @RequestParam String email,
         @Schema(
             description = "角色代码（可选，默认 11-普通用户）",

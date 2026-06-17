@@ -36,24 +36,14 @@ public class ContentAuditRecordServiceImpl implements ContentAuditRecordService 
             sortOrder = "ASC";
         }
 
-        Page<ContentAuditRecord> page = new Page<>(current, size);
-        IPage<ContentAuditRecord> result = contentAuditRecordMapper.selectAuditRecordsPage(
+        Page<AdminAuditRecordVO> page = new Page<>(current, size);
+        IPage<AdminAuditRecordVO> result = contentAuditRecordMapper.selectAuditRecordsPage(
             page, contentType, approvalStatus, keyword, sortOrder
         );
-
-        // 转换为 VO（original_content 已从数据库直接获取）
-        List<AdminAuditRecordVO> voList = result.getRecords().stream().map(record -> {
-            AdminAuditRecordVO vo = new AdminAuditRecordVO();
-            BeanUtils.copyProperties(record, vo);
-            return vo;
-        }).collect(Collectors.toList());
-
-        Page<AdminAuditRecordVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(voList);
 
         log.info("分页查询审核记录完成 - 页码: {}, 每页: {}, 内容类型: {}, 审核状态: {}, 关键词: {}, 排序: {}, 总条数: {}",
             current, size, contentType, approvalStatus, keyword, orderBy, result.getTotal());
 
-        return voPage;
+        return result;
     }
 }
