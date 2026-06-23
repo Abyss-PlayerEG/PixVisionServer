@@ -187,24 +187,26 @@ public class SeriesController {
     }
 
     /**
-     * 分页查询用户的所有作品系列
+     * 分页查询作品系列列表
      *
-     * @param userId  用户 ID
      * @param current 当前页码（从 1 开始）
      * @param size    每页数量（范围 1-500）
+     * @param userId  用户 ID（可选，不传则查询所有用户）
+     * @param keyword 搜索关键词（可选）
      * @return 响应数据，包含分页的作品系列列表
      * @author PlayerEG
      */
-    @GetMapping("/page/{userId}/{current}/{size}")
-    @PublicAccess("分页查询用户作品系列，无需认证")
+    @GetMapping("/page/{current}/{size}")
+    @PublicAccess("分页查询作品系列，无需认证")
     @Operation(
-        summary = "分页查询用户作品系列接口",
+        summary = "分页查询作品系列接口",
         description = """
-            # 分页查询用户作品系列（无需登录认证）
+            # 分页查询作品系列（无需登录认证）
 
             ## 特性
             - 公开接口（无需 Token 认证）
             - 支持分页查询
+            - **支持按用户筛选**（可选，不传则查询所有用户的系列）
             - **支持关键词搜索**（可选，同时匹配系列标题和描述）
             - 自动过滤逻辑删除数据
             - **只返回审核通过的系列**（approval_status = 10）
@@ -212,29 +214,29 @@ public class SeriesController {
             - 返回封面缩略图（取自系列内最新发布的审核通过作品）
 
             ## 参数说明：
-            - **userId**: 用户 ID，Integer 类型，必填
             - **current**: 当前页码，Integer 类型，必填，从 1 开始
             - **size**: 每页数量，Integer 类型，必填，范围 1-500
+            - **userId**: 用户 ID，Integer 类型，可选，不传则查询所有用户的系列
             - **keyword**: 搜索关键词，String 类型，可选，同时搜索系列标题和描述
 
             ## 返回说明：
             - **查询成功**：返回 `{"data": {IPage<Series>对象}}`，包含分页信息和系列列表，每个系列含封面缩略图（thumb_url），系列内无作品时 thumb_url 为 null
-            - **用户 ID 无效**：返回 `{"data": null}` 和 "用户 ID 无效" 提示
             - **无匹配结果**：返回空列表 `[]`，状态码 200
 
             ## 业务逻辑：
-            1. 校验用户 ID、页码和每页数量参数有效性
-            2. 如果提供了关键词，对系列标题和描述进行模糊匹配（LIKE %keyword%）
-            3. 调用 Service 层进行分页查询
-            4. 自动排除逻辑删除的数据（is_delete=0）
-            5. **只返回审核通过的系列**（approval_status=10）
-            6. 待审核（approval_status=20）和未过审（approval_status=30）的系列不会返回
-            7. **通过子查询获取系列内最新发布作品（is_delete=0, approval_status=10）的封面缩略图**
-            8. **排序规则**：有关键词时，标题匹配的系列优先（CASE WHEN 排序）；再按创建时间倒序
+            1. 校验页码和每页数量参数有效性
+            2. 如果提供了 userId，只查询该用户的系列；否则查询所有用户的系列
+            3. 如果提供了关键词，对系列标题和描述进行模糊匹配（LIKE %keyword%）
+            4. 调用 Service 层进行分页查询
+            5. 自动排除逻辑删除的数据（is_delete=0）
+            6. **只返回审核通过的系列**（approval_status=10）
+            7. 待审核（approval_status=20）和未过审（approval_status=30）的系列不会返回
+            8. **通过子查询获取系列内最新发布作品（is_delete=0, approval_status=10）的封面缩略图**
+            9. **排序规则**：有关键词时，标题匹配的系列优先（CASE WHEN 排序）；再按创建时间倒序
 
             ## 注意事项：
             - **此接口为公开接口，无需登录即可访问**
-            - 如果用户没有作品系列，返回空列表 []
+            - 如果没有匹配的系列，返回空列表 []
             - **只能查看审核通过的系列**，待审核和未过审的系列不可见
             - keyword 为空或不传时，返回所有系列（按创建时间倒序）
             - 关键词同时搜索系列标题和描述，标题匹配的结果排在最前面
@@ -244,21 +246,23 @@ public class SeriesController {
             """
     )
     public ResponsePojo<IPage<Series>> getSeriesList(
-        @Parameter(description = "用户 ID", required = true, example = "1") @PathVariable Integer userId,
         @Parameter(description = "当前页码，从 1 开始", required = true, example = "1") @PathVariable Integer current,
         @Parameter(description = "每页数量，范围 1-500", required = true, example = "10") @PathVariable Integer size,
+        @Parameter(description = "用户 ID（可选，不传则查询所有用户）", example = "1") @RequestParam(required = false) Integer userId,
         @Parameter(description = "搜索关键词（可选），同时匹配系列标题和描述", example = "风景") @RequestParam(required = false) String keyword
     ) {
-        log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}, 关键词: {}", userId, current, size, keyword);
+        log.debug("分页查询作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}, 关键词: {}", userId, current, size, keyword);
 
         // 参数校验
-        if (userId == null || userId <= 0) {
-            log.warn("用户 ID 无效: {}", userId);
-            return ResponsePojo.error(null, "用户 ID 无效");
-        }
         ResponsePojo<?> error = PageUtils.validatePageParams(current.longValue(), size.longValue());
         if (error != null) {
             return (ResponsePojo<IPage<Series>>) (ResponsePojo<?>) error;
+        }
+
+        // 如果提供了 userId，校验其有效性
+        if (userId != null && userId <= 0) {
+            log.warn("用户 ID 无效: {}", userId);
+            return ResponsePojo.error(null, "用户 ID 无效");
         }
 
         // 调用服务层分页查询

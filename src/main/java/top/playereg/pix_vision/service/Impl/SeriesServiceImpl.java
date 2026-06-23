@@ -125,9 +125,9 @@ public class SeriesServiceImpl implements SeriesService {
     }
 
     /**
-     * 根据用户 ID 分页查询所有作品系列（支持关键词搜索）
+     * 分页查询作品系列列表（支持按用户筛选和关键词搜索）
      *
-     * @param userId  用户 ID
+     * @param userId  用户 ID（可选，为 null 时查询所有用户的系列）
      * @param current 当前页码
      * @param size    每页数量
      * @param keyword 搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
@@ -135,13 +135,7 @@ public class SeriesServiceImpl implements SeriesService {
      */
     @Override
     public IPage<Series> getSeriesByUserId(Integer userId, Integer current, Integer size, String keyword) {
-        log.debug("分页查询用户作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}, 关键词: {}", userId, current, size, keyword);
-
-        // 参数校验
-        if (userId == null || userId <= 0) {
-            log.warn("用户 ID 无效: {}", userId);
-            return new Page<>(current != null ? current : 1, size != null ? size : 10);
-        }
+        log.debug("分页查询作品系列 - 用户 ID: {}, 页码: {}, 每页数量: {}, 关键词: {}", userId, current, size, keyword);
 
         // 创建分页对象
         Page<Series> page = new Page<>(current != null ? current : 1, size != null ? size : 10);
