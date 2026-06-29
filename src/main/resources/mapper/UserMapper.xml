@@ -194,8 +194,8 @@
             AND status = #{status}
         </if>
             <choose>
-                <when test="isDelete != null">
-                    AND is_delete = #{isDelete}
+                <when test="is_delete != null">
+                    AND is_delete = #{is_delete}
                 </when>
                 <otherwise>
                     AND is_delete = 0
