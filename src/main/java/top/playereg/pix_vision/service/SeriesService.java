@@ -137,7 +137,7 @@ public interface SeriesService {
         Long size,
         String keyword,
         Integer approvalStatus,
-        Boolean isDelete,
+        Boolean is_delete,
         Integer userId,
         String orderBy
     );

@@ -992,9 +992,9 @@ public class SeriesServiceImpl implements SeriesService {
      * @author blue_sky_ks
      */
     @Override
-    public IPage<AdminSeriesVO> getAdminSeriesPage(Long current, Long size, String keyword, Integer approvalStatus, Boolean isDelete, Integer userId, String orderBy) {
+    public IPage<AdminSeriesVO> getAdminSeriesPage(Long current, Long size, String keyword, Integer approvalStatus, Boolean is_delete, Integer userId, String orderBy) {
         log.debug("管理员分页查询作品合集 - 页码: {}, 每页: {}, 关键词: {}, 审核状态: {}, 是否删除: {}, 用户ID: {}, 排序: {}",
-            current, size, keyword, approvalStatus, isDelete, userId, orderBy);
+            current, size, keyword, approvalStatus, is_delete, userId, orderBy);
 
         // 创建分页对象
         Page<AdminSeriesVO> page = new Page<>(
@@ -1003,7 +1003,7 @@ public class SeriesServiceImpl implements SeriesService {
         );
 
         // 调用 Mapper 分页查询（已联表查username）
-        IPage<AdminSeriesVO> result = seriesMapper.selectAdminSeriesPage(page, keyword, approvalStatus, isDelete, userId, orderBy);
+        IPage<AdminSeriesVO> result = seriesMapper.selectAdminSeriesPage(page, keyword, approvalStatus, is_delete, userId, orderBy);
 
         // 批量查询审核记录
         if (result != null && !result.getRecords().isEmpty()) {

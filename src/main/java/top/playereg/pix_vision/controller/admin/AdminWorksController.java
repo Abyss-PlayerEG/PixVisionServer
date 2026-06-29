@@ -213,7 +213,7 @@ public class AdminWorksController extends AdminBaseController {
      * @param orderBy        排序方式：'newest' - 最新、'oldest' - 最旧、'mostLikes' - 最多点赞、'mostStars' - 最多收藏、'mostViews' - 最多查看（默认 newest）
      * @param isOriginal     是否转载（可选，true-原创、false-转载）
      * @param approvalStatus 审核状态（可选，10-正常、20-待审核、30-未过审）
-     * @param isDelete       是否被删除（可选，true-已删除、false-未删除）
+     * @param is_delete       是否被删除（可选，true-已删除、false-未删除）
      * @return 分页结果
      * @author PlayerEG
      */
@@ -246,7 +246,7 @@ public class AdminWorksController extends AdminBaseController {
               - 10: 正常
               - 20: 待审核
               - 30: 未过审
-            - **isDelete**: **是否被删除**，Boolean 类型，可选
+            - **is_delete**: **是否被删除**，Boolean 类型，可选
               - true: 仅查已删除
               - false: 仅查未删除
               - 不传: 默认只查未删除
@@ -266,7 +266,7 @@ public class AdminWorksController extends AdminBaseController {
             ## 注意事项：
             - 所有筛选条件均为可选，可以自由组合
             - 关键字搜索使用模糊匹配（LIKE '%keyword%'）
-            - 不传 isDelete 时默认只查询未删除的作品
+            - 不传 is_delete 时默认只查询未删除的作品
             - 返回完整的 Works 实体字段
             """
     )
@@ -279,7 +279,7 @@ public class AdminWorksController extends AdminBaseController {
         @Schema(description = "排序方式：'newest' - 最新、'oldest' - 最旧、'mostLikes' - 最多点赞、'mostStars' - 最多收藏、'mostViews' - 最多查看（默认 newest）", allowableValues = {"newest", "oldest", "mostLikes", "mostStars", "mostViews"}, example = "newest") @RequestParam(required = false, defaultValue = "newest") String orderBy,
         @Schema(description = "是否转载（可选，true-原创、false-转载）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isOriginal,
         @Schema(description = "审核状态（可选，10-正常、20-待审核、30-未过审）", allowableValues = {"10", "20", "30"}, example = "20") @RequestParam(required = false) Integer approvalStatus,
-        @Schema(description = "是否被删除（可选，true-已删除、false-未删除）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isDelete
+        @Schema(description = "是否被删除（可选，true-已删除、false-未删除）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean is_delete
     ) {
         // 参数校验
         ResponsePojo<?> error = PageUtils.validatePageParams(current, size);
@@ -289,7 +289,7 @@ public class AdminWorksController extends AdminBaseController {
 
         try {
             IPage<AdminWorkVO> result = workService.getAdminWorksPage(current, size, keyword, orderBy,
-                isOriginal, approvalStatus, isDelete);
+                isOriginal, approvalStatus, is_delete);
             return ResponsePojo.success(result, "查询成功");
         } catch (Exception e) {
             log.error("分页查询作品异常，错误: {}", e.getMessage(), e);

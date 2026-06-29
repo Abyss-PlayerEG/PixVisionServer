@@ -331,8 +331,8 @@
         LEFT JOIN tb_user u ON w.user_id = u.user_id
         <where>
             <choose>
-                <when test="isDelete != null">
-                    AND w.is_delete = #{isDelete}
+                <when test="is_delete != null">
+                    AND w.is_delete = #{is_delete}
                 </when>
                 <otherwise>
                     AND w.is_delete = 0

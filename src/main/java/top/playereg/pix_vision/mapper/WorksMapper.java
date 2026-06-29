@@ -235,7 +235,7 @@ public interface WorksMapper extends BaseMapper<Works> {
         @Param("orderBy") String orderBy,
         @Param("isOriginal") Boolean isOriginal,
         @Param("approvalStatus") Integer approvalStatus,
-        @Param("isDelete") Boolean isDelete
+        @Param("is_delete") Boolean is_delete
     );
 
     /**

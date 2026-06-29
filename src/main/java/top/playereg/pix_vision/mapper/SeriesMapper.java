@@ -128,7 +128,7 @@ public interface SeriesMapper extends BaseMapper<Series> {
         IPage<AdminSeriesVO> page,
         @Param("keyword") String keyword,
         @Param("approvalStatus") Integer approvalStatus,
-        @Param("isDelete") Boolean isDelete,
+        @Param("is_delete") Boolean is_delete,
         @Param("userId") Integer userId,
         @Param("orderBy") String orderBy
     );
