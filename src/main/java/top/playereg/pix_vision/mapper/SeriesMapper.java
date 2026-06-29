@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import top.playereg.pix_vision.pojo.entity.Series;
 import top.playereg.pix_vision.pojo.VO.admin.AdminSeriesVO;
+import top.playereg.pix_vision.pojo.entity.Series;
 
 import java.util.List;
 
@@ -29,10 +29,10 @@ public interface SeriesMapper extends BaseMapper<Series> {
     int insertSeries(Series series);
 
     /**
-     * 根据用户 ID 分页查询所有作品系列（排除逻辑删除，支持关键词搜索）
+     * 分页查询作品系列列表（排除逻辑删除，支持按用户筛选和关键词搜索）
      *
      * @param page    分页对象
-     * @param userId  用户 ID
+     * @param userId  用户 ID（可选，为 null 时查询所有用户的系列）
      * @param keyword 搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
      * @return 分页作品系列列表
      */
