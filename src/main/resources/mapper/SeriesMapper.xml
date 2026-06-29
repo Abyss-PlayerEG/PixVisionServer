@@ -200,9 +200,14 @@
             <if test="approvalStatus != null">
                 AND s.approval_status = #{approvalStatus}
             </if>
-            <if test="isDelete != null">
-                AND s.is_delete = #{isDelete}
-            </if>
+            <choose>
+                <when test="isDelete != null">
+                    AND s.is_delete = #{isDelete}
+                </when>
+                <otherwise>
+                    AND s.is_delete = 0
+                </otherwise>
+            </choose>
             <if test="keyword != null and keyword != ''">
                 AND (s.series_title LIKE CONCAT('%', #{keyword}, '%') OR s.about_text LIKE CONCAT('%', #{keyword}, '%'))
             </if>
