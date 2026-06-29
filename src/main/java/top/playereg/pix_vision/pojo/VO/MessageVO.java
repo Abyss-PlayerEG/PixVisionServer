@@ -46,4 +46,16 @@ public class MessageVO extends Message {
      */
     @Schema(description = "发送者头像", example = "/avatar/uuid.png")
     private String from_avatar_url;
+
+    /**
+     * 接收者用户名
+     */
+    @Schema(description = "接收者用户名", example = "zhang_san")
+    private String to_username;
+
+    /**
+     * 接收者昵称
+     */
+    @Schema(description = "接收者昵称", example = "张三")
+    private String to_nickname;
 }
