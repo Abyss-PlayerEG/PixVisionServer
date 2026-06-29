@@ -318,7 +318,7 @@ public class AdminSeriesController extends AdminBaseController {
      * @param size    每页数量
      * @param keyword 搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
      * @param status  审核状态（可选，10-正常、20-待审核、30-未过审）
-     * @param isDelete 是否删除（可选，true-已删除、false-未删除）
+     * @param is_delete 是否删除（可选，true-已删除、false-未删除）
      * @param userId  用户 ID（可选）
      * @param orderBy 排序字段（可选，'oldest'-按最早创建，其他值-按最新创建）
      * @return 分页作品合集列表
@@ -346,7 +346,7 @@ public class AdminSeriesController extends AdminBaseController {
               - 10: 正常
               - 20: 待审核
               - 30: 未过审
-            - **isDelete**: **是否删除**，Boolean 类型，查询参数，可选
+            - **is_delete**: **是否删除**，Boolean 类型，查询参数，可选
               - true: 仅查已删除
               - false: 仅查未删除
               - 不传: 不过滤删除状态
@@ -381,7 +381,7 @@ public class AdminSeriesController extends AdminBaseController {
         @Parameter(description = "每页大小（范围 1-500）", required = true, example = "10") @PathVariable Long size,
         @Parameter(description = "搜索关键词（可选，同时匹配标题和描述）", required = false) @RequestParam(required = false) String keyword,
         @Schema(description = "审核状态（可选，10-正常、20-待审核、30-未过审）", allowableValues = {"10", "20", "30"}, example = "20") @RequestParam(required = false) Integer status,
-        @Schema(description = "是否删除（可选，true-已删除、false-未删除）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean isDelete,
+        @Schema(description = "是否删除（可选，true-已删除、false-未删除）", allowableValues = {"true", "false"}) @RequestParam(required = false) Boolean is_delete,
         @Parameter(description = "用户 ID（可选）", required = false) @RequestParam(required = false) Integer userId,
         @Schema(description = "排序方式：'oldest' - 按最早创建，其他值或 null - 按最新创建（默认）", allowableValues = {"newest", "oldest"}, example = "newest") @RequestParam(required = false, defaultValue = "newest") String orderBy
     ) {
@@ -392,7 +392,7 @@ public class AdminSeriesController extends AdminBaseController {
         }
 
         try {
-            IPage<AdminSeriesVO> result = seriesService.getAdminSeriesPage(current, size, keyword, status, isDelete, userId, orderBy);
+            IPage<AdminSeriesVO> result = seriesService.getAdminSeriesPage(current, size, keyword, status, is_delete, userId, orderBy);
             return ResponsePojo.success(result, "查询成功");
         } catch (Exception e) {
             log.error("分页查询作品合集异常，错误: {}", e.getMessage(), e);

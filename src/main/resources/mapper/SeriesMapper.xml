@@ -201,8 +201,8 @@
                 AND s.approval_status = #{approvalStatus}
             </if>
             <choose>
-                <when test="isDelete != null">
-                    AND s.is_delete = #{isDelete}
+                <when test="is_delete != null">
+                    AND s.is_delete = #{is_delete}
                 </when>
                 <otherwise>
                     AND s.is_delete = 0

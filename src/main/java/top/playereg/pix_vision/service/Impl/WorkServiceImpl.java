@@ -1246,20 +1246,20 @@ public class WorkServiceImpl implements WorkService {
      */
     @Override
     public IPage<AdminWorkVO> getAdminWorksPage(Long current, Long size, String keyword, String orderBy,
-                                           Boolean isOriginal, Integer approvalStatus, Boolean isDelete) {
+                                            Boolean isOriginal, Integer approvalStatus, Boolean is_delete) {
         // 参数校验与默认值处理
         current = PageUtils.getValidCurrent(current);
         size = PageUtils.getValidSize(size);
 
         log.info("开始管理员分页查询作品，页码: {}, 每页大小: {}, 关键字: {}, 排序: {}, 是否转载: {}, 审核状态: {}, 是否删除: {}",
-            current, size, keyword, orderBy, isOriginal, approvalStatus, isDelete);
+            current, size, keyword, orderBy, isOriginal, approvalStatus, is_delete);
 
         // 创建分页对象
         Page<AdminWorkVO> page = new Page<>(current, size);
 
         // 调用 Mapper 层查询（已联表查 nickname）
         IPage<AdminWorkVO> result = worksMapper.adminSelectWorks(page, keyword, orderBy,
-            isOriginal, approvalStatus, isDelete);
+            isOriginal, approvalStatus, is_delete);
 
         // 为列表中的每个作品填充最新的浏览量（优先 Redis，其次回源）
         if (result != null && !result.getRecords().isEmpty()) {
