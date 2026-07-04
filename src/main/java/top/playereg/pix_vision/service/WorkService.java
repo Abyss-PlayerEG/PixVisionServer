@@ -237,7 +237,7 @@ public interface WorkService {
         String orderBy,
         Boolean isOriginal,
         Integer approvalStatus,
-        Boolean isDelete
+        Boolean is_delete
     );
 
     /**

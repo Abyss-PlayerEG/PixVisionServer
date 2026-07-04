@@ -23,9 +23,9 @@ public interface SeriesService {
     SeriesOperationResult addSeries(Integer userId, String seriesTitle, String aboutText);
 
     /**
-     * 根据用户 ID 分页查询所有作品系列（支持关键词搜索）
+     * 分页查询作品系列列表（支持按用户筛选和关键词搜索）
      *
-     * @param userId  用户 ID
+     * @param userId  用户 ID（可选，为 null 时查询所有用户的系列）
      * @param current 当前页码
      * @param size    每页数量
      * @param keyword 搜索关键词（可选，同时匹配标题和描述，标题匹配优先排序）
@@ -137,7 +137,7 @@ public interface SeriesService {
         Long size,
         String keyword,
         Integer approvalStatus,
-        Boolean isDelete,
+        Boolean is_delete,
         Integer userId,
         String orderBy
     );

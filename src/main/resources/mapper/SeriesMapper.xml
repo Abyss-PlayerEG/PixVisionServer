@@ -56,7 +56,7 @@
                 #{create_user})
     </insert>
 
-    <!-- 根据用户 ID 分页查询所有作品系列（排除逻辑删除，只返回审核通过的系列，含最新作品封面，支持关键词搜索） -->
+    <!-- 分页查询作品系列列表（排除逻辑删除，只返回审核通过的系列，含最新作品封面，支持按用户筛选和关键词搜索） -->
     <select id="selectSeriesByUserId" resultType="top.playereg.pix_vision.pojo.entity.Series">
         SELECT s.series_id,
                s.user_id,
@@ -74,9 +74,11 @@
                 ORDER BY w.create_time DESC
                 LIMIT 1) AS thumb_url
         FROM tb_series s
-        WHERE s.user_id = #{userId}
-          AND s.is_delete = 0
+        WHERE s.is_delete = 0
           AND s.approval_status = 10
+          <if test="userId != null">
+          AND s.user_id = #{userId}
+          </if>
           <if test="keyword != null and keyword != ''">
           AND (s.series_title LIKE CONCAT('%', #{keyword}, '%') OR s.about_text LIKE CONCAT('%', #{keyword}, '%'))
           </if>
@@ -198,9 +200,14 @@
             <if test="approvalStatus != null">
                 AND s.approval_status = #{approvalStatus}
             </if>
-            <if test="isDelete != null">
-                AND s.is_delete = #{isDelete}
-            </if>
+            <choose>
+                <when test="is_delete != null">
+                    AND s.is_delete = #{is_delete}
+                </when>
+                <otherwise>
+                    AND s.is_delete = 0
+                </otherwise>
+            </choose>
             <if test="keyword != null and keyword != ''">
                 AND (s.series_title LIKE CONCAT('%', #{keyword}, '%') OR s.about_text LIKE CONCAT('%', #{keyword}, '%'))
             </if>

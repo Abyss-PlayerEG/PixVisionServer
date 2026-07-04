@@ -104,7 +104,7 @@ public interface UserMapper extends BaseMapper<User> {
      * @param page     分页对象
      * @param userRole 用户角色（可选）
      * @param status   用户状态（可选，10-正常, 20-冻结, 30-封禁）
-     * @param isDelete 是否已删除（可选）
+     * @param is_delete 是否已删除（可选）
      * @param nickname 昵称关键字（可选，模糊查询）
      * @param orderBy  排序方式：'oldest' - 最早注册，其他值或 null - 最新注册（默认）
      * @return 分页用户列表
@@ -112,7 +112,7 @@ public interface UserMapper extends BaseMapper<User> {
     IPage<User> adminSelectUsers(Page<User> page,
                                   @Param("userRole") Integer userRole,
                                   @Param("status") Integer status,
-                                  @Param("isDelete") Boolean isDelete,
+                                  @Param("is_delete") Boolean is_delete,
                                   @Param("nickname") String nickname,
                                   @Param("orderBy") String orderBy);
 
