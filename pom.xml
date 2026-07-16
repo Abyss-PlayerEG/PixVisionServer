@@ -186,6 +186,13 @@
             <version>2.5.0</version>
         </dependency>
 
+        <!--Swagger Annotations (显式声明，确保 IDE 正确解析 io.swagger.v3 包)-->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>2.2.22</version>
+        </dependency>
+
         <!--Knife4j OpenAPI3 UI (适配 Spring Boot 3.x)-->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
